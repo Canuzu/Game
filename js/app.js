@@ -1206,8 +1206,8 @@
       '<div class="modal-actions"><button class="btn btn-primary" id="sh-close">Schließen</button></div>',
       function (card) {
         card.addEventListener('click', function (ev) {
-          if (ev.target.closest('#sh-copy-pgn')) copyText(pgn, 'PGN kopiert.');
-          if (ev.target.closest('#sh-copy-fen')) copyText($('sh-fen').value.trim(), 'FEN kopiert.');
+          if (ev.target.closest('#sh-copy-pgn')) copyText(pgn, 'PGN kopiert.', 'sh-pgn');
+          if (ev.target.closest('#sh-copy-fen')) copyText($('sh-fen').value.trim(), 'FEN kopiert.', 'sh-fen');
           if (ev.target.closest('#sh-dl')) downloadPgn(pgn);
           if (ev.target.closest('#sh-close')) closeModal();
           if (ev.target.closest('#sh-load')) {
@@ -1313,12 +1313,31 @@
   }
 
   function downloadPgn(pgn) {
+    var name = 'partie-' + new Date().toISOString().slice(0, 10);
+
+    /* In eingebetteten Umgebungen (etwa einer veroeffentlichten Seite auf
+     * claude.ai) sind gewoehnliche Download-Links wirkungslos — dort speichert
+     * die Umgebung selbst. Ohne diese Erkennung passierte beim Klick nichts.  */
+    if (window.claude && typeof window.claude.use === 'function') {
+      window.claude.use('downloads').then(function (downloads) {
+        if (!downloads) { toast('Herunterladen geht hier nicht — bitte den Text kopieren.'); return; }
+        /* Dort ist .pgn nicht zugelassen, der Inhalt ist aber reiner Text. */
+        return downloads.save({ filename: name + '.txt', data: pgn }).then(
+          function () { toast('Gespeichert als .txt — zum Einlesen in .pgn umbenennen.'); },
+          function (err) {
+            if (err && err.code === 'declined') return;
+            toast('Speichern nicht möglich — bitte den Text kopieren.');
+          });
+      });
+      return;
+    }
+
     try {
       var blob = new Blob([pgn], { type: 'application/x-chess-pgn' });
       var url = URL.createObjectURL(blob);
       var a = document.createElement('a');
       a.href = url;
-      a.download = 'partie-' + new Date().toISOString().slice(0, 10) + '.pgn';
+      a.download = name + '.pgn';
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -1329,12 +1348,25 @@
     }
   }
 
-  function copyText(text, msg) {
+  /**
+   * Legt Text in die Zwischenablage. Ist das gesperrt — in eingebetteten
+   * Seiten durchaus üblich — wird der Text stattdessen markiert, damit
+   * Strg+C trotzdem funktioniert.
+   */
+  function copyText(text, msg, sourceId) {
+    function selectInstead() {
+      var box = sourceId ? $(sourceId) : null;
+      if (box && box.select) {
+        box.focus(); box.select();
+        toast('Zwischenablage gesperrt — Text ist markiert, jetzt Strg+C.');
+      } else {
+        toast('Kopieren ist hier nicht möglich — bitte den Text markieren.');
+      }
+    }
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(function () { toast(msg); },
-                                              function () { toast('Kopieren nicht erlaubt.'); });
+      navigator.clipboard.writeText(text).then(function () { toast(msg); }, selectInstead);
     } else {
-      toast('Kopieren wird hier nicht unterstützt — bitte manuell markieren.');
+      selectInstead();
     }
   }
 

@@ -110,6 +110,21 @@ einer Blitzpartie nicht an der eigenen Bedenkzeit scheitert.
 
 ---
 
+## Einzeldatei-Fassung
+
+Wer das Spiel als eine einzige Datei braucht — zum Verschicken, auf einen
+USB-Stick legen oder irgendwo einbetten:
+
+```bash
+node tools/build-single.mjs              # dist/schach.html, rund 160 KB
+node tools/build-single.mjs --fragment   # ohne Seitenrahmen, zum Einbetten
+```
+
+Stylesheet und Skripte werden dabei direkt ins HTML eingefügt. `dist/` ist
+bewusst nicht eingecheckt — die Datei entsteht vollständig aus den Quellen.
+
+---
+
 ## Tests
 
 ```bash
