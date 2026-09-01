@@ -69,6 +69,9 @@
   var killers = new Int32Array(MAX_PLY * 2);
   var historyTable = new Int32Array(32 * 128);
   var nodes = 0, deadline = 0, aborted = false, useQuiescence = true;
+  /* Wahr, solange findBestMove laeuft. Suche und Schnellbewertung teilen sich
+   * diese Zustandsvariablen, deshalb darf immer nur eine von beiden laufen.  */
+  var searching = false;
 
   function checkTime() {
     if ((nodes & 2047) === 0 && Date.now() >= deadline) aborted = true;
@@ -310,72 +313,80 @@
     }
 
     /* 3. Iterative Vertiefung */
-    nodes = 0;
-    aborted = false;
-    useQuiescence = cfg.quiescence;
-    deadline = Date.now() + cfg.timeMs;
-    generation = (generation + 1) & 127;
-    killers.fill(0);
-    for (var h = 0; h < historyTable.length; h++) historyTable[h] = (historyTable[h] / 8) | 0;
+    searching = true;
+    try {
+      nodes = 0;
+      aborted = false;
+      useQuiescence = cfg.quiescence;
+      deadline = Date.now() + cfg.timeMs;
+      generation = (generation + 1) & 127;
+      killers.fill(0);
+      for (var h = 0; h < historyTable.length; h++) historyTable[h] = (historyTable[h] / 8) | 0;
 
-    var best = { move: rootMoves[0], score: 0, depth: 0 };
-    var rootScores = new Map();
+      var best = { move: rootMoves[0], score: 0, depth: 0 };
+      var rootScores = new Map();
 
-    for (var depth = 1; depth <= cfg.maxDepth; depth++) {
-      var iterBest = null, iterScore = -INFINITY;
-      var alpha = -INFINITY, beta = INFINITY;
-      var scoresThisIter = new Map();
+      for (var depth = 1; depth <= cfg.maxDepth; depth++) {
+        var iterBest = null, iterScore = -INFINITY;
+        var alpha = -INFINITY, beta = INFINITY;
+        var scoresThisIter = new Map();
 
-      /* Beste Zuege der Vorrunde zuerst */
-      rootMoves.sort(function (a, b) {
-        return (rootScores.get(b) === undefined ? -INFINITY : rootScores.get(b)) -
-               (rootScores.get(a) === undefined ? -INFINITY : rootScores.get(a));
-      });
+        /* Beste Zuege der Vorrunde zuerst */
+        rootMoves.sort(function (a, b) {
+          return (rootScores.get(b) === undefined ? -INFINITY : rootScores.get(b)) -
+                 (rootScores.get(a) === undefined ? -INFINITY : rootScores.get(a));
+        });
 
-      for (var i = 0; i < rootMoves.length; i++) {
-        var m = rootMoves[i];
-        pos.makeMove(m);
-        var sc;
-        if (i === 0) {
-          sc = -negamax(pos, depth - 1, -beta, -alpha, 1, true);
-        } else {
-          sc = -negamax(pos, depth - 1, -alpha - 1, -alpha, 1, true);
-          if (!aborted && sc > alpha) sc = -negamax(pos, depth - 1, -beta, -alpha, 1, true);
+        for (var i = 0; i < rootMoves.length; i++) {
+          var m = rootMoves[i];
+          pos.makeMove(m);
+          var sc;
+          if (i === 0) {
+            sc = -negamax(pos, depth - 1, -beta, -alpha, 1, true);
+          } else {
+            sc = -negamax(pos, depth - 1, -alpha - 1, -alpha, 1, true);
+            if (!aborted && sc > alpha) sc = -negamax(pos, depth - 1, -beta, -alpha, 1, true);
+          }
+          pos.undoMove();
+
+          if (aborted) break;
+          scoresThisIter.set(m, sc);
+          if (sc > iterScore) { iterScore = sc; iterBest = m; }
+          if (sc > alpha) alpha = sc;
+
+          /* Oberflaeche atmen lassen */
+          if ((i & 1) === 1) await yieldToUi();
         }
-        pos.undoMove();
 
+        if (aborted && iterBest === null) break;
+        if (!aborted) {
+          rootScores = scoresThisIter;
+          best = { move: iterBest, score: iterScore, depth: depth };
+          if (onInfo) onInfo({ depth: depth, score: iterScore, nodes: nodes, move: iterBest });
+        }
         if (aborted) break;
-        scoresThisIter.set(m, sc);
-        if (sc > iterScore) { iterScore = sc; iterBest = m; }
-        if (sc > alpha) alpha = sc;
-
-        /* Oberflaeche atmen lassen */
-        if ((i & 1) === 1) await yieldToUi();
+        /* Matt gefunden — tiefer suchen bringt nichts mehr */
+        if (Math.abs(iterScore) > MATE_THRESHOLD) break;
+        /* Nicht genug Zeit fuer die naechste Iteration */
+        if (Date.now() - started > cfg.timeMs * 0.5) break;
+        await yieldToUi();
       }
 
-      if (aborted && iterBest === null) break;
-      if (!aborted) {
-        rootScores = scoresThisIter;
-        best = { move: iterBest, score: iterScore, depth: depth };
-        if (onInfo) onInfo({ depth: depth, score: iterScore, nodes: nodes, move: iterBest });
+      /* 4. Streuung: unter mehreren fast gleich guten Zuegen zufaellig waehlen */
+      var chosen = best.move;
+      if (cfg.spread > 0 && rootScores.size > 1) {
+        var bestScore = rootScores.get(best.move);
+        var candidates = [];
+        rootScores.forEach(function (sc, mv) {
+          if (bestScore - sc <= cfg.spread) candidates.push(mv);
+        });
+        if (candidates.length > 1) chosen = candidates[Math.floor(Math.random() * candidates.length)];
       }
-      if (aborted) break;
-      /* Matt gefunden — tiefer suchen bringt nichts mehr */
-      if (Math.abs(iterScore) > MATE_THRESHOLD) break;
-      /* Nicht genug Zeit fuer die naechste Iteration */
-      if (Date.now() - started > cfg.timeMs * 0.5) break;
-      await yieldToUi();
-    }
 
-    /* 4. Streuung: unter mehreren fast gleich guten Zuegen zufaellig waehlen */
-    var chosen = best.move;
-    if (cfg.spread > 0 && rootScores.size > 1) {
-      var bestScore = rootScores.get(best.move);
-      var candidates = [];
-      rootScores.forEach(function (sc, mv) {
-        if (bestScore - sc <= cfg.spread) candidates.push(mv);
-      });
-      if (candidates.length > 1) chosen = candidates[Math.floor(Math.random() * candidates.length)];
+    } finally {
+      /* Auch bei einem Fehler wieder freigeben, sonst bliebe quickEval
+       * dauerhaft blockiert.                                              */
+      searching = false;
     }
 
     var elapsed = Date.now() - started;
@@ -403,8 +414,13 @@
     return hanging;
   }
 
-  /* Schnelle Bewertung fuer die Bewertungsanzeige (Ruhesuche, keine Tiefe) */
+  /**
+   * Schnelle Bewertung fuer die Anzeigeleiste (nur Ruhesuche, keine Tiefe).
+   * Liefert null, wenn gerade eine richtige Suche laeuft — die duerfte sonst
+   * ihren eigenen Zeitpunkt und Abbruchstatus ueberschrieben bekommen.
+   */
   function quickEval(pos) {
+    if (searching) return null;
     aborted = false;
     useQuiescence = true;
     deadline = Date.now() + 60;

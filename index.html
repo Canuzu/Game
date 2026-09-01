@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<meta name="description" content="Schach gegen den Computer in vier Schwierigkeitsstufen oder zu zweit an einem Gerät. Läuft komplett offline im Browser.">
+<title>Schach</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 45 45'><rect width='45' height='45' rx='8' fill='%23161a22'/><g fill='%23e6b455'><path d='M22.5 8v8M19 11h7'/><path d='M22.5 14c5-4 11-2.4 11.9 2.6.7 3.5-1.3 6.7-4.3 9.5-2.2 2-5 4.1-7.6 6.1-2.4-2-5.2-4.1-7.4-6.1-3-2.8-5-6-4.3-9.5C11.5 11.6 17.5 10 22.5 14z'/><path d='M13 32c6.2-3.2 12.4-3.2 18.6 0v3c-6.2-3.2-12.4-3.2-18.6 0z'/></g></svg>">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-board-theme="walnuss">
+
+<div class="app">
+
+  <!-- ===================== Kopfzeile ===================== -->
+  <header class="topbar">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 45 45" aria-hidden="true">
+        <path d="M22.5 5.5v8M18.6 9h7.8" class="bm-cross"/>
+        <path d="M22.5 13.4c5.2-4.2 11.4-2.5 12.3 2.7.7 3.6-1.3 6.9-4.4 9.8-2.3 2.1-5.2 4.2-7.9 6.3-2.5-2.1-5.4-4.2-7.7-6.3-3.1-2.9-5.1-6.2-4.4-9.8.9-5.2 7.1-6.9 12.1-2.7z"/>
+        <path d="M12.6 32.2c6.4-3.3 12.8-3.3 19.2 0v3.1c-6.4-3.3-12.8-3.3-19.2 0z"/>
+      </svg>
+      <div class="brand-text">
+        <span class="brand-name">Schach</span>
+        <span class="brand-sub" id="mode-label">Bereit</span>
+      </div>
+    </div>
+
+    <div class="opening-tag" id="opening-tag" hidden></div>
+
+    <div class="topbar-actions">
+      <button class="icon-btn" id="btn-sound" title="Ton an/aus" aria-label="Ton an oder aus"></button>
+      <button class="icon-btn" id="btn-flip" title="Brett drehen (F)" aria-label="Brett drehen"></button>
+      <button class="icon-btn" id="btn-settings" title="Einstellungen" aria-label="Einstellungen"></button>
+      <button class="btn btn-primary" id="btn-new">Neue Partie</button>
+    </div>
+  </header>
+
+  <!-- ===================== Hauptbereich ===================== -->
+  <main class="layout">
+
+    <section class="board-column">
+
+      <!-- Gegner oben -->
+      <div class="player-bar" id="bar-top">
+        <div class="player-ident">
+          <span class="player-avatar" id="avatar-top"></span>
+          <span class="player-meta">
+            <span class="player-name" id="name-top">Schwarz</span>
+            <span class="player-captured" id="captured-top"></span>
+          </span>
+        </div>
+        <div class="clock" id="clock-top" hidden><span class="clock-time">10:00</span></div>
+      </div>
+
+      <div class="board-shell">
+        <div class="evalbar" id="evalbar" title="Stellungsbewertung">
+          <div class="evalbar-fill" id="evalbar-fill"></div>
+          <span class="evalbar-value" id="evalbar-value">0.0</span>
+        </div>
+
+        <div class="board-frame">
+          <div class="board" id="board" role="grid" aria-label="Schachbrett">
+            <div class="squares" id="squares"></div>
+            <div class="pieces" id="pieces"></div>
+          </div>
+          <div class="promo-layer" id="promo-layer" hidden></div>
+        </div>
+      </div>
+
+      <!-- Spieler unten -->
+      <div class="player-bar" id="bar-bottom">
+        <div class="player-ident">
+          <span class="player-avatar" id="avatar-bottom"></span>
+          <span class="player-meta">
+            <span class="player-name" id="name-bottom">Weiß</span>
+            <span class="player-captured" id="captured-bottom"></span>
+          </span>
+        </div>
+        <div class="clock" id="clock-bottom" hidden><span class="clock-time">10:00</span></div>
+      </div>
+    </section>
+
+    <!-- ===================== Seitenleiste ===================== -->
+    <aside class="side-column">
+
+      <div class="panel panel-moves">
+        <div class="panel-head">
+          <span>Zugliste</span>
+          <span class="engine-note" id="engine-note"></span>
+        </div>
+        <div class="movelist-wrap">
+          <table class="movelist" id="movelist">
+            <tbody id="movelist-body"></tbody>
+          </table>
+          <p class="movelist-empty" id="movelist-empty">Noch keine Züge gespielt.</p>
+        </div>
+        <div class="move-nav">
+          <button class="nav-btn" id="nav-start" title="Zum Anfang" aria-label="Zum Anfang">&#8676;</button>
+          <button class="nav-btn" id="nav-prev" title="Ein Zug zurück (←)" aria-label="Ein Zug zurück">&#8592;</button>
+          <button class="nav-btn" id="nav-next" title="Ein Zug vor (→)" aria-label="Ein Zug vor">&#8594;</button>
+          <button class="nav-btn" id="nav-end" title="Zum Ende" aria-label="Zum Ende">&#8677;</button>
+        </div>
+      </div>
+
+      <div class="panel panel-actions">
+        <button class="action" id="act-undo">
+          <span class="action-icon" data-icon="undo"></span>
+          <span>Zurücknehmen</span>
+        </button>
+        <button class="action" id="act-hint">
+          <span class="action-icon" data-icon="hint"></span>
+          <span>Hinweis</span>
+        </button>
+        <button class="action" id="act-resign">
+          <span class="action-icon" data-icon="flag"></span>
+          <span>Aufgeben</span>
+        </button>
+        <button class="action" id="act-share">
+          <span class="action-icon" data-icon="share"></span>
+          <span>PGN &amp; FEN</span>
+        </button>
+      </div>
+
+      <p class="hint-line" id="status-line">Wähle „Neue Partie“, um zu starten.</p>
+    </aside>
+  </main>
+</div>
+
+<!-- ===================== Dialoge ===================== -->
+<div class="modal-root" id="modal-root" hidden>
+  <div class="modal-backdrop" id="modal-backdrop"></div>
+  <div class="modal-card" id="modal-card" role="dialog" aria-modal="true"></div>
+</div>
+
+<div class="toast" id="toast" hidden></div>
+
+<script src="js/engine.js"></script>
+<script src="js/evaluate.js"></script>
+<script src="js/book.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/pieces.js"></script>
+<script src="js/sound.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
