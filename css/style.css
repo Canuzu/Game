@@ -6,52 +6,156 @@
  *          8) Dialoge   9) Bewegliche Teile   10) Schmale Bildschirme
  * ========================================================================== */
 
-/* ---------- 1) Farbtokens ------------------------------------------------- */
+/* ---------- 1) Farbtokens -------------------------------------------------
+ * Zwei Paletten, jeder Farbwert genau einmal notiert: --d-* dunkel, --l-* hell.
+ * Darunter wird nur noch zugewiesen, welche der beiden gerade gilt.
+ *
+ * Dunkel ist der Grundzustand. Hell greift in drei Fällen:
+ *   - das Betriebssystem bevorzugt hell und im Spiel wurde nichts gewählt,
+ *   - die umgebende Seite setzt data-theme="light",
+ *   - im Spiel steht die Ansicht auf "Hell" (data-app-theme="light").
+ *
+ * Die Einstellung im Spiel gewinnt immer: steht sie auf "Dunkel", schließt
+ * :not([data-app-theme]) sämtliche hellen Regeln aus, und es bleibt bei den
+ * Grundwerten. Deshalb braucht es keinen eigenen Dunkel-Block.
+ * ------------------------------------------------------------------------- */
 :root {
-  --bg-deep:      #0e1015;
-  --bg:           #14171f;
-  --surface:      #1b1f29;
-  --surface-2:    #222734;
-  --surface-3:    #2b3140;
-  --line:         #303747;
-  --line-soft:    #262c39;
+  /* --- dunkle Palette --- */
+  --d-bg-deep:    #0e1015;
+  --d-bg:         #14171f;
+  --d-surface:    #1b1f29;
+  --d-surface-2:  #222734;
+  --d-surface-3:  #2b3140;
+  --d-line:       #303747;
+  --d-line-soft:  #262c39;
+  --d-text:       #e8eaf0;
+  --d-text-dim:   #98a0b3;
+  --d-text-faint: #6a7386;
+  --d-gold:       #e0b464;
+  --d-gold-text:  #f0cf96;
+  --d-gold-deep:  #a97f34;
+  --d-green:      #7bb872;
+  --d-red:        #d9705f;
+  --d-blue:       #6d9fd4;
+  --d-backdrop:   rgba(6, 8, 12, .74);
+  --d-shadow:     0 18px 44px -18px rgba(0, 0, 0, .75);
+  --d-shadow-soft:0 6px 18px -8px rgba(0, 0, 0, .6);
+  --d-wash-warm:  rgba(224, 180, 100, .10);
+  --d-wash-cool:  rgba(109, 159, 212, .09);
 
-  --text:         #e8eaf0;
-  --text-dim:     #98a0b3;
-  --text-faint:   #6a7386;
+  /* --- helle Palette ---
+   * Warme, leicht ins Goldene gezogene Neutraltöne statt reinem Grau, damit
+   * der Akzent nicht wie ein Fremdkörper auf der Fläche sitzt.            */
+  --l-bg-deep:    #e7e0d3;
+  --l-bg:         #f7f3eb;
+  --l-surface:    #fffdf8;
+  --l-surface-2:  #f2ece0;
+  --l-surface-3:  #e7dfcf;
+  --l-line:       #d5ccb8;
+  --l-line-soft:  #e6ded0;
+  --l-text:       #2b2620;
+  --l-text-dim:   #665e50;
+  --l-text-faint: #8d8474;
+  --l-gold:       #a3731f;
+  --l-gold-text:  #7d5713;
+  --l-gold-deep:  #5f3f0c;
+  --l-green:      #3f7d43;
+  --l-red:        #b1432f;
+  --l-blue:       #2f6296;
+  --l-backdrop:   rgba(44, 36, 24, .46);
+  --l-shadow:     0 16px 40px -20px rgba(84, 66, 36, .38);
+  --l-shadow-soft:0 5px 16px -9px rgba(84, 66, 36, .34);
+  --l-wash-warm:  rgba(196, 150, 70, .13);
+  --l-wash-cool:  rgba(88, 132, 184, .10);
 
-  --gold:         #e0b464;
-  --gold-soft:    #f0cf96;
-  --gold-deep:    #a97f34;
-  --green:        #7bb872;
-  --red:          #d9705f;
-  --blue:         #6d9fd4;
+  /* --- Zuweisung: dunkel als Grundzustand --- */
+  --bg-deep:     var(--d-bg-deep);
+  --bg:          var(--d-bg);
+  --surface:     var(--d-surface);
+  --surface-2:   var(--d-surface-2);
+  --surface-3:   var(--d-surface-3);
+  --line:        var(--d-line);
+  --line-soft:   var(--d-line-soft);
+  --text:        var(--d-text);
+  --text-dim:    var(--d-text-dim);
+  --text-faint:  var(--d-text-faint);
+  --gold:        var(--d-gold);
+  --gold-text:   var(--d-gold-text);
+  --gold-deep:   var(--d-gold-deep);
+  --green:       var(--d-green);
+  --red:         var(--d-red);
+  --blue:        var(--d-blue);
+  --backdrop:    var(--d-backdrop);
+  --shadow:      var(--d-shadow);
+  --shadow-soft: var(--d-shadow-soft);
+  --wash-warm:   var(--d-wash-warm);
+  --wash-cool:   var(--d-wash-cool);
 
-  --radius:       14px;
-  --radius-sm:    9px;
-  --shadow:       0 18px 44px -18px rgba(0, 0, 0, .75);
-  --shadow-soft:  0 6px 18px -8px rgba(0, 0, 0, .6);
+  /* --- In beiden Ansichten gleich ---
+   * Gefüllte Goldflächen (Hauptschaltfläche) bleiben hell: sie tragen dunkle
+   * Schrift und funktionieren so auf jedem Untergrund.                    */
+  --gold-fill-a: #f0cf96;
+  --gold-fill-b: #e0b464;
+  --gold-fill-c: #a97f34;
+  --gold-fill-ink: #241a08;
+
+  --radius:      14px;
+  --radius-sm:   9px;
 
   --font: "Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-num: "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo, Consolas, monospace;
 
-  /* Figurenfarben — von den Brett-Themes ueberschreibbar */
-  --piece-white:        #f6f2e9;
-  --piece-white-line:   #1d1a16;
-  --piece-black:        #2a2d36;
-  --piece-black-line:   #05060a;
+  /* Figurenfarben — von den Brett-Themes überschreibbar */
+  --piece-white:      #f6f2e9;
+  --piece-white-line: #1d1a16;
+  --piece-black:      #2a2d36;
+  --piece-black-line: #05060a;
 
   --sq-light: #e9d5b4;
   --sq-dark:  #a8794f;
-  --sq-light-accent: #f4e3c6;
 }
 
-/* ---------- Brett-Themes -------------------------------------------------- */
-body[data-board-theme="walnuss"] { --sq-light:#e9d5b4; --sq-dark:#a8794f; }
-body[data-board-theme="smaragd"] { --sq-light:#eeeed3; --sq-dark:#769656; }
-body[data-board-theme="marmor"]  { --sq-light:#dfe5ec; --sq-dark:#7f96ad; }
+/* Die helle Zuweisung steht zweimal, weil eine Medienabfrage sich nicht mit
+ * gewöhnlichen Selektoren in eine Regel zusammenfassen lässt. Die Farbwerte
+ * selbst bleiben davon unberührt — die stehen oben nur einmal.            */
+@media (prefers-color-scheme: light) {
+  :root:not([data-app-theme]):not([data-theme="dark"]) {
+    --bg-deep: var(--l-bg-deep);       --bg: var(--l-bg);
+    --surface: var(--l-surface);       --surface-2: var(--l-surface-2);
+    --surface-3: var(--l-surface-3);   --line: var(--l-line);
+    --line-soft: var(--l-line-soft);   --text: var(--l-text);
+    --text-dim: var(--l-text-dim);     --text-faint: var(--l-text-faint);
+    --gold: var(--l-gold);             --gold-text: var(--l-gold-text);
+    --gold-deep: var(--l-gold-deep);   --green: var(--l-green);
+    --red: var(--l-red);               --blue: var(--l-blue);
+    --backdrop: var(--l-backdrop);     --shadow: var(--l-shadow);
+    --shadow-soft: var(--l-shadow-soft);
+    --wash-warm: var(--l-wash-warm);   --wash-cool: var(--l-wash-cool);
+  }
+}
+:root[data-theme="light"]:not([data-app-theme]),
+:root[data-app-theme="light"] {
+  --bg-deep: var(--l-bg-deep);       --bg: var(--l-bg);
+  --surface: var(--l-surface);       --surface-2: var(--l-surface-2);
+  --surface-3: var(--l-surface-3);   --line: var(--l-line);
+  --line-soft: var(--l-line-soft);   --text: var(--l-text);
+  --text-dim: var(--l-text-dim);     --text-faint: var(--l-text-faint);
+  --gold: var(--l-gold);             --gold-text: var(--l-gold-text);
+  --gold-deep: var(--l-gold-deep);   --green: var(--l-green);
+  --red: var(--l-red);               --blue: var(--l-blue);
+  --backdrop: var(--l-backdrop);     --shadow: var(--l-shadow);
+  --shadow-soft: var(--l-shadow-soft);
+  --wash-warm: var(--l-wash-warm);   --wash-cool: var(--l-wash-cool);
+}
+
+/* ---------- Brett-Themes --------------------------------------------------
+ * Das Brett behält seine Farben in beiden Ansichten — ein Nussbaumbrett sieht
+ * bei Tageslicht schließlich auch nicht anders aus.                       */
+body[data-board-theme="walnuss"] { --sq-light:#e9d5b4; --sq-dark:#a8794f; --frame-a:#3a3121; --frame-b:#24211c; --frame-c:#1a1815; }
+body[data-board-theme="smaragd"] { --sq-light:#eeeed3; --sq-dark:#769656; --frame-a:#2d3a26; --frame-b:#1f251c; --frame-c:#171a15; }
+body[data-board-theme="marmor"]  { --sq-light:#dfe5ec; --sq-dark:#7f96ad; --frame-a:#2c3540; --frame-b:#1e242c; --frame-c:#171b21; }
 body[data-board-theme="nacht"]   {
-  --sq-light:#7c869b; --sq-dark:#414b5e;
+  --sq-light:#7c869b; --sq-dark:#414b5e; --frame-a:#2a3040; --frame-b:#1c2029; --frame-c:#14171d;
   --piece-white:#f7f7fa; --piece-black:#191c24;
 }
 
@@ -70,9 +174,12 @@ body {
   font-family: var(--font);
   color: var(--text);
   background:
-    radial-gradient(1100px 620px at 78% -12%, rgba(224, 180, 100, .10), transparent 62%),
-    radial-gradient(900px 560px at 6% 108%, rgba(109, 159, 212, .09), transparent 60%),
+    radial-gradient(1100px 620px at 78% -12%, var(--wash-warm), transparent 62%),
+    radial-gradient(900px 560px at 6% 108%, var(--wash-cool), transparent 60%),
     linear-gradient(168deg, var(--bg) 0%, var(--bg-deep) 100%);
+  /* Deckende Grundfarbe hinter den Verläufen. Sie muss nach der Kurzschreib-
+   * weise stehen, denn die setzt background-color sonst wieder zurück.    */
+  background-color: var(--bg);
   background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
@@ -84,6 +191,14 @@ button { font: inherit; color: inherit; cursor: pointer; }
 button:disabled { cursor: not-allowed; opacity: .38; }
 
 :focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; border-radius: 6px; }
+.board:focus-visible { outline-offset: 4px; }
+
+/* Nur für Vorlesewerkzeuge sichtbar */
+.visually-hidden {
+  position: absolute; width: 1px; height: 1px;
+  margin: -1px; padding: 0; border: 0;
+  clip-path: inset(50%); overflow: hidden; white-space: nowrap;
+}
 
 .app {
   max-width: 1240px;
@@ -116,7 +231,7 @@ button:disabled { cursor: not-allowed; opacity: .38; }
 .brand-name {
   font-size: 21px; font-weight: 650; letter-spacing: .06em;
   text-transform: uppercase;
-  background: linear-gradient(96deg, var(--gold-soft), var(--gold) 55%, var(--gold-deep));
+  background: linear-gradient(96deg, var(--gold-text), var(--gold) 55%, var(--gold-deep));
   -webkit-background-clip: text; background-clip: text; color: transparent;
 }
 .brand-sub { font-size: 12px; color: var(--text-faint); letter-spacing: .02em; }
@@ -165,9 +280,9 @@ button:disabled { cursor: not-allowed; opacity: .38; }
 .btn:active:not(:disabled) { transform: translateY(1px); }
 
 .btn-primary {
-  background: linear-gradient(168deg, var(--gold-soft), var(--gold) 45%, var(--gold-deep));
+  background: linear-gradient(168deg, var(--gold-fill-a), var(--gold-fill-b) 45%, var(--gold-fill-c));
   border-color: transparent;
-  color: #241a08;
+  color: var(--gold-fill-ink);
   font-weight: 650;
   box-shadow: 0 6px 16px -8px rgba(224, 180, 100, .7);
 }
@@ -285,12 +400,10 @@ button:disabled { cursor: not-allowed; opacity: .38; }
   min-width: 0;
   border-radius: var(--radius);
   padding: 9px;
-  background: linear-gradient(150deg, #3a3121, #24211c 55%, #1a1815);
+  /* Die drei Farbstufen liefert das Brett-Thema über --frame. */
+  background: linear-gradient(150deg, var(--frame-a), var(--frame-b) 55%, var(--frame-c));
   box-shadow: var(--shadow), inset 0 1px 0 rgba(255, 255, 255, .06);
 }
-body[data-board-theme="smaragd"] .board-frame { background: linear-gradient(150deg, #2d3a26, #1f251c 55%, #171a15); }
-body[data-board-theme="marmor"]  .board-frame { background: linear-gradient(150deg, #2c3540, #1e242c 55%, #171b21); }
-body[data-board-theme="nacht"]   .board-frame { background: linear-gradient(150deg, #2a3040, #1c2029 55%, #14171d); }
 
 .board {
   position: relative;
@@ -339,6 +452,16 @@ body.no-coords .sq .coord { display: none; }
   content: ""; position: absolute; inset: 0;
   background: rgba(224, 180, 100, .58);
 }
+/* Tastatur-Markierung: kräftiger Rahmen, damit sie sich von der Auswahl
+ * und vom Ziehen-Umriss klar unterscheidet.                                */
+.sq.cursor::after {
+  content: ""; position: absolute; inset: 0;
+  border: 3px dashed var(--blue);
+  border-radius: 3px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .35);
+  z-index: 3;
+}
+
 .sq.hover-target::after {
   content: ""; position: absolute; inset: 0;
   border: 3px solid rgba(255, 255, 255, .62);
@@ -491,7 +614,7 @@ body.no-hints .sq .dot, body.no-hints .sq .ring { display: none; }
   transition: background .12s, color .12s;
 }
 .mv:hover { background: var(--surface-2); color: var(--text); }
-.mv.current { background: var(--surface-3); color: var(--gold-soft); font-weight: 620; }
+.mv.current { background: var(--surface-3); color: var(--gold-text); font-weight: 620; }
 .mv .mv-book { color: var(--text-faint); font-size: 11px; }
 
 .movelist-empty {
@@ -532,6 +655,66 @@ body.no-hints .sq .dot, body.no-hints .sq .ring { display: none; }
 .action-icon svg { width: 20px; height: 20px; fill: none; stroke: currentColor;
                    stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
 
+/* ---------- Partieanalyse -------------------------------------------------- */
+.panel-analysis { overflow: hidden; }
+
+.an-body {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 1px; background: var(--line-soft);
+}
+.an-col {
+  display: flex; flex-direction: column; gap: 3px;
+  padding: 13px 15px;
+  background: var(--surface);
+}
+.an-name { font-size: 12px; color: var(--text-dim); font-weight: 550; }
+.an-score {
+  font-family: var(--font-num);
+  font-size: 25px; font-weight: 650;
+  line-height: 1.05;
+  color: var(--gold-text);
+  font-variant-numeric: tabular-nums;
+}
+.an-score i { font-size: 13px; font-style: normal; color: var(--text-faint); margin-left: 1px; }
+.an-detail {
+  display: flex; gap: 11px;
+  font-size: 12px; color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+  margin-top: 2px;
+}
+.an-mark { display: inline-flex; align-items: baseline; gap: 4px; }
+.an-mark b { font-weight: 700; font-size: 12.5px; }
+
+.an-hint {
+  margin: 0; padding: 11px 15px;
+  border-top: 1px solid var(--line-soft);
+  font-size: 11.5px; line-height: 1.5;
+  color: var(--text-faint);
+}
+
+/* Bewertungszeichen — auch ohne Farbe unterscheidbar, weil jedes ein eigenes
+ * Zeichen trägt (??, ?, ?!, !).                                            */
+.rv-patzer  { color: var(--red); }
+.rv-fehler  { color: #d68a3a; }
+.rv-ungenau { color: #c9b04a; }
+.rv-best    { color: var(--green); }
+.mv-mark { font-weight: 700; margin-left: 3px; }
+
+.progress {
+  height: 7px; border-radius: 999px;
+  background: var(--surface-3);
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+.progress-fill {
+  height: 100%; width: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--gold-fill-c), var(--gold-fill-b));
+  transition: width .18s linear;
+}
+
+.action-wide { grid-column: 1 / -1; flex-direction: row; gap: 9px; }
+
 .hint-line {
   margin: 0; padding: 0 4px;
   font-size: 12.5px; line-height: 1.5;
@@ -544,7 +727,7 @@ body.no-hints .sq .dot, body.no-hints .sq .ring { display: none; }
 .modal-root { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 20px; }
 .modal-backdrop {
   position: absolute; inset: 0;
-  background: rgba(6, 8, 12, .74);
+  background: var(--backdrop);
   backdrop-filter: blur(6px);
   animation: fade .2s ease-out;
 }
@@ -609,6 +792,8 @@ body.no-hints .sq .dot, body.no-hints .sq .ring { display: none; }
   border-radius: 5px; padding: 1px 6px;
 }
 
+.field-note { margin: 9px 0 0; font-size: 12px; color: var(--text-faint); line-height: 1.45; }
+
 .chip-row { display: flex; flex-wrap: wrap; gap: 7px; }
 .chip {
   padding: 7px 14px;
@@ -619,7 +804,7 @@ body.no-hints .sq .dot, body.no-hints .sq .ring { display: none; }
   transition: border-color .16s, background .16s, color .16s;
 }
 .chip:hover { background: var(--surface-2); }
-.chip.selected { border-color: var(--gold); background: rgba(224, 180, 100, .14); color: var(--gold-soft); }
+.chip.selected { border-color: var(--gold); background: rgba(224, 180, 100, .14); color: var(--gold-text); }
 
 .color-choice { display: grid; place-items: center; gap: 7px; padding: 14px 8px; }
 .color-choice svg { width: 32px; height: 32px; }
@@ -662,7 +847,7 @@ body.no-hints .sq .dot, body.no-hints .sq .ring { display: none; }
 .codebox {
   width: 100%;
   font-family: var(--font-num); font-size: 12px; line-height: 1.6;
-  color: var(--text-dim);
+  color: var(--text);
   background: var(--bg-deep);
   border: 1px solid var(--line-soft);
   border-radius: 9px;
@@ -670,7 +855,7 @@ body.no-hints .sq .dot, body.no-hints .sq .ring { display: none; }
   resize: vertical;
   word-break: break-all;
 }
-.codebox:focus { outline: none; border-color: var(--gold-deep); color: var(--text); }
+.codebox:focus { outline: none; border-color: var(--gold); }
 
 /* Ergebnisdialog */
 .result-head { text-align: center; margin-bottom: 20px; }
@@ -682,9 +867,12 @@ body.no-hints .sq .dot, body.no-hints .sq .ring { display: none; }
   border: 1px solid var(--line);
 }
 .result-icon svg { width: 30px; height: 30px; }
-.result-icon.win  { background: rgba(123, 184, 114, .15); border-color: rgba(123, 184, 114, .45); }
-.result-icon.lose { background: rgba(217, 112, 95, .13); border-color: rgba(217, 112, 95, .42); }
-.result-icon.draw { background: rgba(109, 159, 212, .13); border-color: rgba(109, 159, 212, .42); }
+.result-icon.win  { background: color-mix(in srgb, var(--green) 15%, transparent);
+                    border-color: color-mix(in srgb, var(--green) 45%, transparent); color: var(--green); }
+.result-icon.lose { background: color-mix(in srgb, var(--red) 13%, transparent);
+                    border-color: color-mix(in srgb, var(--red) 42%, transparent); color: var(--red); }
+.result-icon.draw { background: color-mix(in srgb, var(--blue) 13%, transparent);
+                    border-color: color-mix(in srgb, var(--blue) 42%, transparent); color: var(--blue); }
 .result-title { margin: 0 0 6px; font-size: 25px; font-weight: 650; }
 .result-reason { margin: 0; font-size: 14px; color: var(--text-dim); }
 .result-score {

@@ -312,12 +312,70 @@
       return { move: pick, score: 0, depth: 0, nodes: 0, ms: Date.now() - started, blunder: true };
     }
 
-    /* 3. Iterative Vertiefung */
+    var searched = await runSearch(pos, cfg, onInfo);
+    var best = { move: searched.move, score: searched.score, depth: searched.depth };
+    var rootScores = searched.scores;
+
+    /* 4. Streuung: unter mehreren fast gleich guten Zuegen zufaellig waehlen */
+    var chosen = best.move;
+    if (cfg.spread > 0 && rootScores.size > 1) {
+      var bestScore = rootScores.get(best.move);
+      var candidates = [];
+      rootScores.forEach(function (sc, mv) {
+        if (bestScore - sc <= cfg.spread) candidates.push(mv);
+      });
+      if (candidates.length > 1) chosen = candidates[Math.floor(Math.random() * candidates.length)];
+    }
+
+    /* Ein Zug, der in Nullkommanichts erscheint, wirkt maschinell. */
+    var elapsed = Date.now() - started;
+    if (elapsed < 220) await new Promise(function (r) { setTimeout(r, 220 - elapsed); });
+
+    return {
+      move: chosen,
+      score: rootScores.get(chosen) !== undefined ? rootScores.get(chosen) : best.score,
+      depth: best.depth,
+      nodes: searched.nodes,
+      ms: Date.now() - started,
+      fromBook: false
+    };
+  }
+
+  /**
+   * Bewertet eine einzelne Stellung für die Partieanalyse.
+   * Anders als findBestMove ohne Eröffnungsbuch, ohne Streuung, ohne Patzer
+   * und ohne künstliche Denkpause — und sie sucht auch dann, wenn nur ein
+   * einziger Zug möglich ist, denn die Bewertung wird trotzdem gebraucht.
+   *
+   * @returns {Promise<{move, score, depth}|null>} null bei Matt oder Patt.
+   */
+  function analysePosition(pos, timeMs, maxDepth) {
+    return runSearch(pos, {
+      timeMs: timeMs || 400,
+      maxDepth: maxDepth || 16,
+      quiescence: true,
+      fullBudget: true
+    });
+  }
+
+  /**
+   * Führt die eigentliche Suche aus: iterative Vertiefung über alle Wurzelzüge.
+   * Getrennt von findBestMove, weil die Partieanalyse dieselbe Suche braucht,
+   * aber ohne Eröffnungsbuch, Patzer, Streuung und die künstliche Denkpause.
+   *
+   * @returns {Promise<{move, score, depth, nodes, scores: Map}>} oder null,
+   *          wenn es in der Stellung keinen legalen Zug gibt.
+   */
+  async function runSearch(pos, cfg, onInfo) {
+    var rootMoves = pos.generateMoves();
+    if (rootMoves.length === 0) return null;
+
+    var started = Date.now();
     searching = true;
     try {
       nodes = 0;
       aborted = false;
-      useQuiescence = cfg.quiescence;
+      useQuiescence = cfg.quiescence !== false;
       deadline = Date.now() + cfg.timeMs;
       generation = (generation + 1) & 127;
       killers.fill(0);
@@ -367,39 +425,21 @@
         if (aborted) break;
         /* Matt gefunden — tiefer suchen bringt nichts mehr */
         if (Math.abs(iterScore) > MATE_THRESHOLD) break;
-        /* Nicht genug Zeit fuer die naechste Iteration */
-        if (Date.now() - started > cfg.timeMs * 0.5) break;
+        /* Im Spiel wird abgebrochen, sobald die naechste Iteration die
+         * Bedenkzeit sprengen wuerde. Die Analyse steht dagegen unter keinem
+         * Zeitdruck und schoepft ihr Budget voll aus — das bringt bei
+         * gleichem Aufwand zwei bis drei Halbzuege mehr Tiefe.            */
+        if (!cfg.fullBudget && Date.now() - started > cfg.timeMs * 0.5) break;
         await yieldToUi();
       }
 
-      /* 4. Streuung: unter mehreren fast gleich guten Zuegen zufaellig waehlen */
-      var chosen = best.move;
-      if (cfg.spread > 0 && rootScores.size > 1) {
-        var bestScore = rootScores.get(best.move);
-        var candidates = [];
-        rootScores.forEach(function (sc, mv) {
-          if (bestScore - sc <= cfg.spread) candidates.push(mv);
-        });
-        if (candidates.length > 1) chosen = candidates[Math.floor(Math.random() * candidates.length)];
-      }
-
+      return { move: best.move, score: best.score, depth: best.depth,
+               nodes: nodes, scores: rootScores };
     } finally {
       /* Auch bei einem Fehler wieder freigeben, sonst bliebe quickEval
        * dauerhaft blockiert.                                              */
       searching = false;
     }
-
-    var elapsed = Date.now() - started;
-    if (elapsed < 220) await new Promise(function (r) { setTimeout(r, 220 - elapsed); });
-
-    return {
-      move: chosen,
-      score: rootScores.get(chosen) !== undefined ? rootScores.get(chosen) : best.score,
-      depth: best.depth,
-      nodes: nodes,
-      ms: Date.now() - started,
-      fromBook: false
-    };
   }
 
   /* Grober Check fuer den "Patzer"-Modus: haengt danach Dame oder Turm? */
@@ -436,6 +476,7 @@
 
   global.ChessAI = {
     findBestMove: findBestMove,
+    analysePosition: analysePosition,
     quickEval: quickEval,
     ttClear: ttClear,
     LEVELS: LEVELS,

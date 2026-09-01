@@ -20,15 +20,21 @@
     soundOn:  '<svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7"/><path d="M19 6a8.5 8.5 0 0 1 0 12"/></svg>',
     soundOff: '<svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M17 9.5l4 5M21 9.5l-4 5"/></svg>',
     flip:     '<svg viewBox="0 0 24 24"><path d="M4 8h13l-3-3M20 16H7l3 3"/></svg>',
-    gear:     '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.2"/><path d="M12 3.5v2M12 18.5v2M20.5 12h-2M5.5 12h-2M17.9 6.1l-1.4 1.4M7.5 16.5l-1.4 1.4M17.9 17.9l-1.4-1.4M7.5 7.5L6.1 6.1"/></svg>',
+    /* Schieberegler statt Zahnrad: ein Zahnrad mit Strahlen ist von der Sonne
+     * daneben kaum zu unterscheiden.                                      */
+    gear:     '<svg viewBox="0 0 24 24"><path d="M4 7.5h9M17 7.5h3M4 16.5h3M11 16.5h9"/><circle cx="15" cy="7.5" r="2.3"/><circle cx="9" cy="16.5" r="2.3"/></svg>',
     undo:     '<svg viewBox="0 0 24 24"><path d="M4 8h10a5.5 5.5 0 0 1 0 11H8"/><path d="M7.5 4.5L4 8l3.5 3.5"/></svg>',
     hint:     '<svg viewBox="0 0 24 24"><path d="M9.5 18h5M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.7.5 1.1 1.3 1.1 2.2h5c0-.9.4-1.7 1.1-2.2A6 6 0 0 0 12 3z"/></svg>',
     flag:     '<svg viewBox="0 0 24 24"><path d="M5.5 21V3.5"/><path d="M5.5 4.5h11l-2 3.5 2 3.5h-11"/></svg>',
     share:    '<svg viewBox="0 0 24 24"><path d="M4 14v5.5h16V14"/><path d="M12 3.5v11M8 10.5l4 4 4-4"/></svg>',
-    trophy:   '<svg viewBox="0 0 24 24" fill="none" stroke="#7bb872" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v5a4 4 0 0 1-8 0V4z"/><path d="M8 5.5H5.5V7a3 3 0 0 0 3 3M16 5.5h2.5V7a3 3 0 0 1-3 3"/><path d="M12 13v4M9 20h6M10 17h4"/></svg>',
-    lost:     '<svg viewBox="0 0 24 24" fill="none" stroke="#d9705f" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 20V4"/><path d="M6 5h11l-2 3.5L17 12H6"/></svg>',
-    handshake:'<svg viewBox="0 0 24 24" fill="none" stroke="#6d9fd4" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l3.5-3.5h4L13 11l-2 2-2-2"/><path d="M21 12l-3.5-3.5h-4"/><path d="M13 11l3 3 1.5-1.5"/><path d="M11 13l3 3M9.5 14.5l2.5 2.5"/></svg>',
-    clock:    '<svg viewBox="0 0 24 24" fill="none" stroke="#e0b464" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 7.5V12l3 2"/></svg>',
+    chart:    '<svg viewBox="0 0 24 24"><path d="M4 19.5h16"/><path d="M4 15l4.5-5 3.5 3 4-6.5 4 4.5"/><circle cx="8.5" cy="10" r="1.2"/><circle cx="12" cy="13" r="1.2"/><circle cx="16" cy="6.5" r="1.2"/></svg>',
+    /* Die Ergebnis-Symbole erben ihre Farbe von der umgebenden Klasse, damit
+     * sie in heller wie dunkler Ansicht genug Kontrast haben.             */
+    trophy:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v5a4 4 0 0 1-8 0V4z"/><path d="M8 5.5H5.5V7a3 3 0 0 0 3 3M16 5.5h2.5V7a3 3 0 0 1-3 3"/><path d="M12 13v4M9 20h6M10 17h4"/></svg>',
+    lost:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 20V4"/><path d="M6 5h11l-2 3.5L17 12H6"/></svg>',
+    handshake:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12l3.5-3.5h4L13 11l-2 2-2-2"/><path d="M21 12l-3.5-3.5h-4"/><path d="M13 11l3 3 1.5-1.5"/><path d="M11 13l3 3M9.5 14.5l2.5 2.5"/></svg>',
+    sun:      '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.8v2.4M12 18.8v2.4M21.2 12h-2.4M5.2 12H2.8M18.5 5.5l-1.7 1.7M7.2 16.8l-1.7 1.7M18.5 18.5l-1.7-1.7M7.2 7.2L5.5 5.5"/></svg>',
+    moon:     '<svg viewBox="0 0 24 24"><path d="M20 14.2A8.4 8.4 0 0 1 9.8 4 8.4 8.4 0 1 0 20 14.2z"/></svg>',
     robot:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="8" width="16" height="11" rx="3"/><path d="M12 4.5v3.5M8.5 13h.01M15.5 13h.01M9.5 16.2h5"/></svg>',
     person:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>'
   };
@@ -41,6 +47,8 @@
 
   /* ---------- 2) Zustand -------------------------------------------------- */
   var DEFAULT_SETTINGS = {
+    /* 'auto' folgt dem Betriebssystem, 'hell' und 'dunkel' überstimmen es. */
+    theme: 'auto',
     sound: true,
     animations: true,
     showHints: true,
@@ -72,6 +80,8 @@
     startMoveNo: 1,
     selected: -1,
     targets: [],
+    cursor: -1,          /* Feld unter der Tastatur-Markierung */
+    keyboardMode: false, /* Markierung erst zeigen, wenn die Tastatur benutzt wird */
     thinking: false,
     result: null,
     timeControl: TIME_CONTROLS[0],
@@ -79,6 +89,8 @@
     settings: Object.assign({}, DEFAULT_SETTINGS),
     gameId: 0,
     started: false,
+    analysis: null,      /* Ergebnis der Partieanalyse */
+    analysing: false,
     pendingPromo: null,
     drag: null
   };
@@ -94,11 +106,11 @@
   function cacheDom() {
     ['board', 'squares', 'pieces', 'movelist-body', 'movelist-empty', 'modal-root',
      'modal-card', 'modal-backdrop', 'toast', 'mode-label', 'opening-tag', 'status-line',
-     'engine-note', 'evalbar', 'evalbar-fill', 'evalbar-value', 'promo-layer',
+     'engine-note', 'evalbar', 'evalbar-fill', 'evalbar-value', 'promo-layer', 'live',
      'bar-top', 'bar-bottom', 'name-top', 'name-bottom', 'avatar-top', 'avatar-bottom',
      'captured-top', 'captured-bottom', 'clock-top', 'clock-bottom',
-     'btn-sound', 'btn-flip', 'btn-settings', 'btn-new',
-     'act-undo', 'act-hint', 'act-resign', 'act-share',
+     'btn-sound', 'btn-flip', 'btn-theme', 'btn-settings', 'btn-new',
+     'act-undo', 'act-hint', 'act-resign', 'act-share', 'act-review', 'analysis-panel',
      'nav-start', 'nav-prev', 'nav-next', 'nav-end'
     ].forEach(function (id) { el[id] = $(id); });
   }
@@ -207,12 +219,13 @@
     updateEvalBar();
     updateOpeningTag();
     renderClocks();
+    renderAnalysisPanel();
   }
 
   function updateHighlights() {
     var pos = displayedPos();
     for (var i = 0; i < 64; i++) {
-      squareEls[i].classList.remove('last', 'sel', 'check', 'hover-target');
+      squareEls[i].classList.remove('last', 'sel', 'check', 'hover-target', 'cursor');
       var extra = squareEls[i].querySelectorAll('.dot,.ring');
       for (var k = 0; k < extra.length; k++) extra[k].remove();
     }
@@ -228,6 +241,11 @@
     if (pos.inCheck()) {
       var ks = pos.kings[pos.turn === WHITE ? 0 : 1];
       if (sqToEl[ks]) sqToEl[ks].classList.add('check');
+    }
+
+    /* Tastatur-Markierung */
+    if (state.keyboardMode && state.cursor >= 0 && sqToEl[state.cursor]) {
+      sqToEl[state.cursor].classList.add('cursor');
     }
 
     /* Auswahl und moegliche Ziele */
@@ -282,29 +300,33 @@
     avatar.style.color = 'var(--text-dim)';
   }
 
-  /* Geschlagene Figuren des Gegners + Materialvorteil */
+  /** Welche Farbe hat den Zug mit diesem Index gespielt? */
+  function moverColor(index) {
+    var whiteMoved = state.startTurnBlack ? (index % 2 === 1) : (index % 2 === 0);
+    return whiteMoved ? WHITE : BLACK;
+  }
+
+  /* Geschlagene Figuren des Gegners + Materialvorteil.
+   * Gezählt wird über den Zugverlauf, nicht über fehlende Figuren auf dem
+   * Brett: nach einer Umwandlung stimmt die Bauernzahl sonst nicht mehr —
+   * ein umgewandelter Bauer sähe aus wie ein geschlagener.               */
   var CAPTURE_ORDER = ['q', 'r', 'b', 'n', 'p'];
   function renderCaptured(side, color) {
     var pos = displayedPos();
-    var startCounts = { w: { p: 8, n: 2, b: 2, r: 2, q: 1 }, b: { p: 8, n: 2, b: 2, r: 2, q: 1 } };
-    var cur = { w: { p: 0, n: 0, b: 0, r: 0, q: 0 }, b: { p: 0, n: 0, b: 0, r: 0, q: 0 } };
+    var taken = { p: 0, n: 0, b: 0, r: 0, q: 0 };
+    var victimKey = color === WHITE ? 'b' : 'w';
 
-    for (var sq = 0; sq < 128; sq++) {
-      if (sq & 0x88) { sq += 7; continue; }
-      var p = pos.board[sq];
-      if (!p) continue;
-      var t = C.PIECE_LETTER[p & C.TYPE_MASK].toLowerCase();
-      if (t === 'k') continue;
-      cur[(p & C.COLOR_MASK) === WHITE ? 'w' : 'b'][t]++;
+    for (var i = 0; i < state.viewPly; i++) {
+      var rec = state.moves[i];
+      if (!rec.captured || moverColor(i) !== color) continue;
+      var t = C.PIECE_LETTER[rec.captured & C.TYPE_MASK].toLowerCase();
+      if (taken[t] !== undefined) taken[t]++;
     }
 
-    /* Von dieser Farbe geschlagen = fehlende Figuren der Gegenfarbe */
-    var victimKey = color === WHITE ? 'b' : 'w';
     var html = '';
-    for (var i = 0; i < CAPTURE_ORDER.length; i++) {
-      var type = CAPTURE_ORDER[i];
-      var missing = startCounts[victimKey][type] - cur[victimKey][type];
-      for (var n = 0; n < missing; n++) html += pieceIcon(type, victimKey);
+    for (var k = 0; k < CAPTURE_ORDER.length; k++) {
+      var type = CAPTURE_ORDER[k];
+      for (var n = 0; n < taken[type]; n++) html += pieceIcon(type, victimKey);
     }
 
     var mat = EV.materialCount(pos);
@@ -348,9 +370,16 @@
     }
     function cell(m, idx) {
       var cur = state.viewPly === idx + 1 ? ' current' : '';
-      var book = m.book ? '<span class="mv-book"> ♦</span>' : '';
+      var mark = '';
+      if (m.review && BEWERTUNG[m.review.klasse].zeichen) {
+        mark = '<span class="mv-mark rv-' + m.review.klasse + '" title="' +
+               BEWERTUNG[m.review.klasse].name + '">' +
+               BEWERTUNG[m.review.klasse].zeichen + '</span>';
+      } else if (m.book) {
+        mark = '<span class="mv-book" title="Eröffnungsbuch"> ♦</span>';
+      }
       return '<button class="mv' + cur + '" data-ply="' + (idx + 1) + '">' +
-             escapeHtml(m.san) + book + '</button>';
+             escapeHtml(m.san) + mark + '</button>';
     }
 
     var currentBtn = body.querySelector('.mv.current');
@@ -375,6 +404,10 @@
                              (state.mode === 'ai' && state.pos.turn !== state.humanColor);
     el['act-resign'].disabled = !state.started || !!state.result;
     el['act-share'].disabled = !state.started;
+    /* Erst nach der Partie — während des Spiels wäre es schlicht Schummeln. */
+    el['act-review'].disabled = !state.result || state.analysing || state.moves.length < 2;
+    el['act-review'].querySelector('span:last-child').textContent =
+      state.analysis ? 'Analyse erneuern' : 'Analyse';
     updateStatusLine();
   }
 
@@ -383,6 +416,17 @@
     if (!state.started) {
       line.innerHTML = 'Wähle <strong>Neue Partie</strong>, um zu starten.';
       return;
+    }
+    /* Steht die Ansicht auf einem bewerteten Zug, ist die Alternative
+     * interessanter als der Partiestand.                                   */
+    if (state.viewPly > 0) {
+      var rec = state.moves[state.viewPly - 1];
+      if (rec.review && rec.review.besser && rec.review.klasse !== 'gut' && rec.review.klasse !== 'buch') {
+        line.innerHTML = '<strong class="rv-' + rec.review.klasse + '">' +
+          BEWERTUNG[rec.review.klasse].name + '</strong> — besser war <strong>' +
+          escapeHtml(rec.review.besser) + '</strong>.';
+        return;
+      }
     }
     if (state.result) { line.innerHTML = escapeHtml(state.result.headline); return; }
     if (!isLive()) {
@@ -428,7 +472,10 @@
     } else {
       pct = 100 / (1 + Math.exp(-cp / 320));
       pct = Math.max(3, Math.min(97, pct));
-      label = (cp >= 0 ? '+' : '−') + (Math.abs(cp) / 100).toFixed(1);
+      var pawns = Math.abs(cp) / 100;
+      /* Ab zehn Bauern Vorsprung ohne Nachkommastelle — sonst passt die Zahl
+       * nicht mehr in die schmale Leiste.                                  */
+      label = (cp >= 0 ? '+' : '−') + (pawns >= 10 ? Math.round(pawns) : pawns.toFixed(1));
       if (Math.abs(cp) < 20) label = '0.0';
     }
 
@@ -491,6 +538,8 @@
 
     var sq = squareFromPoint(ev.clientX, ev.clientY);
     if (sq < 0) return;
+    state.keyboardMode = false;
+    state.cursor = sq;
 
     /* Auf ein markiertes Ziel geklickt -> Zug ausfuehren */
     if (state.selected >= 0) {
@@ -560,6 +609,89 @@
       if (to !== d.sq && to >= 0) SND.play('illegal');
       clearSelection();
     }
+  }
+
+  /* ---------- 5b) Tastatur am Brett ----------------------------------------
+   * Das Brett ist über Tab erreichbar. Die Pfeiltasten schieben dann eine
+   * Markierung über die Felder, Leertaste oder Eingabetaste wählt aus und
+   * zieht. Solange das Brett den Fokus hat, blättern die Pfeiltasten nicht
+   * durch den Partieverlauf — sonst wäre beides nicht gleichzeitig möglich.
+   * ------------------------------------------------------------------------ */
+
+  /** Sinnvoller Startpunkt: eigener König, sonst Brettmitte. */
+  function defaultCursor() {
+    var pos = displayedPos();
+    var mine = state.mode === 'human' ? pos.turn : state.humanColor;
+    var k = pos.kings[mine === WHITE ? 0 : 1];
+    return k >= 0 ? k : C.sqIndex('e4');
+  }
+
+  function moveCursor(dFile, dRank) {
+    if (state.cursor < 0) state.cursor = defaultCursor();
+    var f = state.cursor & 7, r = state.cursor >> 4;
+    /* Die Pfeilrichtung folgt dem, was zu sehen ist, nicht dem Brettraster. */
+    var flip = state.orientation === 'b' ? -1 : 1;
+    f = Math.max(0, Math.min(7, f + dFile * flip));
+    r = Math.max(0, Math.min(7, r + dRank * flip));
+    state.cursor = r * 16 + f;
+    state.keyboardMode = true;
+    updateHighlights();
+    announce(describeSquare(state.cursor));
+  }
+
+  function describeSquare(sq) {
+    var pos = displayedPos();
+    var p = pos.board[sq];
+    if (!p) return C.sqName(sq) + ', leer';
+    var key = pieceKey(p);
+    return C.sqName(sq) + ', ' + PIECES.pieceName(key[1], key[0]);
+  }
+
+  /** Leertaste/Eingabe auf dem markierten Feld. */
+  function activateCursor() {
+    if (state.cursor < 0) { state.cursor = defaultCursor(); state.keyboardMode = true; updateHighlights(); return; }
+    if (!isLive() && state.started) { goToPly(state.moves.length); return; }
+    if (!humanMayMove()) { announce('Du bist gerade nicht am Zug.'); return; }
+
+    var pos = state.pos;
+
+    if (state.selected >= 0) {
+      var mv = targetMove(state.cursor);
+      if (mv) { startMove(mv, false); return; }
+      if (state.cursor === state.selected) { clearSelection(); announce('Auswahl aufgehoben.'); return; }
+    }
+
+    var p = pos.board[state.cursor];
+    if (!p || (p & C.COLOR_MASK) !== pos.turn) {
+      SND.play('illegal');
+      announce(p ? 'Diese Figur gehört dem Gegner.' : 'Auf diesem Feld steht keine eigene Figur.');
+      clearSelection();
+      return;
+    }
+    selectSquare(state.cursor);
+    announce(describeSquare(state.cursor) + ' ausgewählt, ' + state.targets.length + ' mögliche Züge.');
+  }
+
+  /** Kurze Meldung für Vorlesewerkzeuge. */
+  function announce(text) {
+    if (el.live) el.live.textContent = text;
+  }
+
+  function onBoardKey(ev) {
+    var handled = true;
+    switch (ev.key) {
+      case 'ArrowLeft':  moveCursor(-1, 0); break;
+      case 'ArrowRight': moveCursor(1, 0); break;
+      case 'ArrowUp':    moveCursor(0, 1); break;
+      case 'ArrowDown':  moveCursor(0, -1); break;
+      case 'Enter': case ' ': activateCursor(); break;
+      case 'Escape':
+        if (state.selected >= 0) { clearSelection(); announce('Auswahl aufgehoben.'); }
+        else handled = false;
+        break;
+      default: handled = false;
+    }
+    if (handled) { ev.preventDefault(); ev.stopPropagation(); }
   }
 
   /* ---------- 6) Zugablauf ------------------------------------------------- */
@@ -649,6 +781,7 @@
     var animate = opts.animate !== false && state.settings.animations;
     var movingEl = pieceEls[from];
     var capSq = (flags & C.F_EP) ? (pos.turn === WHITE ? to - 16 : to + 16) : to;
+    var capturedPiece = pos.board[capSq];   /* vor dem Zug ablesen */
 
     if (pieceEls[capSq] && capSq !== from) {
       var dying = pieceEls[capSq];
@@ -690,7 +823,7 @@
 
     /* --- Verlauf --- */
     state.moves.push({
-      move: move, san: san, clockBefore: clockBefore,
+      move: move, san: san, clockBefore: clockBefore, captured: capturedPiece,
       book: !!opts.book, engine: opts.engine || null
     });
     state.viewPly = state.moves.length;
@@ -712,6 +845,8 @@
     setTimeout(function () { reconcilePieces(state.pos); }, animate ? 210 : 0);
     render({ skipPieces: true });
     saveGame();
+
+    announce(san + (pos.inCheck() ? ', Schach' : ''));
 
     var status = pos.getStatus();
     if (status.over) { finishGame(status); return true; }
@@ -900,6 +1035,7 @@
     state.clock.b = restore.b;
     state.clock.lowWarned = { w: false, b: false };
     state.result = null;
+    state.analysis = null;          /* Bewertungen passen nicht mehr zur Partie */
     state.viewPly = state.moves.length;
     state.viewPos = null;
     el['engine-note'].textContent = '';
@@ -948,6 +1084,203 @@
       updateControls();
       toast('Vorschlag: ' + state.pos.moveToSan(res.move));
     });
+  }
+
+  /* ---------- 9b) Partieanalyse ---------------------------------------------
+   * Nach der Partie wird jede Stellung noch einmal durchgerechnet und mit dem
+   * tatsächlich gespielten Zug verglichen. Bewertet wird nicht der Verlust in
+   * Bauernwerten, sondern der Verlust an Gewinnaussicht — 100 Centipawns
+   * wiegen im ausgeglichenen Mittelspiel viel schwerer als in einer ohnehin
+   * gewonnenen Stellung.
+   *
+   * Die Suche läuft mit knappem Zeitbudget, ist also kein Schiedsrichter.
+   * Deshalb nennt die Oberfläche sie ausdrücklich "Kurzanalyse".
+   * ------------------------------------------------------------------------ */
+
+  var ANALYSE_MS = 420, ANALYSE_TIEFE = 16;
+
+  var BEWERTUNG = {
+    patzer:  { zeichen: '??', name: 'Patzer' },
+    fehler:  { zeichen: '?',  name: 'Fehler' },
+    ungenau: { zeichen: '?!', name: 'Ungenauigkeit' },
+    best:    { zeichen: '!',  name: 'Bester Zug' },
+    gut:     { zeichen: '',   name: 'Solide' },
+    buch:    { zeichen: '',   name: 'Eröffnungsbuch' }
+  };
+
+  /* Bewertung in Centipawns -> Gewinnaussicht in Prozent. */
+  function gewinnAussicht(cp) {
+    return 50 + 50 * (2 / (1 + Math.exp(-0.00368208 * cp)) - 1);
+  }
+
+  /* Genauigkeit eines einzelnen Zuges aus dem Verlust an Gewinnaussicht. */
+  function zugGenauigkeit(vorher, nachher) {
+    var v = 103.1668 * Math.exp(-0.04354 * (vorher - nachher)) - 3.1669;
+    return Math.max(0, Math.min(100, v));
+  }
+
+  function einstufen(istBuchzug, verlustProzent, warBester, vorher, nachher) {
+    if (warBester) return 'best';
+    if (istBuchzug) return 'buch';
+    /* In einer längst entschiedenen Stellung ist ein Ungenauigkeitszuschlag
+     * ohne Aussage — wer drei Damen vorne steht, darf ungenau spielen.     */
+    var entschieden = Math.min(vorher, nachher) > 90 || Math.max(vorher, nachher) < 10;
+    if (entschieden) return 'gut';
+    if (verlustProzent >= 28) return 'patzer';
+    if (verlustProzent >= 16) return 'fehler';
+    if (verlustProzent >= 8) return 'ungenau';
+    return 'gut';
+  }
+
+  async function runAnalysis() {
+    if (state.analysing || state.moves.length < 2) return;
+    state.analysing = true;
+    var myGame = state.gameId;
+    var gesamt = state.moves.length + 1;
+
+    showAnalysisProgress(0, gesamt);
+
+    var pos = new C.Position(state.startFen);
+    var bewertungen = [];   /* je Stellung: Sicht der Seite am Zug */
+    var besteZuege = [];    /* je Stellung: SAN des Engine-Zuges   */
+    var besteRoh = [];
+    var tiefen = [];
+
+    for (var i = 0; i <= state.moves.length; i++) {
+      if (state.gameId !== myGame || !state.analysing) { closeModal(); state.analysing = false; return; }
+
+      var r = await AI.analysePosition(pos, ANALYSE_MS, ANALYSE_TIEFE);
+      if (r) {
+        bewertungen.push(r.score);
+        besteRoh.push(r.move);
+        besteZuege.push(pos.moveToSan(r.move));
+        tiefen.push(r.depth);
+      } else {
+        /* Kein legaler Zug: matt (verloren) oder patt (ausgeglichen). */
+        bewertungen.push(pos.inCheck() ? -AI.MATE : 0);
+        besteRoh.push(0);
+        besteZuege.push(null);
+      }
+
+      if (i < state.moves.length) pos.makeMove(state.moves[i].move);
+      updateAnalysisProgress(i + 1, gesamt);
+    }
+
+    /* Auswertung je Halbzug */
+    var summe = { 8: { genau: 0, zuege: 0 }, 16: { genau: 0, zuege: 0 } };
+    var zaehler = { 8: {}, 16: {} };
+    var sans = [];
+
+    for (var k = 0; k < state.moves.length; k++) {
+      var rec = state.moves[k];
+      /* Auch die eigenen Eröffnungszüge gelten als Buchzüge — sonst würde
+       * eine Kurzsuche gängige Theorie als Ungenauigkeit brandmarken.    */
+      var istBuch = rec.book || (BOOK ? BOOK.contains(sans, rec.san) : false);
+      sans.push(rec.san);
+      var vorherCp = bewertungen[k];
+      var nachherCp = -bewertungen[k + 1];      /* auf die Sicht des Ziehenden drehen */
+      var vorher = gewinnAussicht(vorherCp);
+      var nachher = gewinnAussicht(nachherCp);
+      var verlust = Math.max(0, vorher - nachher);
+      var warBester = besteRoh[k] === rec.move;
+      var klasse = einstufen(istBuch, verlust, warBester, vorher, nachher);
+      var genau = zugGenauigkeit(vorher, nachher);
+
+      rec.review = {
+        klasse: klasse,
+        verlust: verlust,
+        genauigkeit: genau,
+        besser: warBester ? null : besteZuege[k],
+        bewertung: vorherCp
+      };
+
+      var farbe = moverColor(k);
+      if (klasse !== 'buch') { summe[farbe].genau += genau; summe[farbe].zuege++; }
+      zaehler[farbe][klasse] = (zaehler[farbe][klasse] || 0) + 1;
+    }
+
+    var mittlereTiefe = tiefen.length
+      ? Math.round(tiefen.reduce(function (a, b) { return a + b; }, 0) / tiefen.length) : 0;
+
+    state.analysis = {
+      weiss: fasseZusammen(summe[WHITE], zaehler[WHITE]),
+      schwarz: fasseZusammen(summe[BLACK], zaehler[BLACK]),
+      tiefe: mittlereTiefe
+    };
+    state.analysing = false;
+    closeModal();
+    render({ skipPieces: true });
+    SND.play('draw');
+  }
+
+  function fasseZusammen(summe, zaehler) {
+    return {
+      genauigkeit: summe.zuege ? Math.round(summe.genau / summe.zuege) : 0,
+      patzer: zaehler.patzer || 0,
+      fehler: zaehler.fehler || 0,
+      ungenau: zaehler.ungenau || 0,
+      best: zaehler.best || 0
+    };
+  }
+
+  function showAnalysisProgress(fertig, gesamt) {
+    openModal(
+      '<h2 class="modal-title">Kurzanalyse läuft</h2>' +
+      '<p class="modal-sub">Jede Stellung der Partie wird noch einmal durchgerechnet ' +
+        'und mit dem gespielten Zug verglichen.</p>' +
+      '<div class="progress"><div class="progress-fill" id="an-fill"></div></div>' +
+      '<p class="field-note" id="an-text">Stellung ' + fertig + ' von ' + gesamt +
+        ' — dauert etwa ' + Math.max(1, Math.round(gesamt * ANALYSE_MS / 1000)) + ' Sekunden</p>' +
+      '<div class="modal-actions"><button class="btn btn-ghost" id="an-stop">Abbrechen</button></div>',
+      function (card) {
+        card.querySelector('#an-stop').onclick = function () { state.analysing = false; };
+      }
+    );
+  }
+
+  function updateAnalysisProgress(fertig, gesamt) {
+    var fill = $('an-fill'), text = $('an-text');
+    if (fill) fill.style.width = Math.round((fertig / gesamt) * 100) + '%';
+    if (text) {
+      var rest = Math.max(0, Math.round((gesamt - fertig) * ANALYSE_MS / 1000));
+      text.textContent = 'Stellung ' + fertig + ' von ' + gesamt +
+                         (rest > 0 ? ' — noch etwa ' + rest + ' Sekunden' : ' — gleich fertig');
+    }
+  }
+
+  /** Zusammenfassung über der Zugliste. */
+  function renderAnalysisPanel() {
+    var box = el['analysis-panel'];
+    if (!state.analysis) { box.hidden = true; return; }
+    box.hidden = false;
+
+    var a = state.analysis;
+    var namen = state.mode === 'human'
+      ? ['Weiß', 'Schwarz']
+      : [playerName(WHITE), playerName(BLACK)];
+
+    /* Die Zeichen sind dieselben wie in der Zugliste — so ist ohne Legende
+     * klar, worauf sich die Zahlen beziehen.                              */
+    function spalte(name, d) {
+      function marke(klasse, anzahl) {
+        return '<span class="an-mark" title="' + BEWERTUNG[klasse].name + '">' +
+               '<b class="rv-' + klasse + '">' + BEWERTUNG[klasse].zeichen + '</b>' +
+               anzahl + '</span>';
+      }
+      return '<div class="an-col">' +
+        '<span class="an-name">' + escapeHtml(name) + '</span>' +
+        '<span class="an-score">' + d.genauigkeit + '<i>%</i></span>' +
+        '<span class="an-detail">' +
+          marke('patzer', d.patzer) + marke('fehler', d.fehler) + marke('ungenau', d.ungenau) +
+        '</span></div>';
+    }
+
+    box.innerHTML =
+      '<div class="panel-head"><span>Kurzanalyse</span>' +
+      '<span class="engine-note">Tiefe ' + a.tiefe + '</span></div>' +
+      '<div class="an-body">' + spalte(namen[0], a.weiss) + spalte(namen[1], a.schwarz) + '</div>' +
+      '<p class="an-hint">Genauigkeit misst, wie nah deine Züge an der besten ' +
+      'Fortsetzung lagen. Klicke einen markierten Zug an, um die Alternative zu sehen.</p>';
   }
 
   /* ---------- 10) Partieende ----------------------------------------------- */
@@ -1114,9 +1447,17 @@
       ['showEval', 'Bewertungsleiste', 'Zeigt an, wer gerade besser steht.']
     ];
 
+    var ansichten = [['auto', 'Automatisch'], ['hell', 'Hell'], ['dunkel', 'Dunkel']];
+
     openModal(
       '<h2 class="modal-title">Einstellungen</h2>' +
       '<p class="modal-sub">Wird auf diesem Gerät gespeichert.</p>' +
+      '<div class="field"><span class="field-label">Ansicht</span><div class="chip-row">' +
+        ansichten.map(function (a) {
+          return '<button class="chip' + (state.settings.theme === a[0] ? ' selected' : '') +
+                 '" data-view="' + a[0] + '">' + a[1] + '</button>';
+        }).join('') +
+        '</div><p class="field-note">Automatisch folgt der Einstellung deines Geräts.</p></div>' +
       '<div class="field"><span class="field-label">Brett</span><div class="chip-row">' +
         themes.map(function (t) {
           return '<button class="chip' + (state.settings.boardTheme === t[0] ? ' selected' : '') +
@@ -1133,6 +1474,15 @@
       '<div class="modal-actions"><button class="btn btn-primary" id="set-close">Fertig</button></div>',
       function (card) {
         card.addEventListener('click', function (ev) {
+          var vw = ev.target.closest('[data-view]');
+          if (vw) {
+            state.settings.theme = vw.dataset.view;
+            applySettings(); saveSettings();
+            card.querySelectorAll('[data-view]').forEach(function (b) {
+              b.classList.toggle('selected', b.dataset.view === vw.dataset.view);
+            });
+            return;
+          }
           var th = ev.target.closest('[data-theme]');
           if (th) {
             state.settings.boardTheme = th.dataset.theme;
@@ -1170,14 +1520,14 @@
         '<span class="result-score">' + r.score + '</span>' +
       '</div>' +
       '<div class="modal-actions">' +
-        '<button class="btn btn-ghost" id="res-review">Partie ansehen</button>' +
         '<button class="btn btn-ghost" id="res-share">PGN</button>' +
+        '<button class="btn btn-ghost" id="res-analyse">Analyse</button>' +
         '<button class="btn btn-primary" id="res-again">Nochmal</button>' +
       '</div>',
       function (card) {
         card.addEventListener('click', function (ev) {
-          if (ev.target.closest('#res-review')) { closeModal(); goToPly(0); }
           if (ev.target.closest('#res-share')) { closeModal(); showShareDialog(); }
+          if (ev.target.closest('#res-analyse')) { closeModal(); runAnalysis(); }
           if (ev.target.closest('#res-again')) { closeModal(); showNewGameDialog(); }
         });
       }
@@ -1401,10 +1751,13 @@
     state.viewPly = 0;
     state.viewPos = null;
     state.result = null;
+    state.analysis = null;
+    state.analysing = false;
     state.thinking = false;
     state.started = true;
     state.selected = -1;
     state.targets = [];
+    state.cursor = -1;
 
     var color = cfg.color || 'w';
     if (color === 'r') color = Math.random() < 0.5 ? 'w' : 'b';
@@ -1490,8 +1843,15 @@
       var mv = state.pos.sanToMove(s.sans[i]);
       if (!mv) break;
       var san = state.pos.moveToSan(mv);
+      var capSq = (C.mFlags(mv) & C.F_EP)
+        ? (state.pos.turn === WHITE ? C.mTo(mv) - 16 : C.mTo(mv) + 16)
+        : C.mTo(mv);
+      var taken = state.pos.board[capSq];
       state.pos.makeMove(mv);
-      state.moves.push({ move: mv, san: san, clockBefore: { w: state.clock.w, b: state.clock.b }, book: false });
+      state.moves.push({
+        move: mv, san: san, captured: taken,
+        clockBefore: { w: state.clock.w, b: state.clock.b }, book: false
+      });
     }
     state.viewPly = state.moves.length;
     state.orientation = s.orientation || state.orientation;
@@ -1523,6 +1883,15 @@
   }
 
   function applySettings() {
+    /* Der Stempel sitzt auf <html>, nicht auf <body>: eine umgebende Seite
+     * setzt dort ihr eigenes data-theme, und die CSS-Regeln wägen beides
+     * gegeneinander ab. 'auto' entfernt den Stempel wieder.               */
+    var root = document.documentElement;
+    if (state.settings.theme === 'hell') root.dataset.appTheme = 'light';
+    else if (state.settings.theme === 'dunkel') root.dataset.appTheme = 'dark';
+    else delete root.dataset.appTheme;
+    updateThemeButton();
+
     document.body.dataset.boardTheme = state.settings.boardTheme;
     document.body.classList.toggle('no-coords', !state.settings.showCoords);
     document.body.classList.toggle('no-hints', !state.settings.showHints);
@@ -1533,9 +1902,42 @@
     updateEvalBar();
   }
 
+  /** Welche Ansicht ist gerade wirklich zu sehen? */
+  function effectiveTheme() {
+    if (state.settings.theme === 'hell') return 'hell';
+    if (state.settings.theme === 'dunkel') return 'dunkel';
+    var host = document.documentElement.dataset.theme;
+    if (host === 'light') return 'hell';
+    if (host === 'dark') return 'dunkel';
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches
+      ? 'hell' : 'dunkel';
+  }
+
+  function updateThemeButton() {
+    var btn = el['btn-theme'];
+    if (!btn) return;
+    var hell = effectiveTheme() === 'hell';
+    /* Das Symbol zeigt, wohin der Klick führt. */
+    btn.innerHTML = hell ? ICONS.moon : ICONS.sun;
+    var ziel = hell ? 'dunkle' : 'helle';
+    btn.title = 'Zur ' + ziel + ' Ansicht wechseln';
+    btn.setAttribute('aria-label', btn.title);
+  }
+
   /* ---------- Aufbau ------------------------------------------------------- */
   function bindEvents() {
     el.board.addEventListener('pointerdown', onPointerDown);
+    el.board.addEventListener('keydown', onBoardKey);
+    el.board.addEventListener('focus', function () {
+      if (state.cursor < 0) state.cursor = defaultCursor();
+      state.keyboardMode = true;
+      updateHighlights();
+      announce('Brett. Pfeiltasten bewegen die Markierung, Leertaste wählt aus.');
+    });
+    el.board.addEventListener('blur', function () {
+      state.keyboardMode = false;
+      updateHighlights();
+    });
     window.addEventListener('pointermove', onPointerMove);
     window.addEventListener('pointerup', onPointerUp);
     window.addEventListener('pointercancel', onPointerUp);
@@ -1548,11 +1950,18 @@
       if (state.settings.sound) { SND.unlock(); SND.play('move'); }
     };
     el['btn-flip'].onclick = flipBoard;
+    el['btn-theme'].onclick = function () {
+      /* Ein Klick legt die Ansicht ausdrücklich fest — 'automatisch' bleibt
+       * über die Einstellungen erreichbar.                                */
+      state.settings.theme = effectiveTheme() === 'hell' ? 'dunkel' : 'hell';
+      applySettings(); saveSettings();
+    };
 
     el['act-undo'].onclick = undoMove;
     el['act-hint'].onclick = showHint;
     el['act-resign'].onclick = showResignDialog;
     el['act-share'].onclick = showShareDialog;
+    el['act-review'].onclick = runAnalysis;
 
     el['nav-start'].onclick = function () { goToPly(0); };
     el['nav-prev'].onclick = function () { goToPly(state.viewPly - 1); };
@@ -1574,6 +1983,8 @@
       if (ev.target.matches('input, textarea')) return;
       if (ev.key === 'Escape') { closeModal(); closePromotion(); clearSelection(); return; }
       if (!el['modal-root'].hidden) return;
+      /* Hat das Brett den Fokus, gehören die Pfeiltasten der Markierung. */
+      if (document.activeElement === el.board) return;
       if (ev.key === 'ArrowLeft') { ev.preventDefault(); goToPly(state.viewPly - 1); }
       else if (ev.key === 'ArrowRight') { ev.preventDefault(); goToPly(state.viewPly + 1); }
       else if (ev.key === 'Home') { ev.preventDefault(); goToPly(0); }
@@ -1582,9 +1993,18 @@
       else if (ev.key === 'u' || ev.key === 'U') { if (!el['act-undo'].disabled) undoMove(); }
       else if (ev.key === 'h' || ev.key === 'H') { if (!el['act-hint'].disabled) showHint(); }
       else if (ev.key === 'n' || ev.key === 'N') showNewGameDialog();
+      else if (ev.key === 'a' || ev.key === 'A') { if (!el['act-review'].disabled) runAnalysis(); }
     });
 
     window.addEventListener('resize', function () { repositionAll(); });
+
+    /* Im Automatikmodus muss das Symbol mitziehen, wenn das System umschaltet. */
+    if (window.matchMedia) {
+      var mq = window.matchMedia('(prefers-color-scheme: light)');
+      var onSystemTheme = function () { if (state.settings.theme === 'auto') updateThemeButton(); };
+      if (mq.addEventListener) mq.addEventListener('change', onSystemTheme);
+      else if (mq.addListener) mq.addListener(onSystemTheme);
+    }
   }
 
   function flipBoard() {
@@ -1647,6 +2067,7 @@
   /* Fuer Tests im Browser zugaenglich machen */
   window.SchachApp = {
     state: state, startGame: startGame, goToPly: goToPly,
-    buildPgn: buildPgn, playMove: playMove, undoMove: undoMove
+    buildPgn: buildPgn, playMove: playMove, undoMove: undoMove,
+    runAnalysis: runAnalysis
   };
 })();

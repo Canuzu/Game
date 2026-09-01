@@ -1,7 +1,8 @@
 # Schach
 
 Ein vollständiges Schachspiel für den Browser: gegen den Computer in vier
-Schwierigkeitsstufen oder zu zweit an einem Gerät.
+Schwierigkeitsstufen oder zu zweit an einem Gerät — mit Partieanalyse, heller
+und dunkler Ansicht und vollständiger Tastaturbedienung.
 
 **Zum Spielen einfach `index.html` im Browser öffnen.** Kein Server, keine
 Installation, keine Abhängigkeiten — auch nicht zur Laufzeit. Alles läuft
@@ -33,6 +34,22 @@ vorsehen.
 **Bedienung** — Figuren ziehen oder anklicken, erlaubte Züge werden markiert,
 der letzte Zug bleibt hervorgehoben, ein Schach färbt das Königsfeld rot.
 
+**Partieanalyse** — nach der Partie rechnet die Engine jede Stellung noch
+einmal durch und vergleicht sie mit dem, was tatsächlich gespielt wurde. Jeder
+Zug bekommt sein Zeichen in der Zugliste (`??` Patzer, `?` Fehler, `?!`
+Ungenauigkeit, `!` bester Zug), ein Klick darauf zeigt die bessere Fortsetzung.
+Oben steht die Genauigkeit beider Seiten in Prozent.
+
+Bewertet wird nicht der Verlust in Bauernwerten, sondern der Verlust an
+**Gewinnaussicht**: Hundert Centipawns wiegen im ausgeglichenen Mittelspiel
+weit schwerer als in einer ohnehin gewonnenen Stellung. Eröffnungszüge, die im
+Buch stehen, werden gar nicht erst bewertet — Theorie schlägt eine Kurzsuche.
+
+**Helle und dunkle Ansicht** — folgt standardmäßig der Einstellung des Geräts,
+lässt sich aber im Kopf der Seite jederzeit umschalten. Die Brettfarben bleiben
+dabei unverändert: ein Nussbaumbrett sieht bei Tageslicht schließlich auch
+nicht anders aus.
+
 **Weitere Funktionen**
 
 * Zugliste in Standardnotation, anklickbar zum Zurückspulen
@@ -45,19 +62,27 @@ der letzte Zug bleibt hervorgehoben, ein Schach färbt das Königsfeld rot.
 * PGN exportieren und herunterladen, FEN kopieren und laden
 * Laufende Partie wird automatisch gespeichert und beim nächsten Öffnen
   zum Fortsetzen angeboten
+* Vollständig mit der Tastatur bedienbar, mit Ansagen für Vorlesewerkzeuge
 * Läuft auf Handy, Tablet und Rechner
 
 **Tastatur**
 
-| Taste | Wirkung |
-|---|---|
-| `←` `→` | Einen Zug zurück / vor |
-| `Pos1` `Ende` | Zum Anfang / ans Ende der Partie |
-| `F` | Brett drehen |
-| `U` | Zug zurücknehmen |
-| `H` | Hinweis |
-| `N` | Neue Partie |
-| `Esc` | Dialog schließen, Auswahl aufheben |
+Mit `Tab` springt der Fokus auf das Brett. Dort schieben die Pfeiltasten eine
+Markierung über die Felder, Leertaste oder Eingabetaste wählt eine Figur aus
+und zieht sie. Solange das Brett den Fokus hat, blättern die Pfeiltasten nicht
+durch den Verlauf — sonst ließe sich beides nicht gleichzeitig bedienen.
+
+| Taste | Am Brett | Sonst |
+|---|---|---|
+| `←` `↑` `→` `↓` | Markierung bewegen | Einen Zug zurück / vor |
+| `Leertaste` `Enter` | Auswählen und ziehen | — |
+| `Pos1` `Ende` | — | Zum Anfang / ans Ende der Partie |
+| `F` | Brett drehen | Brett drehen |
+| `U` | Zug zurücknehmen | Zug zurücknehmen |
+| `H` | Hinweis | Hinweis |
+| `A` | Analyse starten | Analyse starten |
+| `N` | Neue Partie | Neue Partie |
+| `Esc` | Auswahl aufheben | Dialog schließen |
 
 ---
 
@@ -65,21 +90,34 @@ der letzte Zug bleibt hervorgehoben, ein Schach färbt das Königsfeld rot.
 
 ```
 index.html          Grundgerüst
-css/style.css       Gestaltung, vier Brett-Designs, mobile Ansicht
+css/style.css       Gestaltung, helle/dunkle Ansicht, Brett-Designs, Handy
 js/engine.js        Regelwerk: Zuggenerierung, FEN, Notation, Partiestatus
 js/evaluate.js      Stellungsbewertung
-js/ai.js            Suche und Schwierigkeitsstufen
+js/ai.js            Suche, Schwierigkeitsstufen, Analysebewertung
 js/book.js          Eröffnungsbuch
 js/pieces.js        Figuren als SVG
 js/sound.js         Klänge (zur Laufzeit erzeugt, keine Audiodateien)
 js/app.js           Spielsteuerung und Oberfläche
-tests/              Testsuiten (Node, ohne Abhängigkeiten)
+tools/build-single.mjs  Erzeugt eine Einzeldatei-Fassung
+tests/              Testsuiten
 ```
 
 Die Dateien werden als klassische `<script>`-Elemente geladen, nicht als
 ES-Module. Das ist Absicht: Module unterliegen im Browser der
 Cross-Origin-Prüfung und ließen sich über `file://` gar nicht laden — das Spiel
 wäre dann nur über einen Webserver startbar.
+
+### Wie die beiden Ansichten zusammenspielen
+
+Beide Farbpaletten stehen genau einmal im Stylesheet (`--d-*` dunkel, `--l-*`
+hell); darunter wird nur noch zugewiesen, welche gerade gilt. Dunkel ist der
+Grundzustand, hell greift in drei Fällen: das System bevorzugt hell, eine
+umgebende Seite setzt `data-theme="light"`, oder im Spiel wurde „Hell" gewählt.
+
+Die eigene Einstellung gewinnt immer. Das erledigt ein `:not([data-app-theme])`
+an den beiden helleren Regeln: steht die Einstellung auf „Dunkel", greifen sie
+nicht, und es bleiben die Grundwerte stehen. Ein eigener Dunkel-Block wird
+dadurch überflüssig.
 
 ### Wie die Engine arbeitet
 
@@ -128,9 +166,9 @@ bewusst nicht eingecheckt — die Datei entsteht vollständig aus den Quellen.
 ## Tests
 
 ```bash
-npm test           # beides
-npm run test:perft # Zuggenerierung
-npm run test:taktik # Spielstärke
+npm test             # Engine: Zuggenerierung und Spielstärke
+npm run test:browser # Oberfläche in einem echten Browser
+npm run test:alle    # alles zusammen
 ```
 
 **`tests/perft.mjs`** zählt alle Zugfolgen bis zu einer festen Tiefe und
@@ -146,14 +184,32 @@ Lösungen, sondern belegt, dass der gewählte Zug das Matt wirklich erzwingt.
 Danach spielen die Stufen gegeneinander; nebenbei wird geprüft, dass
 Zurücknehmen über eine ganze Partie exakt zur Grundstellung zurückführt.
 
+**`tests/browser.mjs`** bedient das Spiel in einem echten Browser so, wie ein
+Mensch es täte: klicken, ziehen, tippen. Damit ist abgedeckt, was sich in Node
+nicht prüfen lässt — Rochade und Umwandlung über die Oberfläche, die
+Tastaturbedienung, dass in beiden Ansichten Schrift und Grund unterscheidbar
+bleiben, dass die Analyse einen eingestellten Dameneinsteller findet, und dass
+nach einer durchgespielten Partie kein Figurenrest im Fenster hängen bleibt.
+
+Dieser Test braucht Playwright und überspringt sich selbst, wenn es fehlt — am
+Spiel selbst ändert sich nichts, das bleibt abhängigkeitsfrei:
+
+```bash
+npm install --no-save playwright && npx playwright install chromium
+# Ist schon ein Chromium vorhanden, spart das den Download:
+CHROMIUM_PFAD=/pfad/zu/chrome npm run test:browser
+```
+
 ---
 
 ## Bekannte Grenzen
 
-* Figuren lassen sich nur mit Maus oder Finger bewegen, nicht per Tastatur.
-  Die Tastatur steuert Navigation und Befehle.
-* Die Anzeige geschlagener Figuren rechnet Umwandlungen nicht mit ein — nach
-  einer Umwandlung stimmt dort die Bauernzahl nicht mehr genau.
+* Die Analyse rechnet mit knappem Zeitbudget (rund 0,4 Sekunden je Stellung,
+  im Schnitt fünf bis sieben Halbzüge tief). Sie ist ein guter Wegweiser, aber
+  kein Schiedsrichter — bei tiefer Taktik kann sie danebenliegen. Die Tiefe,
+  mit der sie gearbeitet hat, steht deshalb in der Zusammenfassung.
+* Die Bewertungen werden nicht mitgespeichert. Nach dem Neuladen einer Partie
+  muss die Analyse erneut laufen.
 * Die gespeicherte Partie hält die Uhrstände nur als Gesamtwert fest; ein
   Zurücknehmen nach dem Fortsetzen stellt die Zeit vor dem Zug nicht wieder her.
 

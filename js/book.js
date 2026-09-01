@@ -128,6 +128,22 @@
     return keys[keys.length - 1];
   }
 
+  /**
+   * Steht dieser Zug nach der bisherigen Zugfolge im Buch?
+   * Die Partieanalyse braucht das, um Eröffnungszüge nicht mit einer
+   * Kurzsuche zu bewerten — Buchwissen schlägt drei Halbzüge Rechnen.
+   */
+  function contains(history, san) {
+    if (history.length >= MAX_BOOK_PLY) return false;
+    var node = findNode(history);
+    if (!node) return false;
+    var clean = String(san).replace(/[+#!?]/g, '');
+    for (var key in node.children) {
+      if (key.replace(/[+#!?]/g, '') === clean) return true;
+    }
+    return false;
+  }
+
   /** Name der erkannten Eroeffnung fuer die aktuelle Zugfolge. */
   function nameFor(history) {
     for (var len = Math.min(history.length, MAX_BOOK_PLY); len >= 2; len--) {
@@ -143,6 +159,6 @@
     return null;
   }
 
-  global.ChessBook = { pick: pick, nameFor: nameFor, lineCount: LINES.length };
+  global.ChessBook = { pick: pick, contains: contains, nameFor: nameFor, lineCount: LINES.length };
   if (typeof module !== 'undefined' && module.exports) module.exports = global.ChessBook;
 })(typeof window !== 'undefined' ? window : globalThis);

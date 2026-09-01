@@ -1,13 +1,15 @@
 {
   "name": "schach",
   "version": "1.0.0",
-  "description": "Schach im Browser — gegen den Computer in vier Stufen oder zu zweit an einem Gerät. Läuft ohne Server und ohne Abhängigkeiten.",
+  "description": "Schach im Browser — gegen den Computer in vier Stufen oder zu zweit an einem Gerät, mit Partieanalyse, heller und dunkler Ansicht. Läuft ohne Server und ohne Abhängigkeiten.",
   "private": true,
   "scripts": {
     "test": "node tests/perft.mjs && node tests/tactics.mjs",
     "test:perft": "node tests/perft.mjs",
     "test:taktik": "node tests/tactics.mjs",
-    "start": "node -e \"console.log('Einfach index.html im Browser öffnen — es wird kein Server gebraucht.')\""
+    "start": "node -e \"console.log('Einfach index.html im Browser öffnen — es wird kein Server gebraucht.')\"",
+    "test:browser": "node tests/browser.mjs",
+    "test:alle": "npm test && npm run test:browser"
   },
   "license": "MIT"
 }
