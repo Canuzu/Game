@@ -287,12 +287,130 @@
     return { team: team, name: 'Champ ' + champ.name, cls: 'Champ', level: 3 };
   }
 
-  /* ---------- 5) Ereignisse ------------------------------------------------------ */
+  /* ---------- 5) Der Rivale ------------------------------------------------------
+   * Er nimmt den Starter, der deinen kontert, taucht in jeder zweiten Region
+   * auf und wächst mit. Vier Begegnungen pro Run, die letzte mit vollem Team.
+   * ------------------------------------------------------------------------ */
+
+  // Die Startertrios je Generation, immer in der Reihenfolge Pflanze, Feuer, Wasser.
+  var STARTER_TRIOS = [
+    ['bulbasaur', 'charmander', 'squirtle'],
+    ['chikorita', 'cyndaquil', 'totodile'],
+    ['treecko', 'torchic', 'mudkip'],
+    ['turtwig', 'chimchar', 'piplup'],
+    ['snivy', 'tepig', 'oshawott'],
+    ['chespin', 'fennekin', 'froakie'],
+    ['rowlet', 'litten', 'popplio'],
+    ['grookey', 'scorbunny', 'sobble'],
+    ['sprigatito', 'fuecoco', 'quaxly']
+  ];
+
+  /** Der Starter, der den gewählten schlägt: Pflanze ← Feuer ← Wasser ← Pflanze. */
+  function counterStarter(starterId, rng) {
+    var id = toID(starterId), i, k;
+    for (i = 0; i < STARTER_TRIOS.length; i++) {
+      k = STARTER_TRIOS[i].indexOf(id);
+      if (k >= 0) return STARTER_TRIOS[i][(k + 1) % 3];
+    }
+    // Kein regulärer Starter gewählt — dann nimmt er irgendeinen.
+    return rng.pick(rng.pick(STARTER_TRIOS));
+  }
+
+  /** Entwickelt eine Spezies so oft wie möglich weiter. */
+  function evolveTo(sp, steps) {
+    var cur = dex.sp(sp), i;
+    for (i = 0; i < steps; i++) {
+      if (!cur.ev || !cur.ev.length) break;
+      cur = dex.sp(cur.ev[0]);
+    }
+    return cur;
+  }
+
+  function rivalTeam(rng, rival, level, stage, region) {
+    var size = Math.min(6, 2 + stage);
+    var starter = evolveTo(rival.starter, stage >= 2 ? 2 : stage >= 1 ? 1 : 0);
+    var pool = encounterPool({ level: level, anyGen: true });
+    var team = [], seen = {}, i;
+
+    for (i = 0; i < size - 1; i++) {
+      var sp = pickEncounter(rng, pool, level, { exclude: seen, rare: stage >= 2 });
+      seen[sp.id] = 1;
+      team.push(buildMon(rng, sp, level - (i === 0 ? 0 : 1), {
+        quality: 0.75 + stage * 0.05, ivFloor: 8 + stage * 4, hiddenChance: 0.2
+      }));
+    }
+    // Der Starter kommt zuletzt und ist sein Ass.
+    var ace = buildMon(rng, starter, level + 1, {
+      quality: 0.9 + stage * 0.02, ivFloor: 16 + stage * 3, hiddenChance: 0.3
+    });
+    if (stage >= 2) {
+      ace.item = megaStoneFor(ace, rng) || rng.pick(['lifeorb', 'focussash', 'leftovers']);
+    }
+    mons.addEVs(ace, ace.ivs[1] >= ace.ivs[3] ? 'atk' : 'spa', 80 + stage * 30);
+    mons.addEVs(ace, 'spe', 60 + stage * 20);
+    team.push(ace);
+
+    return { team: team, name: 'Rivale ' + rival.name, cls: 'Ass-Trainer', level: 3, rival: true };
+  }
+
+  var RIVAL_LINES = [
+    {
+      before: ['Na, immer noch unterwegs? Dann zeig mal, was dein Team draufhat.',
+        'Ich wusste, dass ich dich hier treffe. Lass uns keine Zeit verschwenden.'],
+      win: ['Nicht schlecht. Beim nächsten Mal bin ich vorbereitet.',
+        'Hm. Ein Glückstreffer, mehr nicht.'],
+      loss: ['Zu langsam. Trainier noch ein bisschen.',
+        'Siehst du? Genau deshalb hab ich den anderen Starter genommen.']
+    },
+    {
+      before: ['Zweite Runde. Diesmal hab ich mir was überlegt.',
+        'Du bist besser geworden — ich aber auch.'],
+      win: ['Ernsthaft? Schon wieder?', 'Okay. Okay. Jetzt wird es persönlich.'],
+      loss: ['Sag ich doch. Der Abstand wird größer.', 'Vielleicht solltest du dein Team überdenken.']
+    },
+    {
+      before: ['Man sieht sich immer zweimal. Oder dreimal. Egal — kämpfen wir.',
+        'Meine Truppe steht. Deine auch? Wollen wir sehen.'],
+      win: ['Du bist echt gut. Das gebe ich zu. Einmal.',
+        'Beim nächsten Mal treffen wir uns ganz oben. Dann verliere ich nicht.'],
+      loss: ['Hab ich doch gesagt.', 'Komm wieder, wenn du so weit bist.']
+    },
+    {
+      before: ['Das ist die letzte Runde vor der Liga. Ich gehe da rein — mit oder ohne dich.',
+        'Alles oder nichts. Zeig mir, dass die ganze Reise etwas gebracht hat.'],
+      win: ['… Geh und gewinn das Ding. Ich bin dann hinter dir.',
+        'Du hast es verdient. Mach mich nicht zum Idioten und verlier gegen die Top Vier.'],
+      loss: ['Dann sehen wir uns eben nicht in der Liga.', 'Ende der Reise. Für dich.']
+    }
+  ];
+
+  function rivalBanter(name, stage, rng) {
+    var set = RIVAL_LINES[Math.min(stage, RIVAL_LINES.length - 1)];
+    return {
+      before: rng.pick(set.before),
+      win: rng.pick(set.win),
+      loss: rng.pick(set.loss)
+    };
+  }
+
+  /* ---------- 6) Ereignisse ------------------------------------------------------ */
 
   /**
    * Ein Ereignis liefert Titel, Text und Optionen. `enabled` darf eine Option
    * ausblenden, `run` ist der laufende Spielstand (siehe run.js).
    */
+  /** Inhalt einer Kiste beim Kuriositätenhändler. */
+  function mysteryBox(run, rng, index) {
+    var roll = (rng.int(100) + index * 17) % 100;
+    if (roll < 30) return run.giveMoney(1600);
+    if (roll < 55) return run.giveRandomItem(rng, 2);
+    if (roll < 75) { run.healTeam(1, true); run.restorePP(); return 'Ein Duft steigt auf — das Team ist wieder frisch.'; }
+    if (roll < 90) return { relicChoice: 2, text: 'Unter dem Deckel liegt etwas Altes.' };
+    var victim = rng.pick(run.party);
+    if (victim) victim.status = 'psn';
+    return 'Etwas zischt heraus. ' + mons.name(victim) + ' wurde vergiftet.';
+  }
+
   var EVENTS = [
     {
       id: 'rucksack', title: 'Verlassener Rucksack',
@@ -502,6 +620,169 @@
       ]
     },
     {
+      id: 'legendenschrein', title: 'Schrein der Legenden',
+      available: function (run) { return run.region >= 5 || run.leagueStage >= 0; },
+      text: 'Ein Schrein, älter als jede Aufzeichnung. Hinter dem Siegel bewegt sich etwas Großes — und es hat dich bemerkt.',
+      options: [
+        { label: 'Das Siegel brechen', desc: 'Kampf gegen ein legendäres Pokémon. Fangen erlaubt.',
+          run: function (run, rng) { return { battle: run.makeLegendary(rng) }; } },
+        { label: 'Ehrfürchtig zurücktreten', desc: 'Der Schrein belohnt Respekt mit einem Relikt.',
+          run: function (run, rng) { return { relicChoice: 2, text: 'Der Schrein bleibt verschlossen — aber etwas liegt davor.' }; } }
+      ]
+    },
+    {
+      id: 'labor', title: 'Verlassenes Labor',
+      text: 'Ein aufgegebener Forschungsposten. Auf dem Tisch liegen Notizen, in der Ecke summt noch ein Gerät.',
+      options: [
+        { label: 'Datenträger mitnehmen', desc: 'Eine TM, die zu deinem Team passt.',
+          run: function (run, rng) { return run.giveTM(rng); } },
+        { label: 'Gerät ausschlachten', desc: 'Zwei zufällige Gegenstände.',
+          run: function (run, rng) { return run.giveRandomItem(rng, 2); } }
+      ]
+    },
+    {
+      id: 'streuner', title: 'Streunendes Pokémon',
+      text: 'Es folgt dir seit zwei Kreuzungen. Wenn du stehen bleibst, bleibt es auch stehen.',
+      options: [
+        { label: 'Mitnehmen lassen', desc: 'Es schließt sich dir an — etwas unter Teamniveau.',
+          enabled: function (run) { return run.party.length < 6 && run.catchAllowed(); },
+          run: function (run, rng) {
+            return run.gainPokemon(rng, PL.world.pickEncounter(rng,
+              PL.world.encounterPool({ level: run.enemyLevel(-2), anyGen: true }), run.enemyLevel(-2)),
+              run.enemyLevel(-3), 'Streuner', { quality: 0.8, ivFloor: 8 });
+          } },
+        { label: 'Futter dalassen', desc: 'Es teilt seinen Fund mit dir.',
+          run: function (run, rng) { return run.giveRandomItem(rng, 1); } }
+      ]
+    },
+    {
+      id: 'pilze', title: 'Pilzsammler',
+      text: '»Die hier«, sagt der alte Mann und hält einen Beutel hoch, »machen groß und stark. Oder krank. Kommt drauf an.«',
+      options: [
+        { label: 'Fürs ganze Team', desc: '+15 Fleißpunkte auf einen zufälligen Wert für alle.',
+          run: function (run, rng) {
+            run.party.forEach(function (m) { mons.addEVs(m, PL.STATS[1 + rng.int(5)], 15); });
+            return 'Alle kauen tapfer. Es schmeckt scheußlich und wirkt.';
+          } },
+        { label: 'Alles auf eines', desc: '+60 Fleißpunkte auf den besten Wert eines Pokémon.',
+          run: function (run, rng) { return { evFocus: 60 }; } }
+      ]
+    },
+    {
+      id: 'detektiv', title: 'Aufmerksamer Wanderer',
+      text: '»Ich komm von vorn«, sagt er und deutet den Weg hinauf. »Der Arenaleiter da oben — ich sag dir, worauf du dich einstellen musst. Für einen kleinen Obolus.«',
+      options: [
+        { label: 'Bezahlen (400 ₽)', desc: 'Zeigt den Typenschwerpunkt des nächsten Arenaleiters.',
+          enabled: function (run) { return run.money >= 400 && run.leagueStage < 0; },
+          run: function (run, rng) {
+            run.money -= 400;
+            var leader = rng.pick(run.currentRegion().leaders);
+            run.bossHint = leader;
+            return 'Er flüstert: »' + leader[0] + '. Setzt auf ' + PL.t.type(leader[1]) + '. Viel Glück.«';
+          } },
+        { label: 'Selbst herausfinden', desc: 'Überraschungen gehören dazu.',
+          run: function () { return 'Du gehst weiter. Man wird ja sehen.'; } }
+      ]
+    },
+    {
+      id: 'angelstelle', title: 'Alte Angelstelle',
+      text: 'Eine morsche Rute lehnt am Steg. Im Wasser bewegt sich ein Schatten.',
+      options: [
+        { label: 'Angeln', desc: 'Kampf gegen ein Wasser-Pokémon — mit Fangmöglichkeit.',
+          run: function (run, rng) {
+            var bt = run.makeWild(rng, { rare: true });
+            bt.biome = 'wasser';
+            return { battle: bt };
+          } },
+        { label: 'Rute mitnehmen', desc: 'Verkauft sich gut.',
+          run: function (run) { return run.giveMoney(600 + run.region * 120); } }
+      ]
+    },
+    {
+      id: 'trainingsdummy', title: 'Trainingspuppe',
+      text: 'Ein Sandsack aus alten Netzen, aufgehängt zwischen zwei Bäumen. Jemand hat »HAU ZU« draufgeschrieben.',
+      options: [
+        { label: 'Draufhauen', desc: 'Erfahrung für das ganze Team.',
+          run: function (run) { return run.grantExp(Math.round(run.levelCap * 50)); } },
+        { label: 'Technik üben', desc: 'Alle AP werden aufgefrischt.',
+          run: function (run) { run.restorePP(); return 'Jede Attacke sitzt wieder.'; } }
+      ]
+    },
+    {
+      id: 'wanderhaendler', title: 'Reliktsammler',
+      text: 'Er breitet ein Tuch aus. Darauf liegen Dinge, die man nicht kaufen können sollte.',
+      options: [
+        { label: 'Relikt kaufen (2500 ₽)', desc: 'Ein Relikt aus dreien zur Wahl.',
+          enabled: function (run) { return run.money >= 2500; },
+          run: function (run, rng) {
+            run.money -= 2500;
+            return { relicChoice: 3, text: 'Er nickt zufrieden und zeigt dir seine besten Stücke.' };
+          } },
+        { label: 'Höflich ablehnen', desc: 'Er packt achselzuckend wieder ein.',
+          run: function () { return 'Er zieht weiter. Vielleicht trefft ihr euch nochmal.'; } }
+      ]
+    },
+    {
+      id: 'quelle2', title: 'Verwunschener Teich',
+      text: 'Das Wasser ist unnatürlich klar. Auf dem Grund liegen Münzen — und etwas, das schimmert.',
+      options: [
+        { label: 'Hineingreifen', desc: 'Ein Tragegegenstand, aber ein Pokémon erkältet sich.',
+          run: function (run, rng) {
+            var good = ['leftovers', 'lifeorb', 'focussash', 'expertbelt', 'rockyhelmet', 'assaultvest'];
+            var id = rng.pick(good);
+            run.addItem(id, 1);
+            var victim = rng.pick(run.party.filter(function (m) { return m.hp > 0; }) || run.party);
+            if (victim) victim.hp = Math.max(1, Math.floor(victim.hp * 0.6));
+            return PL.items.label(id) + ' gefunden — ' + mons.name(victim) + ' ist klatschnass.';
+          } },
+        { label: 'Münzen fischen', desc: 'Sicheres Geld, trockene Füße.',
+          run: function (run) { return run.giveMoney(800 + run.region * 150); } }
+      ]
+    },
+    {
+      id: 'zirkus', title: 'Wanderzirkus',
+      text: 'Musik, Lampions, ein Zelt. »Tretet ein!«, ruft die Direktorin. »Wer auftritt, wird belohnt!«',
+      options: [
+        { label: 'Auftreten', desc: 'Ein Pokémon steigt zwei Level auf.',
+          run: function (run, rng) {
+            var star = rng.pick(run.party);
+            var target = Math.min(run.levelCap, star.lvl + 2);
+            if (target <= star.lvl) return mons.name(star) + ' erntet Applaus, aber keine Erfahrung mehr.';
+            mons.gainExp(star, mons.expForLevel(target) - star.exp, { levelCap: run.levelCap });
+            return mons.name(star) + ' spielt das Publikum an die Wand — jetzt Level ' + star.lvl + '!';
+          } },
+        { label: 'Zusehen und naschen', desc: 'Heilung und drei Beeren.',
+          run: function (run, rng) {
+            run.healTeam(0.5, true);
+            var berries = PL.items.all().filter(function (i) { return i.berry; });
+            for (var i = 0; i < 3; i++) run.addItem(rng.pick(berries).id, 1);
+            return 'Gut gegessen, halb geheilt, Taschen voller Beeren.';
+          } }
+      ]
+    },
+    {
+      id: 'hoehlenmalerei', title: 'Höhlenmalerei',
+      text: 'An der Wand: Figuren, Kreise, ein Pokémon mit zu vielen Armen. Und ein Muster, das du wiedererkennst.',
+      options: [
+        { label: 'Muster studieren', desc: 'Ein Relikt aus zweien zur Wahl.',
+          run: function (run, rng) { return { relicChoice: 2, text: 'Die Zeichen ergeben plötzlich Sinn.' }; } },
+        { label: 'Farbe abkratzen', desc: 'Zwei Tragegegenstände lassen sich damit auffrischen — oder verkaufen.',
+          run: function (run) { return run.giveMoney(1100); } }
+      ]
+    },
+    {
+      id: 'kuriosum', title: 'Kuriositätenhändler',
+      text: 'Eine Kiste, drei Schlösser, kein Preisschild. »Zwei davon lohnen sich«, sagt er. »Welche, sag ich nicht.«',
+      options: [
+        { label: 'Erste Kiste', desc: 'Inhalt unbekannt.',
+          run: function (run, rng) { return mysteryBox(run, rng, 0); } },
+        { label: 'Zweite Kiste', desc: 'Inhalt unbekannt.',
+          run: function (run, rng) { return mysteryBox(run, rng, 1); } },
+        { label: 'Dritte Kiste', desc: 'Inhalt unbekannt.',
+          run: function (run, rng) { return mysteryBox(run, rng, 2); } }
+      ]
+    },
+    {
       id: 'arena', title: 'Wettkampfarena',
       text: 'Eine improvisierte Arena, ein johlendes Publikum. »Wer gewinnt, kassiert doppelt!«',
       options: [
@@ -521,6 +802,10 @@
     EVENTS: EVENTS,
     encounterPool: encounterPool,
     megaStoneFor: megaStoneFor,
+    counterStarter: counterStarter,
+    rivalTeam: rivalTeam,
+    rivalBanter: rivalBanter,
+    STARTER_TRIOS: STARTER_TRIOS,
     pickEncounter: pickEncounter,
     buildMon: buildMon,
     trainerTeam: trainerTeam,

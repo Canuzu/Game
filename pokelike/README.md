@@ -30,7 +30,8 @@ Top Vier und Champ.
 | 🎁 **Fundstück** | Ein Gegenstand aus drei |
 | 🛒 **Händler** | Kaufen, verkaufen, TMs |
 | 🔥 **Rastplatz** | Heilen, trainieren, entwickeln, Attacken lernen, Team umstellen |
-| ❓ **Ereignis** | 18 Situationen mit echten Entscheidungen |
+| ❓ **Ereignis** | 30 Situationen mit echten Entscheidungen |
+| 🧢 **Rivale** | Taucht in jeder zweiten Region auf und wächst mit |
 | 🏛️ **Schrein** | Ein Relikt aus drei |
 | 🏅 **Arenaleiter** | Typenschwerpunkt, starkes Team, danach volle Heilung |
 
@@ -43,6 +44,17 @@ Zwei Regeln arbeiten für dich: Schickt der Gegner mitten im Kampf ein Pokémon
 nach — freiwillig oder nach einem K. o. —, gehört die nächste Runde dir,
 unabhängig von Initiative und Erstschlagattacken. Und wer ein neues Pokémon
 ins Team holt, bekommt es auf Teamhöhe statt hinterher.
+
+**Dein Rivale** nimmt den Starter, der deinen kontert — wählst du Glumanda,
+nimmt er Schiggy. Er stellt sich dir in jeder zweiten Region in den Weg, sein
+Team wächst von zwei auf sechs Pokémon, sein Starter entwickelt sich mit und
+trägt ab der dritten Begegnung einen Mega-Stein. Vor und nach jedem Kampf hat
+er etwas zu sagen.
+
+**Der Schrein der Legenden** taucht ab der sechsten Region auf: hinter dem
+Siegel wartet ein legendäres Pokémon auf deinem Levelniveau, mit besten
+Werten und Fleißpunkten. Du darfst kämpfen und fangen — oder ehrfürchtig
+zurücktreten und ein Relikt mitnehmen.
 
 ## Was drin ist
 
@@ -126,12 +138,19 @@ Fähigkeits-Kapsel und -Pflaster, Silberkronkorken und alle 50 Mega-Steine.
 |---|---|
 | Standard | Neun Regionen, danach die Liga |
 | Kurzrun | Vier Regionen, dann direkt zur Liga |
-| Endlos | Die Regionen wiederholen sich und werden härter |
+| Endlos | Die Regionen wiederholen sich und werden härter — jede volle Runde bringt einen Segen zur Wahl |
 | Boss-Rush | Fast nur Arenaleiter |
 | Tages-Run | Fester Startwert aus dem Datum — heute für alle gleich |
 
 Dazu **Nuzlocke** als Zusatzregel — besiegte Pokémon verlassen das Team für
-immer, und pro Region darfst du nur ein einziges Pokémon aufnehmen.
+immer, und pro Region darfst du nur ein einziges Pokémon aufnehmen. Wer fällt,
+kommt auf den **Friedhof**: Grabstein, Level, Region und der Gegner, an dem es
+gescheitert ist.
+
+Im **Endlosmodus** wird nach jeder vollen Runde durch alle neun Regionen ein
+Segen ausgeschüttet — drei zur Wahl aus sieben: volle Heilung, ein Relikt,
+fünf Level mehr Obergrenze, Fleißpunkte fürs ganze Team, ein legendärer
+Begleiter, 10 000 ₽ oder eine Feldapotheke.
 
 **Elf Aufstiegsstufen** schalten sich nacheinander frei und stapeln sich:
 
@@ -162,11 +181,14 @@ Team-Übersicht.
 | `B` | Beutel öffnen |
 | `A` | Auto-Kampf an/aus |
 | `M` | Mega-Entwicklung vormerken |
-| `Rücktaste` | Aus dem Attackenmenü zurück |
+
 | `Esc` | Menü bzw. Dialog schließen |
 
 Alles ist auch mit Maus oder Finger bedienbar; auf schmalen Bildschirmen legt
-sich das Layout um.
+sich das Layout um. Auf Karte und Teambildschirm sitzt eine **Schnellheilung**:
+ein Klick belebt, heilt und kuriert mit dem, was im Beutel liegt — immer vom
+kleinsten passenden Gegenstand an. Die **Teamreihenfolge** änderst du, indem du
+die Karten mit Maus oder Finger übereinander ziehst.
 
 ## Einstellungen
 
@@ -220,7 +242,7 @@ npm run build:data
 **Tests**
 
 ```sh
-npm test             # 80 Prüfungen: Werteformel, Typentabelle, Schadensrechnung,
+npm test             # 100 Prüfungen: Werteformel, Typentabelle, Schadensrechnung,
                      # 150 Kämpfe, sechs komplette Runs, Speicherformat
 npm install --no-save playwright && npx playwright install chromium
 npm run test:browser # spielt im echten Chromium einen Run an

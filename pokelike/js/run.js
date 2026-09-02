@@ -44,6 +44,7 @@
     item: { name: 'Fundstück', icon: '🎁', desc: 'Ein Gegenstand liegt bereit.' },
     shop: { name: 'Händler', icon: '🛒', desc: 'Kaufen und verkaufen.' },
     rest: { name: 'Rastplatz', icon: '🔥', desc: 'Heilen, entwickeln oder trainieren.' },
+    rival: { name: 'Rivale', icon: '🧢', desc: 'Dein Rivale stellt sich dir wieder in den Weg.' },
     event: { name: 'Ereignis', icon: '❓', desc: 'Etwas Ungewöhnliches.' },
     relic: { name: 'Schrein', icon: '🏛️', desc: 'Ein Relikt zur Auswahl.' },
     boss: { name: 'Arenaleiter', icon: '🏅', desc: 'Der Weg aus der Region führt nur hier hindurch.' },
@@ -86,6 +87,11 @@
     this.pendingLevelUps = [];
     this.masterballUsed = false;
     this.freeRerollUsed = false;
+    this.graveyard = [];
+    this.rival = {
+      name: this.rng.pick(['Blau', 'Silber', 'Barry', 'Bell', 'Trace', 'Hugo', 'Nemila', 'Kieran']),
+      stage: 0, wins: 0, losses: 0, starter: null
+    };
     this.scene = null;
     this.state = 'map';
     this.result = null;
@@ -97,7 +103,9 @@
       this.gainPokemon(this.rng, opts.starter, 8, 'Starter', {
         quality: 0.9, ivFloor: 14, hiddenChance: 0.2
       });
+      this.rival.starter = W.counterStarter(opts.starter, this.rng);
     }
+    if (!this.rival.starter) this.rival.starter = 'squirtle';
     this.buildMap();
   }
 
@@ -109,7 +117,8 @@
     get: function () {
       if (this.leagueStage >= 0) return 78 + this.leagueStage * 4 + this.ascension * 2;
       var step = this.mode === 'kurz' ? 17 : 8;
-      return Math.min(100, 8 + (this.regionsCleared() + 1) * step + this.ascension * 2);
+      return Math.min(100, 8 + (this.regionsCleared() + 1) * step + this.ascension * 2 +
+        (this.levelBonus || 0));
     }
   });
 
@@ -198,6 +207,10 @@
     // Startknoten bieten unterschiedliche Pokémon an — die Wahl zählt.
     var firstRegion = this.region === 0 && this.leagueStage < 0;
     if (firstRegion) mustHave.push('catch');
+    // Der Rivale taucht in jeder zweiten Region auf — vier Begegnungen pro Run.
+    if (this.leagueStage < 0 && this.region % 2 === 1 && this.rival && this.rival.stage < 4) {
+      mustHave.push('rival');
+    }
     var middleSlots = [];
     for (r = 1; r < rows - 1; r++) for (i = 0; i < map[r].length; i++) middleSlots.push(map[r][i]);
     rng.shuffle(middleSlots);
@@ -307,6 +320,7 @@
       case 'wild': return this.setScene({ kind: 'battle', battle: this.makeWild(rng), node: node });
       case 'trainer': return this.setScene({ kind: 'battle', battle: this.makeTrainer(rng), node: node });
       case 'elite': return this.setScene({ kind: 'battle', battle: this.makeTrainer(rng, { elite: true }), node: node });
+      case 'rival': return this.setScene({ kind: 'battle', battle: this.makeRival(rng), node: node });
       case 'boss': return this.setScene({ kind: 'battle', battle: this.makeBoss(rng), node: node });
       case 'e4': return this.setScene({ kind: 'battle', battle: this.makeElite(rng), node: node });
       case 'champ': return this.setScene({ kind: 'battle', battle: this.makeChampion(rng), node: node });
@@ -335,6 +349,71 @@
     return this.state;
   };
 
+  /* ---------- Segen des Endlosmodus -------------------------------------------
+   * Jede vollständige Runde durch alle neun Regionen wird belohnt — sonst
+   * würde der Modus nur härter, ohne je etwas zurückzugeben.
+   * -------------------------------------------------------------------------- */
+
+  var BLESSINGS = [
+    { id: 'vollheilung', name: 'Atempause', icon: '💚',
+      desc: 'Das ganze Team wird geheilt, wiederbelebt und bekommt volle AP.' },
+    { id: 'relikt', name: 'Fund der Runde', icon: '🏛️',
+      desc: 'Ein Relikt aus dreien zur Wahl.' },
+    { id: 'levelschub', name: 'Höheres Ziel', icon: '⬆️',
+      desc: 'Die Levelgrenze steigt dauerhaft um fünf.' },
+    { id: 'fleiss', name: 'Hartes Training', icon: '💪',
+      desc: '+60 Fleißpunkte auf den besten Wert jedes Teammitglieds.' },
+    { id: 'legende', name: 'Ruf der Legende', icon: '✨',
+      desc: 'Ein legendäres Pokémon schließt sich dir an.' },
+    { id: 'reichtum', name: 'Schatzkammer', icon: '💰',
+      desc: '10 000 ₽ auf die Hand.' },
+    { id: 'apotheke', name: 'Feldapotheke', icon: '🧰',
+      desc: 'Fünf Hypertränke, drei Beleber, zwei Top-Genesungen.' }
+  ];
+
+  R.makeBlessing = function (rng) {
+    var pool = BLESSINGS.slice();
+    if (this.party.length >= 6) pool = pool.filter(function (b) { return b.id !== 'legende'; });
+    return { kind: 'blessing', offers: rng.sample(pool, 3), loop: this.loop() };
+  };
+
+  R.takeBlessing = function (id, rng) {
+    rng = rng || this.rng;
+    switch (id) {
+      case 'vollheilung':
+        this.party.forEach(function (m) { mons.fullRestore(m); });
+        return 'Das Team steht wieder wie am ersten Tag.';
+      case 'relikt':
+        return { relicChoice: 3, text: 'Such dir aus, was dich weiterbringt.' };
+      case 'levelschub':
+        this.levelBonus = (this.levelBonus || 0) + 5;
+        return 'Die Levelgrenze liegt jetzt bei ' + this.levelCap + '.';
+      case 'fleiss':
+        this.party.forEach(function (m) {
+          var st = mons.stats(m), best = 1, k;
+          for (k = 1; k < 6; k++) if (st[k] > st[best]) best = k;
+          mons.addEVs(m, PL.STATS[best], 60);
+        });
+        return 'Jedes Teammitglied hat kräftig zugelegt.';
+      case 'legende': {
+        var pool = dex.species.filter(function (sp) {
+          return !sp.bo && !sp.f && dex.isLegendary(sp) && !dex.isRestricted(sp);
+        });
+        return this.gainPokemon(rng, rng.pick(pool), Math.max(5, this.levelCap - 4), 'Segen',
+          { quality: 1, ivFloor: 24 });
+      }
+      case 'reichtum':
+        return this.giveMoney(10000);
+      case 'apotheke':
+        this.addItem('hyperpotion', 5);
+        this.addItem('revive', 3);
+        this.addItem('fullrestore', 2);
+        return 'Der Beutel ist deutlich schwerer geworden.';
+      default:
+        return '';
+    }
+  };
+
   R.advanceRegion = function () {
     if (this.leagueStage >= 0) {
       this.state = 'victory';
@@ -349,6 +428,11 @@
     } else {
       this.buildMap();
       this.regionCatches = 0;
+      this.bossHint = null;
+      // Neue Runde im Endlosmodus: es gibt einen Segen zur Auswahl.
+      if (this.mode === 'endlos' && this.region > 0 && this.region % W.REGIONS.length === 0) {
+        this.pendingBlessing = this.makeBlessing(this.rng);
+      }
       var reg = this.currentRegion();
       this.history.push({ t: 'region', text: 'Weiter nach ' + reg.name + '.' });
       var ev = this.mod('evPerFloor');
@@ -475,6 +559,47 @@
     return bt;
   };
 
+  /**
+   * Der Rivale. Sein Starter kontert deinen, sein Team wächst mit jeder
+   * Begegnung, und er redet vorher wie nachher.
+   */
+  R.makeRival = function (rng) {
+    var stage = this.rival.stage;
+    var level = this.enemyLevel(1);
+    var t = W.rivalTeam(rng, this.rival, level, stage, this.currentRegion());
+    var bt = new PL.Battle(this.battleOpts({ team: t.team, trainer: t }));
+    bt.aiLevel = 3;
+    bt.biome = this.biomeFor('trainer');
+    bt.rival = true;
+    bt.reward = { money: 700 + stage * 500, kind: stage >= 3 ? 'elite' : 'trainer' };
+    bt.banter = W.rivalBanter(this.rival.name, stage, rng);
+    return bt;
+  };
+
+  /** Ein legendäres Pokémon als seltene, freiwillige Herausforderung. */
+  R.makeLegendary = function (rng) {
+    var level = Math.min(100, this.levelCap + 2);
+    var pool = dex.species.filter(function (sp) {
+      return !sp.bo && !sp.f && dex.isLegendary(sp) && !dex.isRestricted(sp) && sp.bst >= 570;
+    });
+    if (!pool.length) pool = dex.species.filter(function (sp) { return dex.isLegendary(sp) && !sp.f; });
+    var sp = rng.pick(pool);
+    var mon = W.buildMon(rng, sp, level, {
+      quality: 1, ivFloor: 26, hiddenChance: 0.4,
+      shinyOdds: (1 / 120) * this.mod('shinyMult', 1)
+    });
+    mon.item = 'sitrusberry';
+    mons.addEVs(mon, mon.ivs[1] >= mon.ivs[3] ? 'atk' : 'spa', 120);
+    mons.addEVs(mon, 'spe', 100);
+    var bt = new PL.Battle(this.battleOpts({ team: [mon], wild: true }));
+    bt.aiLevel = 3;
+    bt.canCatch = true;
+    bt.legendary = true;
+    bt.biome = rng.chance(0.5) ? 'ruine' : 'hoehle';
+    bt.reward = { money: 3000 + this.region * 200, kind: 'trainer' };
+    return bt;
+  };
+
   R.makeBoss = function (rng) {
     var region = this.currentRegion();
     // Der erste Arenaleiter darf noch kein Bollwerk sein.
@@ -597,10 +722,16 @@
       this.restorePP();
     }
 
+    if (bt.rival) {
+      if (bt.outcome === 'win') { this.rival.wins++; this.rival.stage++; }
+      else if (bt.outcome === 'loss') this.rival.losses++;
+    }
+
     // Nuzlocke: besiegte Pokémon verlassen das Team für immer
     if (this.nuzlocke) {
       var lost = this.party.filter(function (m) { return m.hp <= 0; });
       lost.forEach(function (m) {
+        self.bury(m, bt);
         self.party.splice(self.party.indexOf(m), 1);
         self.stats.faints++;
         res.faintedOut.push(mons.name(m));
@@ -621,6 +752,19 @@
   /** Nuzlocke erlaubt genau einen Fang je Region. */
   R.catchAllowed = function () {
     return !this.nuzlocke || (this.regionCatches || 0) < 1;
+  };
+
+  /** Trägt ein gefallenes Pokémon in den Friedhof ein. */
+  R.bury = function (mon, bt) {
+    var sp = dex.sp(mon.sp);
+    this.graveyard = this.graveyard || [];
+    this.graveyard.push({
+      sp: mon.sp, name: mons.name(mon), lvl: mon.lvl, shiny: !!mon.shiny,
+      region: this.leagueStage >= 0 ? 'Liga' : this.currentRegion().name,
+      by: mon.faintedBy || null,
+      against: mon.faintedAgainst || (bt && bt.trainer ? bt.trainer.name : null),
+      types: sp.t.slice()
+    });
   };
 
   R.acceptCatch = function (mon) {
@@ -885,6 +1029,15 @@
     if (this.bag[id] <= 0) delete this.bag[id];
     return true;
   };
+  /** Schenkt eine TM, die jemand im Team auch wirklich lernen kann. */
+  R.giveTM = function (rng) {
+    var pool = this.teachableMoves(rng, 8);
+    if (!pool.length) { this.giveMoney(900); return 'Die Datenträger sind unlesbar — immerhin 900 ₽ Schrottwert.'; }
+    var mi = rng.pick(pool);
+    this.addTM(mi);
+    return 'TM ' + dex.move(mi).n + ' gesichert.';
+  };
+
   R.addTM = function (moveIndex) {
     this.tms = this.tms || {};
     this.tms[moveIndex] = (this.tms[moveIndex] || 0) + 1;
@@ -918,6 +1071,64 @@
       pools = pools.filter(function (p) { return p !== pick; });
     }
     return 'Gefunden: ' + out.join(', ') + '.';
+  };
+
+  /**
+   * Schnellheilung aus dem Beutel: erst beleben, dann heilen, dann Status.
+   * Es wird immer der kleinste Gegenstand genommen, der reicht — man soll
+   * nicht aus Versehen die Top-Genesung an eine Schramme verschwenden.
+   */
+  R.quickHeal = function () {
+    var self = this, used = [], order, i;
+
+    function have(id) { return (self.bag[id] || 0) > 0; }
+    function take(id) { self.removeItem(id, 1); used.push(PL.items.label(id)); }
+
+    // 1) Belebung
+    this.party.forEach(function (m) {
+      if (m.hp > 0) return;
+      if (have('maxrevive')) { take('maxrevive'); m.hp = mons.maxHP(m); m.status = null; }
+      else if (have('revive')) { take('revive'); m.hp = Math.floor(mons.maxHP(m) / 2); m.status = null; }
+    });
+
+    // 2) Heilung — am stärksten Verletzten zuerst
+    order = this.party.slice().filter(function (m) { return m.hp > 0 && m.hp < mons.maxHP(m); });
+    order.sort(function (a, b) {
+      return (a.hp / mons.maxHP(a)) - (b.hp / mons.maxHP(b));
+    });
+    var potions = [
+      { id: 'potion', amount: 20 }, { id: 'superpotion', amount: 60 },
+      { id: 'hyperpotion', amount: 120 }, { id: 'maxpotion', amount: 9999 },
+      { id: 'fullrestore', amount: 9999 }
+    ];
+    order.forEach(function (m) {
+      var missing = mons.maxHP(m) - m.hp, pick = null;
+      for (i = 0; i < potions.length; i++) {
+        if (!have(potions[i].id)) continue;
+        pick = pick || potions[i];
+        if (potions[i].amount >= missing) { pick = potions[i]; break; }
+      }
+      if (!pick) return;
+      take(pick.id);
+      mons.heal(m, pick.amount);
+      if (pick.id === 'fullrestore') { m.status = null; m.slp = 0; }
+    });
+
+    // 3) Statusprobleme
+    var cures = { psn: 'antidote', tox: 'antidote', brn: 'burnheal', par: 'paralyzeheal', slp: 'awakening', frz: 'iceheal' };
+    this.party.forEach(function (m) {
+      if (!m.status || m.hp <= 0) return;
+      var special = cures[m.status];
+      if (special && have(special)) { take(special); m.status = null; m.slp = 0; }
+      else if (have('fullheal')) { take('fullheal'); m.status = null; m.slp = 0; }
+    });
+
+    return used;
+  };
+
+  /** Wäre eine Schnellheilung überhaupt sinnvoll? */
+  R.needsHealing = function () {
+    return this.party.some(function (m) { return m.hp <= 0 || m.hp < mons.maxHP(m) || m.status; });
   };
 
   R.healTeam = function (fraction, cure) {
@@ -989,8 +1200,16 @@
 
   R.makeEvent = function (rng) {
     var self = this;
-    var pool = W.EVENTS.filter(function (e) { return !self.seenEvents || !self.seenEvents[e.id]; });
-    if (!pool.length) { this.seenEvents = {}; pool = W.EVENTS; }
+    function usable(e) {
+      if (e.available && !e.available(self)) return false;
+      return !self.seenEvents || !self.seenEvents[e.id];
+    }
+    var pool = W.EVENTS.filter(usable);
+    if (!pool.length) {
+      this.seenEvents = {};
+      pool = W.EVENTS.filter(function (e) { return !e.available || e.available(self); });
+    }
+    if (!pool.length) pool = W.EVENTS;
     var ev = rng.pick(pool);
     this.seenEvents = this.seenEvents || {};
     this.seenEvents[ev.id] = true;
@@ -1041,6 +1260,9 @@
       history: this.history.slice(-40), map: this.map, pos: this.pos, rowIndex: this.rowIndex,
       bossesBeaten: this.bossesBeaten || 0, tms: this.tms || {},
       regionCatches: this.regionCatches || 0,
+      graveyard: this.graveyard || [], rival: this.rival,
+      levelBonus: this.levelBonus || 0, pendingBlessing: this.pendingBlessing || null,
+      bossHint: this.bossHint || null,
       pendingNode: this.pendingNode || null,
       seenEvents: this.seenEvents || {}, masterballUsed: this.masterballUsed, result: this.result,
       state: this.state === 'map' ? 'map' : 'map'
@@ -1059,6 +1281,7 @@
     return run;
   };
 
+  Run.BLESSINGS = BLESSINGS;
   Run.MODES = MODES;
   Run.NODE_INFO = NODE_INFO;
   PL.Run = Run;

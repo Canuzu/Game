@@ -942,3 +942,41 @@ button.move-row:hover { border-color: var(--accent); }
   .trainer-sprite { width: 68px; height: 102px; }
   .slot-enemy .trainer-sprite { width: 56px; height: 84px; }
 }
+
+/* ---------- 15) Schnellheilung, Ziehen, Friedhof ---------------------------- */
+
+.party-head { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; margin: 1.2rem 0 .5rem; }
+.party-head .section-label { margin: 0; }
+.party-head .muted.small { margin: 0; flex: 1; min-width: 180px; }
+.btn.small { padding: .3rem .7rem; font-size: .84rem; }
+.btn.small.heal:not(:disabled) { border-color: var(--good); color: var(--good); }
+.btn.small.heal:disabled { opacity: .4; }
+
+/* Ziehen im Team */
+.mon-card.draggable { touch-action: none; cursor: grab; }
+.mon-card.dragging {
+  cursor: grabbing; opacity: .85; z-index: 5; position: relative;
+  box-shadow: 5px 5px 0 rgba(0,0,0,.5);
+}
+.mon-card.drop-here { border-color: var(--accent); box-shadow: 0 -3px 0 var(--accent), 3px 3px 0 rgba(0,0,0,.35); }
+
+/* Friedhof */
+.grave-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .6rem; }
+.grave {
+  display: flex; flex-direction: column; align-items: center; gap: .15rem; text-align: center;
+  padding: .6rem .4rem; border: 2px solid var(--frame-edge);
+  background: color-mix(in srgb, var(--panel) 90%, transparent);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--frame-inner) 30%, transparent);
+}
+.grave-stone {
+  position: relative; width: 74px; height: 74px; display: grid; place-items: center;
+  background: linear-gradient(180deg, var(--panel-2) 0 38%, transparent 38%);
+}
+.grave-cross { position: absolute; top: 2px; font-size: 1.1rem; color: var(--muted); }
+.grave-sprite { width: 60px; height: 60px; object-fit: contain; filter: grayscale(1) brightness(.75); }
+.grave-cause { font-size: .74rem; color: var(--muted); }
+
+.log-line.l-banter { color: var(--accent-2); font-style: italic; }
+.banter { color: var(--accent-2); font-style: italic; }
+.region-progress .hint { color: var(--accent); }
+.map-node.t-rival .node-badge { border-color: var(--accent-2); }

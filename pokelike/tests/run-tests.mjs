@@ -424,6 +424,85 @@ section('Durchgespielter Run');
   check('Runs kommen spürbar voran', totalBattles / 6 >= 4, 'Ø ' + (totalBattles / 6).toFixed(1) + ' Kämpfe');
 }
 
+section('Neue Systeme');
+{
+  const run = new PL.Run({ seed: 4242, mode: 'standard', starter: 'charmander' });
+  for (const id of ['pikachu', 'gengar', 'lapras']) run.party.push(PL.mon.create(id, 20, run.rng, {}));
+
+  // Schnellheilung
+  run.party[1].hp = 5;
+  run.party[2].hp = 0;
+  run.party[3].status = 'brn';
+  run.addItem('hyperpotion', 2); run.addItem('revive', 1); run.addItem('burnheal', 1);
+  const stock = { revive: run.bag.revive, burnheal: run.bag.burnheal, hyperpotion: run.bag.hyperpotion };
+  const used = run.quickHeal();
+  check('Schnellheilung belebt, heilt und kuriert',
+    run.party[1].hp > 5 && run.party[2].hp > 0 && !run.party[3].status, used.join(', '));
+  check('Schnellheilung verbraucht die Gegenstände',
+    (run.bag.revive || 0) === stock.revive - 1 &&
+    (run.bag.burnheal || 0) === stock.burnheal - 1 &&
+    (run.bag.hyperpotion || 0) < stock.hyperpotion,
+    JSON.stringify({ vorher: stock, nachher: { revive: run.bag.revive, burnheal: run.bag.burnheal, hyperpotion: run.bag.hyperpotion } }));
+  eq('Ohne Bedarf tut sie nichts', run.quickHeal().length, 0);
+
+  // Rivale
+  check('Der Rivale nimmt den Konter-Starter',
+    PL.world.counterStarter('charmander', run.rng) === 'squirtle');
+  const rivalBattle = run.makeRival(run.rng);
+  check('Rivalenkampf hat Team und Sprüche',
+    rivalBattle.sides[1].team.length >= 2 && !!rivalBattle.banter.before);
+  check('Der Rivale führt seinen Starter als Ass', (function () {
+    const ace = rivalBattle.sides[1].team[rivalBattle.sides[1].team.length - 1];
+    const base = dex.baseOf(dex.sp(ace.sp));
+    return base.id === 'squirtle';
+  })());
+  const stages = [0, 1, 2, 3].map((st) => {
+    run.rival.stage = st;
+    return run.makeRival(run.rng).sides[1].team.length;
+  });
+  check('Sein Team wächst mit jeder Begegnung',
+    stages[0] < stages[3] && stages.every((n, i) => i === 0 || n >= stages[i - 1]), stages.join('<'));
+
+  // Friedhof
+  run.rival.stage = 0;
+  const victim = run.party[0];
+  victim.faintedBy = 'Rihorn';
+  run.bury(victim, { trainer: { name: 'Wanderer Ben' } });
+  eq('Der Friedhof merkt sich den Gefallenen', run.graveyard.length, 1);
+  check('Mit Todesursache', run.graveyard[0].by === 'Rihorn' && !!run.graveyard[0].region);
+
+  // Legendäres
+  run.region = 6;
+  const legend = run.makeLegendary(run.rng);
+  const boss = legend.sides[1].team[0];
+  check('Der Schrein ruft ein legendäres Pokémon', dex.isLegendary(dex.sp(boss.sp)), PL.mon.name(boss));
+  check('Es ist wild und damit fangbar', legend.wild === true);
+  check('Der Schrein erscheint erst spät', (function () {
+    const early = new PL.Run({ seed: 3, starter: 'squirtle' });
+    const ev = PL.world.EVENTS.filter((e) => e.id === 'legendenschrein')[0];
+    return ev && ev.available && !ev.available(early) && ev.available(run);
+  })());
+
+  // Segen im Endlosmodus
+  const endless = new PL.Run({ seed: 9, mode: 'endlos', starter: 'chikorita' });
+  endless.region = 8;
+  endless.advanceRegion();
+  check('Nach einer vollen Runde wartet ein Segen',
+    !!endless.pendingBlessing && endless.pendingBlessing.offers.length === 3);
+  const capBefore = endless.levelCap;
+  endless.takeBlessing('levelschub');
+  eq('Der Levelschub hebt die Grenze', endless.levelCap, capBefore + 5);
+  check('Jeder Segen hat Namen und Beschreibung',
+    PL.Run.BLESSINGS.every((b) => b.id && b.name && b.desc && b.icon));
+
+  // Ereignisse
+  check('Deutlich mehr Ereignisse als vorher', PL.world.EVENTS.length >= 30, String(PL.world.EVENTS.length));
+  check('Jedes Ereignis hat Titel, Text und Optionen',
+    PL.world.EVENTS.every((e) => e.title && e.text && e.options.length >= 2));
+  check('Bedingte Ereignisse haben eine Prüffunktion',
+    PL.world.EVENTS.every((e) => !e.available || typeof e.available === 'function'));
+}
+
 section('Speichern und Laden');
 {
   const run = new PL.Run({ seed: 999, mode: 'standard', starter: 'squirtle' });
@@ -439,6 +518,11 @@ section('Speichern und Laden');
   eq('Relikt bleibt erhalten', !!back.relics.glueckliches_ei, true);
   eq('Levelgrenze wird wieder berechnet', back.levelCap, run.levelCap);
   eq('Karte bleibt erhalten', back.map.length, run.map.length);
+  run.bury(run.party[0], null);
+  const json2 = JSON.parse(JSON.stringify(run.toJSON()));
+  const back2 = PL.Run.fromJSON(json2);
+  eq('Friedhof übersteht das Speichern', back2.graveyard.length, run.graveyard.length);
+  eq('Der Rivale übersteht das Speichern', back2.rival.name, run.rival.name);
   const a = PL.rng(back.rngState).int(1e6), b = PL.rng(run.rng.save()).int(1e6);
   eq('Zufallsstrom läuft identisch weiter', a, b);
 }

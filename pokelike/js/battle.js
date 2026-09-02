@@ -1295,6 +1295,10 @@
       act.fainted = true;
       side.fainted++;
       side.lastFainted = act;
+      // Wer hat den letzten Treffer gesetzt? Der Friedhof will es wissen.
+      var killer = act.hurtBySource;
+      act.mon.faintedBy = killer ? mons.name(killer.mon) : null;
+      act.mon.faintedAgainst = this.trainer ? this.trainer.name : (this.wild ? 'einem wilden Pokémon' : null);
       this.say(this.name(act) + ' wurde besiegt!', 'faint', { side: i, mon: side.activeIndex });
       var foe = side.other.active;
       if (foe && foe.mon.hp > 0) this.hook(foe, 'onFoeFaint', [act]);

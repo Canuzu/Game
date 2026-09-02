@@ -119,6 +119,57 @@
     ]);
   }
 
+  /** Ein Knopf, der aus dem Beutel heraus so viel heilt wie möglich. */
+  function quickHealButton() {
+    var run = App.run;
+    var btn = el('button', {
+      className: 'btn small heal', type: 'button',
+      disabled: !run.needsHealing(),
+      title: 'Belebt, heilt und kuriert mit den Gegenständen im Beutel — vom kleinsten passenden zuerst.',
+      onclick: function () {
+        var used = run.quickHeal();
+        if (!used.length) {
+          U.toast('Nichts im Beutel, was hier helfen würde.', 'bad');
+          return;
+        }
+        sfx('heal');
+        U.toast('Verbraucht: ' + used.join(', '));
+        autosave();
+        show(App.screen === 'team' ? 'team' : 'map');
+      }
+    }, '🧪 Schnellheilung');
+    return btn;
+  }
+
+  /** Der Nuzlocke-Friedhof: wer gefallen ist, warum und wo. */
+  function openGraveyard() {
+    var run = App.run;
+    var list = (run.graveyard || []).slice().reverse();
+    var content = list.length
+      ? el('div', { className: 'grave-grid' }, list.map(function (g) {
+        return el('div', { className: 'grave' }, [
+          el('div', { className: 'grave-stone' }, [
+            el('span', { className: 'grave-cross', text: '✝' }),
+            U.sprite(dex.species[g.sp], { shiny: g.shiny, className: 'grave-sprite' })
+          ]),
+          el('strong', { text: g.name + (g.shiny ? ' ✦' : '') }),
+          el('span', { className: 'muted', text: 'Lv ' + g.lvl + ' · ' + g.region }),
+          el('span', { className: 'grave-cause', text: g.by
+            ? 'gefallen gegen ' + g.by + (g.against ? ' (' + g.against + ')' : '')
+            : 'gefallen im Kampf' })
+        ]);
+      }))
+      : el('p', { text: 'Noch niemand. So soll es bleiben.' });
+    U.modal({
+      title: '🪦 Friedhof', wide: true,
+      content: el('div', {}, [
+        el('p', { className: 'muted', text: 'Im Nuzlocke bleibt ein besiegtes Pokémon fort. Hier stehen sie alle.' }),
+        content
+      ]),
+      actions: [{ label: 'Schließen', primary: true }]
+    });
+  }
+
   function partyStrip(opts) {
     opts = opts || {};
     var run = App.run;
@@ -357,11 +408,20 @@
         el('p', { className: 'muted', text: region.motto || '' }),
         el('div', { className: 'region-progress' }, [
           el('span', { text: 'Route ' + Math.max(0, run.rowIndex + 1) + ' / ' + run.map.length }),
-          run.leagueStage < 0 ? el('span', { text: 'Nur ein Weg führt zum Arenaleiter.' }) : null
+          run.bossHint
+            ? el('span', { className: 'hint', text: '🔎 ' + run.bossHint[0] + ' setzt auf ' + T.type(run.bossHint[1]) })
+            : (run.leagueStage < 0 ? el('span', { text: 'Nur ein Weg führt zum Arenaleiter.' }) : null)
         ])
       ]),
       stage,
-      el('h3', { className: 'section-label', text: 'Dein Team' }),
+      el('div', { className: 'party-head' }, [
+        el('h3', { className: 'section-label', text: 'Dein Team' }),
+        quickHealButton(),
+        run.nuzlocke && run.graveyard && run.graveyard.length
+          ? el('button', { className: 'btn small', type: 'button', onclick: openGraveyard },
+              '🪦 Friedhof (' + run.graveyard.length + ')')
+          : null
+      ]),
       partyStrip()
     ]);
   };
@@ -433,6 +493,13 @@
     var before = run.region;
     run.closeScene();
     if (run.state === 'victory' || run.state === 'gameover') { finishRun(); return; }
+    // Nach einer vollen Runde im Endlosmodus wartet ein Segen.
+    if (run.pendingBlessing) {
+      var blessing = run.pendingBlessing;
+      run.setScene(blessing);
+      show('scene', { type: 'blessing', scene: blessing });
+      return;
+    }
     if (run.region !== before) {
       U.toast(run.leagueStage >= 0 ? 'Die Pokémon-Liga öffnet ihre Tore!' : 'Neue Region: ' + run.currentRegion().name);
     }
@@ -451,7 +518,8 @@
     bt.sides[0].team.forEach(function (m) { m.seen = 1; });
     bt.sides[1].team.forEach(function (m) { meta.noteSeen(m.sp); });
     meta.save();
-    if (PL.audio) PL.audio.play(PL.audio.trackFor(bt.aiLevel >= 3 ? 'boss' : 'battle', bt.biome));
+    if (bt.banter) bt.log.splice(1, 0, { k: 'banter', s: '»' + bt.banter.before + '«' });
+    if (PL.audio) PL.audio.play(PL.audio.trackFor(bt.aiLevel >= 3 || bt.rival ? 'boss' : 'battle', bt.biome));
     sfx('encounter');
     if (PL.fx) {
       App.transitioning = true;
@@ -655,7 +723,7 @@
     move: 'l-move', damage: '', crit: 'l-crit', super: 'l-super', resist: 'l-resist',
     faint: 'l-faint', switchin: 'l-switch', switchout: 'l-switch', status: 'l-status',
     heal: 'l-heal', boost: 'l-boost', item: 'l-item', ability: 'l-ability', weather: 'l-field',
-    field: 'l-field', side: 'l-field', mega: 'l-mega', caught: 'l-caught',
+    field: 'l-field', side: 'l-field', mega: 'l-mega', caught: 'l-caught', banter: 'l-banter',
     end: 'l-end', turn: 'l-turn', miss: 'l-miss', immune: 'l-miss', protect: 'l-item',
     ball: 'l-item', ballfail: 'l-miss'
   };
@@ -1045,6 +1113,7 @@
       case 'shop': return sceneShop(arg.scene);
       case 'event': return sceneEvent(arg.scene);
       case 'rest': return sceneRest(arg.scene);
+      case 'blessing': return sceneBlessing(arg.scene);
       default: return el('p', { text: '…' });
     }
   };
@@ -1074,6 +1143,10 @@
     res.faintedOut.forEach(function (name) {
       lines.push(el('p', { className: 'bad', text: name + ' ist für immer gegangen (Nuzlocke).' }));
     });
+    if (bt.banter) {
+      lines.unshift(el('p', { className: 'banter', text: '»' +
+        (bt.outcome === 'win' ? bt.banter.win : bt.banter.loss) + '«' }));
+    }
     if (!lines.length) lines.push(el('p', { text: bt.outcome === 'fled' ? 'Entkommen.' : 'Weiter geht’s.' }));
 
     var pending = [];
@@ -1132,6 +1205,34 @@
         onClick: function () { processMoveLearning(queue, done); }
       }]
     });
+  }
+
+  /** Der Segen nach einer vollen Runde im Endlosmodus. */
+  function sceneBlessing(scene) {
+    var run = App.run;
+    var grid = el('div', { className: 'relic-grid' }, scene.offers.map(function (b) {
+      return el('button', { className: 'relic-card r-episch', type: 'button', onclick: function () {
+        var out = run.takeBlessing(b.id, run.rng);
+        run.pendingBlessing = null;
+        if (out && out.relicChoice) {
+          var s2 = run.makeRelicChoice(run.rng, out.relicChoice, out.text);
+          run.setScene(s2);
+          openScene(s2);
+          return;
+        }
+        U.toast(typeof out === 'string' ? out : b.name + ' erhalten.');
+        autosave();
+        show('map');
+      } }, [
+        el('span', { className: 'relic-icon', text: b.icon }),
+        el('strong', { text: b.name }),
+        el('span', { className: 'relic-rarity', text: 'Segen' }),
+        el('span', { className: 'muted', text: b.desc })
+      ]);
+    }));
+    return sceneFrame('Runde ' + (scene.loop || 1) + ' geschafft',
+      'Neun Regionen liegen hinter dir. Die Welt bedankt sich — such dir etwas aus.',
+      [grid], []);
   }
 
   function sceneCatch(scene) {
@@ -1286,6 +1387,7 @@
       if (out.scene) { openScene(out.scene); return; }
       if (out.tutor) { openTutor(function () { backToMap(); }); return; }
       if (out.trade) { openTrade(function () { backToMap(); }); return; }
+      if (out.evFocus) { openEVFocus(out.evFocus, function () { backToMap(); }); return; }
       U.modal({
         title: scene.title,
         content: el('p', { text: out.text || 'Nichts passiert.' }),
@@ -1394,6 +1496,28 @@
     });
   }
 
+  /** Fleißpunkte gezielt auf ein Pokémon verteilen. */
+  function openEVFocus(amount, done) {
+    var run = App.run;
+    var box = U.modal({
+      title: 'Wer bekommt die volle Ladung?',
+      wide: true,
+      content: el('div', { className: 'switch-grid' }, run.party.map(function (mon) {
+        return U.monCard(mon, {
+          onClick: function () {
+            var st = mons.stats(mon), best = 1, k;
+            for (k = 1; k < 6; k++) if (st[k] > st[best]) best = k;
+            var got = mons.addEVs(mon, PL.STATS[best], amount);
+            box.close();
+            U.toast(mons.name(mon) + ': ' + T.stat(PL.STATS[best]) + ' +' + got + ' FP.');
+            done();
+          }
+        });
+      })),
+      actions: [{ label: 'Abbrechen', onClick: done }]
+    });
+  }
+
   function openEvolveDialog(done) {
     var run = App.run;
     var rows = [];
@@ -1439,10 +1563,15 @@
     function drawList() {
       clear(listHost);
       run.party.forEach(function (mon, i) {
-        listHost.appendChild(U.monCard(mon, {
+        var card = U.monCard(mon, {
           selected: i === sel.index,
           onClick: function () { sel.index = i; drawList(); drawDetail(); }
-        }));
+        });
+        // Kein natives draggable-Attribut: das würde den Browser eine eigene
+        // Ziehoperation starten lassen und unsere Zeiger-Ereignisse abbrechen.
+        card.classList.add('draggable');
+        makeDraggable(card, i, drawList, drawDetail, sel);
+        listHost.appendChild(card);
       });
       clear(boxHost);
       if (!run.box.length) {
@@ -1482,7 +1611,7 @@
         el('button', { className: 'btn', type: 'button', onclick: function () { openTeachTM(mon, drawDetail); } }, '💿 TM beibringen'),
         el('button', { className: 'btn', type: 'button', onclick: function () { openEvolveDialog(function () { drawList(); drawDetail(); }); } }, '💠 Entwickeln'),
         sel.index > 0 ? el('button', {
-          className: 'btn', type: 'button',
+          className: 'btn', type: 'button', title: 'Alternative zum Ziehen',
           onclick: function () {
             var m = run.party.splice(sel.index, 1)[0];
             run.party.splice(sel.index - 1, 0, m);
@@ -1512,11 +1641,82 @@
         el('button', { className: 'btn', type: 'button', onclick: function () { show('map'); } }, 'Zurück zur Karte')
       ]),
       el('div', { className: 'team-cols' }, [
-        el('div', {}, [listHost, el('h3', { className: 'section-label', text: 'Box' }), boxHost]),
+        el('div', {}, [
+          el('div', { className: 'party-head' }, [
+            el('p', { className: 'muted small', text: 'Reihenfolge per Ziehen ändern — das erste Pokémon startet den Kampf.' }),
+            quickHealButton()
+          ]),
+          listHost,
+          el('h3', { className: 'section-label', text: 'Box' }), boxHost]),
         detail
       ])
     ]);
   };
+
+  /**
+   * Team umsortieren durch Ziehen. Zeigeereignisse statt HTML5-Drag, damit es
+   * auf dem Handy genauso funktioniert; die Karte hängt am Finger, und eine
+   * Linie zeigt, wo sie landet.
+   */
+  function makeDraggable(card, index, drawList, drawDetail, sel) {
+    card.addEventListener('pointerdown', function (e) {
+      if (e.button !== undefined && e.button !== 0) return;
+      var run = App.run;
+      if (run.party.length < 2) return;
+      var startY = e.clientY, moved = false;
+      var host = card.parentNode;
+      var rect = card.getBoundingClientRect();
+      var to = index;
+
+      // Die Zeiger-Ereignisse hängen am Fenster: sobald die Karte unter dem
+      // Finger wegrutscht, bekäme sie selbst keine mehr.
+      function onMove(ev) {
+        var dy = ev.clientY - startY;
+        if (!moved && Math.abs(dy) < 6) return;
+        if (!moved) { moved = true; card.classList.add('dragging'); }
+        if (ev.cancelable) ev.preventDefault();
+        card.style.transform = 'translateY(' + dy + 'px)';
+        var mid = rect.top + rect.height / 2 + dy;
+        var kids = host.children, k, best = 0;
+        for (k = 0; k < kids.length; k++) {
+          if (kids[k] === card) continue;
+          var r = kids[k].getBoundingClientRect();
+          if (mid > r.top + r.height / 2) best = Math.max(best, k);
+        }
+        to = best;
+        for (k = 0; k < kids.length; k++) kids[k].classList.toggle('drop-here', k === to && kids[k] !== card);
+      }
+
+      function onUp() {
+        root.removeEventListener('pointermove', onMove);
+        root.removeEventListener('pointerup', onUp);
+        root.removeEventListener('pointercancel', onUp);
+        card.style.transform = '';
+        card.classList.remove('dragging');
+        Array.prototype.forEach.call(host.children, function (n) { n.classList.remove('drop-here'); });
+        if (!moved) return;
+        // Nach dem Ziehen darf der Klick die Karte nicht zusätzlich auswählen.
+        card.addEventListener('click', function stop(ev2) {
+          ev2.stopPropagation();
+          ev2.preventDefault();
+          card.removeEventListener('click', stop, true);
+        }, true);
+        if (index !== to) {
+          var mon = App.run.party.splice(index, 1)[0];
+          App.run.party.splice(to, 0, mon);
+          sel.index = to;
+          autosave();
+          sfx('select');
+          drawList();
+          drawDetail();
+        }
+      }
+
+      root.addEventListener('pointermove', onMove);
+      root.addEventListener('pointerup', onUp);
+      root.addEventListener('pointercancel', onUp);
+    });
+  }
 
   function openMonSheet(index) {
     var run = App.run, mon = run.party[index];

@@ -176,6 +176,44 @@ async function closeModals() {
 }
 await closeModals();
 
+console.log('\nNeue Bedienelemente');
+await page.evaluate(() => {
+  const PL = globalThis.PL, App = globalThis.PokelikeApp;
+  App.run.party[0].hp = 3;
+  App.run.addItem('hyperpotion', 2);
+  App.show('map');
+});
+await page.waitForSelector('.btn.small.heal');
+check('Der Schnellheilungsknopf ist da', await page.isVisible('.btn.small.heal'));
+const hpBefore = await page.evaluate(() => globalThis.PokelikeApp.run.party[0].hp);
+await page.click('.btn.small.heal');
+await page.waitForTimeout(250);
+const hpAfter = await page.evaluate(() => globalThis.PokelikeApp.run.party[0].hp);
+check('Ein Klick heilt aus dem Beutel', hpAfter > hpBefore, hpBefore + ' → ' + hpAfter);
+
+await page.evaluate(() => globalThis.PokelikeApp.show('team'));
+await page.waitForSelector('.team-list .mon-card.draggable');
+{
+  const order = () => page.evaluate(() => globalThis.PokelikeApp.run.party.map((m) => m.uid));
+  const before = await order();
+  if (before.length >= 3) {
+    const cards = page.locator('.team-list .mon-card');
+    const a = await cards.nth(0).boundingBox();
+    const c = await cards.nth(2).boundingBox();
+    await page.mouse.move(a.x + 40, a.y + 20);
+    await page.mouse.down();
+    for (let y = a.y + 20; y <= c.y + 40; y += 14) { await page.mouse.move(a.x + 40, y); await page.waitForTimeout(12); }
+    await page.mouse.up();
+    await page.waitForTimeout(250);
+    const after = await order();
+    check('Team lässt sich per Ziehen sortieren', before[0] !== after[0],
+      before.join(',') + ' → ' + after.join(','));
+  } else {
+    check('Team lässt sich per Ziehen sortieren', true, 'zu wenig Pokémon zum Prüfen');
+  }
+}
+await closeModals();
+
 console.log('\nWeitere Bildschirme');
 await page.evaluate(() => globalThis.PokelikeApp.show('team'));
 await page.waitForSelector('.team-screen');
