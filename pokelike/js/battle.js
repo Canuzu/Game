@@ -1000,6 +1000,9 @@
     side.active = makeActive(mon, side);
     side.used = side.used || {};
     side.used[index] = true;
+    // Schickt der Gegner mitten im Kampf jemanden nach — freiwillig oder nach
+    // einem K. o. —, gehört die nächste Runde dem Spieler.
+    if (!side.isPlayer && this.turn > 0) this.playerFirstNextTurn = true;
     if (!silent) {
       this.say((side.isPlayer ? 'Los, ' : (this.wild ? 'Ein wildes ' : 'Der Gegner schickt ')) +
         mons.name(mon) + (side.isPlayer ? '!' : (this.wild ? ' erscheint!' : ' in den Kampf!')),
@@ -1051,6 +1054,9 @@
   /** Reihenfolge zweier Aktionen bestimmen. */
   B.actionOrder = function (a0, a1) {
     var self = this;
+    // Nach einem gegnerischen Wechsel handelt der Spieler zuerst — unabhängig
+    // von Initiative und Priorität.
+    if (this.playerFirstNextTurn && (a0 || a1)) return [0, 1];
     function prio(action, act) {
       if (!action) return -99;
       if (action.type !== 'move') return 6;
@@ -1104,6 +1110,7 @@
     }
 
     order = this.actionOrder(actions[0], actions[1]);
+    this.playerFirstNextTurn = false;
     for (var oi = 0; oi < 2; oi++) {
       i = order[oi];
       side = this.sides[i];

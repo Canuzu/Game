@@ -39,6 +39,11 @@ ihre Teamgröße wächst mit deiner. Wer mit einem einzigen Starter losläuft, w
 nicht sofort von sechs Pokémon überrannt — wer sechs sammelt, bekommt volle
 Teams zu sehen.
 
+Zwei Regeln arbeiten für dich: Schickt der Gegner mitten im Kampf ein Pokémon
+nach — freiwillig oder nach einem K. o. —, gehört die nächste Runde dir,
+unabhängig von Initiative und Erstschlagattacken. Und wer ein neues Pokémon
+ins Team holt, bekommt es auf Teamhöhe statt hinterher.
+
 ## Was drin ist
 
 **Kämpfe** — rundenbasiert und nah an der Hauptreihe: Schadensformel ab
@@ -59,7 +64,9 @@ Mega-Armband sind es zwei Mega-Entwicklungen pro Kampf.
 
 **Manuell oder automatisch** — du wählst jede Attacke selbst, oder du schaltest
 den Auto-Kampf ein und die KI übernimmt: Attackenwahl, Wechsel, Gegenstände,
-Mega-Entwicklung. Auch für den Nachrücker nach einem K. o.
+Mega-Entwicklung, auch den Nachrücker nach einem K. o. Der Auto-Kampf spielt
+auf Sieg und würfelt nicht: Er rechnet jede Attacke gegen das aktuelle Ziel
+durch und nimmt die beste; bei Gleichstand entscheidet die zuverlässigere.
 
 **Typenvorteil auf einen Blick** — jeder Attackenknopf zeigt, was die Attacke
 beim aktuellen Gegner ausrichtet (×4, ×2, ×½, ×¼, wirkungslos). Kein Blättern
@@ -80,12 +87,12 @@ kämpfen in der Arena, die Liga in ihrer Halle, Fundstücke liegen in Höhlen.
 Die Routenkarte bekommt dieselbe Welt in der Draufsicht: eine nahtlos
 kachelnde Bodentextur je Region.
 
-**Bedienung wie im Spiel** — unter der Bühne sitzt die klassische Textbox:
-links das Kampfprotokoll, rechts das Menü (KAMPF, BEUTEL, POKÉMON, BALL,
-FLUCHT, MEGA, AUTO) mit ▶-Cursor. KAMPF blendet die vier Attacken ein, daneben
-Typ, Stärke, Genauigkeit, AP und die Wirksamkeit gegen das aktuelle Ziel.
-Rahmen, Balken und Knöpfe sind flächig und hart umrandet — keine runden Ecken,
-keine weichen Schatten.
+**Bedienung** — unter der Bühne steht das Kampfprotokoll in einem Textfenster,
+darunter die vier Attacken als Kacheln mit Typ, Kategorie, AP und Wirksamkeit
+gegen das aktuelle Ziel. Die Zeile darunter (Wechseln, Beutel, Ball, Fliehen,
+Mega, Auto) bleibt immer stehen — auch während das Protokoll abläuft, damit
+sich der Auto-Kampf jederzeit abschalten lässt. Rahmen, Balken und Knöpfe sind
+flächig und hart umrandet: keine runden Ecken, keine weichen Schatten.
 
 **52 Relikte** — dauerhafte Effekte für den ganzen Run: mehr Erfahrung, bessere
 Fangchancen, Fleißpunkte nach jedem Kampf, eine zweite Mega-Entwicklung, ein

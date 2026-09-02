@@ -8,6 +8,8 @@
  *   1  Trainer     — schlägt zu, was gerade am meisten weh tut
  *   2  Ass         — rechnet Sieg in einem Zug aus, wechselt, nutzt Status
  *   3  Boss        — zusätzlich Mega-Entwicklung und vorausschauende Wechsel
+ *   4  Auto-Kampf  — wie 3, aber ohne jedes Zufallsrauschen: es wird immer
+ *                    der beste bekannte Zug gespielt
  * ========================================================================== */
 (function (root) {
   'use strict';
@@ -218,7 +220,10 @@
       var sc = scoreMove(bt, me, foe, moves[i], level);
       if (level === 0) sc = sc * 0.3 + bt.rng.next() * 60;
       else if (level === 1) sc += bt.rng.next() * 25;
-      else sc += bt.rng.next() * 6;
+      else if (level < 4) sc += bt.rng.next() * 6;
+      // Stufe 4 würfelt nicht: Gleichstand entscheidet die zuverlässigere
+      // Attacke — höhere Genauigkeit, dann mehr Reserve-AP.
+      else sc += (moves[i].move.ac === 0 ? 1 : moves[i].move.ac / 100) * 0.9 + moves[i].pp * 0.01;
       if (sc > bestScore) { bestScore = sc; best = moves[i]; }
     }
 
@@ -234,7 +239,7 @@
         if (alt >= 0) {
           var altScore = matchup(bt, side.team[alt], side, foe);
           var meScore = matchup(bt, me.mon, side, foe);
-          if (altScore > meScore + 45) return { type: 'switch', to: alt };
+          if (altScore > meScore + (level >= 4 ? 60 : 45)) return { type: 'switch', to: alt };
         }
       }
     }

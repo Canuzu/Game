@@ -534,7 +534,7 @@
 
       // Erfahrung: Teilnehmer voll, Bank anteilig
       var benchShare = this.mod('benchExp') || 0.25;
-      var expMult = this.mod('expMult', 1) * (this.asc(7) ? 0.8 : 1);
+      var expMult = this.mod('expMult', 1) * 1.08 * (this.asc(7) ? 0.8 : 1);
       var alive = this.party.filter(function (m) { return m.hp > 0; });
       beaten.forEach(function (loser) {
         var sp = dex.sp(loser.sp);

@@ -215,8 +215,8 @@
     if (opts && opts.maxSize) size = Math.min(size, opts.maxSize);
     // Arenaleiter werden von Region zu Region ernster: der erste ist eine
     // Prüfung, der neunte ein Brett.
-    var quality = Math.min(0.92, 0.72 + index * 0.025);
-    var evScale = Math.min(1, 0.35 + index * 0.09);
+    var quality = Math.min(0.88, 0.70 + index * 0.023);
+    var evScale = Math.min(0.9, 0.30 + index * 0.08);
     var team = [], seen = {}, i;
     for (i = 0; i < size; i++) {
       var last = i === size - 1;
@@ -262,9 +262,9 @@
         var eStone = last ? megaStoneFor(mon, rng) : null;
         mon.item = eStone || rng.pick(['leftovers', 'lifeorb', 'focussash', 'choiceband', 'choicespecs', 'choicescarf', 'assaultvest', 'sitrusberry']);
       }
-      mons.addEVs(mon, mon.ivs[1] >= mon.ivs[3] ? 'atk' : 'spa', 140);
-      mons.addEVs(mon, 'spe', 100);
-      mons.addEVs(mon, 'hp', 80);
+      mons.addEVs(mon, mon.ivs[1] >= mon.ivs[3] ? 'atk' : 'spa', 120);
+      mons.addEVs(mon, 'spe', 90);
+      mons.addEVs(mon, 'hp', 70);
       team.push(mon);
     }
     return { team: team, name: 'Top Vier ' + choice[0], cls: 'Top Vier', type: type, level: 3 };

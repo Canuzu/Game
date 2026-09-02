@@ -78,8 +78,16 @@ check('Team hat ein Pokémon', (await page.locator('.party-strip .mon-card:not(.
 check('Knoten sind wählbar', (await page.locator('.map-node.open').count()) >= 1);
 if (SHOT_DIR) await page.screenshot({ path: join(SHOT_DIR, '03-karte.png') });
 
-// Tempo auf sofort stellen, damit der Test nicht auf Animationen wartet
-await page.evaluate(() => globalThis.PL.meta.setSetting('speed', 'sofort'));
+// Tempo auf sofort stellen, damit der Test nicht auf Animationen wartet, und
+// dem Team drei Begleiter geben — sonst endet der Durchlauf gelegentlich schon
+// im ersten Kampf und es gäbe nichts zu prüfen.
+await page.evaluate(() => {
+  const PL = globalThis.PL, App = globalThis.PokelikeApp;
+  PL.meta.setSetting('speed', 'sofort');
+  for (const id of ['pikachu', 'geodude', 'poliwag']) {
+    App.run.party.push(PL.mon.create(id, 9, App.run.rng, { quality: 0.85 }));
+  }
+});
 
 console.log('\nDurchspielen');
 let battles = 0, scenes = {}, guard = 0, shotBattle = false;
@@ -104,8 +112,10 @@ while (guard++ < 45) {
         (await page.locator('.stage-slot .platform').count()) === 2);
       check('Kein Terakristall mehr in der Oberfläche',
         (await page.locator('.action-btn.tera').count()) === 0);
-      check('Das Kampfmenü steht im Spielstil bereit',
-        (await page.locator('.battle-bar .menu-item').count()) >= 4);
+      check('Attackenkacheln stehen bereit',
+        (await page.locator('.move-grid .move-btn').count()) >= 1);
+      check('Der Auto-Schalter ist immer sichtbar',
+        await page.isVisible('.action-btn.auto'));
       check('Die Kulisse ist ein Pixelbild', await page.isVisible('.battle-stage .scene-art'));
     }
     if (!shotBattle && SHOT_DIR) {
@@ -114,7 +124,7 @@ while (guard++ < 45) {
     }
     shotBattle = true;
     // Auto-Kampf einschalten und warten, bis der Kampf endet
-    const auto = page.locator('.menu-item', { hasText: 'AUTO' });
+    const auto = page.locator('.action-btn.auto');
     if (await auto.count() && !(await auto.first().evaluate((n) => n.classList.contains('on')))) {
       await auto.first().click({ timeout: 8000 }).catch(() => {});
     }
@@ -142,7 +152,8 @@ while (guard++ < 45) {
   break;
 }
 
-check('Es wurde gekämpft', battles >= 1, battles + ' Kämpfe');
+check('Es wurde gekämpft', battles >= 1,
+  battles + ' Kämpfe nach ' + guard + ' Schritten, Bildschirme: ' + JSON.stringify(scenes));
 check('Mehrere Knotenarten besucht', Object.keys(scenes).length >= 2, JSON.stringify(scenes));
 if (SHOT_DIR) await page.screenshot({ path: join(SHOT_DIR, '05-verlauf.png') });
 

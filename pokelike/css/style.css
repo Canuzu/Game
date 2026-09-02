@@ -876,74 +876,15 @@ button.move-row:hover { border-color: var(--accent); }
 .modal { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--frame-inner) 45%, transparent), 6px 6px 0 rgba(0,0,0,.5); }
 .modal-back { background: rgba(6,8,14,.72); }
 
-/* ---------- 13) Kampfleiste im Spielstil ------------------------------------
- * Unter der Bühne sitzt eine breite Textbox: links das Protokoll (im
- * Attackenmenü die Angaben zur Attacke), rechts die Auswahl mit ▶-Cursor.
+/* ---------- 13) Attackenbereich --------------------------------------------
+ * Vier Kacheln für die Attacken, darunter eine Zeile mit den übrigen
+ * Aktionen. Die Zeile bleibt auch während des Protokolls stehen, damit der
+ * Auto-Kampf jederzeit abschaltbar ist.
  * ------------------------------------------------------------------------- */
 
-.battle-bar {
-  display: grid;
-  grid-template-columns: 1fr minmax(300px, 42%);
-  gap: .5rem;
-  align-items: stretch;
+.move-area { min-height: 84px; }
+.action-btn.auto.on {
+  background: var(--good); color: #04220f; border-color: var(--frame-edge); font-weight: 700;
 }
-.bar-left, .bar-right {
-  border: 2px solid var(--frame-edge);
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--frame-inner) 45%, transparent),
-              3px 3px 0 rgba(0,0,0,.35);
-  background: var(--frame-fill);
-  padding: .5rem .7rem;
-  min-height: 132px;
-}
-.bar-left .battle-log {
-  height: 100%; min-height: 116px; border: 0; box-shadow: none; padding: 0; background: none;
-}
-.menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .1rem .6rem; }
-.menu-grid.moves { grid-template-columns: 1fr 1fr; }
-.menu-item {
-  display: flex; align-items: center; gap: .35rem;
-  background: none; border: 0; padding: .28rem .2rem; cursor: pointer;
-  text-align: left; color: inherit; font-weight: 650; letter-spacing: .02em;
-  border-radius: 0;
-}
-.menu-item .cursor { visibility: hidden; color: var(--accent-2); flex: none; }
-.menu-item:hover:not(:disabled) .cursor,
-.menu-item:focus-visible .cursor { visibility: visible; }
-.menu-item:hover:not(:disabled) .menu-label { color: var(--accent); }
-.menu-item:focus-visible { outline: none; }
-.menu-item:disabled { opacity: .4; cursor: not-allowed; }
-.menu-label { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.menu-right { display: flex; align-items: center; gap: .3rem; flex: none; }
-.menu-pp { color: var(--muted); font-size: .8rem; font-variant-numeric: tabular-nums; }
-.menu-item.on .menu-label { color: var(--accent); }
-.menu-item.on .cursor { visibility: visible; }
-.menu-item.mega .menu-label { color: #c79af0; }
-.menu-item.back .menu-label { color: var(--muted); }
-.menu-item.move .menu-label { position: relative; padding-left: .85rem; }
-.menu-item.move .menu-label::before {
-  content: ''; position: absolute; left: 0; top: 50%; margin-top: -3px;
-  width: 6px; height: 6px; background: var(--move-tone, var(--muted));
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.4);
-}
-.move-info { display: flex; flex-direction: column; gap: .35rem; height: 100%; }
-.info-head { display: flex; align-items: center; gap: .45rem; flex-wrap: wrap; }
-.info-row { display: flex; gap: 1rem; font-size: .84rem; color: var(--muted); font-variant-numeric: tabular-nums; }
-.info-desc { font-size: .85rem; margin: 0; }
-.move-eff { border-radius: 0; padding: 0 .25rem; }
-
-/* Typfarbe am Attackeneintrag */
-.menu-item.t-normal { --move-tone: #9fa19f; } .menu-item.t-fire { --move-tone: #e8613c; }
-.menu-item.t-water { --move-tone: #4a90d9; } .menu-item.t-electric { --move-tone: #e2c73f; }
-.menu-item.t-grass { --move-tone: #5cb85c; } .menu-item.t-ice { --move-tone: #6fd3e0; }
-.menu-item.t-fighting { --move-tone: #c0392b; } .menu-item.t-poison { --move-tone: #9b59b6; }
-.menu-item.t-ground { --move-tone: #cba54a; } .menu-item.t-flying { --move-tone: #8ba7e8; }
-.menu-item.t-psychic { --move-tone: #e8558f; } .menu-item.t-bug { --move-tone: #8cb020; }
-.menu-item.t-rock { --move-tone: #b09040; } .menu-item.t-ghost { --move-tone: #6a5acd; }
-.menu-item.t-dragon { --move-tone: #6f52e0; } .menu-item.t-dark { --move-tone: #5a4a44; }
-.menu-item.t-steel { --move-tone: #8a9aa8; } .menu-item.t-fairy { --move-tone: #e79ad0; }
-
-@media (max-width: 860px) {
-  .battle-bar { grid-template-columns: 1fr; }
-  .bar-left, .bar-right { min-height: 0; }
-  .bar-left .battle-log { min-height: 84px; height: 84px; }
-}
+.action-btn.mega.on { background: #b07ae0; color: #1b1030; border-color: var(--frame-edge); }
+.move-btn-meta .move-eff { margin-left: auto; }
