@@ -170,7 +170,7 @@
     { id: 'notafraid', name: 'Kein Zurück', desc: 'Gewinne einen Kampf mit einem Pokémon auf 1 KP.', manual: true },
     { id: 'sweep', name: 'Alleingang', desc: 'Besiege ein volles Gegnerteam mit einem einzigen Pokémon.', manual: true },
     { id: 'mega', name: 'Mega', desc: 'Mega-entwickle ein Pokémon.', manual: true },
-    { id: 'tera', name: 'Kristallklar', desc: 'Terakristallisiere in einem Kampf.', manual: true },
+    { id: 'primal', name: 'Urgewalt', desc: 'Löse eine Protoform aus (Kyogre oder Groudon).', manual: true },
     { id: 'rich', name: 'Wohlhabend', desc: 'Besitze 50 000 ₽ in einem Run.', manual: true },
     { id: 'level100', name: 'Maximum', desc: 'Bringe ein Pokémon auf Level 100.', manual: true },
     { id: 'daily', name: 'Tagwerk', desc: 'Beende einen Tages-Run.', manual: true },
@@ -251,7 +251,7 @@
     'Gegner tragen häufiger Gegenstände.',
     'Erfahrung um 20 % reduziert.',
     'Kein Vollheilen nach Arenaleitern.',
-    'Gegner terakristallisieren immer.',
+    'Gegner mega-entwickeln, sobald sie können.',
     'Alles zusammen — und noch zwei Level obendrauf. Viel Glück.'
   ];
 

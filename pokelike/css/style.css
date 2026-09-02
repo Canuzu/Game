@@ -232,27 +232,62 @@ button { font: inherit; color: inherit; }
   border: 1px solid var(--line); border-left: 4px solid var(--region-color, var(--accent));
 }
 .region-progress { display: flex; gap: 1rem; color: var(--muted); font-size: .85rem; flex-wrap: wrap; }
-.map-rows { display: flex; flex-direction: column; gap: 1.5rem; }
-.map-row { display: flex; gap: .6rem; justify-content: center; }
-.map-row.current { }
-.map-node {
-  flex: 0 1 190px; display: flex; align-items: center; gap: .5rem;
-  padding: .55rem .7rem; border-radius: var(--radius);
-  background: var(--panel); border: 1px solid var(--line); cursor: not-allowed; opacity: .55;
-  transition: transform .1s ease, border-color .15s ease, opacity .15s ease;
+/* Die Route liegt auf einer Kulisse der Region; ein Schleier darüber hält die
+   Knoten lesbar, ohne die Landschaft zu verstecken. */
+.map-stage {
+  position: relative; isolation: isolate; overflow: hidden;
+  border-radius: var(--radius); border: 1px solid var(--line);
+  padding: 1.6rem 1rem;
+  box-shadow: inset 0 -30px 60px rgba(0,0,0,.20);
 }
-.map-node.open { opacity: 1; cursor: pointer; border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent); }
-.map-node.open:hover { transform: translateY(-2px); }
+.map-stage::after {
+  content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--bg) 46%, transparent),
+    color-mix(in srgb, var(--bg) 70%, transparent));
+}
+.map-rows { position: relative; z-index: 2; display: flex; flex-direction: column; gap: 1.15rem; }
+.map-links { position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: visible; }
+.map-link { fill: none; stroke: color-mix(in srgb, var(--text) 32%, transparent); stroke-width: 2.5; stroke-dasharray: 5 6; stroke-linecap: round; }
+.map-link.walked { stroke: color-mix(in srgb, var(--good) 70%, transparent); stroke-dasharray: none; }
+.map-link.live { stroke: var(--accent); stroke-width: 3.5; stroke-dasharray: none; }
+.map-row { position: relative; z-index: 3; display: flex; gap: 1.8rem; justify-content: center; }
+
+.map-node {
+  display: flex; flex-direction: column; align-items: center; gap: .3rem;
+  background: none; border: 0; padding: 0; cursor: not-allowed; opacity: .5;
+  transition: transform .12s ease, opacity .15s ease;
+  width: 92px;
+}
+.node-badge {
+  width: 52px; height: 52px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  border: 2px solid var(--line);
+  box-shadow: 0 4px 12px rgba(0,0,0,.3);
+  transition: border-color .15s ease, box-shadow .15s ease, transform .12s ease;
+}
+.node-icon { font-size: 1.5rem; line-height: 1; }
+.node-name {
+  font-size: .76rem; text-align: center; line-height: 1.2;
+  color: var(--text); text-shadow: 0 1px 3px var(--bg);
+}
+.map-node.open { opacity: 1; cursor: pointer; }
+.map-node.open .node-badge {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent), 0 6px 16px rgba(0,0,0,.35);
+}
+.map-node.open:hover { transform: translateY(-3px); }
+.map-node.open:hover .node-badge { transform: scale(1.06); }
 .map-node.done { opacity: .35; }
-.map-node.here { border-color: var(--good); opacity: 1; }
-.map-node.hidden .node-name { color: var(--muted); }
-.map-node.t-boss { border-left: 4px solid var(--accent-2); }
-.map-node.t-champ, .map-node.t-e4 { border-left: 4px solid var(--accent); }
-.map-node.t-rest { border-left: 4px solid var(--good); }
-.map-node.t-shop { border-left: 4px solid #5b9bd5; }
-.map-node.t-relic { border-left: 4px solid #b07ae0; }
-.node-icon { font-size: 1.3rem; }
-.node-name { font-size: .9rem; }
+.map-node.here { opacity: 1; }
+.map-node.here .node-badge { border-color: var(--good); box-shadow: 0 0 0 4px color-mix(in srgb, var(--good) 25%, transparent); }
+.map-node.t-boss .node-badge { border-color: var(--accent-2); }
+.map-node.t-champ .node-badge, .map-node.t-e4 .node-badge { border-color: var(--accent); }
+.map-node.t-rest .node-badge { border-color: var(--good); }
+.map-node.t-shop .node-badge { border-color: #5b9bd5; }
+.map-node.t-relic .node-badge { border-color: #b07ae0; }
+.map-node:focus-visible .node-badge { outline: 2px solid var(--accent); outline-offset: 3px; }
 
 .party-strip { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: .5rem; }
 .mon-card {
@@ -300,50 +335,116 @@ button { font: inherit; color: inherit; }
 .boost-chip.up { background: color-mix(in srgb, var(--good) 30%, transparent); color: var(--good); }
 .boost-chip.down { background: color-mix(in srgb, var(--bad) 30%, transparent); color: var(--bad); }
 
-/* ---------- 6) Kampf ------------------------------------------------------- */
+/* ---------- 6) Kampf --------------------------------------------------------
+ * Die Bühne ist eine gezeichnete Kulisse (scenery.js) mit zwei Standplätzen.
+ * Anordnung wie in den Hauptspielen: Gegner rechts oben mit Anzeige links,
+ * eigenes Pokémon links unten mit Anzeige rechts.
+ * ------------------------------------------------------------------------- */
 
 .battle { display: flex; flex-direction: column; gap: .7rem; }
-.battle-field {
+
+.battle-stage {
   position: relative;
-  display: grid; grid-template-columns: 1fr; gap: .5rem;
-  padding: 1rem; border-radius: var(--radius);
-  background:
-    linear-gradient(180deg, color-mix(in srgb, #6aa9d8 18%, var(--panel)), var(--panel) 55%),
-    var(--panel);
+  height: clamp(280px, 42vh, 380px);
+  border-radius: var(--radius);
+  overflow: hidden;
   border: 1px solid var(--line);
-  min-height: 280px;
+  box-shadow: inset 0 -30px 60px rgba(0,0,0,.18), inset 0 20px 40px rgba(255,255,255,.06);
+  isolation: isolate;
 }
-.side { display: flex; align-items: center; gap: 1rem; }
-.side.enemy { justify-content: flex-start; }
-.side.mine { justify-content: flex-end; flex-direction: row; }
+.scene-layer { position: absolute; inset: 0; z-index: 0; }
+.scene-svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.battle-stage::after {
+  /* Lichtstimmung der Kulisse als weicher Schleier über allem */
+  content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: radial-gradient(120% 80% at 50% 0%, var(--scene-light, transparent), transparent 70%);
+}
+
+.stage-slot { position: absolute; z-index: 2; display: grid; place-items: center; }
+.slot-enemy { top: 7%; right: 9%; }
+.slot-mine { bottom: 4%; left: 9%; }
+.platform {
+  position: absolute; bottom: 6px; left: 50%; transform: translateX(-50%);
+  width: 168px; height: 40px; border-radius: 50%;
+  background: radial-gradient(closest-side, var(--scene-platform, #7cc25c), color-mix(in srgb, var(--scene-platform, #7cc25c) 70%, transparent));
+  border: 2px solid var(--scene-edge, #4d8a3a);
+  box-shadow: 0 6px 16px rgba(0,0,0,.28);
+}
+.slot-enemy .platform { width: 138px; height: 32px; }
+.mon-art { position: relative; width: 150px; height: 150px; display: grid; place-items: center; z-index: 1; }
+.slot-enemy .mon-art { width: 124px; height: 124px; }
+.battle-sprite { width: 140px; height: 140px; object-fit: contain; filter: drop-shadow(0 8px 8px rgba(0,0,0,.35)); }
+.slot-enemy .battle-sprite { width: 116px; height: 116px; }
+.battle-sprite.fainted { opacity: .2; filter: grayscale(1); }
+.sub-mark { position: absolute; bottom: 0; right: 4px; font-size: 1.4rem; }
+
+.frame-wrap { position: absolute; z-index: 3; width: min(300px, 44%); }
+.frame-enemy { top: 6%; left: 3%; }
+.frame-mine { bottom: 6%; right: 3%; }
 .mon-frame {
-  flex: 0 1 300px; padding: .5rem .7rem; border-radius: var(--radius);
-  background: color-mix(in srgb, var(--panel-2) 85%, transparent);
-  border: 1px solid var(--line);
+  padding: .45rem .7rem; border-radius: 12px;
+  background: color-mix(in srgb, var(--panel) 88%, transparent);
+  backdrop-filter: blur(6px);
+  border: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+  box-shadow: 0 4px 14px rgba(0,0,0,.25);
 }
 .frame-head { display: flex; align-items: baseline; gap: .35rem; }
 .frame-head strong { font-size: 1rem; }
 .frame-types { display: flex; gap: .2rem; margin: .2rem 0; }
 .frame-sub { display: flex; align-items: center; gap: .4rem; margin-top: .3rem; flex-wrap: wrap; font-size: .8rem; }
 .hp-num { color: var(--muted); }
-.tera-mark { color: var(--accent); font-size: 1.1rem; }
+.mega-mark { color: #d9a5ff; font-size: 1.1rem; text-shadow: 0 0 8px rgba(176,122,224,.9); }
 .team-dots { display: flex; gap: .2rem; margin-top: .4rem; }
-.team-dots .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--good); border: 1px solid rgba(0,0,0,.25); }
-.team-dots .dot.out { background: var(--panel); border-color: var(--line); }
+.team-dots .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--good); border: 1px solid rgba(0,0,0,.3); }
+.team-dots .dot.out { background: var(--panel-2); border-color: var(--line); }
 .team-dots .dot.active { box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 60%, transparent); }
-.mon-art { position: relative; width: 150px; height: 150px; display: grid; place-items: center; flex: none; }
-.battle-sprite { width: 140px; height: 140px; object-fit: contain; filter: drop-shadow(0 6px 10px rgba(0,0,0,.35)); }
-.battle-sprite.fainted { opacity: .25; filter: grayscale(1); }
-.side.mine .battle-sprite { transform: scale(1.15); }
-.sub-mark { position: absolute; bottom: 0; right: 8px; font-size: 1.4rem; }
-.field-effects { display: flex; gap: .3rem; flex-wrap: wrap; justify-content: center; min-height: 1.2rem; }
-.field-chip { font-size: .74rem; padding: .1rem .45rem; border-radius: 999px; background: var(--panel-2); border: 1px solid var(--line); }
+
+.field-effects {
+  position: absolute; z-index: 3; left: 50%; top: 6px; transform: translateX(-50%);
+  display: flex; gap: .3rem; flex-wrap: wrap; justify-content: center; max-width: 46%;
+}
+.field-chip {
+  font-size: .72rem; padding: .1rem .45rem; border-radius: 999px;
+  background: color-mix(in srgb, var(--panel) 85%, transparent);
+  border: 1px solid var(--line); backdrop-filter: blur(4px);
+}
 .field-chip.weather { border-color: #6aa9d8; }
 .field-chip.terrain { border-color: #7ac97a; }
 .field-chip.hazard { border-color: var(--accent-2); }
 
+/* --- Teilchen ------------------------------------------------------------- */
+
+.scene-particles { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+.scene-particles i {
+  position: absolute; top: -8%; display: block;
+  animation-name: fall; animation-timing-function: linear; animation-iteration-count: infinite;
+}
+@keyframes fall {
+  from { transform: translate3d(0, -10%, 0) rotate(0deg); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  to { transform: translate3d(var(--drift, 0), 110vh, 0) rotate(320deg); opacity: 0; }
+}
+@keyframes rise {
+  from { transform: translate3d(0, 110%, 0) scale(.6); opacity: 0; }
+  15% { opacity: .9; }
+  to { transform: translate3d(var(--drift, 0), -20%, 0) scale(1.1); opacity: 0; }
+}
+.p-leaf i { width: 9px; height: 6px; border-radius: 60% 10% 60% 10%; background: #7fbf58; }
+.p-snow i { width: 5px; height: 5px; border-radius: 50%; background: #fff; box-shadow: 0 0 4px #fff; }
+.p-sand i { width: 4px; height: 2px; border-radius: 2px; background: #e8cf9a; opacity: .8; }
+.p-pollen i { width: 4px; height: 4px; border-radius: 50%; background: #fff4b0; box-shadow: 0 0 5px #ffeb8a; }
+.p-dust i { width: 3px; height: 3px; border-radius: 50%; background: #d8d2bc; opacity: .6; }
+.p-drop i { width: 3px; height: 9px; border-radius: 3px; background: linear-gradient(#9fd8f0, #4b93bb); }
+.p-ember i, .p-spark i, .p-bubble i { top: auto; bottom: -8%; animation-name: rise; }
+.p-ember i { width: 4px; height: 4px; border-radius: 50%; background: #ff9a3c; box-shadow: 0 0 8px #ff6a1a; }
+.p-spark i { width: 3px; height: 3px; border-radius: 50%; background: #ffd98a; box-shadow: 0 0 6px #ffae3c; }
+.p-bubble i { width: 7px; height: 7px; border-radius: 50%; border: 1px solid rgba(255,255,255,.75); background: rgba(255,255,255,.14); }
+
+/* --- Protokoll und Bedienung ---------------------------------------------- */
+
 .battle-log {
-  height: 128px; overflow-y: auto; padding: .5rem .7rem;
+  height: 118px; overflow-y: auto; padding: .5rem .7rem;
   border-radius: var(--radius); background: var(--panel); border: 1px solid var(--line);
   font-size: .9rem; scroll-behavior: smooth;
 }
@@ -355,7 +456,7 @@ button { font: inherit; color: inherit; }
 .log-line.l-faint { color: var(--bad); font-weight: 600; }
 .log-line.l-heal { color: var(--good); }
 .log-line.l-status { color: #d8a4e0; }
-.log-line.l-tera { color: var(--accent); font-weight: 600; }
+.log-line.l-mega { color: #c79af0; font-weight: 700; }
 .log-line.l-caught { color: var(--good); font-weight: 700; }
 .log-line.l-end { color: var(--accent); font-weight: 700; }
 .log-line.l-item, .log-line.l-ability { color: #7fb8e8; }
@@ -374,9 +475,9 @@ button { font: inherit; color: inherit; }
 .move-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 14px color-mix(in srgb, var(--move-color) 30%, transparent); }
 .move-btn:disabled { opacity: .4; cursor: not-allowed; }
 .move-btn-name { font-weight: 650; }
-.move-btn-meta { display: flex; gap: .5rem; font-size: .76rem; color: var(--muted); }
+.move-btn-meta { display: flex; gap: .5rem; font-size: .76rem; color: var(--muted); align-items: center; }
 .move-btn-type { color: color-mix(in srgb, var(--move-color) 80%, var(--text)); font-weight: 600; }
-.action-row { display: flex; gap: .4rem; flex-wrap: wrap; }
+.action-row { display: flex; gap: .4rem; flex-wrap: wrap; align-items: center; }
 .action-btn {
   padding: .45rem .8rem; border-radius: var(--radius); cursor: pointer;
   background: var(--panel); border: 1px solid var(--line);
@@ -384,21 +485,32 @@ button { font: inherit; color: inherit; }
 .action-btn:hover:not(:disabled) { border-color: var(--accent); }
 .action-btn:disabled { opacity: .4; cursor: not-allowed; }
 .action-btn.on { background: var(--accent); color: #201a06; border-color: transparent; font-weight: 650; }
-.action-btn.tera.on { background: linear-gradient(135deg, #b07ae0, var(--accent)); color: #1b1030; }
+.action-btn.mega { border-color: #b07ae0; color: #c79af0; }
+.action-btn.mega:hover:not(:disabled) { background: linear-gradient(135deg, #b07ae0, var(--accent)); color: #1b1030; border-color: transparent; }
+.mega-hint { color: #c79af0; font-size: .82rem; }
+.mega-note { color: #c79af0; font-size: .82rem; }
 .waiting { color: var(--muted); padding: .8rem; text-align: center; letter-spacing: .3em; }
 .prompt { padding: .3rem 0; color: var(--muted); }
 .switch-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: .5rem; }
 .switch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: .5rem; }
+.scout {
+  display: flex; gap: .4rem; flex-wrap: wrap; align-items: center;
+  padding: .4rem .6rem; border-radius: var(--radius);
+  background: var(--panel); border: 1px dashed var(--line); font-size: .8rem;
+}
+.scout-mon { display: flex; align-items: center; gap: .25rem; padding: .1rem .4rem; border-radius: 999px; background: var(--panel-2); }
+.scout-mon.out { opacity: .4; text-decoration: line-through; }
+.scout-mon img { width: 24px; height: 24px; object-fit: contain; }
 
 /* Kampfeffekte */
 @keyframes fx-hit { 0% { transform: translateX(0); } 25% { transform: translateX(-8px); } 50% { transform: translateX(6px); } 100% { transform: translateX(0); } }
 @keyframes fx-attack { 0% { transform: scale(1); } 40% { transform: scale(1.08) translateY(-6px); } 100% { transform: scale(1); } }
-@keyframes fx-faint { to { opacity: .15; transform: translateY(24px) scale(.9); } }
-@keyframes fx-shine { 0% { filter: brightness(1); } 50% { filter: brightness(2.2) drop-shadow(0 0 14px var(--accent)); } 100% { filter: brightness(1); } }
+@keyframes fx-faint { to { opacity: .12; transform: translateY(28px) scale(.85); } }
+@keyframes fx-shine { 0% { filter: brightness(1); } 50% { filter: brightness(2.4) drop-shadow(0 0 16px #d9a5ff); } 100% { filter: brightness(1); } }
 .fx-hit { animation: fx-hit .28s ease; }
 .fx-attack { animation: fx-attack .3s ease; }
 .fx-faint { animation: fx-faint .5s ease forwards; }
-.fx-shine { animation: fx-shine .6s ease; }
+.fx-shine { animation: fx-shine .7s ease; }
 
 /* ---------- 7) Szenen ------------------------------------------------------- */
 
@@ -579,20 +691,30 @@ button.move-row:hover { border-color: var(--accent); }
 @media (max-width: 860px) {
   .team-cols { grid-template-columns: 1fr; }
   .icon-label { display: none; }
-  .mon-art { width: 116px; height: 116px; }
-  .battle-sprite { width: 108px; height: 108px; }
-  .side.mine { flex-direction: row-reverse; }
   .history-row { grid-template-columns: 1fr 1fr; }
+  .frame-wrap { width: 48%; }
 }
 @media (max-width: 560px) {
   #screen { padding: .7rem .6rem 2.5rem; }
-  .map-node { flex-basis: 140px; padding: .45rem .5rem; }
-  .node-name { font-size: .78rem; }
+  .map-node { width: 74px; }
+  .node-badge { width: 46px; height: 46px; }
+  .node-icon { font-size: 1.2rem; }
+  .node-name { font-size: .68rem; }
+  .map-row { gap: 1.1rem; }
+  .map-stage { padding: 1.1rem .5rem; }
   .party-strip { grid-template-columns: 1fr 1fr; }
   .move-grid { grid-template-columns: 1fr 1fr; }
-  .battle-field { padding: .6rem; min-height: 240px; }
-  .mon-frame { flex-basis: 190px; }
-  .battle-log { height: 108px; }
+  .battle-stage { height: clamp(230px, 34vh, 300px); }
+  .mon-art { width: 104px; height: 104px; }
+  .slot-enemy .mon-art { width: 88px; height: 88px; }
+  .battle-sprite { width: 98px; height: 98px; }
+  .slot-enemy .battle-sprite { width: 84px; height: 84px; }
+  .platform { width: 118px; height: 28px; }
+  .slot-enemy .platform { width: 98px; height: 24px; }
+  .frame-wrap { width: 54%; }
+  .mon-frame { padding: .35rem .5rem; font-size: .92em; }
+  .field-effects { max-width: 90%; top: auto; bottom: 4px; }
+  .battle-log { height: 100px; }
   .dex-grid { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); }
   .dex-cell img, .dex-silhouette { width: 48px; height: 48px; }
 }
@@ -601,29 +723,12 @@ button.move-row:hover { border-color: var(--accent); }
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
 
-/* ---------- Nachtrag: Wege auf der Karte ------------------------------------ */
-
-.map-rows { position: relative; }
-.map-links { position: absolute; inset: 0; pointer-events: none; z-index: 0; overflow: visible; }
-.map-link { fill: none; stroke: color-mix(in srgb, var(--muted) 55%, transparent); stroke-width: 2; stroke-dasharray: 4 5; }
-.map-link.walked { stroke: color-mix(in srgb, var(--good) 55%, var(--line)); stroke-dasharray: none; }
-.map-link.live { stroke: var(--accent); stroke-width: 2.5; stroke-dasharray: none; }
-.map-row { position: relative; z-index: 1; }
-
-/* ---------- Nachtrag: Wirksamkeit und Späherblick --------------------------- */
+/* ---------- Nachtrag: Wirksamkeit am Attackenknopf -------------------------- */
 
 .move-eff { font-weight: 700; font-size: .74rem; padding: 0 .3rem; border-radius: 4px; }
 .move-eff.super { background: color-mix(in srgb, var(--good) 30%, transparent); color: var(--good); }
 .move-eff.weak { background: color-mix(in srgb, var(--warn) 25%, transparent); color: var(--warn); }
 .move-eff.none { background: var(--panel-2); color: var(--muted); }
-.scout {
-  display: flex; gap: .4rem; flex-wrap: wrap; align-items: center;
-  padding: .4rem .6rem; border-radius: var(--radius);
-  background: var(--panel); border: 1px dashed var(--line); font-size: .8rem;
-}
-.scout-mon { display: flex; align-items: center; gap: .25rem; padding: .1rem .4rem; border-radius: 999px; background: var(--panel-2); }
-.scout-mon.out { opacity: .4; text-decoration: line-through; }
-.scout-mon img { width: 24px; height: 24px; object-fit: contain; }
 
 /* ---------- Nachtrag: Pixelbilder sauber vergrößern -------------------------
  * Die Sprites sind 96 × 96 Pixel groß. Wo sie größer dargestellt werden,

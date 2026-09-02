@@ -70,15 +70,20 @@ const speciesList = gen.species.all()
 
 const idxOf = new Map(speciesList.map((s, i) => [s.id, i]));
 
-// Megas: baseId -> [{ item, name, types, baseStats, ability }]
+// Megas und Protoformen: baseId -> [{ item, name, types, baseStats, ability }]
+// Showdown führt auch spekulative Megas eines Fan-Formats ("Future") — die
+// bleiben draußen, hier zählen nur die aus den Spielen.
 const megas = {};
 for (const s of gen.species.all()) {
-  if (!s.forme || !/^Mega/.test(s.forme) || s.num > 1025) continue;
+  if (!s.forme || !/^(Mega|Primal)/.test(s.forme) || s.num > 1025) continue;
+  if (s.isNonstandard && s.isNonstandard !== 'Past') continue;
   const base = gen.species.get(s.baseSpecies);
   if (!base || !idxOf.has(base.id)) continue;
   (megas[base.id] ??= []).push({
     n: s.name,
     it: s.requiredItem || '',
+    // Rayquaza braucht keinen Stein, sondern die Attacke Zenitstürmer.
+    mv: s.requiredMove || (base.id === 'rayquaza' ? 'Dragon Ascent' : ''),
     t: s.types,
     bs: [s.baseStats.hp, s.baseStats.atk, s.baseStats.def, s.baseStats.spa, s.baseStats.spd, s.baseStats.spe],
     a: s.abilities[0],

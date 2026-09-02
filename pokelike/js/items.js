@@ -236,16 +236,6 @@
       return { text: mons.name(mon) + ' hat jetzt das Wesen ' + PL.t.nature(nature) + '.' };
     }
   });
-  def('terashard', {
-    name: 'Tera-Stück', kind: 'special', price: 3000, useOutside: true, outsideOnly: true, needsChoice: 'type',
-    desc: 'Ändert den Tera-Typ eines Pokémon.',
-    use: function (bt, side, mon, run, type) {
-      if (!type || mon.tera === type) return false;
-      mon.tera = type;
-      return { text: mons.name(mon) + ' hat jetzt den Tera-Typ ' + PL.t.type(type) + '.' };
-    }
-  });
-
   /* ---------- Tragegegenstände ---------------------------------------------- */
 
   var HOLD = [
@@ -390,8 +380,8 @@
       var id = toID(m.it);
       if (ITEMS[id]) return;
       def(id, {
-        name: m.it, kind: 'hold', hold: true, mega: baseId, price: 6000,
-        desc: 'Ermöglicht die Mega-Entwicklung von ' + PL.t.species(dex.sp(baseId)) + ' (Mega-Ring nötig).'
+        name: m.it, kind: 'hold', hold: true, mega: baseId, price: 4000,
+        desc: 'Lässt ' + PL.t.species(dex.sp(baseId)) + ' im Kampf mega-entwickeln.'
       });
     });
   });
@@ -456,12 +446,12 @@
   relic('schutzhelm', { name: 'Schutzhelm', rarity: 'selten', icon: '⛑️',
     desc: 'Dein Team ignoriert Tarnsteine, Stachler und Klebenetze.',
     mods: { hazardImmune: 1 }, battle: true });
-  relic('terakristall_splitter', { name: 'Terakristall-Splitter', rarity: 'episch', icon: '💎',
-    desc: 'Du darfst zweimal pro Kampf terakristallisieren.',
-    mods: { teraCharges: 2 }, battle: true });
-  relic('mega_ring', { name: 'Mega-Ring', rarity: 'episch', icon: '💍',
-    desc: 'Erlaubt Mega-Entwicklung, wenn ein Pokémon den passenden Stein trägt.',
-    mods: { mega: 1 }, battle: true });
+  relic('mega_armband', { name: 'Mega-Armband', rarity: 'episch', icon: '💎',
+    desc: 'Du darfst zweimal pro Kampf mega-entwickeln.',
+    mods: { megaCharges: 2 }, battle: true });
+  relic('steinsammlung', { name: 'Steinsammlung', rarity: 'selten', icon: '💍',
+    desc: 'Mega-Steine kosten im Laden nur die Hälfte und tauchen häufiger auf.',
+    mods: { stoneDiscount: 0.5 } });
   relic('meisterball_splitter', { name: 'Meisterball-Splitter', rarity: 'episch', icon: '🔮',
     desc: 'Einmal pro Run fängst du garantiert.', mods: { freeMasterball: 1 } });
   relic('zweite_chance', { name: 'Zweite Chance', rarity: 'selten', icon: '🔁',

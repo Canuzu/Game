@@ -5,7 +5,7 @@
  * laufender Run mit JSON.stringify wegschreiben und unverändert fortsetzen.
  *
  *   { sp, lvl, exp, ivs[6], evs[6], nat, ab, moves[], hp, status, item,
- *     shiny, gender, tera, friendship, uid }
+ *     shiny, gender, friendship, uid }
  *
  * Gliederung:  1) Werte   2) Attackenwahl   3) Erzeugen   4) Erfahrung
  *              5) Entwicklung   6) Fangen
@@ -225,7 +225,7 @@
   /**
    * Erzeugt ein Pokémon.
    * opts: { ivs, evs, nature, ability, moves, item, shiny, shinyOdds, hiddenChance,
-   *         quality, ivFloor, tera, nick }
+   *         quality, ivFloor, nick }
    */
   function create(ref, level, rng, opts) {
     opts = opts || {};
@@ -257,7 +257,6 @@
       item: opts.item || null,
       shiny: opts.shiny !== undefined ? opts.shiny : rng.chance(shinyOdds),
       gender: opts.gender || pickGender(sp, rng),
-      tera: opts.tera || (rng.chance(0.06) ? rng.pick(dex.types) : sp.t[0]),
       friendship: opts.friendship || 70,
       nick: opts.nick || null,
       seen: 0
@@ -413,7 +412,6 @@
     if (wasHidden && newSp.abh) mon.ab = newSp.abh;
     else if (slot >= 0 && newSp.ab[slot]) mon.ab = newSp.ab[slot];
     else if (abilityOptions(newSp).indexOf(mon.ab) < 0) mon.ab = newSp.ab[0];
-    if (newSp.t.indexOf(mon.tera) < 0 && rng && rng.chance(0.5)) mon.tera = newSp.t[0];
     mon.hp = Math.max(1, Math.round(maxHP(mon) * frac));
     return mon;
   }

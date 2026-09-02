@@ -308,7 +308,7 @@
           title: info.name + ' — ' + info.desc,
           onclick: function () { enterNode(node.row, node.col); }
         }, [
-          el('span', { className: 'node-icon', text: info.icon }),
+          el('span', { className: 'node-badge' }, el('span', { className: 'node-icon', text: info.icon })),
           el('span', { className: 'node-name', text: info.name })
         ]);
         nodeEls[node.row + ':' + node.col] = btn;
@@ -317,10 +317,18 @@
       rowsWrap.appendChild(rowEl);
     }
 
+    // Kulisse der Region hinter die Route legen
+    var stage = el('div', { className: 'map-stage' });
+    if (PL.scenery) {
+      var list = PL.scenery.regionBiomes[region.id];
+      PL.scenery.render(stage, run.leagueStage >= 0 ? 'liga' : (list ? list[0] : 'wiese'), { stretch: true });
+    }
+
     // Verbindungen als SVG hinterlegen, sobald die Knoten ihre Plätze haben.
     var svg = doc.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('class', 'map-links');
-    rowsWrap.insertBefore(svg, rowsWrap.firstChild);
+    stage.appendChild(svg);
+    stage.appendChild(rowsWrap);
     root.requestAnimationFrame(function () { drawLinks(run, rowsWrap, svg, nodeEls); });
 
     return el('div', { className: 'map-screen' }, [
@@ -332,7 +340,7 @@
           run.leagueStage < 0 ? el('span', { text: 'Nur ein Weg führt zum Arenaleiter.' }) : null
         ])
       ]),
-      rowsWrap,
+      stage,
       el('h3', { className: 'section-label', text: 'Dein Team' }),
       partyStrip()
     ]);
@@ -340,7 +348,7 @@
 
   /** Zeichnet die Wege zwischen den Knoten. */
   function drawLinks(run, wrap, svg, nodeEls) {
-    var box = wrap.getBoundingClientRect();
+    var box = svg.parentNode.getBoundingClientRect();
     if (!box.width) return;
     svg.setAttribute('viewBox', '0 0 ' + box.width + ' ' + box.height);
     svg.setAttribute('width', box.width);
@@ -429,22 +437,36 @@
     var bt = App.battle;
     var wrap = el('div', { className: 'battle' });
 
+    var stage = el('div', { className: 'battle-stage' });
+    var slots = [
+      el('div', { className: 'stage-slot slot-mine' }, el('div', { className: 'platform' })),
+      el('div', { className: 'stage-slot slot-enemy' }, el('div', { className: 'platform' }))
+    ];
+    var frames = [
+      el('div', { className: 'frame-wrap frame-mine' }),
+      el('div', { className: 'frame-wrap frame-enemy' })
+    ];
+
     BV = {
       bt: bt,
-      frames: [null, null],
+      slots: slots,
+      frames: frames,
       log: el('div', { className: 'battle-log', 'aria-live': 'polite' }),
       controls: el('div', { className: 'battle-controls' }),
       field: el('div', { className: 'field-effects' }),
-      pendingTera: false,
+      stage: stage,
+      pendingMega: false,
       busy: false
     };
 
-    var enemy = el('div', { className: 'side enemy' });
-    var mine = el('div', { className: 'side mine' });
-    BV.frames[1] = enemy;
-    BV.frames[0] = mine;
+    stage.appendChild(slots[1]);
+    stage.appendChild(slots[0]);
+    stage.appendChild(frames[1]);
+    stage.appendChild(frames[0]);
+    stage.appendChild(BV.field);
+    if (PL.scenery) PL.scenery.render(stage, bt.biome || 'wiese');
 
-    wrap.appendChild(el('div', { className: 'battle-field' }, [enemy, BV.field, mine]));
+    wrap.appendChild(stage);
     if (App.run && App.run.hasMod('scout') && !bt.wild) wrap.appendChild(scoutPanel(bt));
     wrap.appendChild(BV.log);
     wrap.appendChild(BV.controls);
@@ -470,49 +492,50 @@
     })));
   }
 
-  /** Baut eine Kampfseite (Gegner oben, eigenes Pokémon unten) neu auf. */
+  /** Baut eine Kampfseite neu auf: Standplatz und Anzeige. */
   function renderSide(sideId) {
-    var bt = App.battle, side = bt.sides[sideId], act = side.active, host = BV.frames[sideId];
-    if (!host) return;
-    clear(host);
+    var bt = App.battle, side = bt.sides[sideId], act = side.active;
+    var slot = BV.slots[sideId], frameHost = BV.frames[sideId];
+    if (!slot || !frameHost) return;
+    // Die Plattform bleibt stehen, nur das Pokémon wird ausgetauscht.
+    var oldArt = slot.querySelector('.mon-art');
+    if (oldArt) slot.removeChild(oldArt);
+    clear(frameHost);
     if (!act) return;
-    var mon = act.mon, max = act.stats[0];
-    var isMine = sideId === 0;
 
-    var dots = el('div', { className: 'team-dots' }, side.team.map(function (m) {
-      return el('i', {
-        className: 'dot' + (m.hp <= 0 ? ' out' : '') + (m === mon ? ' active' : ''),
-        title: mons.name(m) + ' — ' + (m.hp <= 0 ? 'besiegt' : m.hp + '/' + mons.maxHP(m) + ' KP')
-      });
-    }));
-
-    var bar = U.hpBar(mon.hp, max);
-    var frame = el('div', { className: 'mon-frame' }, [
-      el('div', { className: 'frame-head' }, [
-        el('strong', { text: act.megaName ? act.megaName : mons.name(mon) }),
-        U.genderMark(mon.gender),
-        el('span', { className: 'lvl', text: 'Lv ' + mon.lvl }),
-        act.tera ? el('span', { className: 'tera-mark', title: 'Terakristallisiert', text: '◈' }) : null
-      ]),
-      el('div', { className: 'frame-types' }, act.types.map(function (t) { return U.typeChip(t, true); })),
-      bar,
-      el('div', { className: 'frame-sub' }, [
-        el('span', { className: 'hp-num', text: (isMine ? mon.hp + ' / ' + max : Math.round(mon.hp / max * 100) + ' %') }),
-        U.statusChip(mon.status),
-        boostChips(act)
-      ]),
-      isMine ? U.expBar(mon) : null,
-      dots
-    ]);
+    var mon = act.mon, max = act.stats[0], isMine = sideId === 0;
 
     var art = el('div', { className: 'mon-art' }, [
       U.sprite(mon, { back: isMine, eager: true, className: 'battle-sprite' + (mon.hp <= 0 ? ' fainted' : '') }),
       mon.shiny ? el('span', { className: 'shiny-mark', text: '✦' }) : null,
       act.vol.substitute ? el('span', { className: 'sub-mark', title: 'Delegator', text: '🪆' }) : null
     ]);
+    slot.appendChild(art);
 
-    host.appendChild(isMine ? art : frame);
-    host.appendChild(isMine ? frame : art);
+    var bar = U.hpBar(mon.hp, max);
+    frameHost.appendChild(el('div', { className: 'mon-frame' }, [
+      el('div', { className: 'frame-head' }, [
+        el('strong', { text: act.megaName ? act.megaName : mons.name(mon) }),
+        U.genderMark(mon.gender),
+        el('span', { className: 'lvl', text: 'Lv ' + mon.lvl }),
+        act.mega ? el('span', { className: 'mega-mark', title: 'Mega-entwickelt', text: '◈' }) : null
+      ]),
+      el('div', { className: 'frame-types' }, act.types.map(function (t) { return U.typeChip(t, true); })),
+      bar,
+      el('div', { className: 'frame-sub' }, [
+        el('span', { className: 'hp-num', text: isMine ? mon.hp + ' / ' + max : Math.round(mon.hp / max * 100) + ' %' }),
+        U.statusChip(mon.status),
+        boostChips(act)
+      ]),
+      isMine ? U.expBar(mon) : null,
+      el('div', { className: 'team-dots' }, side.team.map(function (m) {
+        return el('i', {
+          className: 'dot' + (m.hp <= 0 ? ' out' : '') + (m === mon ? ' active' : ''),
+          title: mons.name(m) + ' — ' + (m.hp <= 0 ? 'besiegt' : m.hp + '/' + mons.maxHP(m) + ' KP')
+        });
+      }))
+    ]));
+
     BV['bar' + sideId] = bar;
     BV['art' + sideId] = art;
   }
@@ -561,7 +584,7 @@
     move: 'l-move', damage: '', crit: 'l-crit', super: 'l-super', resist: 'l-resist',
     faint: 'l-faint', switchin: 'l-switch', switchout: 'l-switch', status: 'l-status',
     heal: 'l-heal', boost: 'l-boost', item: 'l-item', ability: 'l-ability', weather: 'l-field',
-    field: 'l-field', side: 'l-field', tera: 'l-tera', mega: 'l-tera', caught: 'l-caught',
+    field: 'l-field', side: 'l-field', mega: 'l-mega', caught: 'l-caught',
     end: 'l-end', turn: 'l-turn', miss: 'l-miss', immune: 'l-miss', protect: 'l-item',
     ball: 'l-item', ballfail: 'l-miss'
   };
@@ -621,10 +644,10 @@
       sfx('faint');
     } else if (e.k === 'switchin') {
       renderSide(e.side);
-    } else if (e.k === 'tera' || e.k === 'mega') {
+    } else if (e.k === 'mega') {
       renderSide(e.side);
       if (BV['art' + e.side]) flash(BV['art' + e.side], 'shine');
-      sfx('tera');
+      sfx('mega');
     } else if (e.k === 'boost' || e.k === 'status') {
       renderSide(e.side);
     } else if (e.k === 'weather' || e.k === 'field' || e.k === 'side') {
@@ -654,6 +677,7 @@
         if (App.autoPlay && !BV.busy && App.battle === bt && !bt.ended) {
           var a = PL.ai.chooseAction(bt, 0, 3, { bag: App.run ? App.run.bag : null });
           if (a.type === 'item' && App.run) App.run.removeItem(a.item, 1);
+          BV.pendingMega = false;
           submitAction(a);
         }
       }, Math.max(120, delayMs() * 0.6));
@@ -682,7 +706,7 @@
         type: 'button', disabled: mv.disabled,
         style: { '--move-color': U.TYPE_COLOR[m.t] || '#777' },
         title: (mv.why ? mv.why + ' — ' : '') + T.moveDesc(m),
-        onclick: function () { submitAction({ type: 'move', index: mv.index, tera: BV.pendingTera }); }
+        onclick: function () { submitAction({ type: 'move', index: mv.index }); }
       }, [
         el('span', { className: 'move-btn-name', text: m.n }),
         el('span', { className: 'move-btn-meta' }, [
@@ -701,22 +725,25 @@
       actions.appendChild(actionBtn('🔴 Ball', true, function () { openBallDialog(); }));
       actions.appendChild(actionBtn('🏃 Fliehen', true, function () { submitAction({ type: 'run' }); }));
     }
-    if (bt.canTera(bt.sides[0].active) || (run && run.hasMod('teraCharges') && !bt.sides[0].active.tera)) {
-      var teraBtn = el('button', {
-        className: 'action-btn tera' + (BV.pendingTera ? ' on' : ''), type: 'button',
-        title: 'Terakristallisieren zum Typ ' + T.type(bt.sides[0].active.mon.tera),
+    if (bt.canMega(bt.sides[0].active)) {
+      var form = bt.megaFormFor(bt.sides[0].active);
+      var primal = /Primal/.test(form.n);
+      actions.appendChild(el('button', {
+        className: 'action-btn mega', type: 'button',
+        title: (primal ? 'Protoform auslösen: ' : 'Mega-entwickeln zu ') + form.n,
         onclick: function () {
-          BV.pendingTera = !BV.pendingTera;
-          teraBtn.classList.toggle('on', BV.pendingTera);
+          var first = moves.filter(function (m) { return !m.disabled; })[0];
+          if (!first) return;
+          BV.pendingMega = true;
+          renderControls();
+          U.toast(primal ? 'Protoform bereit — wähle deine Attacke.' : 'Mega-Entwicklung bereit — wähle deine Attacke.');
         }
-      }, '◈ Tera ' + T.type(bt.sides[0].active.mon.tera));
-      actions.appendChild(teraBtn);
+      }, (primal ? '☀ Proto ' : '◈ Mega ') + form.n.replace(/^[^-]+-/, '')));
     }
-    if (bt.canMega(bt.sides[0].active) && (!run || run.hasMod('mega'))) {
-      actions.appendChild(actionBtn('💎 Mega', true, function () {
-        submitAction({ type: 'move', index: moves[0].index, mega: true });
-      }));
+    if (BV.pendingMega) {
+      actions.appendChild(el('span', { className: 'mega-hint', text: '◈ Mega-Entwicklung vorgemerkt' }));
     }
+
     var auto = el('button', {
       className: 'action-btn auto' + (App.autoPlay ? ' on' : ''), type: 'button',
       title: 'Der Computer übernimmt die Kämpfe',
@@ -741,7 +768,8 @@
   function submitAction(action) {
     var bt = App.battle;
     if (!bt || BV.busy || bt.ended) return;
-    BV.pendingTera = false;
+    if (BV.pendingMega && action.type === 'move') action.mega = true;
+    BV.pendingMega = false;
     var enemyAction = PL.ai.chooseAction(bt, 1, bt.aiLevel === undefined ? 1 : bt.aiLevel);
     var entries = bt.runTurn([action, enemyAction]);
     App.run.stats.turns++;
@@ -887,8 +915,9 @@
     var result = run.finishBattle(bt);
     if (bt.outcome === 'caught' && bt.caught) meta.noteCaught(bt.caught);
     run.party.forEach(function (m) { if (m.hp === 1) meta.award('notafraid'); });
-    if (bt.sides[0].active && bt.sides[0].active.tera) meta.award('tera');
-    if (bt.sides[0].active && bt.sides[0].active.mega) meta.award('mega');
+    bt.sides[0].team.forEach(function (m) { void m; });
+    if (bt.sides[0].megaUsed) meta.award('mega');
+    if (bt.sides[0].active && /Primal/.test(bt.sides[0].active.megaName || '')) meta.award('primal');
     if (run.party.length >= 6) meta.award('full_team');
     if (Object.keys(run.relics).length >= 10) meta.award('relic10');
     if (run.money >= 50000) meta.award('rich');
@@ -1154,7 +1183,6 @@
       if (out.scene) { openScene(out.scene); return; }
       if (out.tutor) { openTutor(function () { backToMap(); }); return; }
       if (out.trade) { openTrade(function () { backToMap(); }); return; }
-      if (out.teraChange) { openTeraChange(function () { backToMap(); }); return; }
       U.modal({
         title: scene.title,
         content: el('p', { text: out.text || 'Nichts passiert.' }),
@@ -1261,35 +1289,6 @@
       })),
       actions: [{ label: 'Doch nicht', onClick: done }]
     });
-  }
-
-  function openTeraChange(done) {
-    var run = App.run;
-    var box = U.modal({
-      title: 'Wessen Tera-Typ?',
-      wide: true,
-      content: el('div', { className: 'switch-grid' }, run.party.map(function (mon) {
-        return U.monCard(mon, { onClick: function () { box.close(); pickType(mon); } });
-      })),
-      actions: [{ label: 'Abbrechen', onClick: done }]
-    });
-    function pickType(mon) {
-      var box2 = U.modal({
-        title: 'Neuer Tera-Typ für ' + mons.name(mon),
-        content: el('div', { className: 'type-grid' }, dex.types.map(function (t) {
-          return el('button', {
-            className: 'type-pick', type: 'button', style: { background: U.TYPE_COLOR[t] },
-            onclick: function () {
-              mon.tera = t;
-              box2.close();
-              U.toast(mons.name(mon) + ' hat jetzt Tera-Typ ' + T.type(t) + '.');
-              done();
-            }
-          }, T.type(t));
-        })),
-        actions: [{ label: 'Abbrechen', onClick: done }]
-      });
-    }
   }
 
   function openEvolveDialog(done) {
@@ -1510,19 +1509,6 @@
       });
       return;
     }
-    if (it.needsChoice === 'type') {
-      var box2 = U.modal({
-        title: 'Welcher Tera-Typ?',
-        content: el('div', { className: 'type-grid' }, dex.types.map(function (t) {
-          return el('button', {
-            className: 'type-pick', type: 'button', style: { background: U.TYPE_COLOR[t] },
-            onclick: function () { box2.close(); finish(t); }
-          }, T.type(t));
-        })),
-        actions: [{ label: 'Abbrechen' }]
-      });
-      return;
-    }
     if (it.needsMove) {
       var box3 = U.modal({
         title: 'Welche Attacke?',
@@ -1625,7 +1611,7 @@
     U.modal({
       title: 'Menü',
       content: el('div', { className: 'menu-hint' }, [
-        el('p', { className: 'muted', text: 'Tasten: 1–4 Attacken · W Wechseln · B Beutel · A Auto · Esc Menü' })
+        el('p', { className: 'muted', text: 'Tasten: 1–4 Attacken · W Wechseln · B Beutel · M Mega · A Auto · Esc Menü' })
       ]),
       actions: actions
     });
@@ -1909,7 +1895,7 @@
         hit: { f: 180, t: 'square', d: 0.09, v: 0.05 },
         heal: { f: 660, t: 'sine', d: 0.16, v: 0.05 },
         faint: { f: 110, t: 'sawtooth', d: 0.35, v: 0.05 },
-        tera: { f: 880, t: 'triangle', d: 0.25, v: 0.05 },
+        mega: { f: 880, t: 'triangle', d: 0.25, v: 0.05 },
         coin: { f: 990, t: 'square', d: 0.08, v: 0.04 },
         select: { f: 440, t: 'sine', d: 0.05, v: 0.03 }
       }[kind];
@@ -1918,7 +1904,7 @@
       osc.type = spec.t;
       osc.frequency.setValueAtTime(spec.f, now);
       if (kind === 'faint') osc.frequency.exponentialRampToValueAtTime(spec.f / 3, now + spec.d);
-      if (kind === 'tera') osc.frequency.exponentialRampToValueAtTime(spec.f * 2, now + spec.d);
+      if (kind === 'mega') osc.frequency.exponentialRampToValueAtTime(spec.f * 2, now + spec.d);
       gain.gain.setValueAtTime(spec.v, now);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + spec.d);
       osc.connect(gain).connect(audio.destination);
@@ -1944,7 +1930,7 @@
     var moves = App.battle ? App.battle.legalMoves(0) : [];
     if (/^[1-4]$/.test(e.key)) {
       var mv = moves[+e.key - 1];
-      if (mv && !mv.disabled) { sfx('select'); submitAction({ type: 'move', index: mv.index, tera: BV.pendingTera }); }
+      if (mv && !mv.disabled) { sfx('select'); submitAction({ type: 'move', index: mv.index }); }
     } else if (e.key.toLowerCase() === 'w') {
       if (App.battle.canSwitch(0)) openSwitchDialog();
     } else if (e.key.toLowerCase() === 'b') {
@@ -1954,8 +1940,8 @@
       U.toast('Auto-Kampf ' + (App.autoPlay ? 'an' : 'aus'));
       renderControls();
       if (App.autoPlay) awaitInput();
-    } else if (e.key.toLowerCase() === 't') {
-      if (App.battle.canTera(App.battle.sides[0].active)) { BV.pendingTera = !BV.pendingTera; renderControls(); }
+    } else if (e.key.toLowerCase() === 'm') {
+      if (App.battle.canMega(App.battle.sides[0].active)) { BV.pendingMega = !BV.pendingMega; renderControls(); }
     }
   }
 

@@ -69,6 +69,8 @@ if (SHOT_DIR) await page.screenshot({ path: join(SHOT_DIR, '02-neuer-run.png') }
 await page.click('text=Los geht’s');
 await page.waitForSelector('.map-screen', { timeout: 10000 });
 check('Karte erscheint', await page.isVisible('.region-header'));
+check('Die Karte liegt auf einer Kulisse', await page.isVisible('.map-stage .scene-svg'));
+check('Knoten sind runde Wegmarken', (await page.locator('.map-node .node-badge').count()) >= 2);
 check('Team hat ein Pokémon', (await page.locator('.party-strip .mon-card:not(.empty)').count()) === 1);
 check('Knoten sind wählbar', (await page.locator('.map-node.open').count()) >= 1);
 if (SHOT_DIR) await page.screenshot({ path: join(SHOT_DIR, '03-karte.png') });
@@ -78,7 +80,7 @@ await page.evaluate(() => globalThis.PL.meta.setSetting('speed', 'sofort'));
 
 console.log('\nDurchspielen');
 let battles = 0, scenes = {}, guard = 0, shotBattle = false;
-while (guard++ < 60) {
+while (guard++ < 45) {
   const screen = await page.evaluate(() => document.body.getAttribute('data-screen'));
   scenes[screen] = (scenes[screen] || 0) + 1;
 
@@ -92,33 +94,40 @@ while (guard++ < 60) {
 
   if (screen === 'battle') {
     battles++;
+    if (!shotBattle) {
+      check('Der Kampf spielt in einer gezeichneten Kulisse',
+        await page.isVisible('.battle-stage .scene-svg'));
+      check('Beide Pokémon stehen auf Plattformen',
+        (await page.locator('.stage-slot .platform').count()) === 2);
+      check('Kein Terakristall mehr in der Oberfläche',
+        (await page.locator('.action-btn.tera').count()) === 0);
+    }
     if (!shotBattle && SHOT_DIR) {
       await page.waitForTimeout(400);
       await page.screenshot({ path: join(SHOT_DIR, '04-kampf.png') });
-      shotBattle = true;
     }
+    shotBattle = true;
     // Auto-Kampf einschalten und warten, bis der Kampf endet
     const auto = page.locator('.action-btn.auto');
     if (await auto.count() && !(await auto.first().evaluate((n) => n.classList.contains('on')))) {
-      await auto.first().click();
+      await auto.first().click({ timeout: 8000 }).catch(() => {});
     }
     await page.waitForFunction(
       () => document.body.getAttribute('data-screen') !== 'battle',
-      null, { timeout: 45000 }
+      null, { timeout: 25000 }
     ).catch(() => {});
     continue;
   }
 
   if (screen === 'scene') {
-    // Erste sinnvolle Schaltfläche drücken
-    const primary = page.locator('.scene-actions .btn.primary, .scene-actions .btn').first();
+    // Erste sinnvolle Schaltfläche drücken. Ein Dialog kann jederzeit
+    // aufgehen (etwa "Attacke lernen") — dann greift der Modal-Zweig oben
+    // beim nächsten Durchlauf, deshalb hier nur kurz versuchen.
     const offer = page.locator('.offer, .relic-card, .item-row:not(:disabled), .option:not(:disabled)').first();
-    if (await offer.count()) await offer.click();
-    else if (await primary.count()) await primary.click();
+    const primary = page.locator('.scene-actions .btn.primary, .scene-actions .btn').first();
+    if (await offer.count()) await offer.click({ timeout: 6000 }).catch(() => {});
+    else if (await primary.count()) await primary.click({ timeout: 6000 }).catch(() => {});
     await page.waitForTimeout(150);
-    // Falls ein Dialog offen ist (z. B. Attacke lernen): schließen
-    const modalBtn = page.locator('.modal-actions .btn').last();
-    if (await page.locator('.modal').count() && await modalBtn.count()) await modalBtn.click();
     continue;
   }
 
@@ -130,6 +139,22 @@ while (guard++ < 60) {
 check('Es wurde gekämpft', battles >= 1, battles + ' Kämpfe');
 check('Mehrere Knotenarten besucht', Object.keys(scenes).length >= 2, JSON.stringify(scenes));
 if (SHOT_DIR) await page.screenshot({ path: join(SHOT_DIR, '05-verlauf.png') });
+
+// Nach dem Durchspielen kann noch ein Dialog offen sein — erst aufräumen.
+async function closeModals() {
+  for (let i = 0; i < 6; i++) {
+    if (!(await page.locator('.modal').count())) return;
+    const btn = page.locator('.modal-actions .btn').last();
+    if (!(await btn.count())) break;
+    await btn.click({ timeout: 4000 }).catch(() => {});
+    await page.waitForTimeout(120);
+  }
+  await page.evaluate(() => {
+    const host = document.querySelector('#overlay');
+    if (host) { host.innerHTML = ''; host.classList.remove('active'); }
+  });
+}
+await closeModals();
 
 console.log('\nWeitere Bildschirme');
 await page.evaluate(() => globalThis.PokelikeApp.show('team'));

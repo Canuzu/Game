@@ -201,7 +201,7 @@
           el('div', { className: 'mon-detail-line small' }, [
             el('span', { text: 'Wesen ' + T.nature(mon.nat) }),
             el('span', { text: 'Fähigkeit ' + mon.ab }),
-            el('span', {}, [el('span', { text: 'Tera ' }), typeChip(mon.tera, true)])
+            megaNote(sp)
           ]),
           el('div', { className: 'mon-detail-line small' }, [
             el('span', { text: 'Gegenstand: ' + (mon.item ? PL.items.label(mon.item) : '—') }),
@@ -220,6 +220,19 @@
         }))
       ])
     ]);
+  }
+
+  /** Hinweis auf eine mögliche Mega-Form — inklusive des nötigen Steins. */
+  function megaNote(sp) {
+    var list = dex.megasFor(sp);
+    if (!list || !list.length) return null;
+    var names = list.map(function (f) {
+      return f.it ? PL.items.label(PL.util.toID(f.it)) : (f.mv || '—');
+    });
+    return el('span', {
+      className: 'mega-note',
+      title: 'Mega-Form: ' + list.map(function (f) { return f.n; }).join(' / ')
+    }, '◈ Mega mit ' + names.join(' oder '));
   }
 
   var CAT_ICON = { P: '💥', S: '✨', T: '🌀' };
@@ -350,7 +363,7 @@
     el: el, append: append, clear: clear, $: $,
     sprite: sprite, placeholder: placeholder,
     typeChip: typeChip, hpBar: hpBar, expBar: expBar, statusChip: statusChip, genderMark: genderMark,
-    monCard: monCard, monDetail: monDetail, moveRow: moveRow,
+    monCard: monCard, monDetail: monDetail, moveRow: moveRow, megaNote: megaNote,
     modal: modal, confirm: confirm, toast: toast,
     money: money, itemRow: itemRow, itemIcon: itemIcon,
     TYPE_COLOR: TYPE_COLOR, CAT_ICON: CAT_ICON, CAT_NAME: CAT_NAME

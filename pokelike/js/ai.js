@@ -7,7 +7,7 @@
  *   0  wild        — würfelt fast blind
  *   1  Trainer     — schlägt zu, was gerade am meisten weh tut
  *   2  Ass         — rechnet Sieg in einem Zug aus, wechselt, nutzt Status
- *   3  Boss        — zusätzlich Terakristall, Mega und vorausschauende Wechsel
+ *   3  Boss        — zusätzlich Mega-Entwicklung und vorausschauende Wechsel
  * ========================================================================== */
 (function (root) {
   'use strict';
@@ -159,7 +159,7 @@
       mon: mon, side: side, species: dex.sp(mon.sp), types: dex.sp(mon.sp).t.slice(),
       ability: PL.util.toID(mon.ab), abilityName: mon.ab, item: mon.item,
       boosts: { atk: 0, def: 0, spa: 0, spd: 0, spe: 0, acc: 0, eva: 0 },
-      vol: {}, stats: mons.stats(mon), turnsActive: 0, lastMove: null, tera: false,
+      vol: {}, stats: mons.stats(mon), turnsActive: 0, lastMove: null, mega: false,
       damagedThisTurn: 0, protectStreak: 0
     };
     var best = 0, i;
@@ -239,19 +239,9 @@
       }
     }
 
-    // Terakristall und Mega
-    if (bt.alwaysTera && sideId === 1 && bt.canTera(me)) action.tera = true;
-    else if (level >= 3 && bt.canTera(me) && best && best.move.c !== 'T') {
-      var normal = estimate(bt, me, foe, best.move);
-      me.tera = true;
-      var teraTypes = me.types;
-      me.types = [me.mon.tera];
-      var boosted = estimate(bt, me, foe, best.move);
-      me.tera = false;
-      me.types = teraTypes;
-      if (boosted > normal * 1.25 || (boosted >= foe.mon.hp && normal < foe.mon.hp)) action.tera = true;
-    }
-    if (level >= 2 && bt.canMega(me)) action.mega = true;
+    // Mega-Entwicklung: fast immer richtig, sobald sie möglich ist — die
+    // Mega-Form ist in jedem Wert stärker als die Ausgangsform.
+    if (bt.canMega(me) && (level >= 2 || bt.alwaysMega)) action.mega = true;
 
     return action;
   }

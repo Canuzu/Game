@@ -175,15 +175,33 @@ section('Kampfmechanik im Einzelnen');
   eq('Rauflust durchbricht die Geist-Immunität',
     bt.effectiveness('Normal', bt.sides[0].active, dex.move('bodyslam'), bt.sides[1].active), 1);
 
-  // Terakristall
+  // Mega-Entwicklung
   bt = duel('charizard', 'blastoise');
-  const plain = bt.calcDamage(bt.sides[0].active, bt.sides[1].active, dex.move('tackle'), { noCrit: true });
-  bt.sides[0].active.mon.tera = 'Normal';
-  bt.terastallize(bt.sides[0].active);
-  const tera = bt.calcDamage(bt.sides[0].active, bt.sides[1].active, dex.move('tackle'), { noCrit: true });
-  check('Terakristall verstärkt passende Attacken', tera.dmg > plain.dmg,
-    plain.dmg + ' → ' + tera.dmg);
-  eq('Terakristall ist nur einmal möglich', bt.canTera(bt.sides[0].active), false);
+  bt.sides[0].active.item = 'charizarditey';
+  check('Mega ist mit passendem Stein möglich', bt.canMega(bt.sides[0].active));
+  const plainAtk = bt.statOf(bt.sides[0].active, 'spa');
+  eq('Mega-Entwicklung gelingt', bt.megaEvolve(bt.sides[0].active), true);
+  check('Mega-Form ist stärker', bt.statOf(bt.sides[0].active, 'spa') > plainAtk,
+    plainAtk + ' → ' + bt.statOf(bt.sides[0].active, 'spa'));
+  eq('Mega-Form bringt ihre Fähigkeit mit', bt.sides[0].active.abilityName, 'Drought');
+  eq('Mega geht nur einmal pro Kampf', bt.canMega(bt.sides[0].active), false);
+
+  bt = duel('charizard', 'blastoise');
+  eq('Ohne Stein keine Mega-Entwicklung', bt.canMega(bt.sides[0].active), false);
+
+  bt = duel('rayquaza', 'blastoise');
+  bt.sides[0].active.mon.moves = [{ m: dex.move('dragonascent').i, pp: 5, ppUp: 0, used: 0 }];
+  check('Rayquaza mega-entwickelt sich über Zenitstürmer', bt.canMega(bt.sides[0].active));
+
+  bt = duel('groudon', 'blastoise');
+  bt.sides[0].active.item = 'redorb';
+  if (bt.canMega(bt.sides[0].active)) {
+    bt.megaEvolve(bt.sides[0].active);
+    check('Protoform trägt ihren Namen', /Primal/.test(bt.sides[0].active.megaName || ''),
+      bt.sides[0].active.megaName);
+  } else {
+    check('Protoform von Groudon ist erreichbar', false, 'Roter Edelstein greift nicht');
+  }
 
   // Wetter
   bt = duel('charizard', 'blastoise');
@@ -438,6 +456,16 @@ section('Inhalte');
     PL.world.REGIONS.every((r) => r.leaders.length === 8));
   check('Jedes Ereignis hat mindestens zwei Optionen',
     PL.world.EVENTS.every((e) => e.options.length >= 2 && e.title && e.text));
+  check('Mega-Formen sind auf die echten beschränkt',
+    Object.keys(dex.megas).length === 48,
+    Object.keys(dex.megas).length + ' Spezies');
+  check('Jede Mega-Form hat Stein oder Attacke',
+    Object.keys(dex.megas).every((k) => dex.megas[k].every((f) => f.it || f.mv)));
+  check('Zu jedem Mega-Stein gibt es einen Gegenstand',
+    Object.keys(dex.megas).every((k) => dex.megas[k].every((f) => !f.it || PL.items.get(f.it))));
+  check('Kein Terakristall mehr im Spiel',
+    !PL.items.get('terashard') && !PL.relics.get('terakristall_splitter') && !PL.relics.get('mega_ring'));
+
   check('Alle Champ-Teams verweisen auf echte Spezies',
     PL.world.CHAMPIONS.every((c) => c.team.every((id) => !!dex.sp(id))),
     PL.world.CHAMPIONS.map((c) => c.team.filter((id) => !dex.sp(id))).flat().join(','));

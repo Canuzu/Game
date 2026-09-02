@@ -50,20 +50,33 @@ Absorption, Wahl-Gegenstände, Beeren — dazu **201 Fähigkeiten**, **82
 Tragegegenstände** und **87 Attacken mit Sonderregeln** (Bodycheck, Fassade,
 Abschlag, Konter, Bauchtrommel, Turbodreher, Auflockern …).
 
-**Terakristall und Mega** — jedes Pokémon hat einen Tera-Typ und darf einmal pro
-Kampf terakristallisieren. Mega-Steine gibt es im Laden; sie wirken, sobald du
-den Mega-Ring als Relikt gefunden hast (91 Mega-Formen).
+**Mega-Entwicklung** — 48 Pokémon haben eine Mega-Form (dazu die Protoformen
+von Kyogre und Groudon). Einmal pro Kampf, mit dem passenden Stein; Rayquaza
+kommt wie in den Spielen ohne Stein aus und verlangt stattdessen Zenitstürmer.
+Der Händler führt immer einen Stein, der zu deinem Team passt — Mega ist damit
+ein Ziel, auf das du hinspielen kannst, keine Glückssache. Mit dem Relikt
+Mega-Armband sind es zwei Mega-Entwicklungen pro Kampf.
 
 **Manuell oder automatisch** — du wählst jede Attacke selbst, oder du schaltest
 den Auto-Kampf ein und die KI übernimmt: Attackenwahl, Wechsel, Gegenstände,
-Terakristall. Auch für den Nachrücker nach einem K. o.
+Mega-Entwicklung. Auch für den Nachrücker nach einem K. o.
 
 **Typenvorteil auf einen Blick** — jeder Attackenknopf zeigt, was die Attacke
 beim aktuellen Gegner ausrichtet (×4, ×2, ×½, ×¼, wirkungslos). Kein Blättern
 in Tabellen, keine Rechnerei — die Entscheidung bleibt trotzdem deine.
 
+**Gezeichnete Umgebungen** — 15 Kulissen, alle aus SVG und CSS gebaut, kein
+einziges geladenes Bild: Route, Wald, Höhle, Bergpfad, Eisfeld, Küste,
+Gewässer, Vulkan, Wüste, Stadt, Arena, Liga-Halle, Ruine, Dschungel und
+Nachtlager. Beide Pokémon stehen auf Plattformen wie in den Hauptspielen,
+darüber ziehen Blätter, Schneeflocken, Funken oder Sandkörner. Welche Kulisse
+erscheint, entscheiden Region und Knotenart: Kanto zeigt Wälder und Wiesen,
+Sinnoh Schnee und Berge, Alola Strand und Vulkan; Arenaleiter kämpfen in der
+Arena, die Liga in ihrer Halle, Fundstücke liegen in Höhlen. Dieselbe
+Landschaft liegt auch hinter der Routenkarte.
+
 **52 Relikte** — dauerhafte Effekte für den ganzen Run: mehr Erfahrung, bessere
-Fangchancen, Fleißpunkte nach jedem Kampf, ein zweiter Terakristall, ein
+Fangchancen, Fleißpunkte nach jedem Kampf, eine zweite Mega-Entwicklung, ein
 Notfallband, das ein besiegtes Pokémon zurückholt, Typen-Fokus für jeden der 18
 Typen, und mehr.
 
@@ -71,7 +84,7 @@ Typen, und mehr.
 Fähigkeiten, Schillernde (mit Schillerpin achtmal so häufig), Geschlecht,
 Freundschaft, Entwicklung über Level, Steine, Freundschaft, Tausch und
 Attacken. 251 Gegenstände, darunter alle Entwicklungssteine, Vitamine, Minzen,
-Fähigkeits-Kapsel und -Pflaster, Silberkronkorken und Tera-Stücke.
+Fähigkeits-Kapsel und -Pflaster, Silberkronkorken und alle 50 Mega-Steine.
 
 **Modi**
 
@@ -98,7 +111,7 @@ immer, und pro Region darfst du nur ein einziges Pokémon aufnehmen.
 | 6 | Gegner tragen häufiger Gegenstände |
 | 7 | 20 % weniger Erfahrung |
 | 8 | Kein Vollheilen nach Arenaleitern |
-| 9 | Gegner terakristallisieren immer |
+| 9 | Gegner mega-entwickeln, sobald sie können |
 | 10 | Alles zusammen und noch zwei Level obendrauf |
 
 **Meta-Fortschritt** — der Pokédex sammelt über alle Runs hinweg, was du gesehen
@@ -114,7 +127,7 @@ Team-Übersicht.
 | `W` | Pokémon wechseln |
 | `B` | Beutel öffnen |
 | `A` | Auto-Kampf an/aus |
-| `T` | Terakristall vormerken |
+| `M` | Mega-Entwicklung vormerken |
 | `Esc` | Menü bzw. Dialog schließen |
 
 Alles ist auch mit Maus oder Finger bedienbar; auf schmalen Bildschirmen legt
@@ -135,6 +148,7 @@ pokelike/
   index.html          Einstiegspunkt — reicht zum Spielen
   data/dex.js         erzeugte Pokémon-Daten (0,9 MB, alle neun Generationen)
   js/core.js          Zufall, Pokédex-Zugriff, Übersetzungen, Sprites
+  js/scenery.js       15 gezeichnete Kulissen mit Plattformen und Teilchen
   js/pokemon.js       Werte, Attackenwahl, Erfahrung, Entwicklung, Fangen
   js/effects.js       Fähigkeiten, Tragegegenstände, Attacken-Sonderregeln
   js/battle.js        Kampf-Engine
@@ -168,7 +182,7 @@ npm run build:data
 **Tests**
 
 ```sh
-npm test             # 70 Prüfungen: Werteformel, Typentabelle, Schadensrechnung,
+npm test             # 80 Prüfungen: Werteformel, Typentabelle, Schadensrechnung,
                      # 150 Kämpfe, sechs komplette Runs, Speicherformat
 npm install --no-save playwright && npx playwright install chromium
 npm run test:browser # spielt im echten Chromium einen Run an

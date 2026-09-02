@@ -3,12 +3,12 @@
  * -----------------------------------------------------------------------------
  * Einzelkämpfe 1 gegen 1 aus Teams zu sechst, nah an den Regeln der Hauptreihe:
  * Schadensformel ab Generation 5, Statusprobleme, Statusstufen, Wetter, Felder,
- * Fähigkeiten, Tragegegenstände, Terakristall und Mega-Entwicklung.
+ * Fähigkeiten, Tragegegenstände und Mega-Entwicklung.
  *
  * Zwei Ebenen von Zustand:
  *   mon    — bleibt über Kämpfe hinweg (KP, Status, AP, Item, Level)
  *   active — gilt nur, solange das Pokémon im Kampf steht (Statusstufen,
- *            flüchtige Zustände, Typänderung durch Terakristall)
+ *            flüchtige Zustände, Mega-Form)
  *
  * Gliederung:  1) Aufbau        2) Werte und Zustände   3) Schadensrechnung
  *              4) Attacken      5) Rundenablauf         6) Rundenende
@@ -41,7 +41,7 @@
     this.trainer = opts.trainer || null;
     this.relics = opts.relics || {};
     this.catchMult = opts.catchMult === undefined ? 1 : opts.catchMult;
-    this.alwaysTera = !!opts.alwaysTera;
+    this.alwaysMega = !!opts.alwaysMega;
     this.nuzlockeLocked = !!opts.nuzlockeLocked;
     this.log = [];
     this.turn = 0;
@@ -70,8 +70,7 @@
       hazards: { stealthrock: 0, spikes: 0, toxicspikes: 0, stickyweb: 0 },
       screens: { reflect: 0, lightscreen: 0, auroraveil: 0, safeguard: 0, mist: 0, tailwind: 0 },
       wish: null,
-      teraUsed: false,
-      megaUsed: false,
+      megaUsed: 0,
       lastFainted: null,
       fainted: 0
     };
@@ -97,7 +96,6 @@
       damagedThisTurn: 0,
       hurtBySource: null,
       protectStreak: 0,
-      tera: false,
       mega: false,
       switchedInThisTurn: true,
       itemUsed: false,
@@ -447,13 +445,8 @@
     if (crit) m *= 1.5;
     m *= 0.85 + this.rng.int(16) * 0.01;
 
-    // STAB inklusive Terakristall
-    var stab = 1;
-    var natural = atk.species.t;
-    if (atk.tera) {
-      if (moveType === atk.mon.tera) stab = natural.indexOf(moveType) >= 0 ? 2 : 1.5;
-      else if (natural.indexOf(moveType) >= 0) stab = 1.5;
-    } else if (atk.types.indexOf(moveType) >= 0) stab = 1.5;
+    // STAB
+    var stab = atk.types.indexOf(moveType) >= 0 ? 1.5 : 1;
     if (stab > 1 && this.abilityId(atk) === 'adaptability') stab = stab === 2 ? 2.25 : 2;
     m *= stab;
 
@@ -1104,12 +1097,10 @@
       }
     }
 
-    // Terakristall und Mega gelten sofort, unabhängig von der Reihenfolge
+    // Mega-Entwicklung geschieht vor allen Aktionen der Runde
     for (i = 0; i < 2; i++) {
       action = actions[i];
-      if (!action) continue;
-      if (action.tera) this.terastallize(this.sides[i].active);
-      if (action.mega) this.megaEvolve(this.sides[i].active);
+      if (action && action.mega) this.megaEvolve(this.sides[i].active);
     }
 
     order = this.actionOrder(actions[0], actions[1]);
@@ -1382,43 +1373,52 @@
     return true;
   };
 
-  /* --- Terakristall und Mega ------------------------------------------------- */
+  /* --- Mega-Entwicklung -------------------------------------------------------
+   * Einmal pro Kampf (mit dem passenden Relikt zweimal). Es braucht den Stein
+   * der Spezies; Rayquaza kommt wie in den Spielen ohne aus, verlangt dafür
+   * Zenitstürmer.
+   * -------------------------------------------------------------------------- */
 
-  B.canTera = function (act) {
-    return !!act && !act.side.teraUsed && !act.tera && act.mon.hp > 0;
+  /** Die Mega-Form, die dieses Pokémon gerade erreichen könnte. */
+  B.megaFormFor = function (act) {
+    if (!act || act.mega || act.mon.hp <= 0) return null;
+    var list = dex.megasFor(act.species);
+    if (!list) return null;
+    for (var i = 0; i < list.length; i++) {
+      var form = list[i];
+      if (form.mv) {
+        var knows = act.mon.moves.some(function (mv) { return dex.move(mv.m).n === form.mv; });
+        if (knows) return form;
+      } else if (form.it && act.item === PL.util.toID(form.it)) {
+        return form;
+      }
+    }
+    return null;
   };
-  B.terastallize = function (act) {
-    if (!this.canTera(act)) return false;
-    act.tera = true;
-    act.side.teraUsed = true;
-    act.types = [act.mon.tera];
-    this.say(this.name(act) + ' terakristallisiert zum Typ ' + T.type(act.mon.tera) + '!', 'tera',
-      { side: act.side.id, type: act.mon.tera });
-    return true;
+
+  B.megaCharges = function (side) {
+    return this.hasRelic('mega_armband') && side.isPlayer ? 2 : 1;
   };
 
   B.canMega = function (act) {
-    if (!act || act.side.megaUsed || act.mega || !act.item) return false;
-    var list = dex.megasFor(act.species);
-    if (!list) return false;
-    return list.some(function (m) { return m.it === act.item; });
+    if (!act) return false;
+    if (act.side.megaUsed >= this.megaCharges(act.side)) return false;
+    return !!this.megaFormFor(act);
   };
+
   B.megaEvolve = function (act) {
-    if (!this.canMega(act)) return false;
-    var list = dex.megasFor(act.species), form = null;
-    for (var i = 0; i < list.length; i++) if (list[i].it === act.item) form = list[i];
+    var form = this.canMega(act) ? this.megaFormFor(act) : null;
     if (!form) return false;
     act.mega = true;
-    act.side.megaUsed = true;
+    act.side.megaUsed++;
     act.types = form.t.slice();
     act.ability = PL.util.toID(form.a);
     act.abilityName = form.a;
     act.megaName = form.n;
-    // Werte neu berechnen: Basiswerte der Mega-Form, alles andere bleibt
-    var mon = act.mon, sp = act.species, saved = sp.bs;
-    var fake = { bs: form.bs, id: sp.id, i: sp.i };
-    act.stats = megaStats(mon, form.bs);
-    this.say(this.name(act) + ' mega-entwickelt sich zu ' + form.n + '!', 'mega', { side: act.side.id });
+    act.stats = megaStats(act.mon, form.bs);
+    var primal = /Primal/.test(form.n);
+    this.say(this.name(act) + (primal ? ' erwacht als ' : ' mega-entwickelt sich zu ') + form.n + '!',
+      'mega', { side: act.side.id, primal: primal });
     this.onSwitchInEffects(act);
     return true;
   };
@@ -1532,8 +1532,7 @@
           max: a.stats[0],
           status: a.mon.status,
           types: a.types.slice(),
-          tera: a.tera,
-          teraType: a.mon.tera,
+          mega: a.mega,
           boosts: a.boosts,
           ability: a.abilityName,
           item: a.item,
@@ -1546,7 +1545,6 @@
         }),
         hazards: side.hazards,
         screens: side.screens,
-        teraUsed: side.teraUsed,
         megaUsed: side.megaUsed
       };
     }

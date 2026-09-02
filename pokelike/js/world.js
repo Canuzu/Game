@@ -153,6 +153,15 @@
 
   /* ---------- 4) Teams bauen ---------------------------------------------------- */
 
+  /** Der Mega-Stein zu einem Pokémon, sofern es eine Mega-Form hat. */
+  function megaStoneFor(mon, rng) {
+    var list = dex.megasFor(dex.sp(mon.sp));
+    if (!list || !list.length) return null;
+    var withStone = list.filter(function (m) { return m.it; });
+    if (!withStone.length) return null;
+    return toID(rng.pick(withStone).it);
+  }
+
   function buildMon(rng, sp, level, opts) {
     opts = opts || {};
     return mons.create(sp, level, rng, {
@@ -218,11 +227,12 @@
       var mon = buildMon(rng, sp, level + (last ? 2 : 0), {
         quality: quality, ivFloor: 6 + index, hiddenChance: 0.25, shinyOdds: 1 / 120
       });
-      // Nur der Ass-Kämpfer trägt einen Gegenstand
+      // Nur der Ass-Kämpfer trägt einen Gegenstand — wenn er eine Mega-Form
+      // hat, bekommt er ab der dritten Region den passenden Stein.
       if ((last && index > 0) || (opts && opts.items && rng.chance(0.6))) {
-        mon.item = rng.pick(['leftovers', 'lifeorb', 'focussash', 'assaultvest', 'choicescarf', 'sitrusberry']);
+        var stone = index >= 2 && last ? megaStoneFor(mon, rng) : null;
+        mon.item = stone || rng.pick(['leftovers', 'lifeorb', 'focussash', 'assaultvest', 'choicescarf', 'sitrusberry']);
       }
-      mon.tera = type;
       mons.addEVs(mon, mon.ivs[1] >= mon.ivs[3] ? 'atk' : 'spa', Math.round(120 * evScale));
       mons.addEVs(mon, 'spe', Math.round(90 * evScale));
       mons.addEVs(mon, 'hp', Math.round(80 * evScale));
@@ -249,9 +259,9 @@
         quality: 0.9, ivFloor: 16, hiddenChance: 0.3, shinyOdds: 1 / 100
       });
       if (last || i < 1) {
-        mon.item = rng.pick(['leftovers', 'lifeorb', 'focussash', 'choiceband', 'choicespecs', 'choicescarf', 'assaultvest', 'sitrusberry']);
+        var eStone = last ? megaStoneFor(mon, rng) : null;
+        mon.item = eStone || rng.pick(['leftovers', 'lifeorb', 'focussash', 'choiceband', 'choicespecs', 'choicescarf', 'assaultvest', 'sitrusberry']);
       }
-      mon.tera = rng.chance(0.6) ? type : mon.tera;
       mons.addEVs(mon, mon.ivs[1] >= mon.ivs[3] ? 'atk' : 'spa', 140);
       mons.addEVs(mon, 'spe', 100);
       mons.addEVs(mon, 'hp', 80);
@@ -267,7 +277,9 @@
       var mon = buildMon(rng, sp, level + (i === 5 ? 2 : 0), {
         quality: 0.9, ivFloor: 20, hiddenChance: 0.5, shinyOdds: 1 / 60
       });
-      if (i < 4) mon.item = ['leftovers', 'lifeorb', 'focussash', 'choicescarf'][i];
+      var cStone = i === 5 ? megaStoneFor(mon, rng) : null;
+      if (cStone) mon.item = cStone;
+      else if (i < 4) mon.item = ['leftovers', 'lifeorb', 'focussash', 'choicescarf'][i];
       mons.addEVs(mon, mon.ivs[1] >= mon.ivs[3] ? 'atk' : 'spa', 160);
       mons.addEVs(mon, 'spe', 140);
       return mon;
@@ -453,13 +465,13 @@
       ]
     },
     {
-      id: 'tera', title: 'Kristallhöhle',
-      text: 'Die Wände sind von schillernden Kristallen überzogen. Sie summen im Takt deines Herzschlags.',
+      id: 'steinhoehle', title: 'Kristallhöhle',
+      text: 'Die Wände sind von Kristallen überzogen. Einer davon pulsiert in einem Rhythmus, den du aus deinem eigenen Team zu kennen glaubst.',
       options: [
-        { label: 'Kristall berühren', desc: 'Ändert den Tera-Typ eines Pokémon.',
-          run: function (run, rng) { return { teraChange: true }; } },
-        { label: 'Splitter mitnehmen', desc: 'Zwei Tera-Stücke.',
-          run: function (run) { run.addItem('terashard', 2); return 'Zwei Tera-Stücke wandern in den Beutel.'; } }
+        { label: 'Den pulsierenden Kristall lösen', desc: 'Ein Mega-Stein, der zu einem deiner Pokémon passt — falls einer passt.',
+          run: function (run, rng) { return run.giveMegaStone(rng); } },
+        { label: 'Kristallsplitter verkaufen', desc: 'Sicheres Geld.',
+          run: function (run) { return run.giveMoney(1200 + run.region * 200); } }
       ]
     },
     {
@@ -508,6 +520,7 @@
     CHAMPIONS: CHAMPIONS,
     EVENTS: EVENTS,
     encounterPool: encounterPool,
+    megaStoneFor: megaStoneFor,
     pickEncounter: pickEncounter,
     buildMon: buildMon,
     trainerTeam: trainerTeam,

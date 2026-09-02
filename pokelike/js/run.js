@@ -17,6 +17,7 @@
 
   var PL = root.PL || (root.PL = {});
   if (typeof require === 'function') {
+    if (!PL.scenery) { try { require('./scenery.js'); } catch (e) { /* nur für die Oberfläche */ } }
     if (!PL.world) require('./world.js');
     if (!PL.Battle) require('./battle.js');
     if (!PL.ai) require('./ai.js');
@@ -394,6 +395,20 @@
     return clamp(Math.max(alive, this.party.length - 1) + (bonus || 0), 1, 6);
   };
 
+  /**
+   * Die Kulisse eines Kampfes: Region und Knotenart entscheiden. Der Startwert
+   * kommt aus der Position auf der Karte, nicht aus dem Kampfzufall — sonst
+   * würde die Optik den Spielverlauf verschieben, und derselbe Knoten sähe
+   * nach dem Fortsetzen anders aus.
+   */
+  R.biomeFor = function (nodeType) {
+    if (!PL.scenery) return 'wiese';
+    var region = this.leagueStage >= 0 ? null : this.currentRegion();
+    var seed = PL.util.hashSeed(this.seed + ':' + this.region + ':' + this.rowIndex + ':' +
+      (this.pos ? this.pos.col : 0) + ':' + nodeType);
+    return PL.scenery.pick(region ? region.id : 'liga', nodeType, seed % 100);
+  };
+
   R.battleOpts = function (extra) {
     return {
       teams: [this.party, extra.team],
@@ -402,7 +417,7 @@
       trainer: extra.trainer || null,
       relics: this.relics,
       catchMult: this.mod('catchMult', 1) * (this.asc(5) ? 0.6 : 1),
-      alwaysTera: this.asc(9),
+      alwaysMega: this.asc(9),
       nuzlockeLocked: this.nuzlocke && (this.regionCatches || 0) >= 1
     };
   };
@@ -427,6 +442,7 @@
     var bt = new PL.Battle(this.battleOpts({ team: [mon], wild: true }));
     bt.aiLevel = 0;
     bt.canCatch = true;
+    bt.biome = this.biomeFor(opts.rare ? 'wild' : 'wild');
     return bt;
   };
 
@@ -444,6 +460,7 @@
     });
     var bt = new PL.Battle(this.battleOpts({ team: t.team, trainer: t }));
     bt.aiLevel = opts.elite ? 2 : 1;
+    bt.biome = this.biomeFor(opts.elite ? 'elite' : 'trainer');
     bt.reward = { money: Math.round((70 + level * 16) * (opts.elite ? 2 : 1)), kind: opts.elite ? 'elite' : 'trainer' };
     if (opts.doubleReward) bt.reward.money *= 2;
     return bt;
@@ -454,6 +471,7 @@
     var bt = this.makeTrainer(rng, { elite: !!opts.elite });
     bt.trainer.name = opts.elite ? ('Arenakämpfer ' + bt.trainer.name.split(' ').pop()) : 'Rüpel ' + bt.trainer.name.split(' ').pop();
     if (opts.doubleReward) bt.reward.money = Math.round(bt.reward.money * 2);
+    bt.biome = opts.elite ? 'arena' : this.biomeFor('event');
     return bt;
   };
 
@@ -466,6 +484,7 @@
     });
     var bt = new PL.Battle(this.battleOpts({ team: t.team, trainer: t }));
     bt.aiLevel = 3;
+    bt.biome = 'arena';
     bt.reward = { money: 900 + this.region * 320, kind: 'boss' };
     return bt;
   };
@@ -477,6 +496,7 @@
     });
     var bt = new PL.Battle(this.battleOpts({ team: t.team, trainer: t }));
     bt.aiLevel = 3;
+    bt.biome = 'liga';
     bt.reward = { money: 2200 + this.leagueStage * 400, kind: 'e4' };
     return bt;
   };
@@ -485,6 +505,7 @@
     var t = W.championTeam(rng, this.enemyLevel(2));
     var bt = new PL.Battle(this.battleOpts({ team: t.team, trainer: t }));
     bt.aiLevel = 3;
+    bt.biome = 'liga';
     bt.reward = { money: 8000, kind: 'champ' };
     return bt;
   };
@@ -678,17 +699,35 @@
     // Tragegegenstände
     PL.items.all().forEach(function (it) {
       if (it.kind !== 'hold') return;
-      if (it.mega) return;
+      if (it.mega) return;                                   // Megasteine unten, gezielt
       var w = it.berry ? 6 : 5;
       if (it.price > 2200 && deep < 3) w = 1;
       out.push({ item: it, w: w });
     });
+    // Mega-Steine nur, wenn sie zu jemandem im Team passen — ein Stein für ein
+    // Pokémon, das man gar nicht hat, ist bloß toter Platz im Angebot.
+    this.matchingMegaStones().forEach(function (id) { add(id, deep > 1 ? 16 : 8); });
     // Entwicklungssteine, wenn sie jemandem im Team helfen
     var needed = {};
     this.party.forEach(function (m) {
       mons.evolutions(m, {}).forEach(function (e) { if (e.item) needed[PL.util.toID(e.item)] = true; });
     });
     Object.keys(needed).forEach(function (id) { add(id, 14); });
+    return out;
+  };
+
+  /** Alle Mega-Steine, die zu einem Pokémon im Team gehören. */
+  R.matchingMegaStones = function () {
+    var out = [];
+    this.party.forEach(function (m) {
+      var list = dex.megasFor(dex.sp(m.sp));
+      if (!list) return;
+      list.forEach(function (form) {
+        if (!form.it) return;
+        var id = PL.util.toID(form.it);
+        if (out.indexOf(id) < 0) out.push(id);
+      });
+    });
     return out;
   };
 
@@ -726,6 +765,15 @@
     opts = opts || {};
     var size = opts.size || 7;
     var pools = this.itemPool(), stock = [], i;
+    // Ein passender Mega-Stein liegt immer aus, solange das Team einen
+    // gebrauchen kann und ihn noch nicht hat.
+    var stones = this.matchingMegaStones().filter(function (id) { return !this.bag[id]; }, this);
+    if (stones.length) {
+      var owned = {};
+      this.party.forEach(function (m) { if (m.item) owned[m.item] = 1; });
+      stones = stones.filter(function (id) { return !owned[id]; });
+      if (stones.length) stock.push(PL.items.get(rng.pick(stones)));
+    }
     if (this.hasMod('shopHold')) {
       var holds = pools.filter(function (p) { return p.item.kind === 'hold'; });
       if (holds.length) { stock.push(rng.pick(holds).item); }
@@ -742,10 +790,12 @@
     }
     var discount = opts.discount !== undefined ? opts.discount : this.mod('shopDiscount');
     if (this.asc(2)) discount -= 0.25;                     // Aufstieg 2: teurere Läden
+    var stoneCut = this.mod('stoneDiscount') || 0;
     return {
       kind: 'shop',
       stock: stock.map(function (it) {
-        return { item: it, price: Math.max(50, Math.round(it.price * (1 - discount))) };
+        var off = discount + (it.mega ? stoneCut : 0);
+        return { item: it, price: Math.max(50, Math.round(it.price * (1 - Math.min(0.85, off)))) };
       }),
       text: opts.text || 'Ein Händler hat seinen Stand aufgebaut.'
     };
@@ -838,6 +888,25 @@
   R.addTM = function (moveIndex) {
     this.tms = this.tms || {};
     this.tms[moveIndex] = (this.tms[moveIndex] || 0) + 1;
+  };
+
+  /** Ein Mega-Stein, der zu einem Teammitglied passt. */
+  R.giveMegaStone = function (rng) {
+    var options = [];
+    this.party.forEach(function (m) {
+      var list = dex.megasFor(dex.sp(m.sp));
+      if (!list) return;
+      list.forEach(function (form) {
+        if (form.it) options.push({ mon: m, id: PL.util.toID(form.it), name: form.it });
+      });
+    });
+    if (!options.length) {
+      this.giveMoney(900);
+      return 'Der Kristall bleibt stumm — niemand in deinem Team antwortet ihm. Du verkaufst ihn für 900 ₽.';
+    }
+    var pick = rng.pick(options);
+    this.addItem(pick.id, 1);
+    return PL.items.label(pick.id) + ' gefunden — er gehört zu ' + mons.name(pick.mon) + '.';
   };
 
   R.giveRandomItem = function (rng, count) {
