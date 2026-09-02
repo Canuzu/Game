@@ -32,7 +32,11 @@
   function delayMs() { return App.speeds[settings().speed] !== undefined ? App.speeds[settings().speed] : 420; }
 
   function applyTheme() {
-    doc.documentElement.setAttribute('data-app-theme', settings().theme);
+    // 'auto' überlässt die Entscheidung der Umgebung: erst der Seite, in der
+    // das Spiel steckt, sonst dem Betriebssystem.
+    var theme = settings().theme;
+    if (theme === 'light' || theme === 'dark') doc.documentElement.setAttribute('data-app-theme', theme);
+    else doc.documentElement.removeAttribute('data-app-theme');
     T.setLang(settings().lang);
   }
 
@@ -1822,9 +1826,9 @@
         el('h2', { text: 'Einstellungen' }),
         el('button', { className: 'btn', type: 'button', onclick: function () { show(App.run ? 'map' : 'title'); } }, 'Zurück')
       ]),
-      row('Ansicht', 'Hell oder dunkel.', picker(
-        [{ value: 'dark', label: 'Dunkel' }, { value: 'light', label: 'Hell' }], s.theme,
-        function (v) { meta.setSetting('theme', v); applyTheme(); })),
+      row('Ansicht', 'Automatisch richtet sich nach deinem System.', picker(
+        [{ value: 'auto', label: 'Automatisch' }, { value: 'dark', label: 'Dunkel' }, { value: 'light', label: 'Hell' }],
+        s.theme, function (v) { meta.setSetting('theme', v); applyTheme(); })),
       row('Sprache der Pokémon-Namen', 'Attacken und Fähigkeiten bleiben englisch — so heißen sie überall.', picker(
         [{ value: 'de', label: 'Deutsch' }, { value: 'en', label: 'Englisch' }], s.lang,
         function (v) { meta.setSetting('lang', v); applyTheme(); })),

@@ -54,21 +54,37 @@
   --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-@media (prefers-color-scheme: light) {
-  :root:not([data-app-theme="dark"]) {
-    --bg-deep: var(--l-bg-deep); --bg: var(--l-bg); --panel: var(--l-panel);
-    --panel-2: var(--l-panel-2); --line: var(--l-line); --text: var(--l-text);
-    --muted: var(--l-muted); --accent: var(--l-accent); --accent-2: var(--l-accent-2);
-    --good: var(--l-good); --warn: var(--l-warn); --bad: var(--l-bad);
-    --shadow: 0 6px 20px rgba(20,25,40,.12);
-  }
-}
+/* Hell greift in drei Fällen, in dieser Rangfolge:
+     1. im Spiel wurde "Hell" gewählt          (data-app-theme)
+     2. die umgebende Seite steht auf hell     (data-theme)
+     3. das Betriebssystem bevorzugt hell und im Spiel wurde nichts gewählt
+   Die Wahl im Spiel gewinnt immer — deshalb schließt jede der anderen Regeln
+   ein ausdrückliches data-app-theme="dark" aus. */
+
 :root[data-app-theme="light"] {
   --bg-deep: var(--l-bg-deep); --bg: var(--l-bg); --panel: var(--l-panel);
   --panel-2: var(--l-panel-2); --line: var(--l-line); --text: var(--l-text);
   --muted: var(--l-muted); --accent: var(--l-accent); --accent-2: var(--l-accent-2);
   --good: var(--l-good); --warn: var(--l-warn); --bad: var(--l-bad);
   --shadow: 0 6px 20px rgba(20,25,40,.12);
+}
+
+:root[data-theme="light"]:not([data-app-theme="dark"]) {
+  --bg-deep: var(--l-bg-deep); --bg: var(--l-bg); --panel: var(--l-panel);
+  --panel-2: var(--l-panel-2); --line: var(--l-line); --text: var(--l-text);
+  --muted: var(--l-muted); --accent: var(--l-accent); --accent-2: var(--l-accent-2);
+  --good: var(--l-good); --warn: var(--l-warn); --bad: var(--l-bad);
+  --shadow: 0 6px 20px rgba(20,25,40,.12);
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-app-theme="dark"]):not([data-theme="dark"]) {
+    --bg-deep: var(--l-bg-deep); --bg: var(--l-bg); --panel: var(--l-panel);
+    --panel-2: var(--l-panel-2); --line: var(--l-line); --text: var(--l-text);
+    --muted: var(--l-muted); --accent: var(--l-accent); --accent-2: var(--l-accent-2);
+    --good: var(--l-good); --warn: var(--l-warn); --bad: var(--l-bad);
+    --shadow: 0 6px 20px rgba(20,25,40,.12);
+  }
 }
 
 /* ---------- 2) Grundlagen ------------------------------------------------- */
