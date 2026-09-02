@@ -321,7 +321,8 @@
     var stage = el('div', { className: 'map-stage' });
     if (PL.scenery) {
       var list = PL.scenery.regionBiomes[region.id];
-      PL.scenery.render(stage, run.leagueStage >= 0 ? 'liga' : (list ? list[0] : 'wiese'), { stretch: true });
+      PL.scenery.render(stage, run.leagueStage >= 0 ? 'liga' : (list ? list[0] : 'wiese'),
+        { tiled: true, particles: false });
     }
 
     // Verbindungen als SVG hinterlegen, sobald die Knoten ihre Plätze haben.
@@ -438,9 +439,17 @@
     var wrap = el('div', { className: 'battle' });
 
     var stage = el('div', { className: 'battle-stage' });
+    var scene = PL.scenery ? PL.scenery.get(bt.biome || 'wiese') : null;
+    function platform(w, h) {
+      if (!PL.scenery) return el('div', { className: 'platform' });
+      return el('img', {
+        className: 'platform', alt: '',
+        src: PL.scenery.platform(w, h, scene.platform, scene.edge)
+      });
+    }
     var slots = [
-      el('div', { className: 'stage-slot slot-mine' }, el('div', { className: 'platform' })),
-      el('div', { className: 'stage-slot slot-enemy' }, el('div', { className: 'platform' }))
+      el('div', { className: 'stage-slot slot-mine' }, platform(44, 13)),
+      el('div', { className: 'stage-slot slot-enemy' }, platform(36, 11))
     ];
     var frames = [
       el('div', { className: 'frame-wrap frame-mine' }),
@@ -452,7 +461,9 @@
       slots: slots,
       frames: frames,
       log: el('div', { className: 'battle-log', 'aria-live': 'polite' }),
+      info: el('div', { className: 'move-info' }),
       controls: el('div', { className: 'battle-controls' }),
+      menu: 'main',
       field: el('div', { className: 'field-effects' }),
       stage: stage,
       pendingMega: false,
@@ -468,7 +479,9 @@
 
     wrap.appendChild(stage);
     if (App.run && App.run.hasMod('scout') && !bt.wild) wrap.appendChild(scoutPanel(bt));
-    wrap.appendChild(BV.log);
+    BV.left = el('div', { className: 'bar-left' });
+    BV.right = el('div', { className: 'bar-right' });
+    BV.controls.appendChild(el('div', { className: 'battle-bar' }, [BV.left, BV.right]));
     wrap.appendChild(BV.controls);
 
     renderSide(0);
@@ -601,8 +614,10 @@
   function playLog(entries, done) {
     var i = 0, speed = delayMs();
     BV.busy = true;
-    clear(BV.controls);
-    BV.controls.appendChild(el('div', { className: 'waiting', text: '…' }));
+    clear(BV.left);
+    BV.left.appendChild(BV.log);
+    clear(BV.right);
+    BV.right.appendChild(el('div', { className: 'waiting', text: '▾' }));
 
     function step() {
       if (!BV || BV.bt !== App.battle) return;          // Ansicht gewechselt
@@ -684,85 +699,127 @@
     }
   }
 
+  /**
+   * Die Bedienung sitzt in der Textbox unter der Bühne: links das Protokoll
+   * (beim Attackenmenü die Angaben zur Attacke), rechts die Auswahl mit
+   * Cursor — wie in den Hauptspielen.
+   */
   function renderControls() {
-    var bt = App.battle, run = App.run;
-    clear(BV.controls);
-    var moves = bt.legalMoves(0);
-    var foe = bt.sides[1].active;
-    var me = bt.sides[0].active;
-    var grid = el('div', { className: 'move-grid' });
-    moves.forEach(function (mv) {
-      var m = mv.move;
-      // Typenvorteil direkt am Knopf: das ist der Kern jeder Entscheidung.
-      var effTag = null;
-      if (m.c !== 'T' && foe && foe.mon.hp > 0) {
-        var eff = bt.effectiveness(m.t, foe, m, me);
-        if (eff === 0) effTag = { c: 'none', t: 'wirkungslos' };
-        else if (eff > 1) effTag = { c: 'super', t: eff >= 4 ? '×4' : '×2' };
-        else if (eff < 1) effTag = { c: 'weak', t: eff <= 0.25 ? '×¼' : '×½' };
-      }
-      grid.appendChild(el('button', {
-        className: 'move-btn' + (mv.disabled ? ' disabled' : ''),
-        type: 'button', disabled: mv.disabled,
-        style: { '--move-color': U.TYPE_COLOR[m.t] || '#777' },
-        title: (mv.why ? mv.why + ' — ' : '') + T.moveDesc(m),
-        onclick: function () { submitAction({ type: 'move', index: mv.index }); }
-      }, [
-        el('span', { className: 'move-btn-name', text: m.n }),
-        el('span', { className: 'move-btn-meta' }, [
-          el('span', { className: 'move-btn-type', text: T.type(m.t) }),
-          el('span', { text: U.CAT_ICON[m.c] }),
-          el('span', { text: mv.pp + '/' + mv.maxPP }),
-          effTag ? el('span', { className: 'move-eff ' + effTag.c, text: effTag.t }) : null
-        ])
-      ]));
-    });
+    if (BV.menu === 'moves') showMoveMenu();
+    else showMainMenu();
+  }
 
-    var actions = el('div', { className: 'action-row' });
-    actions.appendChild(actionBtn('🔄 Wechseln', bt.canSwitch(0), function () { openSwitchDialog(); }));
-    actions.appendChild(actionBtn('🎒 Beutel', true, function () { openBattleBag(); }));
+  function menuItem(label, opts) {
+    opts = opts || {};
+    return el('button', {
+      className: 'menu-item' + (opts.className ? ' ' + opts.className : ''),
+      type: 'button', disabled: !!opts.disabled, title: opts.title || null,
+      onclick: opts.onClick || null,
+      onmouseenter: opts.onHover || null,
+      onfocus: opts.onHover || null
+    }, [
+      el('span', { className: 'cursor', text: '▶' }),
+      el('span', { className: 'menu-label', text: label }),
+      opts.right || null
+    ]);
+  }
+
+  function showMainMenu() {
+    var bt = App.battle, run = App.run;
+    BV.menu = 'main';
+    clear(BV.left);
+    BV.left.appendChild(BV.log);
+    clear(BV.right);
+
+    var items = [
+      menuItem('KAMPF', { className: 'accent', onClick: function () { showMoveMenu(); } }),
+      menuItem('BEUTEL', { onClick: function () { openBattleBag(); } }),
+      menuItem('POKÉMON', { disabled: !bt.canSwitch(0), onClick: function () { openSwitchDialog(); } })
+    ];
     if (bt.wild) {
-      actions.appendChild(actionBtn('🔴 Ball', true, function () { openBallDialog(); }));
-      actions.appendChild(actionBtn('🏃 Fliehen', true, function () { submitAction({ type: 'run' }); }));
+      items.push(menuItem('BALL', { onClick: function () { openBallDialog(); } }));
+      items.push(menuItem('FLUCHT', { onClick: function () { submitAction({ type: 'run' }); } }));
     }
     if (bt.canMega(bt.sides[0].active)) {
       var form = bt.megaFormFor(bt.sides[0].active);
       var primal = /Primal/.test(form.n);
-      actions.appendChild(el('button', {
-        className: 'action-btn mega', type: 'button',
-        title: (primal ? 'Protoform auslösen: ' : 'Mega-entwickeln zu ') + form.n,
-        onclick: function () {
-          var first = moves.filter(function (m) { return !m.disabled; })[0];
-          if (!first) return;
-          BV.pendingMega = true;
-          renderControls();
-          U.toast(primal ? 'Protoform bereit — wähle deine Attacke.' : 'Mega-Entwicklung bereit — wähle deine Attacke.');
+      items.push(menuItem(primal ? 'PROTO' : 'MEGA', {
+        className: 'mega' + (BV.pendingMega ? ' on' : ''),
+        title: (primal ? 'Protoform: ' : 'Mega-Form: ') + form.n,
+        onClick: function () {
+          BV.pendingMega = !BV.pendingMega;
+          showMainMenu();
+          if (BV.pendingMega) showMoveMenu();
         }
-      }, (primal ? '☀ Proto ' : '◈ Mega ') + form.n.replace(/^[^-]+-/, '')));
+      }));
     }
-    if (BV.pendingMega) {
-      actions.appendChild(el('span', { className: 'mega-hint', text: '◈ Mega-Entwicklung vorgemerkt' }));
-    }
-
-    var auto = el('button', {
-      className: 'action-btn auto' + (App.autoPlay ? ' on' : ''), type: 'button',
+    items.push(menuItem('AUTO', {
+      className: App.autoPlay ? 'on' : '',
       title: 'Der Computer übernimmt die Kämpfe',
-      onclick: function () {
+      onClick: function () {
         App.autoPlay = !App.autoPlay;
-        auto.classList.toggle('on', App.autoPlay);
+        showMainMenu();
         if (App.autoPlay) awaitInput();
       }
-    }, '⚡ Auto');
-    actions.appendChild(auto);
+    }));
 
-    BV.controls.appendChild(grid);
-    BV.controls.appendChild(actions);
+    BV.right.appendChild(el('div', { className: 'menu-grid' }, items));
+    if (BV.pendingMega) {
+      BV.right.appendChild(el('div', { className: 'mega-hint', text: '◈ Mega vorgemerkt' }));
+    }
   }
 
-  function actionBtn(label, enabled, onClick) {
-    return el('button', {
-      className: 'action-btn', type: 'button', disabled: !enabled, onclick: onClick
-    }, label);
+  function showMoveMenu() {
+    var bt = App.battle;
+    BV.menu = 'moves';
+    var moves = bt.legalMoves(0);
+    var foe = bt.sides[1].active, me = bt.sides[0].active;
+
+    clear(BV.left);
+    BV.left.appendChild(BV.info);
+    describeMove(moves[0] ? moves[0].move : null);
+
+    clear(BV.right);
+    var grid = el('div', { className: 'menu-grid moves' }, moves.map(function (mv) {
+      var m = mv.move, eff = null;
+      if (m.c !== 'T' && foe && foe.mon.hp > 0) {
+        var e = bt.effectiveness(m.t, foe, m, me);
+        if (e === 0) eff = { c: 'none', t: '✕' };
+        else if (e > 1) eff = { c: 'super', t: e >= 4 ? '▲▲' : '▲' };
+        else if (e < 1) eff = { c: 'weak', t: e <= 0.25 ? '▼▼' : '▼' };
+      }
+      return menuItem(m.n, {
+        className: 'move t-' + PL.util.toID(m.t) + (mv.disabled ? ' disabled' : ''),
+        disabled: mv.disabled,
+        title: (mv.why ? mv.why + ' — ' : '') + T.moveDesc(m),
+        onHover: function () { describeMove(m, mv); },
+        onClick: function () { submitAction({ type: 'move', index: mv.index }); },
+        right: el('span', { className: 'menu-right' }, [
+          eff ? el('span', { className: 'move-eff ' + eff.c, text: eff.t }) : null,
+          el('span', { className: 'menu-pp', text: mv.pp + '/' + mv.maxPP })
+        ])
+      });
+    }));
+    grid.appendChild(menuItem('ZURÜCK', { className: 'back', onClick: function () { showMainMenu(); } }));
+    BV.right.appendChild(grid);
+  }
+
+  /** Angaben zur gerade betrachteten Attacke in der linken Boxhälfte. */
+  function describeMove(move, slot) {
+    clear(BV.info);
+    if (!move) { BV.info.appendChild(el('p', { className: 'muted', text: 'Keine Attacke verfügbar.' })); return; }
+    BV.info.appendChild(el('div', { className: 'info-head' }, [
+      U.typeChip(move.t),
+      el('strong', { text: move.n }),
+      el('span', { className: 'muted', text: U.CAT_NAME[move.c] })
+    ]));
+    BV.info.appendChild(el('div', { className: 'info-row' }, [
+      el('span', { text: 'STÄRKE ' + (move.c === 'T' ? '—' : move.bp) }),
+      el('span', { text: 'GENAU ' + (move.ac === 0 ? '—' : move.ac) }),
+      slot ? el('span', { text: 'AP ' + slot.pp + '/' + slot.maxPP }) : null
+    ]));
+    BV.info.appendChild(el('p', { className: 'info-desc', text: T.moveDesc(move) }));
+    if (slot && slot.why) BV.info.appendChild(el('p', { className: 'bad', text: slot.why }));
   }
 
   function submitAction(action) {
@@ -770,6 +827,7 @@
     if (!bt || BV.busy || bt.ended) return;
     if (BV.pendingMega && action.type === 'move') action.mega = true;
     BV.pendingMega = false;
+    BV.menu = 'main';
     var enemyAction = PL.ai.chooseAction(bt, 1, bt.aiLevel === undefined ? 1 : bt.aiLevel);
     var entries = bt.runTurn([action, enemyAction]);
     App.run.stats.turns++;
@@ -784,8 +842,8 @@
       if (voluntary && pick < 0) { bt.pendingSelfSwitchSide = null; awaitInput(); return; }
       if (pick < 0) pick = bt.sides[0].team.findIndex(function (m) { return m.hp > 0; });
       if (pick >= 0) {
-        clear(BV.controls);
-        BV.controls.appendChild(el('div', { className: 'waiting', text: '…' }));
+        clear(BV.right);
+        BV.right.appendChild(el('div', { className: 'waiting', text: '▾' }));
         root.setTimeout(function () {
           if (!App.autoPlay || App.battle !== bt) { askReplacementManual(voluntary); return; }
           bt.replace(0, pick);
@@ -802,8 +860,10 @@
 
   function askReplacementManual(voluntary) {
     var bt = App.battle;
-    clear(BV.controls);
-    BV.controls.appendChild(el('div', { className: 'prompt', text: voluntary ? 'Wen schickst du nach?' : 'Dein Pokémon ist kampfunfähig. Wer übernimmt?' }));
+    clear(BV.left);
+    BV.left.appendChild(BV.log);
+    clear(BV.right);
+    BV.right.appendChild(el('div', { className: 'prompt', text: voluntary ? 'Wen schickst du nach?' : 'Wer übernimmt?' }));
     var list = el('div', { className: 'switch-row' });
     bt.sides[0].team.forEach(function (mon, i) {
       if (mon.hp <= 0 || i === bt.sides[0].activeIndex) return;
@@ -823,7 +883,7 @@
         onclick: function () { bt.pendingSelfSwitchSide = null; awaitInput(); }
       }, 'Bleiben'));
     }
-    BV.controls.appendChild(list);
+    BV.right.appendChild(list);
   }
 
   function openSwitchDialog() {
@@ -1938,10 +1998,14 @@
     } else if (e.key.toLowerCase() === 'a') {
       App.autoPlay = !App.autoPlay;
       U.toast('Auto-Kampf ' + (App.autoPlay ? 'an' : 'aus'));
+      BV.menu = 'main';
       renderControls();
       if (App.autoPlay) awaitInput();
     } else if (e.key.toLowerCase() === 'm') {
       if (App.battle.canMega(App.battle.sides[0].active)) { BV.pendingMega = !BV.pendingMega; renderControls(); }
+    } else if (e.key === 'Backspace' && BV.menu === 'moves') {
+      BV.menu = 'main';
+      renderControls();
     }
   }
 

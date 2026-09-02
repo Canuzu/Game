@@ -65,15 +65,27 @@ Mega-Entwicklung. Auch für den Nachrücker nach einem K. o.
 beim aktuellen Gegner ausrichtet (×4, ×2, ×½, ×¼, wirkungslos). Kein Blättern
 in Tabellen, keine Rechnerei — die Entscheidung bleibt trotzdem deine.
 
-**Gezeichnete Umgebungen** — 15 Kulissen, alle aus SVG und CSS gebaut, kein
-einziges geladenes Bild: Route, Wald, Höhle, Bergpfad, Eisfeld, Küste,
+**Pixelgrafik statt glatter Flächen** — Vorbild ist die Game-Boy-Advance-Ära.
+Die 15 Kulissen werden auf einem 240 × 80 Pixel großen Canvas gezeichnet, also
+genau so breit wie ein GBA-Bild, und anschließend hart hochskaliert: große,
+sichtbare Pixel, Farbverläufe als Bänder mit Dither-Naht, kein einziges
+weichgezeichnetes Bild. Route, Wald, Höhle, Bergpfad, Eisfeld, Küste,
 Gewässer, Vulkan, Wüste, Stadt, Arena, Liga-Halle, Ruine, Dschungel und
-Nachtlager. Beide Pokémon stehen auf Plattformen wie in den Hauptspielen,
-darüber ziehen Blätter, Schneeflocken, Funken oder Sandkörner. Welche Kulisse
-erscheint, entscheiden Region und Knotenart: Kanto zeigt Wälder und Wiesen,
-Sinnoh Schnee und Berge, Alola Strand und Vulkan; Arenaleiter kämpfen in der
-Arena, die Liga in ihrer Halle, Fundstücke liegen in Höhlen. Dieselbe
-Landschaft liegt auch hinter der Routenkarte.
+Nachtlager. Beide Pokémon stehen auf gezeichneten Plattformen, darüber ziehen
+Blätter, Schneeflocken, Funken oder Sandkörner.
+
+Welche Kulisse erscheint, entscheiden Region und Knotenart: Kanto zeigt Wälder
+und Wiesen, Sinnoh Schnee und Berge, Alola Strand und Vulkan; Arenaleiter
+kämpfen in der Arena, die Liga in ihrer Halle, Fundstücke liegen in Höhlen.
+Die Routenkarte bekommt dieselbe Welt in der Draufsicht: eine nahtlos
+kachelnde Bodentextur je Region.
+
+**Bedienung wie im Spiel** — unter der Bühne sitzt die klassische Textbox:
+links das Kampfprotokoll, rechts das Menü (KAMPF, BEUTEL, POKÉMON, BALL,
+FLUCHT, MEGA, AUTO) mit ▶-Cursor. KAMPF blendet die vier Attacken ein, daneben
+Typ, Stärke, Genauigkeit, AP und die Wirksamkeit gegen das aktuelle Ziel.
+Rahmen, Balken und Knöpfe sind flächig und hart umrandet — keine runden Ecken,
+keine weichen Schatten.
 
 **52 Relikte** — dauerhafte Effekte für den ganzen Run: mehr Erfahrung, bessere
 Fangchancen, Fleißpunkte nach jedem Kampf, eine zweite Mega-Entwicklung, ein
@@ -128,6 +140,7 @@ Team-Übersicht.
 | `B` | Beutel öffnen |
 | `A` | Auto-Kampf an/aus |
 | `M` | Mega-Entwicklung vormerken |
+| `Rücktaste` | Aus dem Attackenmenü zurück |
 | `Esc` | Menü bzw. Dialog schließen |
 
 Alles ist auch mit Maus oder Finger bedienbar; auf schmalen Bildschirmen legt
@@ -148,7 +161,7 @@ pokelike/
   index.html          Einstiegspunkt — reicht zum Spielen
   data/dex.js         erzeugte Pokémon-Daten (0,9 MB, alle neun Generationen)
   js/core.js          Zufall, Pokédex-Zugriff, Übersetzungen, Sprites
-  js/scenery.js       15 gezeichnete Kulissen mit Plattformen und Teilchen
+  js/scenery.js       15 Pixelkulissen, Plattformen, Bodenkacheln, Teilchen
   js/pokemon.js       Werte, Attackenwahl, Erfahrung, Entwicklung, Fangen
   js/effects.js       Fähigkeiten, Tragegegenstände, Attacken-Sonderregeln
   js/battle.js        Kampf-Engine

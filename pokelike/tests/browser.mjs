@@ -69,7 +69,10 @@ if (SHOT_DIR) await page.screenshot({ path: join(SHOT_DIR, '02-neuer-run.png') }
 await page.click('text=Los geht’s');
 await page.waitForSelector('.map-screen', { timeout: 10000 });
 check('Karte erscheint', await page.isVisible('.region-header'));
-check('Die Karte liegt auf einer Kulisse', await page.isVisible('.map-stage .scene-svg'));
+check('Die Karte liegt auf einer Bodenkachel', await page.evaluate(() => {
+  const layer = document.querySelector('.map-stage .scene-layer');
+  return !!layer && /url\(/.test(getComputedStyle(layer).backgroundImage);
+}));
 check('Knoten sind runde Wegmarken', (await page.locator('.map-node .node-badge').count()) >= 2);
 check('Team hat ein Pokémon', (await page.locator('.party-strip .mon-card:not(.empty)').count()) === 1);
 check('Knoten sind wählbar', (await page.locator('.map-node.open').count()) >= 1);
@@ -96,11 +99,14 @@ while (guard++ < 45) {
     battles++;
     if (!shotBattle) {
       check('Der Kampf spielt in einer gezeichneten Kulisse',
-        await page.isVisible('.battle-stage .scene-svg'));
+        await page.isVisible('.battle-stage .scene-art'));
       check('Beide Pokémon stehen auf Plattformen',
         (await page.locator('.stage-slot .platform').count()) === 2);
       check('Kein Terakristall mehr in der Oberfläche',
         (await page.locator('.action-btn.tera').count()) === 0);
+      check('Das Kampfmenü steht im Spielstil bereit',
+        (await page.locator('.battle-bar .menu-item').count()) >= 4);
+      check('Die Kulisse ist ein Pixelbild', await page.isVisible('.battle-stage .scene-art'));
     }
     if (!shotBattle && SHOT_DIR) {
       await page.waitForTimeout(400);
@@ -108,7 +114,7 @@ while (guard++ < 45) {
     }
     shotBattle = true;
     // Auto-Kampf einschalten und warten, bis der Kampf endet
-    const auto = page.locator('.action-btn.auto');
+    const auto = page.locator('.menu-item', { hasText: 'AUTO' });
     if (await auto.count() && !(await auto.first().evaluate((n) => n.classList.contains('on')))) {
       await auto.first().click({ timeout: 8000 }).catch(() => {});
     }

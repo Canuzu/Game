@@ -1,404 +1,466 @@
 /* =============================================================================
- * scenery.js — Gezeichnete Umgebungen
+ * scenery.js — Gezeichnete Umgebungen im GBA-Stil
  * -----------------------------------------------------------------------------
- * Jede Kulisse ist ein SVG mit drei Ebenen (Himmel, Ferne, Nähe) plus einem
- * Bodenband, dazu eine Handvoll Farbtokens für Plattformen und Beleuchtung und
- * optional bewegte Teilchen. Alles wird gezeichnet — es wird kein einziges
- * Bild geladen, damit die Kulissen auch offline und in Umgebungen mit
- * gesperrten externen Bildern stehen.
+ * Jede Kulisse wird auf einem 240 × 80 Pixel großen Canvas gezeichnet — genau
+ * so breit wie ein Game-Boy-Advance-Bild — und anschließend hart hochskaliert
+ * (image-rendering: pixelated). Dadurch sind die Pixel groß und sichtbar,
+ * statt weichgezeichnet zu verschwimmen.
  *
- * Koordinatensystem: 400 × 150, unten verankert. Die Kulisse deckt die Bühne
- * ab (preserveAspectRatio="xMidYMax slice"), der Boden bleibt also immer
- * sichtbar, egal wie breit das Fenster ist.
+ * Gezeichnet wird mit wenigen Grundformen und einer kleinen Palette je
+ * Umgebung. Farbverläufe entstehen als Bänder mit Dither-Übergängen, wie es
+ * die Hardware damals gemacht hat — kein einziger weicher Verlauf.
  *
- * Gliederung:  1) Bausteine   2) Kulissen   3) Auswahl   4) Darstellung
+ * Gliederung:  1) Zeichenwerkzeug   2) Kulissen   3) Auswahl   4) Darstellung
  * ========================================================================== */
 (function (root) {
   'use strict';
 
   var PL = root.PL || (root.PL = {});
+  var W = 240, H = 80;                    // Auflösung der Kulisse in Pixeln
 
-  /* ---------- 1) Bausteine ---------------------------------------------------- */
+  /* ---------- 1) Zeichenwerkzeug ---------------------------------------------- */
 
-  /** Zackige Silhouette (Berge, Baumkronen, Dünen) als Pfad. */
-  function ridge(points, baseY) {
-    var d = 'M-10 ' + baseY;
-    points.forEach(function (p) { d += ' L' + p[0] + ' ' + p[1]; });
-    return d + ' L410 ' + baseY + ' L410 160 L-10 160 Z';
+  function px(ctx, x, y, w, h, c) {
+    ctx.fillStyle = c;
+    ctx.fillRect(Math.round(x), Math.round(y), Math.max(1, Math.round(w)), Math.max(1, Math.round(h)));
   }
 
-  /** Weiche Hügelkette aus Bögen. */
-  function hills(baseY, height, count, phase) {
-    var step = 420 / count, d = 'M-10 ' + baseY, x = -10, i;
+  function poly(ctx, pts, c) {
+    ctx.fillStyle = c;
+    ctx.beginPath();
+    ctx.moveTo(Math.round(pts[0][0]), Math.round(pts[0][1]));
+    for (var i = 1; i < pts.length; i++) ctx.lineTo(Math.round(pts[i][0]), Math.round(pts[i][1]));
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  /** Waagerechte Farbbänder mit gepunktetem Übergang — der GBA-Verlauf. */
+  function bands(ctx, y0, y1, colors) {
+    var n = colors.length, span = (y1 - y0) / n, i, y, k, x;
+    for (i = 0; i < n; i++) {
+      y = y0 + span * i;
+      px(ctx, 0, y, W, Math.ceil(span) + 1, colors[i]);
+    }
+    // Dither-Naht zwischen den Bändern: jede zweite Spalte einen Pixel tief
+    for (i = 1; i < n; i++) {
+      y = Math.round(y0 + span * i);
+      for (x = 0; x < W; x += 2) px(ctx, x, y - 1, 1, 1, colors[i]);
+      for (x = 1; x < W; x += 2) px(ctx, x, y, 1, 1, colors[i - 1]);
+    }
+  }
+
+  /** Silhouette aus Spalten: fn(x) liefert die Höhe an dieser Stelle. */
+  function silhouette(ctx, fn, baseY, color, shade) {
+    var x, top, prev = null;
+    for (x = 0; x < W; x++) {
+      top = Math.round(baseY - fn(x));
+      px(ctx, x, top, 1, H - top, color);
+      if (shade && (prev === null || top < prev)) px(ctx, x, top, 1, 1, shade);
+      prev = top;
+    }
+  }
+
+  function wave(amp, freq, phase, base) {
+    return function (x) {
+      return base + Math.sin(x * freq + phase) * amp + Math.sin(x * freq * 2.3 + phase * 1.7) * amp * 0.35;
+    };
+  }
+
+  /** Nadelbaum aus gestapelten Dreiecksstufen. */
+  function conifer(ctx, x, groundY, h, dark, light) {
+    var w = Math.max(3, Math.round(h * 0.42)), i, rows = 3, step = h / rows;
+    px(ctx, x - 1, groundY - 3, 3, 4, dark);
+    for (i = 0; i < rows; i++) {
+      var top = groundY - h + step * i;
+      var ww = Math.round(w * (0.45 + 0.28 * i));
+      poly(ctx, [[x, top], [x + ww, top + step * 1.25], [x - ww, top + step * 1.25]], i === 0 ? light : dark);
+      poly(ctx, [[x, top + 1], [x + ww - 2, top + step * 1.25], [x, top + step * 1.25]], dark);
+    }
+  }
+
+  /** Laubbaum: Stamm plus zwei Kronenblöcke. */
+  function bush(ctx, x, groundY, r, dark, light) {
+    px(ctx, x - 1, groundY - r, 2, r, '#5a3f28');
+    px(ctx, x - r, groundY - r * 2.2, r * 2, r * 1.5, dark);
+    px(ctx, x - r + 1, groundY - r * 2.4, r * 2 - 2, r * 0.8, light);
+  }
+
+  /** Streut Pixel als Struktur (Gras, Kies, Sterne). */
+  function speckle(ctx, x0, y0, w, h, color, count, seed) {
+    var i, s = seed || 7;
     for (i = 0; i < count; i++) {
-      var h = height * (0.7 + 0.3 * Math.sin(i * 1.7 + phase));
-      d += ' Q' + (x + step / 2) + ' ' + (baseY - h) + ' ' + (x + step) + ' ' + baseY;
-      x += step;
+      s = (s * 1103515245 + 12345) & 0x7fffffff;
+      var sx = x0 + (s >> 7) % w;
+      s = (s * 1103515245 + 12345) & 0x7fffffff;
+      var sy = y0 + (s >> 7) % h;
+      px(ctx, sx, sy, 1, 1, color);
     }
-    return d + ' L410 160 L-10 160 Z';
-  }
-
-  /** Nadelbaum als Dreiecksstapel. */
-  function conifer(x, y, h, w) {
-    var s = '';
-    for (var i = 0; i < 3; i++) {
-      var t = y - h + (h / 3) * i;
-      var ww = w * (0.55 + 0.22 * i);
-      s += '<path d="M' + x + ' ' + t + ' L' + (x + ww) + ' ' + (t + h / 2.4) +
-        ' L' + (x - ww) + ' ' + (t + h / 2.4) + ' Z"/>';
-    }
-    s += '<rect x="' + (x - 1.2) + '" y="' + (y - 4) + '" width="2.4" height="6"/>';
-    return s;
-  }
-
-  /** Laubbaum: Stamm plus drei Kreise. */
-  function broadleaf(x, y, h, w) {
-    return '<rect x="' + (x - 1.6) + '" y="' + (y - h * 0.45) + '" width="3.2" height="' + h * 0.45 + '"/>' +
-      '<circle cx="' + x + '" cy="' + (y - h * 0.62) + '" r="' + w + '"/>' +
-      '<circle cx="' + (x - w * 0.7) + '" cy="' + (y - h * 0.48) + '" r="' + w * 0.72 + '"/>' +
-      '<circle cx="' + (x + w * 0.7) + '" cy="' + (y - h * 0.5) + '" r="' + w * 0.68 + '"/>';
-  }
-
-  function svg(inner) {
-    return '<svg class="scene-svg" viewBox="0 0 400 150" preserveAspectRatio="xMidYMax slice" ' +
-      'xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' + inner + '</svg>';
-  }
-
-  function grad(id, from, to, x2, y2) {
-    return '<linearGradient id="' + id + '" x1="0" y1="0" x2="' + (x2 || 0) + '" y2="' + (y2 === undefined ? 1 : y2) + '">' +
-      '<stop offset="0" stop-color="' + from + '"/><stop offset="1" stop-color="' + to + '"/></linearGradient>';
-  }
-
-  function sky(id, from, to) {
-    return '<defs>' + grad(id, from, to) + '</defs><rect x="-10" y="-10" width="420" height="170" fill="url(#' + id + ')"/>';
   }
 
   /* ---------- 2) Kulissen ------------------------------------------------------ */
 
   var B = {};
-
   function biome(id, o) { o.id = id; B[id] = o; return o; }
 
   biome('wiese', {
-    name: 'Route', ground: '#6fae52', platform: '#7cc25c', edge: '#4d8a3a', light: 'rgba(255,246,200,.30)',
+    tile: 'gras',
+    sky: '#5090d8',
+    name: 'Route', ground: '#68a848', platform: '#7cc25c', edge: '#3c7030', light: 'rgba(255,246,200,.16)',
     particles: 'pollen',
-    art: function () {
-      return svg(
-        sky('g-wiese', '#7ec8f0', '#cfeaf7') +
-        '<circle cx="320" cy="26" r="16" fill="#fff6c8" opacity=".85"/>' +
-        '<g fill="#ffffff" opacity=".55"><ellipse cx="90" cy="34" rx="26" ry="9"/><ellipse cx="112" cy="30" rx="18" ry="7"/>' +
-        '<ellipse cx="255" cy="22" rx="20" ry="7"/></g>' +
-        '<path d="' + hills(96, 26, 4, 0.4) + '" fill="#9dd07a" opacity=".75"/>' +
-        '<path d="' + hills(108, 18, 6, 2.1) + '" fill="#7ebd5c"/>' +
-        '<g fill="#4f8f3c">' + broadleaf(40, 112, 30, 11) + broadleaf(365, 116, 26, 9) + '</g>' +
-        '<rect x="-10" y="118" width="420" height="42" fill="#6fae52"/>' +
-        '<g fill="#8ccb6a" opacity=".7"><ellipse cx="120" cy="130" rx="60" ry="7"/><ellipse cx="300" cy="140" rx="70" ry="8"/></g>'
-      );
+    draw: function (ctx) {
+      bands(ctx, 0, 44, ['#5090d8', '#68a8e0', '#88c0e8', '#a8d8f0']);
+      px(ctx, 188, 8, 14, 3, '#f8f0b8'); px(ctx, 191, 5, 8, 9, '#f8f0b8'); px(ctx, 194, 4, 2, 11, '#f8f0b8');
+      px(ctx, 30, 14, 26, 4, '#ffffff'); px(ctx, 36, 11, 14, 4, '#ffffff');
+      px(ctx, 120, 9, 20, 3, '#ffffff'); px(ctx, 126, 7, 10, 3, '#ffffff');
+      silhouette(ctx, wave(5, 0.035, 1.2, 12), 56, '#88c060', '#a8d878');
+      silhouette(ctx, wave(3, 0.05, 3.4, 7), 62, '#68a848', '#88c060');
+      px(ctx, 0, 62, W, H - 62, '#68a848');
+      px(ctx, 0, 62, W, 2, '#88c060');
+      conifer(ctx, 18, 62, 20, '#2c6030', '#3c8038');
+      bush(ctx, 214, 62, 7, '#2c6030', '#4c9040');
+      speckle(ctx, 0, 64, W, 16, '#7cc25c', 90, 11);
+      speckle(ctx, 0, 64, W, 16, '#4c8438', 60, 29);
     }
   });
 
   biome('wald', {
-    name: 'Wald', ground: '#3f6b39', platform: '#4f8446', edge: '#2f5230', light: 'rgba(190,255,160,.18)',
+    tile: 'gras',
+    sky: '#6ba048',
+    name: 'Wald', ground: '#3c6838', platform: '#4f8446', edge: '#24421f', light: 'rgba(190,255,160,.10)',
     particles: 'leaves',
-    art: function () {
-      return svg(
-        sky('g-wald', '#a8d38a', '#5d9450') +
-        '<g fill="#2f5c34" opacity=".55">' + conifer(24, 96, 40, 13) + conifer(78, 92, 34, 11) +
-        conifer(140, 95, 38, 12) + conifer(212, 93, 36, 12) + conifer(286, 94, 40, 13) +
-        conifer(348, 90, 34, 11) + '</g>' +
-        '<path d="' + ridge([[0, 78], [60, 62], [130, 74], [210, 58], [280, 72], [350, 60], [400, 74]], 78) + '" fill="#2c5531"/>' +
-        '<g fill="#1f3f26">' + conifer(20, 118, 52, 17) + conifer(72, 122, 46, 15) +
-        conifer(126, 118, 54, 18) + conifer(182, 124, 44, 14) + conifer(236, 119, 50, 16) +
-        conifer(292, 123, 46, 15) + conifer(348, 118, 54, 18) + conifer(392, 122, 44, 14) + '</g>' +
-        '<rect x="-10" y="118" width="420" height="42" fill="#3f6b39"/>' +
-        '<g fill="#325a33" opacity=".8"><ellipse cx="80" cy="134" rx="55" ry="8"/><ellipse cx="330" cy="142" rx="65" ry="9"/></g>'
-      );
+    draw: function (ctx) {
+      bands(ctx, 0, 36, ['#6ba048', '#568c3c', '#447434']);
+      silhouette(ctx, wave(6, 0.045, 0.6, 16), 40, '#2c5830');
+      var i;
+      for (i = 0; i < 9; i++) conifer(ctx, 12 + i * 28, 44, 18 + (i % 3) * 4, '#24471f', '#356b2c');
+      px(ctx, 0, 44, W, 8, '#325c30');
+      for (i = 0; i < 8; i++) conifer(ctx, 4 + i * 32 + (i % 2) * 12, 62, 26 + (i % 3) * 6, '#1b3a1c', '#2c5c28');
+      px(ctx, 0, 62, W, H - 62, '#3c6838');
+      px(ctx, 0, 62, W, 2, '#4f8446');
+      speckle(ctx, 0, 64, W, 16, '#4f8446', 80, 5);
+      speckle(ctx, 0, 64, W, 16, '#2c5028', 50, 41);
     }
   });
 
   biome('hoehle', {
-    name: 'Höhle', ground: '#3a3340', platform: '#4a4152', edge: '#282230', light: 'rgba(140,180,255,.14)',
+    tile: 'fels',
+    sky: '#1d1a26',
+    name: 'Höhle', ground: '#4a4050', platform: '#5c5064', edge: '#2a2432', light: 'rgba(150,190,255,.10)',
     particles: 'drops',
-    art: function () {
-      var stal = '', i;
-      for (i = 0; i < 11; i++) {
-        var x = i * 38 + 8, h = 16 + ((i * 37) % 26);
-        stal += '<path d="M' + (x - 7) + ' -6 L' + (x + 7) + ' -6 L' + x + ' ' + h + ' Z"/>';
+    draw: function (ctx) {
+      bands(ctx, 0, 34, ['#1d1a26', '#26212f', '#302a3a']);
+      var i, x, h;
+      for (i = 0; i < 16; i++) {                       // Tropfsteine von oben
+        x = i * 15 + 3; h = 6 + ((i * 37) % 12);
+        poly(ctx, [[x - 3, 0], [x + 3, 0], [x, h]], '#332c3d');
+        px(ctx, x - 1, 0, 1, h - 2, '#463c52');
       }
-      var stag = '';
-      for (i = 0; i < 7; i++) {
-        var xx = i * 58 + 24, hh = 12 + ((i * 53) % 20);
-        stag += '<path d="M' + (xx - 8) + ' 122 L' + (xx + 8) + ' 122 L' + xx + ' ' + (122 - hh) + ' Z"/>';
+      silhouette(ctx, wave(4, 0.06, 2.1, 10), 46, '#393144');
+      px(ctx, 0, 46, W, 16, '#332c3d');
+      for (i = 0; i < 9; i++) {                        // Stalagmiten
+        x = i * 27 + 8; h = 5 + ((i * 53) % 9);
+        poly(ctx, [[x - 3, 62], [x + 3, 62], [x, 62 - h]], '#463c52');
       }
-      return svg(
-        sky('g-hoehle', '#241f2b', '#171420') +
-        '<ellipse cx="200" cy="70" rx="150" ry="60" fill="#2e2838" opacity=".8"/>' +
-        '<g fill="#2b2534">' + stal + '</g>' +
-        '<path d="' + ridge([[0, 96], [70, 84], [150, 94], [240, 80], [320, 92], [400, 84]], 96) + '" fill="#332c3d"/>' +
-        '<g fill="#3b3446">' + stag + '</g>' +
-        '<rect x="-10" y="118" width="420" height="42" fill="#3a3340"/>' +
-        '<ellipse cx="200" cy="118" rx="150" ry="16" fill="#4a4152" opacity=".55"/>'
-      );
+      px(ctx, 0, 62, W, H - 62, '#4a4050');
+      px(ctx, 0, 62, W, 2, '#5c5064');
+      speckle(ctx, 0, 64, W, 16, '#5c5064', 70, 13);
+      speckle(ctx, 0, 20, W, 24, '#4a4058', 40, 77);
     }
   });
 
   biome('berg', {
-    name: 'Bergpfad', ground: '#8a7f6e', platform: '#9d907c', edge: '#655c4e', light: 'rgba(255,240,210,.25)',
+    tile: 'fels',
+    sky: '#7ba4c8',
+    name: 'Bergpfad', ground: '#98866c', platform: '#b0a084', edge: '#6c5e4a', light: 'rgba(255,240,210,.14)',
     particles: 'dust',
-    art: function () {
-      return svg(
-        sky('g-berg', '#9dc4e0', '#e6dcc8') +
-        '<path d="' + ridge([[0, 58], [50, 20], [95, 46], [150, 12], [205, 44], [265, 18], [320, 48], [400, 26]], 58) + '" fill="#8fa3b8" opacity=".7"/>' +
-        '<g fill="#ffffff" opacity=".85"><path d="M150 12 L138 32 L162 32 Z"/><path d="M265 18 L254 36 L277 36 Z"/><path d="M50 20 L40 38 L61 38 Z"/></g>' +
-        '<path d="' + ridge([[0, 88], [70, 66], [140, 84], [220, 62], [300, 82], [400, 70]], 88) + '" fill="#7d7263"/>' +
-        '<rect x="-10" y="112" width="420" height="48" fill="#8a7f6e"/>' +
-        '<g fill="#6d6355" opacity=".7"><ellipse cx="70" cy="128" rx="34" ry="6"/><ellipse cx="250" cy="138" rx="46" ry="7"/>' +
-        '<circle cx="330" cy="122" r="7"/><circle cx="120" cy="146" r="5"/></g>'
-      );
+    draw: function (ctx) {
+      bands(ctx, 0, 40, ['#7ba4c8', '#9cbcd8', '#c0d4e4', '#dcd8c8']);
+      silhouette(ctx, function (x) {
+        return 20 + Math.abs(Math.sin(x * 0.028)) * 16 + Math.abs(Math.sin(x * 0.011 + 2)) * 10;
+      }, 52, '#8496ac', '#c8d8e8');
+      silhouette(ctx, wave(6, 0.03, 1.9, 12), 60, '#847460', '#a89880');
+      px(ctx, 0, 60, W, H - 60, '#98866c');
+      px(ctx, 0, 60, W, 2, '#b0a084');
+      var i;
+      for (i = 0; i < 7; i++) {
+        var x = 12 + i * 34, y = 64 + (i % 3) * 4, r = 2 + (i % 3);
+        px(ctx, x, y, r * 2, r, '#7c6c58'); px(ctx, x + 1, y - 1, r, 1, '#b0a084');
+      }
+      speckle(ctx, 0, 62, W, 18, '#7c6c58', 70, 23);
     }
   });
 
   biome('schnee', {
-    name: 'Eisfeld', ground: '#e8f1f8', platform: '#d3e6f2', edge: '#a9c6dc', light: 'rgba(200,230,255,.35)',
+    tile: 'schnee',
+    sky: '#4c74a0',
+    name: 'Eisfeld', ground: '#e8f0f8', platform: '#d0e4f0', edge: '#98b8d0', light: 'rgba(200,230,255,.22)',
     particles: 'snow',
-    art: function () {
-      return svg(
-        sky('g-schnee', '#5f86ab', '#bcd7e8') +
-        '<path d="' + ridge([[0, 56], [60, 24], [120, 50], [190, 18], [260, 48], [330, 26], [400, 52]], 56) + '" fill="#9fbdd4" opacity=".8"/>' +
-        '<path d="' + ridge([[0, 82], [80, 60], [160, 80], [250, 58], [340, 78], [400, 66]], 82) + '" fill="#cfe2ef"/>' +
-        '<g fill="#a9cbe0" opacity=".9"><path d="M40 118 L58 86 L76 118 Z"/><path d="M300 120 L318 92 L336 120 Z"/>' +
-        '<path d="M355 118 L368 100 L381 118 Z"/></g>' +
-        '<rect x="-10" y="116" width="420" height="44" fill="#e8f1f8"/>' +
-        '<g fill="#c9dded" opacity=".8"><ellipse cx="140" cy="132" rx="70" ry="8"/><ellipse cx="320" cy="144" rx="60" ry="7"/></g>'
-      );
+    draw: function (ctx) {
+      bands(ctx, 0, 40, ['#4c74a0', '#6890b8', '#88aecc', '#acc8dc']);
+      silhouette(ctx, function (x) {
+        return 18 + Math.abs(Math.sin(x * 0.024 + 1)) * 18;
+      }, 50, '#8ca8c4', '#e0f0fc');
+      silhouette(ctx, wave(4, 0.04, 0.8, 10), 60, '#c8dcec', '#eef6fc');
+      px(ctx, 0, 60, W, H - 60, '#e8f0f8');
+      px(ctx, 0, 60, W, 2, '#ffffff');
+      var i;
+      for (i = 0; i < 5; i++) {                        // Eiszacken
+        var x = 18 + i * 48;
+        poly(ctx, [[x - 5, 62], [x + 5, 62], [x, 62 - (8 + (i % 3) * 5)]], '#b8d8ec');
+        poly(ctx, [[x - 2, 62], [x + 2, 62], [x, 62 - (6 + (i % 3) * 4)]], '#e4f4ff');
+      }
+      speckle(ctx, 0, 62, W, 18, '#ffffff', 60, 19);
+      speckle(ctx, 0, 62, W, 18, '#c8dcec', 40, 61);
     }
   });
 
   biome('strand', {
-    name: 'Küste', ground: '#e6d7a8', platform: '#efe0b4', edge: '#c4b184', light: 'rgba(255,240,190,.32)',
+    tile: 'sand',
+    sky: '#58a8d8',
+    name: 'Küste', ground: '#e8d8a8', platform: '#f0e4bc', edge: '#c0a870', light: 'rgba(255,240,190,.20)',
     particles: 'pollen',
-    art: function () {
-      return svg(
-        sky('g-strand', '#79c6e8', '#dff0f5') +
-        '<circle cx="70" cy="30" r="14" fill="#fff3c4" opacity=".9"/>' +
-        '<defs>' + grad('g-meer', '#2f8fbf', '#63bcd8') + '</defs>' +
-        '<rect x="-10" y="74" width="420" height="42" fill="url(#g-meer)"/>' +
-        '<g fill="#ffffff" opacity=".55"><ellipse cx="80" cy="92" rx="34" ry="3"/><ellipse cx="230" cy="86" rx="42" ry="3"/>' +
-        '<ellipse cx="330" cy="100" rx="30" ry="3"/><ellipse cx="150" cy="106" rx="50" ry="3.5"/></g>' +
-        '<path d="M-10 116 Q100 108 200 116 Q300 124 410 114 L410 160 L-10 160 Z" fill="#e6d7a8"/>' +
-        '<g fill="#d6c391" opacity=".8"><ellipse cx="110" cy="134" rx="55" ry="7"/><ellipse cx="320" cy="144" rx="60" ry="7"/></g>' +
-        '<g fill="#3f7a45"><rect x="366" y="92" width="3" height="26"/>' +
-        '<path d="M367 92 Q350 84 340 92 Q352 88 367 96 Z"/><path d="M367 92 Q384 84 394 92 Q382 88 367 96 Z"/>' +
-        '<path d="M367 92 Q358 76 366 68 Q368 80 371 94 Z"/></g>'
-      );
+    draw: function (ctx) {
+      bands(ctx, 0, 34, ['#58a8d8', '#78c0e4', '#a0d8f0']);
+      px(ctx, 30, 6, 12, 3, '#fff4c0'); px(ctx, 33, 3, 6, 9, '#fff4c0');
+      bands(ctx, 34, 58, ['#1c78a8', '#2c8cbc', '#48a4cc']);
+      var i, x;
+      for (i = 0; i < 26; i++) {                       // Schaumkronen
+        x = (i * 19) % W;
+        px(ctx, x, 38 + (i % 4) * 5, 6, 1, '#bfe8f8');
+        px(ctx, (x + 40) % W, 48 + (i % 3) * 4, 4, 1, '#bfe8f8');
+      }
+      silhouette(ctx, wave(2, 0.05, 2.5, 4), 60, '#e8d8a8', '#f6ecc8');
+      px(ctx, 0, 60, W, H - 60, '#e8d8a8');
+      px(ctx, 0, 58, W, 2, '#f6ecc8');
+      px(ctx, 214, 40, 2, 20, '#4c7838');              // Palme
+      px(ctx, 206, 38, 18, 2, '#3c8438'); px(ctx, 204, 40, 8, 2, '#3c8438');
+      px(ctx, 216, 40, 8, 2, '#3c8438'); px(ctx, 210, 35, 10, 2, '#4c9440');
+      speckle(ctx, 0, 62, W, 18, '#d8c490', 60, 31);
     }
   });
 
   biome('wasser', {
-    name: 'Gewässer', ground: '#2f7fa8', platform: '#4c9cc0', edge: '#245f80', light: 'rgba(180,235,255,.28)',
+    tile: 'wasser',
+    sky: '#68b8dc',
+    name: 'Gewässer', ground: '#2c80ac', platform: '#4ca0c4', edge: '#1c5c7c', light: 'rgba(180,235,255,.18)',
     particles: 'bubbles',
-    art: function () {
-      return svg(
-        sky('g-wasser', '#8ed2ea', '#3f9cc4') +
-        '<path d="' + hills(72, 14, 5, 1.2) + '" fill="#2e7fa6" opacity=".55"/>' +
-        '<defs>' + grad('g-tief', '#3f9cc4', '#1f5f80') + '</defs>' +
-        '<rect x="-10" y="86" width="420" height="74" fill="url(#g-tief)"/>' +
-        '<g stroke="#bfe9f7" stroke-width="1.4" fill="none" opacity=".5">' +
-        '<path d="M-10 100 Q40 96 90 100 T190 100 T290 100 T410 100"/>' +
-        '<path d="M-10 118 Q50 113 110 118 T230 118 T350 118 T410 118"/>' +
-        '<path d="M-10 138 Q60 132 130 138 T270 138 T410 138"/></g>' +
-        '<g fill="#3d8f4f" opacity=".9"><ellipse cx="60" cy="126" rx="22" ry="7"/><ellipse cx="340" cy="112" rx="18" ry="6"/></g>'
-      );
+    draw: function (ctx) {
+      bands(ctx, 0, 30, ['#68b8dc', '#88cce8']);
+      silhouette(ctx, wave(3, 0.03, 1.1, 6), 32, '#3c8ca8');
+      bands(ctx, 32, H, ['#3c94bc', '#2c80ac', '#1f6c94', '#175a80']);
+      var i, x, y;
+      for (i = 0; i < 40; i++) {
+        x = (i * 23) % W; y = 36 + (i * 7) % 40;
+        px(ctx, x, y, 5, 1, '#9fdcf0');
+        px(ctx, (x + 11) % W, y + 3, 3, 1, '#7cc8e0');
+      }
+      px(ctx, 24, 56, 14, 4, '#3c9448'); px(ctx, 26, 54, 10, 2, '#4cb058');
+      px(ctx, 190, 44, 12, 3, '#3c9448'); px(ctx, 192, 42, 8, 2, '#4cb058');
     }
   });
 
   biome('vulkan', {
-    name: 'Vulkan', ground: '#3a2b28', platform: '#4d3833', edge: '#241a18', light: 'rgba(255,140,60,.30)',
+    tile: 'lava',
+    sky: '#4c1c1c',
+    name: 'Vulkan', ground: '#3c2c28', platform: '#54403a', edge: '#221816', light: 'rgba(255,140,60,.20)',
     particles: 'embers',
-    art: function () {
-      return svg(
-        sky('g-vulkan', '#5a2320', '#c05a2a') +
-        '<circle cx="330" cy="26" r="10" fill="#ffb15c" opacity=".5"/>' +
-        '<path d="' + ridge([[0, 84], [90, 40], [130, 52], [180, 34], [240, 60], [320, 44], [400, 74]], 84) + '" fill="#4a2f2a"/>' +
-        '<path d="M180 34 L168 46 Q180 40 194 46 Z" fill="#ff8a3c"/>' +
-        '<path d="M181 38 Q186 50 179 62 Q190 52 185 39 Z" fill="#ff6a2a" opacity=".85"/>' +
-        '<g fill="#ff8a3c" opacity=".5"><circle cx="176" cy="30" r="2.5"/><circle cx="188" cy="26" r="2"/>' +
-        '<circle cx="182" cy="20" r="1.6"/></g>' +
-        '<path d="' + ridge([[0, 104], [80, 92], [160, 104], [250, 88], [340, 102], [400, 94]], 104) + '" fill="#33231f"/>' +
-        '<rect x="-10" y="118" width="420" height="42" fill="#3a2b28"/>' +
-        '<g fill="#ff7a30" opacity=".75"><ellipse cx="120" cy="132" rx="46" ry="4"/><ellipse cx="310" cy="144" rx="56" ry="4"/></g>' +
-        '<g fill="#2a1d1a"><circle cx="60" cy="140" r="8"/><circle cx="250" cy="128" r="6"/><circle cx="380" cy="136" r="7"/></g>'
-      );
+    draw: function (ctx) {
+      bands(ctx, 0, 40, ['#4c1c1c', '#7c2c20', '#a84428', '#c85c30']);
+      silhouette(ctx, function (x) {
+        var d = Math.abs(x - 96);
+        return Math.max(4, 34 - d * 0.42) + Math.sin(x * 0.05) * 2;
+      }, 56, '#3c2824', '#5c3c30');
+      px(ctx, 90, 22, 12, 3, '#ff8a3c');               // Krater
+      px(ctx, 93, 19, 6, 4, '#ffc060');
+      px(ctx, 95, 12, 2, 8, '#ff8a3c'); px(ctx, 92, 8, 2, 4, '#ffb040');
+      silhouette(ctx, wave(4, 0.04, 2.2, 8), 62, '#2e211e', '#48332c');
+      px(ctx, 0, 62, W, H - 62, '#3c2c28');
+      px(ctx, 0, 62, W, 2, '#54403a');
+      var i;
+      for (i = 0; i < 4; i++) {                        // Lavaadern
+        var x = 10 + i * 58, y = 66 + (i % 2) * 6;
+        px(ctx, x, y, 30 + (i % 3) * 12, 2, '#e85820');
+        px(ctx, x + 4, y + 1, 20, 1, '#ff9040');
+      }
+      speckle(ctx, 0, 62, W, 18, '#241a18', 60, 37);
     }
   });
 
   biome('wueste', {
-    name: 'Wüste', ground: '#dcb877', platform: '#e8c78a', edge: '#b8945c', light: 'rgba(255,225,160,.34)',
+    tile: 'sand',
+    sky: '#e09850',
+    name: 'Wüste', ground: '#dcb878', platform: '#ecd098', edge: '#b08c50', light: 'rgba(255,225,160,.20)',
     particles: 'sand',
-    art: function () {
-      return svg(
-        sky('g-wueste', '#e8a35c', '#f6ddb0') +
-        '<circle cx="110" cy="34" r="20" fill="#fff0c0" opacity=".8"/>' +
-        '<path d="' + hills(86, 22, 3, 0.9) + '" fill="#cfa268" opacity=".8"/>' +
-        '<path d="' + hills(104, 16, 4, 2.6) + '" fill="#dcb877"/>' +
-        '<g fill="#4f7a45"><rect x="330" y="88" width="7" height="34" rx="3"/>' +
-        '<rect x="316" y="98" width="6" height="18" rx="3"/><rect x="316" y="98" width="18" height="6" rx="3"/>' +
-        '<rect x="345" y="92" width="6" height="22" rx="3"/><rect x="333" y="92" width="18" height="6" rx="3"/></g>' +
-        '<rect x="-10" y="116" width="420" height="44" fill="#dcb877"/>' +
-        '<g fill="#c9a465" opacity=".8"><ellipse cx="120" cy="132" rx="66" ry="7"/><ellipse cx="310" cy="146" rx="58" ry="6"/></g>'
-      );
+    draw: function (ctx) {
+      bands(ctx, 0, 42, ['#e09850', '#ecb470', '#f4d0a0', '#f8e4c0']);
+      px(ctx, 46, 8, 16, 4, '#fff0c0'); px(ctx, 50, 4, 8, 12, '#fff0c0');
+      silhouette(ctx, wave(6, 0.022, 0.4, 12), 54, '#cca068', '#e8c088');
+      silhouette(ctx, wave(4, 0.033, 2.7, 8), 62, '#dcb878', '#f0d0a0');
+      px(ctx, 0, 62, W, H - 62, '#dcb878');
+      px(ctx, 196, 44, 5, 18, '#4c7c44');              // Kaktus
+      px(ctx, 191, 50, 5, 4, '#4c7c44'); px(ctx, 191, 50, 3, 10, '#4c7c44');
+      px(ctx, 201, 47, 5, 4, '#4c7c44'); px(ctx, 203, 47, 3, 13, '#4c7c44');
+      px(ctx, 197, 44, 2, 18, '#5c9450');
+      speckle(ctx, 0, 62, W, 18, '#c8a464', 70, 43);
     }
   });
 
   biome('stadt', {
-    name: 'Stadt', ground: '#5b5f6b', platform: '#6d7280', edge: '#43464f', light: 'rgba(255,235,200,.22)',
+    tile: 'boden',
+    sky: '#4c6c9c',
+    name: 'Stadt', ground: '#68687c', platform: '#80809c', edge: '#40404e', light: 'rgba(255,235,200,.14)',
     particles: null,
-    art: function () {
-      var houses = '', i;
-      for (i = 0; i < 16; i++) {
-        var x = i * 26 - 6, w = 18 + ((i * 13) % 9), h = 26 + ((i * 29) % 46);
-        houses += '<rect x="' + x + '" y="' + (104 - h) + '" width="' + w + '" height="' + h + '" rx="1.5"/>';
+    draw: function (ctx) {
+      bands(ctx, 0, 40, ['#4c6c9c', '#6888b4', '#88a4c8', '#b0c4d8']);
+      var i, x, w, h;
+      for (i = 0; i < 20; i++) {                       // hintere Häuserzeile
+        x = i * 13 - 3; w = 9 + (i % 3) * 2; h = 12 + ((i * 17) % 16);
+        px(ctx, x, 46 - h, w, h, '#4c5468');
       }
-      var win = '';
-      for (i = 0; i < 84; i++) {
-        var wx = 4 + (i % 28) * 14.4, wy = 62 + Math.floor(i / 28) * 11;
-        if ((i * 7) % 5 === 0) continue;
-        win += '<rect x="' + wx.toFixed(1) + '" y="' + wy + '" width="3.4" height="4.4" rx=".8"/>';
+      for (i = 0; i < 14; i++) {                       // vordere Häuserzeile
+        x = i * 18 - 4; w = 13 + (i % 3) * 3; h = 18 + ((i * 29) % 22);
+        px(ctx, x, 56 - h, w, h, '#3a4054');
+        px(ctx, x, 56 - h, w, 2, '#565e74');
+        var r, c;
+        for (r = 0; r < Math.floor(h / 7); r++) {
+          for (c = 0; c < Math.floor(w / 5); c++) {
+            if (((i + r * 3 + c * 5) % 4) === 0) continue;
+            px(ctx, x + 2 + c * 5, 56 - h + 4 + r * 7, 2, 3, '#f0d488');
+          }
+        }
       }
-      return svg(
-        sky('g-stadt', '#5d7ba8', '#c9d8e8') +
-        '<g fill="#4e5766" opacity=".65"><rect x="20" y="34" width="26" height="70"/><rect x="250" y="26" width="30" height="78"/></g>' +
-        '<g fill="#3f4654">' + houses + '</g>' +
-        '<g fill="#ffd98a" opacity=".85">' + win + '</g>' +
-        '<rect x="-10" y="104" width="420" height="56" fill="#5b5f6b"/>' +
-        '<rect x="-10" y="104" width="420" height="4" fill="#7b808d"/>' +
-        '<g fill="#8b909d" opacity=".8"><rect x="40" y="126" width="34" height="3" rx="1.5"/>' +
-        '<rect x="150" y="126" width="34" height="3" rx="1.5"/><rect x="260" y="126" width="34" height="3" rx="1.5"/></g>'
-      );
+      px(ctx, 0, 56, W, H - 56, '#68687c');
+      px(ctx, 0, 56, W, 2, '#8890a4');
+      for (i = 0; i < 8; i++) px(ctx, 8 + i * 30, 68, 14, 2, '#9098ac');
     }
   });
 
   biome('arena', {
-    name: 'Arena', ground: '#7d5a3c', platform: '#96704b', edge: '#5b4029', light: 'rgba(255,220,140,.30)',
+    tile: 'boden',
+    sky: '#2a2438',
+    name: 'Arena', ground: '#8c6440', platform: '#a87c50', edge: '#5c3f26', light: 'rgba(255,220,140,.18)',
     particles: null,
-    art: function () {
-      var crowd = '', i;
-      for (i = 0; i < 176; i++) {
-        var cx = 4 + (i % 44) * 9.1 + (Math.floor(i / 44) % 2) * 4.5;
-        var cy = 22 + Math.floor(i / 44) * 8.6;
-        var tone = ['#e8d0a0', '#cf9f7a', '#a8bcd8', '#d8a8b4', '#bda8d8'][i % 5];
-        crowd += '<circle cx="' + cx.toFixed(1) + '" cy="' + cy.toFixed(1) + '" r="2.3" fill="' + tone + '"/>';
+    draw: function (ctx) {
+      bands(ctx, 0, 30, ['#2a2438', '#352c46']);
+      var i, r, c, tones = ['#e8d0a0', '#cf9f7a', '#a8bcd8', '#d8a8b4', '#bda8d8'];
+      for (r = 0; r < 5; r++) {                        // Publikum
+        for (c = 0; c < 48; c++) {
+          var x = c * 5 + (r % 2) * 2, y = 4 + r * 5;
+          px(ctx, x, y, 3, 3, tones[(r * 7 + c) % 5]);
+        }
       }
-      return svg(
-        sky('g-arena', '#2b2f3e', '#4a4257') +
-        '<rect x="-10" y="10" width="420" height="46" fill="#39304a"/>' +
-        '<g opacity=".85">' + crowd + '</g>' +
-        '<rect x="-10" y="56" width="420" height="8" fill="#584a6e"/>' +
-        '<path d="M-10 64 L410 64 L410 96 L-10 96 Z" fill="#463b58"/>' +
-        '<g fill="#5f5178" opacity=".7"><rect x="-10" y="72" width="420" height="2"/>' +
-        '<rect x="-10" y="84" width="420" height="2"/></g>' +
-        '<g fill="#ffe9a8" opacity=".18"><path d="M60 56 L20 160 L120 160 Z"/><path d="M340 56 L300 160 L400 160 Z"/></g>' +
-        '<rect x="-10" y="96" width="420" height="64" fill="#7d5a3c"/>' +
-        '<g stroke="#e8d9b8" stroke-width="1.6" fill="none" opacity=".55">' +
-        '<ellipse cx="200" cy="132" rx="150" ry="24"/><path d="M200 108 L200 156"/></g>'
-      );
+      px(ctx, 0, 30, W, 4, '#584a6e');
+      px(ctx, 0, 34, W, 20, '#463b58');
+      px(ctx, 0, 40, W, 1, '#584a6e'); px(ctx, 0, 47, W, 1, '#584a6e');
+      // Scheinwerferkegel
+      for (i = 0; i < 2; i++) {
+        var sx = 50 + i * 140;
+        poly(ctx, [[sx, 34], [sx + 26, H], [sx - 26, H]], 'rgba(255,233,168,.10)');
+      }
+      px(ctx, 0, 54, W, H - 54, '#8c6440');
+      px(ctx, 0, 54, W, 2, '#a87c50');
+      px(ctx, 118, 56, 2, 24, '#d8c8a8');              // Mittellinie
+      for (i = 0; i < W; i += 4) px(ctx, i, 68, 2, 1, '#c8b48c');
+      speckle(ctx, 0, 56, W, 24, '#7c5838', 50, 53);
     }
   });
 
   biome('liga', {
-    name: 'Liga-Halle', ground: '#2d2a3d', platform: '#3f3a55', edge: '#1d1b2a', light: 'rgba(255,210,120,.28)',
+    tile: 'boden',
+    sky: '#16142a',
+    name: 'Liga-Halle', ground: '#302c44', platform: '#443e5c', edge: '#1c1a28', light: 'rgba(255,210,120,.18)',
     particles: 'sparks',
-    art: function () {
-      var pillars = '', i;
-      for (i = 0; i < 5; i++) {
-        var x = 18 + i * 92;
-        pillars += '<rect x="' + x + '" y="18" width="16" height="86" fill="#4a4463"/>' +
-          '<rect x="' + (x - 3) + '" y="14" width="22" height="7" rx="2" fill="#5b5478"/>' +
-          '<rect x="' + (x - 3) + '" y="100" width="22" height="7" rx="2" fill="#5b5478"/>';
+    draw: function (ctx) {
+      bands(ctx, 0, 34, ['#16142a', '#221e38', '#2e2846']);
+      var i;
+      for (i = 0; i < 6; i++) {                        // Säulen
+        var x = 8 + i * 44;
+        px(ctx, x, 8, 10, 46, '#4a4463');
+        px(ctx, x, 8, 3, 46, '#5f5878');
+        px(ctx, x - 2, 5, 14, 4, '#5f5878');
+        px(ctx, x - 2, 50, 14, 4, '#5f5878');
       }
-      return svg(
-        sky('g-liga', '#191727', '#332e48') +
-        '<rect x="-10" y="-10" width="420" height="26" fill="#241f36"/>' +
-        pillars +
-        '<g fill="#c9a227" opacity=".85"><path d="M186 20 L214 20 L210 62 L200 72 L190 62 Z"/></g>' +
-        '<path d="M186 20 L214 20 L212 34 L188 34 Z" fill="#e8c14a"/>' +
-        '<rect x="-10" y="104" width="420" height="56" fill="#2d2a3d"/>' +
-        '<rect x="150" y="104" width="100" height="56" fill="#8b2f3a" opacity=".85"/>' +
-        '<g stroke="#c9a227" stroke-width="1.2" fill="none" opacity=".5"><path d="M150 104 L150 160"/><path d="M250 104 L250 160"/></g>'
-      );
+      px(ctx, 108, 6, 24, 4, '#e8c14a');               // Wappen
+      px(ctx, 110, 10, 20, 14, '#c9a227');
+      px(ctx, 116, 24, 8, 6, '#c9a227'); px(ctx, 118, 30, 4, 4, '#c9a227');
+      px(ctx, 0, 54, W, H - 54, '#302c44');
+      px(ctx, 0, 54, W, 2, '#443e5c');
+      px(ctx, 88, 54, 64, H - 54, '#8b2f3a');          // Teppich
+      px(ctx, 88, 54, 2, H - 54, '#c9a227'); px(ctx, 150, 54, 2, H - 54, '#c9a227');
     }
   });
 
   biome('ruine', {
-    name: 'Ruine', ground: '#6e6a55', platform: '#837e66', edge: '#4e4b3c', light: 'rgba(230,235,190,.22)',
+    tile: 'fels',
+    sky: '#8496ac',
+    name: 'Ruine', ground: '#7c7860', platform: '#94906f', edge: '#54503e', light: 'rgba(230,235,190,.14)',
     particles: 'dust',
-    art: function () {
-      return svg(
-        sky('g-ruine', '#8f9cb0', '#d8d2bc') +
-        '<path d="' + hills(84, 20, 4, 1.8) + '" fill="#7f8a76" opacity=".7"/>' +
-        '<g fill="#9a957c">' +
-        '<rect x="34" y="52" width="18" height="66"/><rect x="30" y="46" width="26" height="8"/>' +
-        '<rect x="96" y="70" width="16" height="48"/>' +
-        '<rect x="286" y="58" width="18" height="60"/><rect x="282" y="52" width="26" height="8"/>' +
-        '<rect x="344" y="80" width="15" height="38"/>' +
-        '<path d="M30 46 L308 46 L308 56 L30 56 Z" opacity=".55"/></g>' +
-        '<g fill="#5f8a4e" opacity=".7"><ellipse cx="43" cy="118" rx="16" ry="5"/><ellipse cx="295" cy="118" rx="16" ry="5"/>' +
-        '<ellipse cx="104" cy="118" rx="12" ry="4"/></g>' +
-        '<rect x="-10" y="118" width="420" height="42" fill="#6e6a55"/>' +
-        '<g stroke="#575343" stroke-width="1" opacity=".6"><path d="M-10 132 L410 132"/><path d="M60 118 L60 160"/>' +
-        '<path d="M180 118 L180 160"/><path d="M300 118 L300 160"/></g>'
-      );
+    draw: function (ctx) {
+      bands(ctx, 0, 40, ['#8496ac', '#a8b4c0', '#c8c8b4', '#dcd8c0']);
+      silhouette(ctx, wave(4, 0.026, 1.4, 9), 52, '#7c8a70', '#94a884');
+      var cols = [[14, 26], [56, 14], [150, 22], [206, 10]], i;
+      for (i = 0; i < cols.length; i++) {
+        var x = cols[i][0], h = cols[i][1];
+        px(ctx, x, 60 - h, 9, h, '#9c9880');
+        px(ctx, x, 60 - h, 3, h, '#b4b098');
+        px(ctx, x - 2, 60 - h - 3, 13, 3, '#a8a488');
+        px(ctx, x - 1, 58, 11, 2, '#7c7860');
+      }
+      px(ctx, 14, 30, 150, 3, '#a8a488');              // Architrav
+      px(ctx, 0, 60, W, H - 60, '#7c7860');
+      px(ctx, 0, 60, W, 2, '#94906f');
+      for (i = 0; i < 6; i++) px(ctx, i * 40 + 4, 66, 34, 1, '#6c6852');
+      speckle(ctx, 0, 62, W, 18, '#5c8a4c', 30, 67);
     }
   });
 
   biome('dschungel', {
-    name: 'Dschungel', ground: '#2f5a34', platform: '#3d7340', edge: '#204224', light: 'rgba(190,255,150,.16)',
+    tile: 'gras',
+    sky: '#6cae54',
+    name: 'Dschungel', ground: '#2f5c34', platform: '#3d7340', edge: '#1c3c1e', light: 'rgba(190,255,150,.10)',
     particles: 'leaves',
-    art: function () {
-      var leaves = '', i;
-      for (i = 0; i < 26; i++) {
-        var x = i * 16 - 4, y = -6 + ((i * 19) % 26);
-        leaves += '<ellipse cx="' + x + '" cy="' + y + '" rx="17" ry="11" transform="rotate(' + ((i % 4) * 12 - 18) + ' ' + x + ' ' + y + ')"/>';
+    draw: function (ctx) {
+      bands(ctx, 0, 30, ['#6cae54', '#4f8c40', '#3a7034']);
+      var i;
+      for (i = 0; i < 22; i++) {                       // Blätterdach
+        var x = i * 11 - 4, y = -2 + ((i * 13) % 10);
+        px(ctx, x, y, 14, 8, '#1e4423');
+        px(ctx, x + 2, y + 1, 10, 3, '#2c5c2c');
       }
-      return svg(
-        sky('g-dschungel', '#7fbf6a', '#2e5c36') +
-        '<g fill="#1f4526" opacity=".85">' + leaves + '</g>' +
-        '<g stroke="#2b5c31" stroke-width="3" fill="none" opacity=".8">' +
-        '<path d="M60 6 Q52 40 66 74"/><path d="M210 4 Q222 42 206 84"/><path d="M340 8 Q330 44 344 78"/></g>' +
-        '<path d="' + ridge([[0, 92], [70, 76], [150, 90], [230, 72], [320, 88], [400, 78]], 92) + '" fill="#28502c"/>' +
-        '<rect x="-10" y="116" width="420" height="44" fill="#2f5a34"/>' +
-        '<g fill="#3d7340" opacity=".8"><ellipse cx="110" cy="132" rx="60" ry="8"/><ellipse cx="320" cy="144" rx="62" ry="8"/></g>'
-      );
+      for (i = 0; i < 4; i++) px(ctx, 30 + i * 56, 8, 2, 26, '#2c5c2c');   // Lianen
+      silhouette(ctx, wave(5, 0.04, 0.9, 12), 50, '#26502a');
+      for (i = 0; i < 7; i++) bush(ctx, 10 + i * 36, 62, 6 + (i % 3), '#1e4423', '#3a7034');
+      px(ctx, 0, 62, W, H - 62, '#2f5c34');
+      px(ctx, 0, 62, W, 2, '#3d7340');
+      speckle(ctx, 0, 64, W, 16, '#468048', 70, 71);
     }
   });
 
   biome('nacht', {
-    name: 'Nachtlager', ground: '#2b3242', platform: '#3a4356', edge: '#1c212c', light: 'rgba(255,170,80,.30)',
+    tile: 'gras',
+    sky: '#0e1424',
+    name: 'Nachtlager', ground: '#2c3444', platform: '#3e4658', edge: '#1a1e28', light: 'rgba(255,170,80,.20)',
     particles: 'sparks',
-    art: function () {
-      var stars = '', i;
-      for (i = 0; i < 46; i++) {
-        var x = (i * 61) % 400, y = ((i * 37) % 66) + 4, r = 0.7 + ((i * 13) % 10) / 9;
-        stars += '<circle cx="' + x + '" cy="' + y + '" r="' + r.toFixed(1) + '"/>';
-      }
-      return svg(
-        sky('g-nacht', '#131a2e', '#3d4a68') +
-        '<g fill="#ffffff" opacity=".8">' + stars + '</g>' +
-        '<circle cx="330" cy="30" r="15" fill="#f2f0d8"/><circle cx="324" cy="26" r="13" fill="#131a2e" opacity=".85"/>' +
-        '<path d="' + ridge([[0, 92], [80, 74], [170, 90], [260, 70], [350, 88], [400, 80]], 92) + '" fill="#20283a"/>' +
-        '<rect x="-10" y="116" width="420" height="44" fill="#2b3242"/>' +
-        '<g><ellipse cx="200" cy="140" rx="34" ry="12" fill="#ff9a3c" opacity=".22"/>' +
-        '<path d="M188 140 L212 140 L206 128 Z" fill="#5a4230"/>' +
-        '<path d="M200 116 Q206 128 200 138 Q194 128 200 116 Z" fill="#ffb347"/>' +
-        '<path d="M200 122 Q204 130 200 137 Q196 130 200 122 Z" fill="#ffe08a"/></g>'
-      );
+    draw: function (ctx) {
+      bands(ctx, 0, 46, ['#0e1424', '#182036', '#243048', '#33405c']);
+      speckle(ctx, 0, 0, W, 40, '#ffffff', 70, 3);
+      speckle(ctx, 0, 0, W, 26, '#c8d8ff', 30, 91);
+      px(ctx, 196, 8, 10, 10, '#f2f0d8');              // Mond
+      px(ctx, 193, 6, 8, 12, '#182036');
+      silhouette(ctx, wave(5, 0.03, 2.0, 10), 56, '#1d2432');
+      px(ctx, 0, 56, W, H - 56, '#2c3444');
+      px(ctx, 0, 56, W, 2, '#3e4658');
+      // Lagerfeuer
+      px(ctx, 112, 68, 16, 3, '#5a4230');
+      px(ctx, 116, 62, 8, 8, '#e86820');
+      px(ctx, 118, 58, 4, 8, '#ffa838');
+      px(ctx, 119, 55, 2, 5, '#ffe08a');
+      px(ctx, 104, 70, 32, 2, 'rgba(255,150,60,.25)');
     }
   });
 
   /* ---------- 3) Auswahl -------------------------------------------------------- */
 
-  // Welche Kulissen zu welcher Region gehören. Die Reihenfolge ist die
-  // Wahrscheinlichkeit: der erste Eintrag kommt am häufigsten.
   var REGION_BIOMES = {
     kanto: ['wiese', 'wald', 'hoehle', 'stadt'],
     johto: ['wald', 'ruine', 'berg', 'wiese'],
@@ -411,23 +473,16 @@
     paldea: ['wueste', 'wiese', 'berg', 'dschungel']
   };
 
-  // Manche Knotenarten bringen ihre eigene Umgebung mit.
   var NODE_BIOMES = {
     boss: 'arena', e4: 'liga', champ: 'liga',
     shop: 'stadt', rest: 'nacht', item: 'hoehle'
   };
 
-  /**
-   * Wählt eine Kulisse. regionId ist die Region des Runs, nodeType die Art des
-   * Knotens; seed sorgt dafür, dass derselbe Knoten immer gleich aussieht.
-   */
   function pick(regionId, nodeType, seed) {
     if (NODE_BIOMES[nodeType]) return NODE_BIOMES[nodeType];
     var list = REGION_BIOMES[regionId] || REGION_BIOMES.kanto;
-    var weights = [46, 26, 17, 11];
-    var r = (Math.abs(seed | 0) % 100);
-    var acc = 0;
-    for (var i = 0; i < list.length; i++) {
+    var weights = [46, 26, 17, 11], r = Math.abs(seed | 0) % 100, acc = 0, i;
+    for (i = 0; i < list.length; i++) {
       acc += weights[i] || 8;
       if (r < acc) return list[i];
     }
@@ -437,25 +492,37 @@
   /* ---------- 4) Darstellung ----------------------------------------------------- */
 
   var PARTICLES = {
-    leaves: { count: 14, cls: 'p-leaf' },
-    snow: { count: 26, cls: 'p-snow' },
-    embers: { count: 18, cls: 'p-ember' },
-    drops: { count: 10, cls: 'p-drop' },
-    sand: { count: 20, cls: 'p-sand' },
-    pollen: { count: 14, cls: 'p-pollen' },
-    bubbles: { count: 12, cls: 'p-bubble' },
-    sparks: { count: 14, cls: 'p-spark' },
-    dust: { count: 12, cls: 'p-dust' }
+    leaves: { count: 12, cls: 'p-leaf' }, snow: { count: 22, cls: 'p-snow' },
+    embers: { count: 16, cls: 'p-ember' }, drops: { count: 9, cls: 'p-drop' },
+    sand: { count: 18, cls: 'p-sand' }, pollen: { count: 12, cls: 'p-pollen' },
+    bubbles: { count: 10, cls: 'p-bubble' }, sparks: { count: 12, cls: 'p-spark' },
+    dust: { count: 10, cls: 'p-dust' }
   };
 
+  var cache = {};
+
+  /** Zeichnet eine Kulisse einmal und merkt sie sich als Bilddaten. */
+  function bitmap(biomeId) {
+    if (cache[biomeId]) return cache[biomeId];
+    var b = B[biomeId] || B.wiese;
+    var cv = root.document.createElement('canvas');
+    cv.width = W; cv.height = H;
+    var ctx = cv.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    b.draw(ctx);
+    cache[biomeId] = cv.toDataURL('image/png');
+    return cache[biomeId];
+  }
+
   /**
-   * Baut die Kulisse in ein Element. Erwartet ein Element mit position:relative;
-   * setzt zusätzlich die Farbtokens für Plattformen und Licht.
+   * Baut die Kulisse in ein Element. opts.stretch dehnt sie (für hohe Flächen
+   * wie die Karte), sonst deckt sie ab und bleibt unten verankert.
    */
   function render(host, biomeId, opts) {
     opts = opts || {};
     var b = B[biomeId] || B.wiese;
     host.className = host.className.replace(/\bb-[a-z]+\b/g, '').trim() + ' b-' + b.id;
+    host.style.setProperty('--scene-sky', b.sky || b.ground);
     host.style.setProperty('--scene-ground', b.ground);
     host.style.setProperty('--scene-platform', b.platform);
     host.style.setProperty('--scene-edge', b.edge);
@@ -467,11 +534,15 @@
       layer.className = 'scene-layer';
       host.insertBefore(layer, host.firstChild);
     }
-    var art = b.art();
-    // Auf hohen Flächen (etwa der Karte) wird die Kulisse gedehnt statt
-    // beschnitten — sonst füllt ein einzelner Hügel den halben Bildschirm.
-    if (opts.stretch) art = art.replace('preserveAspectRatio="xMidYMax slice"', 'preserveAspectRatio="none"');
-    layer.innerHTML = art + (opts.particles === false ? '' : particleMarkup(b.particles));
+    if (opts.tiled) {
+      // Draufsicht: eine nahtlose Bodenkachel füllt die ganze Fläche.
+      layer.style.backgroundImage = 'url(' + tile(b.id) + ')';
+      layer.innerHTML = opts.particles === false ? '' : particleMarkup(b.particles);
+    } else {
+      layer.style.backgroundImage = '';
+      layer.innerHTML = '<img class="scene-art" alt="" src="' + bitmap(b.id) + '">' +
+        (opts.particles === false ? '' : particleMarkup(b.particles));
+    }
     return b;
   }
 
@@ -482,18 +553,96 @@
     for (i = 0; i < spec.count; i++) {
       var left = ((i * 37) % 100), delay = ((i * 13) % 90) / 10, dur = 5 + ((i * 7) % 60) / 10;
       var drift = ((i * 29) % 40) - 20;
-      out += '<i style="left:' + left + '%;animation-delay:-' + delay + 's;animation-duration:' + dur +
-        's;--drift:' + drift + 'px"></i>';
+      out += '<i style="left:' + left + '%;animation-delay:-' + delay + 's;animation-duration:' +
+        dur + 's;--drift:' + drift + 'px"></i>';
     }
     return out + '</div>';
   }
 
+  /**
+   * Bodenkachel von oben — für die Routenkarte. Eine Seitenansicht taugt dort
+   * nicht: die Karte ist hoch, die Kulisse wäre entweder winzig oder ins
+   * Absurde skaliert. Die Kachel wiederholt sich nahtlos.
+   */
+  var tileCache = {};
+  function tile(biomeId) {
+    if (tileCache[biomeId]) return tileCache[biomeId];
+    var b = B[biomeId] || B.wiese, T = 32;
+    var cv = root.document.createElement('canvas');
+    cv.width = T; cv.height = T;
+    var ctx = cv.getContext('2d'), i, x, y;
+    ctx.imageSmoothingEnabled = false;
+    px(ctx, 0, 0, T, T, b.ground);
+
+    function scatter(color, count, w, h, seed) {
+      var sd = seed;
+      for (i = 0; i < count; i++) {
+        sd = (sd * 1103515245 + 12345) & 0x7fffffff; x = (sd >> 7) % T;
+        sd = (sd * 1103515245 + 12345) & 0x7fffffff; y = (sd >> 7) % T;
+        px(ctx, x, y, w, h, color);
+      }
+    }
+
+    switch (b.tile) {
+      case 'gras':
+        scatter(b.platform, 26, 2, 1, 17);
+        scatter(b.edge, 18, 1, 2, 53);
+        for (i = 0; i < 4; i++) { x = (i * 9 + 3) % T; y = (i * 13 + 5) % T; px(ctx, x, y, 1, 3, b.edge); px(ctx, x + 1, y + 1, 1, 2, b.platform); }
+        break;
+      case 'sand':
+        scatter(b.platform, 30, 3, 1, 23);
+        scatter(b.edge, 14, 2, 1, 61);
+        break;
+      case 'schnee':
+        scatter('#ffffff', 24, 2, 2, 29);
+        scatter(b.edge, 10, 3, 1, 71);
+        break;
+      case 'fels':
+        scatter(b.platform, 20, 3, 2, 31);
+        scatter(b.edge, 22, 2, 2, 13);
+        for (i = 0; i < 3; i++) px(ctx, (i * 11) % T, (i * 17 + 4) % T, 6, 1, b.edge);
+        break;
+      case 'lava':
+        scatter(b.platform, 18, 3, 2, 37);
+        for (i = 0; i < 3; i++) px(ctx, (i * 13) % T, (i * 9 + 6) % T, 7, 1, '#e85820');
+        scatter('#ff9040', 6, 1, 1, 83);
+        break;
+      case 'wasser':
+        for (y = 0; y < T; y += 4) { px(ctx, 0, y, T, 1, b.platform); px(ctx, (y * 3) % T, y + 2, 6, 1, '#9fdcf0'); }
+        break;
+      default:                                       // gepflasterter Boden
+        for (y = 0; y < T; y += 8) {
+          px(ctx, 0, y, T, 1, b.edge);
+          for (x = (y / 8 % 2) * 8; x < T; x += 16) px(ctx, x, y, 1, 8, b.edge);
+        }
+        scatter(b.platform, 10, 2, 1, 41);
+    }
+    tileCache[biomeId] = cv.toDataURL('image/png');
+    return tileCache[biomeId];
+  }
+
+  /** Plattform als Pixel-Ellipse — sie muss zu den Kulissen passen. */
+  function platform(w, h, fill, edge) {
+    var cv = root.document.createElement('canvas');
+    cv.width = w; cv.height = h;
+    var ctx = cv.getContext('2d'), y, half = h / 2, cx = w / 2;
+    for (y = 0; y < h; y++) {
+      var dy = (y + 0.5 - half) / half;
+      var span = Math.round(Math.sqrt(Math.max(0, 1 - dy * dy)) * cx);
+      if (span <= 0) continue;
+      ctx.fillStyle = fill;
+      ctx.fillRect(cx - span, y, span * 2, 1);
+      ctx.fillStyle = edge;
+      ctx.fillRect(cx - span, y, 1, 1);
+      ctx.fillRect(cx + span - 1, y, 1, 1);
+      if (y === 0 || y === h - 1) ctx.fillRect(cx - span, y, span * 2, 1);
+    }
+    return cv.toDataURL('image/png');
+  }
+
   PL.scenery = {
-    biomes: B,
-    regionBiomes: REGION_BIOMES,
-    nodeBiomes: NODE_BIOMES,
-    pick: pick,
-    render: render,
+    biomes: B, regionBiomes: REGION_BIOMES, nodeBiomes: NODE_BIOMES,
+    pick: pick, render: render, platform: platform, tile: tile, size: { w: W, h: H },
     get: function (id) { return B[id] || B.wiese; },
     list: function () { return Object.keys(B); }
   };
