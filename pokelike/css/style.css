@@ -332,7 +332,7 @@ button { font: inherit; color: inherit; }
 .team-dots .dot.out { background: var(--panel); border-color: var(--line); }
 .team-dots .dot.active { box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 60%, transparent); }
 .mon-art { position: relative; width: 150px; height: 150px; display: grid; place-items: center; flex: none; }
-.battle-sprite { max-width: 140px; max-height: 140px; object-fit: contain; filter: drop-shadow(0 6px 10px rgba(0,0,0,.35)); }
+.battle-sprite { width: 140px; height: 140px; object-fit: contain; filter: drop-shadow(0 6px 10px rgba(0,0,0,.35)); }
 .battle-sprite.fainted { opacity: .25; filter: grayscale(1); }
 .side.mine .battle-sprite { transform: scale(1.15); }
 .sub-mark { position: absolute; bottom: 0; right: 8px; font-size: 1.4rem; }
@@ -415,7 +415,7 @@ button { font: inherit; color: inherit; }
 }
 .offer:hover { border-color: var(--accent); transform: translateY(-2px); }
 .offer-art { position: relative; width: 110px; height: 110px; display: grid; place-items: center; }
-.offer-art img { max-width: 110px; max-height: 110px; object-fit: contain; }
+.offer-art img { width: 104px; height: 104px; object-fit: contain; }
 .offer-types { display: flex; gap: .2rem; }
 .relic-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: .7rem; }
 .relic-card {
@@ -469,7 +469,7 @@ button.move-row:hover { border-color: var(--accent); }
 .team-tools { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: 1rem; }
 .mon-detail-head { display: flex; gap: 1rem; flex-wrap: wrap; }
 .mon-detail-art { position: relative; width: 140px; height: 140px; display: grid; place-items: center; flex: none; }
-.mon-detail-art .big { max-width: 130px; max-height: 130px; object-fit: contain; }
+.mon-detail-art .big { width: 128px; height: 128px; object-fit: contain; }
 .mon-detail-types { display: flex; gap: .3rem; margin: .3rem 0; }
 .mon-detail-line { display: flex; gap: .8rem; flex-wrap: wrap; align-items: center; margin: .25rem 0; }
 .mon-detail-line.small { font-size: .84rem; color: var(--muted); }
@@ -580,7 +580,7 @@ button.move-row:hover { border-color: var(--accent); }
   .team-cols { grid-template-columns: 1fr; }
   .icon-label { display: none; }
   .mon-art { width: 116px; height: 116px; }
-  .battle-sprite { max-width: 110px; max-height: 110px; }
+  .battle-sprite { width: 108px; height: 108px; }
   .side.mine { flex-direction: row-reverse; }
   .history-row { grid-template-columns: 1fr 1fr; }
 }
@@ -624,3 +624,16 @@ button.move-row:hover { border-color: var(--accent); }
 .scout-mon { display: flex; align-items: center; gap: .25rem; padding: .1rem .4rem; border-radius: 999px; background: var(--panel-2); }
 .scout-mon.out { opacity: .4; text-decoration: line-through; }
 .scout-mon img { width: 24px; height: 24px; object-fit: contain; }
+
+/* ---------- Nachtrag: Pixelbilder sauber vergrößern -------------------------
+ * Die Sprites sind 96 × 96 Pixel groß. Wo sie größer dargestellt werden,
+ * sieht harte Skalierung besser aus als weichgezeichnete Interpolation.
+ * ------------------------------------------------------------------------- */
+
+.battle-sprite,
+.mon-detail-art .big,
+.dex-entry-art .big,
+.offer-art img {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}

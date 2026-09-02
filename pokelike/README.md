@@ -8,6 +8,9 @@ Pokémon, 851 Attacken und 311 Fähigkeiten.
 keine Installation, keine Abhängigkeiten zur Laufzeit. Der Spielstand liegt im
 Browser dieses Geräts und wird nirgendwohin übertragen.
 
+Wer lieber eine einzige Datei mitnimmt: `node tools/build-single.mjs` erzeugt
+`dist/pokelike.html` — 5,2 MB, Sprites inklusive, läuft komplett offline.
+
 ---
 
 ## Was ein Run ist
@@ -142,7 +145,10 @@ pokelike/
   js/meta.js          Speicherstand, Sammlung, Erfolge
   js/ui.js            Bausteine der Oberfläche
   js/app.js           Bildschirme und Spielsteuerung
-  tools/build-data.mjs  erzeugt data/dex.js
+  data/sprites.js     eingebettete Sprites (3,9 MB) für die Einzeldatei
+  tools/build-data.mjs    erzeugt data/dex.js
+  tools/build-sprites.mjs erzeugt data/sprites.js
+  tools/build-single.mjs  bündelt alles zu dist/pokelike.html
   tests/              Prüfungen
 ```
 
@@ -162,7 +168,7 @@ npm run build:data
 **Tests**
 
 ```sh
-npm test             # 59 Prüfungen: Werteformel, Typentabelle, Schadensrechnung,
+npm test             # 70 Prüfungen: Werteformel, Typentabelle, Schadensrechnung,
                      # 150 Kämpfe, sechs komplette Runs, Speicherformat
 npm install --no-save playwright && npx playwright install chromium
 npm run test:browser # spielt im echten Chromium einen Run an
@@ -176,10 +182,13 @@ MIT-Lizenz), die deutschen Pokémon-Namen aus dem npm-Paket
 [`pokemon`](https://www.npmjs.com/package/pokemon). Beide werden beim Bauen
 einmalig ausgelesen; im Spiel selbst steckt nur die erzeugte Datei `data/dex.js`.
 
-Die Sprites lädt die Seite zur Laufzeit von
-[Pokémon Showdown](https://play.pokemonshowdown.com/sprites/) und
-[PokeAPI](https://github.com/PokeAPI/sprites) — sie liegen nicht im Repository.
-Ohne Internet läuft das Spiel weiterhin, dann mit gezeichneten Platzhaltern.
+Für die Sprites gibt es zwei Wege. `index.html` lädt zur Laufzeit die
+animierten Bilder von [Pokémon Showdown](https://play.pokemonshowdown.com/sprites/)
+und fällt auf [PokeAPI](https://github.com/PokeAPI/sprites) zurück — das sieht
+am besten aus, braucht aber Internet. Daneben liegen in `data/sprites.js` alle
+1025 Sprites (vorne, hinten, schillernd) als Base64 eingebettet; die
+Einzeldatei-Fassung nutzt diese und läuft damit vollständig offline. Erzeugt
+werden sie mit `node tools/build-sprites.mjs`.
 
 Pokémon und alle zugehörigen Namen sind Marken von Nintendo, Game Freak und The
 Pokémon Company. Dies ist ein privates, nicht kommerzielles Fan-Projekt ohne

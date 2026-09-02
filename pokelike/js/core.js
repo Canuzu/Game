@@ -322,13 +322,32 @@
   }
 
   /**
+   * Eingebettetes Sprite, sofern die Einzeldatei-Fassung eines mitbringt.
+   * Formen greifen auf das Bild ihrer Grundform zurück — die Nummer ist
+   * dieselbe.
+   */
+  function embedded(num, opts) {
+    var store = root.PL_SPRITES;
+    if (!store) return null;
+    var set = opts.shiny ? store.s : opts.back ? store.b : store.f;
+    var data = (set && set[num]) || (store.f && store.f[num]);
+    return data ? 'data:image/png;base64,' + data : null;
+  }
+
+  /**
    * Adressen von hübsch nach robust. Showdown führt animierte Sprites unter
    * `ani/` und gezeichnete unter `gen5/`; fehlt beides, springt PokeAPI ein.
    * Die Oberfläche hängt sich an das error-Ereignis und rückt weiter.
+   *
+   * Sind Sprites eingebettet, stehen sie ganz vorn: sie sind sofort da,
+   * brauchen kein Netz und funktionieren auch dort, wo externe Bilder
+   * blockiert werden.
    */
   function spriteChain(sp, opts) {
     opts = opts || {};
     var sid = spriteId(sp), num = sp.num, shiny = opts.shiny, back = opts.back, out = [];
+    var local = embedded(num, opts);
+    if (local) out.push(local);
     if (back) {
       out.push(SHOWDOWN + (shiny ? 'ani-back-shiny/' : 'ani-back/') + sid + '.gif');
       out.push(SHOWDOWN + (shiny ? 'gen5-back-shiny/' : 'gen5-back/') + sid + '.png');

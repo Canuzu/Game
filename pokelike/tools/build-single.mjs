@@ -7,7 +7,7 @@
  * Die zweite Fassung lässt Doctype, <html>, <head> und <body> weg — für
  * Umgebungen, die den Seitenrahmen selbst mitbringen.
  */
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -15,6 +15,13 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const fragment = process.argv.includes('--fragment');
 
 let html = readFileSync(join(ROOT, 'index.html'), 'utf8');
+
+// Eingebettete Sprites, falls tools/build-sprites.mjs sie erzeugt hat. Die
+// Mehrdatei-Fassung lädt stattdessen die animierten Bilder aus dem Netz.
+if (existsSync(join(ROOT, 'data', 'sprites.js'))) {
+  html = html.replace('<script src="data/dex.js"></script>',
+    '<script src="data/dex.js"></script>\n<script src="data/sprites.js"></script>');
+}
 
 // Stylesheet einbetten
 html = html.replace(/<link rel="stylesheet" href="([^"]+)">/g, (_, href) =>
