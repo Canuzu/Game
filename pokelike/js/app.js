@@ -51,6 +51,7 @@
     var host = $('#screen');
     clear(host);
     doc.body.setAttribute('data-screen', name);
+    updateMusic(name);
     var view = SCREENS[name];
     if (!view) { host.appendChild(el('p', { text: 'Unbekannter Bildschirm: ' + name })); return; }
     host.appendChild(view(arg));
@@ -58,6 +59,24 @@
     host.scrollTop = 0;
   }
   App.show = show;
+
+  /** Wählt das Stück, das zum gerade gezeigten Bildschirm passt. */
+  function updateMusic(screen) {
+    if (!PL.audio) return;
+    if (!settings().music) { PL.audio.stop(); return; }
+    var run = App.run, bt = App.battle;
+    if (screen === 'battle' && bt) {
+      PL.audio.play(PL.audio.trackFor(bt.aiLevel >= 3 ? 'boss' : 'battle', bt.biome));
+      return;
+    }
+    var biome = 'wiese';
+    if (run && PL.scenery && run.leagueStage < 0) {
+      var list = PL.scenery.regionBiomes[run.currentRegion().id];
+      biome = (list && list[0]) || 'wiese';
+    } else if (run && run.leagueStage >= 0) biome = 'liga';
+    if (screen === 'scene' && run && run.scene && run.scene.kind === 'shop') biome = 'stadt';
+    PL.audio.play(PL.audio.trackFor('map', biome));
+  }
 
   function renderHeader() {
     var head = $('#topbar');
@@ -389,6 +408,7 @@
 
   function enterNode(row, col) {
     var run = App.run;
+    if (App.transitioning) return;          // während des Wischers nichts annehmen
     var scene = run.enterNode(row, col);
     if (!scene) return;
     autosave();
@@ -431,7 +451,12 @@
     bt.sides[0].team.forEach(function (m) { m.seen = 1; });
     bt.sides[1].team.forEach(function (m) { meta.noteSeen(m.sp); });
     meta.save();
-    show('battle');
+    if (PL.audio) PL.audio.play(PL.audio.trackFor(bt.aiLevel >= 3 ? 'boss' : 'battle', bt.biome));
+    sfx('encounter');
+    if (PL.fx) {
+      App.transitioning = true;
+      PL.fx.wipe(function () { show('battle'); }, function () { App.transitioning = false; });
+    } else show('battle');
   }
 
   SCREENS.battle = function () {
@@ -484,12 +509,45 @@
     BV.controls.appendChild(BV.actionRow);
     wrap.appendChild(BV.controls);
 
-    renderSide(0);
-    renderSide(1);
+    // Zu Beginn stehen die Trainer auf den Plätzen; sie weichen erst, wenn
+    // das Protokoll das erste Pokémon aussendet.
+    BV.intro = bt.turn === 0 && PL.scenery;
+    if (BV.intro) {
+      placeTrainer(0, 'Spieler', true);
+      if (bt.trainer) placeTrainer(1, bt.trainer.cls, false);
+      else renderSide(1);
+    } else {
+      renderSide(0);
+      renderSide(1);
+    }
     renderField();
     playLog(bt.log.slice(), function () { awaitInput(); });
     return wrap;
   };
+
+  /** Stellt eine Trainerfigur auf einen Standplatz. */
+  function placeTrainer(sideId, cls, back) {
+    var slot = BV.slots[sideId];
+    if (!slot) return;
+    var old = slot.querySelector('.mon-art, .trainer-art');
+    if (old) slot.removeChild(old);
+    var seed = PL.util.hashSeed((cls || '') + sideId + (App.battle.biome || ''));
+    slot.appendChild(el('div', { className: 'trainer-art' },
+      el('img', { className: 'trainer-sprite', alt: '', src: PL.scenery.trainer(cls, seed, back) })));
+  }
+
+  /** Lässt eine Trainerfigur zur Seite gehen, bevor das Pokémon erscheint. */
+  function dismissTrainer(sideId, done) {
+    var slot = BV.slots[sideId];
+    var art = slot && slot.querySelector('.trainer-art');
+    if (!art || !art.animate || (PL.fx && PL.fx.reduced())) { if (art) art.remove(); done(); return; }
+    var dir = sideId === 0 ? -1 : 1;
+    var anim = art.animate([
+      { transform: 'translateX(0)', opacity: 1 },
+      { transform: 'translateX(' + dir * 90 + 'px)', opacity: 0 }
+    ], { duration: 260, easing: 'ease-in' });
+    anim.onfinish = function () { art.remove(); done(); };
+  }
 
   /** Typenkompass: zeigt vor dem Kampf, was der Gegner im Ärmel hat. */
   function scoutPanel(bt) {
@@ -628,8 +686,8 @@
       }
       var e = entries[i++];
       pushLine(e);
-      applyLogVisual(e);
-      var wait = speed;
+      var extra = applyLogVisual(e) || 0;
+      var wait = Math.max(speed, speed === 0 ? 0 : extra);
       if (!e.s) wait = Math.min(speed, 90);
       if (e.k === 'turn') wait = Math.min(speed, 140);
       if (e.k === 'faint' || e.k === 'caught' || e.k === 'end') wait = speed * 1.6;
@@ -640,6 +698,21 @@
   }
 
   function applyLogVisual(e) {
+    // Attackeneffekt: fliegt vom Angreifer zum Ziel, je nach Kategorie.
+    if (e.k === 'move' && PL.fx && BV.art0 !== undefined) {
+      var mv = dex.move(e.move);
+      var self = mv && mv.tg === 'self';
+      var from = BV['art' + e.side], to = BV['art' + (1 - e.side)];
+      if (from) {
+        var dur = PL.fx.move({
+          stage: BV.stage, fromArt: from, toArt: self ? from : to,
+          type: e.type, category: e.cat, self: self
+        });
+        if (from) flash(from, 'attack');
+        return dur;
+      }
+    }
+    if (e.k === 'crit' && PL.fx && BV.stage) PL.fx.shake(BV.stage);
     if (e.side === undefined || e.side === null) return;
     var bar = BV['bar' + e.side], art = BV['art' + e.side];
     if (e.k === 'damage' && bar && e.max) {
@@ -657,6 +730,10 @@
       if (art) flash(art, 'faint');
       sfx('faint');
     } else if (e.k === 'switchin') {
+      if (BV.slots && BV.slots[e.side] && BV.slots[e.side].querySelector('.trainer-art')) {
+        dismissTrainer(e.side, function () { renderSide(e.side); });
+        return 300;
+      }
       renderSide(e.side);
     } else if (e.k === 'mega') {
       renderSide(e.side);
@@ -953,6 +1030,7 @@
     meta.save();
 
     if (run.state === 'gameover') { finishRun(); return; }
+    if (PL.audio && (bt.outcome === 'win' || bt.outcome === 'caught')) PL.audio.jingle();
     show('scene', { type: 'aftermath', result: result, battle: bt });
   }
 
@@ -1850,6 +1928,18 @@
       row('Töne', 'Kurze Klänge bei Treffern und Aktionen.', picker(
         [{ value: true, label: 'An' }, { value: false, label: 'Aus' }], s.sound,
         function (v) { meta.setSetting('sound', v); })),
+      row('Musik', 'Chiptune-Schleifen, im Spiel erzeugt — je nach Ort eine andere.', picker(
+        [{ value: true, label: 'An' }, { value: false, label: 'Aus' }], s.music,
+        function (v) {
+          meta.setSetting('music', v);
+          if (PL.audio) { PL.audio.setEnabled(v); if (v) updateMusic(App.screen); }
+        })),
+      row('Lautstärke', 'Gilt für Musik und Klänge.', picker(
+        [{ value: 0.25, label: 'Leise' }, { value: 0.5, label: 'Mittel' }, { value: 0.8, label: 'Laut' }],
+        s.volume, function (v) {
+          meta.setSetting('volume', v);
+          if (PL.audio) PL.audio.setVolume(v);
+        })),
       el('div', { className: 'danger-zone' }, [
         el('h3', { text: 'Gefahrenzone' }),
         el('button', {
@@ -1922,6 +2012,7 @@
         faint: { f: 110, t: 'sawtooth', d: 0.35, v: 0.05 },
         mega: { f: 880, t: 'triangle', d: 0.25, v: 0.05 },
         coin: { f: 990, t: 'square', d: 0.08, v: 0.04 },
+        encounter: { f: 220, t: 'square', d: 0.3, v: 0.06 },
         select: { f: 440, t: 'sine', d: 0.05, v: 0.03 }
       }[kind];
       if (!spec) return;
@@ -1930,6 +2021,7 @@
       osc.frequency.setValueAtTime(spec.f, now);
       if (kind === 'faint') osc.frequency.exponentialRampToValueAtTime(spec.f / 3, now + spec.d);
       if (kind === 'mega') osc.frequency.exponentialRampToValueAtTime(spec.f * 2, now + spec.d);
+      if (kind === 'encounter') osc.frequency.exponentialRampToValueAtTime(spec.f * 3, now + spec.d);
       gain.gain.setValueAtTime(spec.v, now);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + spec.d);
       osc.connect(gain).connect(audio.destination);
@@ -1974,6 +2066,10 @@
 
   function boot() {
     applyTheme();
+    if (PL.audio) {
+      PL.audio.setVolume(settings().volume === undefined ? 0.5 : settings().volume);
+      PL.audio.setEnabled(!!settings().music);
+    }
     doc.addEventListener('keydown', onKey);
     root.addEventListener('beforeunload', function () { autosave(); });
     show('title');

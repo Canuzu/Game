@@ -98,8 +98,11 @@ while (guard++ < 45) {
   if (screen === 'map') {
     const open = page.locator('.map-node.open');
     if (!(await open.count())) break;
-    await open.first().click();
-    await page.waitForTimeout(120);
+    await open.first().click({ timeout: 8000 }).catch(() => {});
+    // Der Kampfstart blendet über — erst warten, bis der Bildschirm wechselt.
+    await page.waitForFunction(
+      () => document.body.getAttribute('data-screen') !== 'map', null, { timeout: 4000}
+    ).catch(() => {});
     continue;
   }
 

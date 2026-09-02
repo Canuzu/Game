@@ -87,6 +87,21 @@ kämpfen in der Arena, die Liga in ihrer Halle, Fundstücke liegen in Höhlen.
 Die Routenkarte bekommt dieselbe Welt in der Draufsicht: eine nahtlos
 kachelnde Bodentextur je Region.
 
+**Musik und Effekte** — sechs Chiptune-Schleifen (Route, Stadt, Höhle, Kampf,
+Arenaleiter, Siegesfanfare) werden zur Laufzeit auf vier Kanälen erzeugt:
+Melodie, Begleitung, Bass und ein Schlagzeug aus gefiltertem Rauschen. Keine
+Audiodatei, kein Download. Welches Stück läuft, entscheidet der Ort.
+
+Attacken werfen typgefärbte Pixel über die Bühne: Spezialattacken fliegen als
+Geschoss zum Ziel und zerplatzen, physische lassen den Angreifer vorstoßen und
+schlagen ein, Statusattacken ziehen einen Ring. Volltreffer lassen die Bühne
+wackeln. Die Pokémon heben und senken sich im Leerlauf.
+
+**Kampfauftakt** — der Bildschirm schließt sich in Streifen, dahinter stehen
+beide Trainer als gezeichnete Pixelfiguren auf ihren Plätzen (19 Klassen mit
+eigener Palette, vom Käfersammler bis zum Champ), dann weichen sie zur Seite
+und schicken ihr Pokémon ins Feld.
+
 **Bedienung** — unter der Bühne steht das Kampfprotokoll in einem Textfenster,
 darunter die vier Attacken als Kacheln mit Typ, Kategorie, AP und Wirksamkeit
 gegen das aktuelle Ziel. Die Zeile darunter (Wechseln, Beutel, Ball, Fliehen,
@@ -155,8 +170,9 @@ sich das Layout um.
 
 ## Einstellungen
 
-Hell/dunkel, Kampftempo (langsam bis sofort), Töne an/aus und die Sprache der
-Pokémon-Namen (deutsch oder englisch). Attacken- und Fähigkeitsnamen bleiben
+Hell/dunkel, Kampftempo (langsam bis sofort), Töne und Musik getrennt an/aus,
+Lautstärke in drei Stufen und die Sprache der Pokémon-Namen (deutsch oder
+englisch). Attacken- und Fähigkeitsnamen bleiben
 englisch — so heißen sie in Wettbewerb und Datenbanken überall.
 
 ---
@@ -168,7 +184,9 @@ pokelike/
   index.html          Einstiegspunkt — reicht zum Spielen
   data/dex.js         erzeugte Pokémon-Daten (0,9 MB, alle neun Generationen)
   js/core.js          Zufall, Pokédex-Zugriff, Übersetzungen, Sprites
-  js/scenery.js       15 Pixelkulissen, Plattformen, Bodenkacheln, Teilchen
+  js/scenery.js       15 Pixelkulissen, Plattformen, Bodenkacheln, Trainer
+  js/audio.js         Chiptune-Sequencer mit sechs Stücken
+  js/fx.js            Attackeneffekte, Bildschirmwischer, Wackeln
   js/pokemon.js       Werte, Attackenwahl, Erfahrung, Entwicklung, Fangen
   js/effects.js       Fähigkeiten, Tragegegenstände, Attacken-Sonderregeln
   js/battle.js        Kampf-Engine

@@ -888,3 +888,57 @@ button.move-row:hover { border-color: var(--accent); }
 }
 .action-btn.mega.on { background: #b07ae0; color: #1b1030; border-color: var(--frame-edge); }
 .move-btn-meta .move-eff { margin-left: auto; }
+
+/* ---------- 14) Bewegung: Atmen, Effekte, Übergang --------------------------
+ * Die Sprites heben und senken sich leicht, Attacken werfen Pixel über die
+ * Bühne, und zwischen Karte und Kampf schließt sich der Bildschirm in
+ * Streifen. Bei prefers-reduced-motion bleibt alles stehen.
+ * ------------------------------------------------------------------------- */
+
+@keyframes idle-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+.battle-sprite { animation: idle-bob 2.4s ease-in-out infinite; }
+.slot-enemy .battle-sprite { animation-duration: 2.9s; animation-delay: -.7s; }
+.battle-sprite.fainted { animation: none; }
+
+.fx-layer { position: absolute; inset: 0; z-index: 4; pointer-events: none; overflow: hidden; }
+.fx-bit {
+  position: absolute; display: block;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 0 6px currentColor;
+}
+
+@keyframes fx-shake {
+  0%, 100% { transform: translate(0, 0); }
+  20% { transform: translate(-4px, 2px); }
+  40% { transform: translate(4px, -2px); }
+  60% { transform: translate(-3px, -1px); }
+  80% { transform: translate(3px, 1px); }
+}
+.fx-shake { animation: fx-shake .32s steps(4); }
+
+.trainer-art { position: relative; width: 150px; height: 150px; display: grid; place-items: end center; z-index: 1; }
+.slot-enemy .trainer-art { width: 124px; height: 124px; }
+.trainer-sprite {
+  width: 96px; height: 144px; object-fit: contain;
+  image-rendering: pixelated; image-rendering: crisp-edges;
+  filter: drop-shadow(0 6px 6px rgba(0,0,0,.4));
+}
+.slot-enemy .trainer-sprite { width: 78px; height: 117px; }
+
+/* Bildschirmwischer beim Kampfstart */
+.fx-wipe { position: fixed; inset: 0; z-index: 90; pointer-events: none; }
+.fx-wipe i {
+  position: absolute; left: 0; width: 100%; display: block;
+  background: #0b0d13;
+  transform: scaleX(0);
+  animation: wipe-close .3s steps(6) forwards;
+}
+.fx-wipe.open i { animation: wipe-open .3s steps(6) forwards; }
+@keyframes wipe-close { to { transform: scaleX(1); } }
+@keyframes wipe-open { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+
+@media (max-width: 860px) {
+  .trainer-art { width: 104px; height: 104px; }
+  .slot-enemy .trainer-art { width: 88px; height: 88px; }
+  .trainer-sprite { width: 68px; height: 102px; }
+  .slot-enemy .trainer-sprite { width: 56px; height: 84px; }
+}

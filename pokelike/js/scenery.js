@@ -621,6 +621,91 @@
     return tileCache[biomeId];
   }
 
+  /* --- Trainerfiguren ---------------------------------------------------------
+   * 24 × 36 Pixel, aus Rechtecken gebaut. Die Klasse bestimmt die Palette und
+   * ob es Hut, Mütze oder Umhang gibt; der Startwert variiert Haar- und
+   * Hautton, damit nicht alle gleich aussehen.
+   * -------------------------------------------------------------------------- */
+
+  var SKIN = ['#f0c8a0', '#e0a878', '#c08050', '#8c5a38'];
+  var HAIR = ['#3c2a20', '#6b3f22', '#c8a028', '#2a2a35', '#a03030', '#5c4a8c'];
+
+  var TRAINER_STYLE = {
+    'Arenaleiter': { shirt: '#d84838', pants: '#2c3450', cape: '#e8c14a', hat: null },
+    'Top Vier': { shirt: '#4a3c78', pants: '#241f38', cape: '#8c6ad0', hat: null },
+    'Champ': { shirt: '#2c3860', pants: '#1b2038', cape: '#c9a227', hat: null },
+    'Käfersammler': { shirt: '#6ba848', pants: '#4c6c30', cape: null, hat: '#d8c078' },
+    'Angler': { shirt: '#4888c0', pants: '#2c4c70', cape: null, hat: '#d8c078' },
+    'Schwimmerin': { shirt: '#48b0c8', pants: '#2c7c94', cape: null, hat: null },
+    'Wanderer': { shirt: '#a86838', pants: '#6c4828', cape: null, hat: '#8c5a38' },
+    'Ruinenmaniac': { shirt: '#8c7048', pants: '#5c4830', cape: null, hat: '#6c5438' },
+    'Rowdy': { shirt: '#3a3a44', pants: '#24242c', cape: null, hat: null },
+    'Team-Rüpel': { shirt: '#2a2a32', pants: '#1a1a20', cape: null, hat: '#2a2a32' },
+    'Ass-Trainer': { shirt: '#e8e8f0', pants: '#c03838', cape: null, hat: null },
+    'Ass-Trainerin': { shirt: '#e8e8f0', pants: '#c03838', cape: null, hat: null },
+    'Veteranin': { shirt: '#8c4870', pants: '#4c2c48', cape: null, hat: null },
+    'Drachenzähmer': { shirt: '#6c4898', pants: '#3c2860', cape: null, hat: null },
+    'Psycho': { shirt: '#c06898', pants: '#6c3c58', cape: null, hat: null },
+    'Ninjajunge': { shirt: '#38484c', pants: '#243034', cape: null, hat: null },
+    'Feuerwehrmann': { shirt: '#d85028', pants: '#8c3418', cape: null, hat: '#e8c14a' },
+    'Skaterin': { shirt: '#48b8a0', pants: '#2c6c60', cape: null, hat: null },
+    'Spieler': { shirt: '#e05a47', pants: '#2c3450', cape: null, hat: '#e05a47' }
+  };
+
+  var trainerCache = {};
+
+  /** Zeichnet eine Trainerfigur; back = Rückenansicht für den Spieler. */
+  function trainer(cls, seed, back) {
+    var key = cls + '|' + seed + '|' + (back ? 'b' : 'f');
+    if (trainerCache[key]) return trainerCache[key];
+    var style = TRAINER_STYLE[cls] || TRAINER_STYLE['Ass-Trainer'];
+    var skin = SKIN[Math.abs(seed | 0) % SKIN.length];
+    var hair = HAIR[Math.abs((seed | 0) >> 3) % HAIR.length];
+
+    var cv = root.document.createElement('canvas');
+    cv.width = 24; cv.height = 36;
+    var ctx = cv.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+
+    function dark(c, f) {
+      var n = parseInt(c.slice(1), 16);
+      var r = Math.round(((n >> 16) & 255) * f), g = Math.round(((n >> 8) & 255) * f), b = Math.round((n & 255) * f);
+      return 'rgb(' + r + ',' + g + ',' + b + ')';
+    }
+
+    if (style.cape) {                                  // Umhang hinter der Figur
+      px(ctx, 4, 12, 16, 18, style.cape);
+      px(ctx, 4, 12, 16, 2, dark(style.cape, 0.75));
+    }
+    px(ctx, 7, 12, 10, 12, style.shirt);               // Rumpf
+    px(ctx, 7, 12, 10, 2, dark(style.shirt, 0.8));
+    px(ctx, 4, 13, 3, 9, style.shirt);                 // Arme
+    px(ctx, 17, 13, 3, 9, style.shirt);
+    px(ctx, 4, 21, 3, 3, skin);
+    px(ctx, 17, 21, 3, 3, skin);
+    px(ctx, 8, 24, 3, 8, style.pants);                 // Beine
+    px(ctx, 13, 24, 3, 8, style.pants);
+    px(ctx, 7, 32, 5, 3, '#2a2028');                   // Schuhe
+    px(ctx, 12, 32, 5, 3, '#2a2028');
+    px(ctx, 8, 4, 8, 9, skin);                         // Kopf
+    if (back) {
+      px(ctx, 7, 3, 10, 9, hair);                      // Hinterkopf
+    } else {
+      px(ctx, 7, 3, 10, 4, hair);
+      px(ctx, 7, 3, 2, 8, hair);
+      px(ctx, 15, 3, 2, 8, hair);
+      px(ctx, 10, 8, 2, 2, '#2a2028');                 // Augen
+      px(ctx, 14, 8, 2, 2, '#2a2028');
+    }
+    if (style.hat) {
+      px(ctx, 6, 2, 12, 3, style.hat);
+      px(ctx, 8, 0, 8, 3, dark(style.hat, 0.85));
+      if (!back) px(ctx, 6, 5, 12, 1, dark(style.hat, 0.7));
+    }
+    trainerCache[key] = cv.toDataURL('image/png');
+    return trainerCache[key];
+  }
+
   /** Plattform als Pixel-Ellipse — sie muss zu den Kulissen passen. */
   function platform(w, h, fill, edge) {
     var cv = root.document.createElement('canvas');
@@ -642,7 +727,8 @@
 
   PL.scenery = {
     biomes: B, regionBiomes: REGION_BIOMES, nodeBiomes: NODE_BIOMES,
-    pick: pick, render: render, platform: platform, tile: tile, size: { w: W, h: H },
+    pick: pick, render: render, platform: platform, tile: tile, trainer: trainer,
+    trainerStyles: TRAINER_STYLE, size: { w: W, h: H },
     get: function (id) { return B[id] || B.wiese; },
     list: function () { return Object.keys(B); }
   };
