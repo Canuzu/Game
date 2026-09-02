@@ -167,9 +167,10 @@
     opts = opts || {};
     var sp = dex.sp(mon.sp), st = mons.stats(mon), max = st[0];
     var nature = dex.nature(mon.nat);
+    var peak = Math.max.apply(null, st);
     var rows = PL.STATS.map(function (key, i) {
       var mod = nature && nature.p === key ? '+' : nature && nature.m === key ? '−' : '';
-      var pct = Math.min(1, st[i] / (key === 'hp' ? 400 : 300));
+      var pct = peak > 0 ? st[i] / peak : 0;
       return el('div', { className: 'stat-row' }, [
         el('span', { className: 'stat-name', text: T.statShort(key) + mod }),
         el('span', { className: 'stat-value', text: st[i] }),
@@ -233,7 +234,7 @@
       className: 'move-row' + (opts.className ? ' ' + opts.className : ''),
       type: opts.onClick ? 'button' : null,
       onclick: opts.onClick || null,
-      title: m.d
+      title: T.moveDesc(m)
     }, [
       el('span', { className: 'move-type', style: { background: TYPE_COLOR[m.t] }, text: T.type(m.t) }),
       el('span', { className: 'move-name', text: m.n }),

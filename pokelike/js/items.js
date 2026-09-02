@@ -409,7 +409,7 @@
     return {
       id: 'tm-' + m.id, name: 'TM ' + m.n, kind: 'tm', move: moveIndex,
       price: Math.round(300 + (m.bp || 40) * 12 + (m.c === 'T' ? 400 : 0)),
-      desc: m.d, type: m.t, cat: m.c
+      desc: PL.t.moveDesc(m), type: m.t, cat: m.c
     };
   }
 

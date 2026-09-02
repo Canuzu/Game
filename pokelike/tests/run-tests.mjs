@@ -232,6 +232,51 @@ section('Kampfmechanik im Einzelnen');
   eq('Stahl-Pokémon werden nicht vergiftet',
     bt.setStatus(bt.sides[1].active, 'psn', bt.sides[0].active, null), false);
 
+  // Statusattacken müssen als Status durchlaufen — nicht als schwacher Spezialangriff
+  eq('Attackenkategorien sind sauber getrennt',
+    dex.moves.filter((m) => m.c === 'T').length > 200, true);
+  check('Bekannte Statusattacken sind als Status geführt',
+    ['swordsdance', 'thunderwave', 'recover', 'protect', 'stealthrock', 'toxic', 'rest', 'calmmind']
+      .every((id) => dex.move(id).c === 'T'),
+    ['swordsdance', 'thunderwave', 'recover', 'protect', 'stealthrock', 'toxic', 'rest', 'calmmind']
+      .filter((id) => dex.move(id).c !== 'T').join(', '));
+
+  bt = duel('scizor', 'blissey');
+  bt.useMove(bt.sides[0].active, { move: dex.move('swordsdance') });
+  eq('Schwerttanz erhöht den Angriff um zwei Stufen', bt.sides[0].active.boosts.atk, 2);
+
+  bt = duel('pikachu', 'snorlax');
+  bt.useMove(bt.sides[0].active, { move: dex.move('thunderwave') });
+  eq('Donnerwelle paralysiert', bt.sides[1].active.mon.status, 'par');
+
+  bt = duel('blissey', 'snorlax');
+  bt.sides[0].active.mon.hp = 50;
+  bt.useMove(bt.sides[0].active, { move: dex.move('softboiled') });
+  check('Weichei heilt die Hälfte der KP', bt.sides[0].active.mon.hp > 50,
+    'KP ' + bt.sides[0].active.mon.hp);
+
+  bt = duel('snorlax', 'snorlax');
+  bt.sides[0].active.mon.hp = 20;
+  bt.sides[0].active.mon.status = 'brn';
+  bt.useMove(bt.sides[0].active, { move: dex.move('rest') });
+  eq('Erholung füllt die KP', bt.sides[0].active.mon.hp, bt.maxHP(bt.sides[0].active));
+  eq('Erholung lässt schlafen', bt.sides[0].active.mon.status, 'slp');
+
+  bt = duel('skarmory', 'charizard');
+  bt.useMove(bt.sides[0].active, { move: dex.move('stealthrock') });
+  eq('Tarnsteine landen auf der Gegenseite', bt.sides[1].hazards.stealthrock, 1);
+
+  bt = duel('blissey', 'machamp');
+  bt.useMove(bt.sides[0].active, { move: dex.move('protect') });
+  eq('Schutzschild ist aktiv', !!bt.sides[0].active.vol.protect, true);
+  const hpUnderShield = bt.sides[0].active.mon.hp;
+  bt.useMove(bt.sides[1].active, { move: dex.move('closecombat') });
+  eq('Schutzschild fängt den Treffer ab', bt.sides[0].active.mon.hp, hpUnderShield);
+
+  bt = duel('venusaur', 'charizard');
+  bt.useMove(bt.sides[0].active, { move: dex.move('sunnyday') });
+  eq('Sonnentag setzt das Wetter', bt.field.weather, 'sunnyday');
+
   // Fallen
   bt = duel('charizard', 'tyranitar');
   bt.addSideCondition(bt.sides[1], 'stealthrock', bt.sides[0].active);

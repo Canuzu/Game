@@ -112,6 +112,18 @@
     }
   });
 
+  /**
+   * Wirksamer Aufstieg. Im Endlosmodus kommt für jede vollständige Runde durch
+   * alle neun Regionen eine Stufe dazu — sonst würde die Schwierigkeit
+   * einschlafen, sobald die Levelgrenze bei 100 anschlägt.
+   */
+  R.effectiveAscension = function () {
+    return this.ascension + (this.mode === 'endlos' ? this.loop() : 0);
+  };
+
+  /** Gilt die Erschwernis dieser Aufstiegsstufe schon? */
+  R.asc = function (level) { return this.effectiveAscension() >= level; };
+
   R.regionsCleared = function () { return this.region; };
   R.totalRegions = function () {
     var m = MODES[this.mode];
@@ -270,14 +282,17 @@
    * Betritt einen Knoten und liefert die Szene, die die Oberfläche zeigen soll.
    * Die Szene ist ein reines Datenobjekt: { kind, ... }.
    */
-  R.enterNode = function (row, col) {
-    var ok = this.available().some(function (a) { return a.row === row && a.col === col; });
+  R.enterNode = function (row, col, force) {
+    var ok = force || this.available().some(function (a) { return a.row === row && a.col === col; });
     if (!ok) return null;
     var node = this.nodeAt(row, col);
     if (!node) return null;
     this.rowIndex = row;
     this.pos = { row: row, col: col };
     node.done = true;
+    // Merken, was gerade offen ist: wer mitten im Kampf das Fenster schließt,
+    // soll denselben Knoten wiederfinden statt ihn zu überspringen.
+    this.pendingNode = { row: row, col: col };
     this.stats.nodes++;
     var rng = this.rng;
 
@@ -313,6 +328,7 @@
   /** Zurück zur Karte; rückt gegebenenfalls in die nächste Region vor. */
   R.closeScene = function () {
     this.scene = null;
+    this.pendingNode = null;
     this.state = 'map';
     if (this.rowIndex >= this.map.length - 1) this.advanceRegion();
     return this.state;
@@ -331,6 +347,7 @@
       this.history.push({ t: 'liga', text: 'Die Liga öffnet ihre Tore.' });
     } else {
       this.buildMap();
+      this.regionCatches = 0;
       var reg = this.currentRegion();
       this.history.push({ t: 'region', text: 'Weiter nach ' + reg.name + '.' });
       var ev = this.mod('evPerFloor');
@@ -362,7 +379,8 @@
    * bleibt in seiner Liga.
    */
   R.enemyLevel = function (delta) {
-    var base = this.teamLevel() + (delta || 0) + this.ascension;
+    var bonus = (this.asc(1) ? 2 : 0) + (this.asc(10) ? 2 : 0);
+    var base = this.teamLevel() + (delta || 0) + bonus;
     return clamp(Math.round(Math.min(base, this.levelCap)), 2, 100);
   };
 
@@ -377,14 +395,16 @@
   };
 
   R.battleOpts = function (extra) {
-    var o = {
+    return {
       teams: [this.party, extra.team],
       rng: this.rng,
       wild: !!extra.wild,
       trainer: extra.trainer || null,
-      relics: this.relics
+      relics: this.relics,
+      catchMult: this.mod('catchMult', 1) * (this.asc(5) ? 0.6 : 1),
+      alwaysTera: this.asc(9),
+      nuzlockeLocked: this.nuzlocke && (this.regionCatches || 0) >= 1
     };
-    return o;
   };
 
   R.makeWild = function (rng, opts) {
@@ -416,6 +436,7 @@
     var level = this.enemyLevel(opts.elite ? 0 : -2);
     var t = W.trainerTeam(rng, region, level, {
       maxSize: this.matchSize(opts.elite ? 1 : 0),
+      items: this.asc(6),
       bonus: opts.elite ? 2 : 0,
       quality: opts.elite ? 0.8 : 0.68,
       ivFloor: opts.elite ? 10 : 4,
@@ -440,7 +461,9 @@
     var region = this.currentRegion();
     // Der erste Arenaleiter darf noch kein Bollwerk sein.
     var level = this.enemyLevel(this.region === 0 ? 0 : 2);
-    var t = W.bossTeam(rng, region, level, this.region, { maxSize: this.matchSize(1) });
+    var t = W.bossTeam(rng, region, level, this.region, {
+      maxSize: this.matchSize(this.asc(3) ? 2 : 1), items: this.asc(6)
+    });
     var bt = new PL.Battle(this.battleOpts({ team: t.team, trainer: t }));
     bt.aiLevel = 3;
     bt.reward = { money: 900 + this.region * 320, kind: 'boss' };
@@ -449,7 +472,9 @@
 
   R.makeElite = function (rng) {
     var level = this.enemyLevel(1);
-    var t = W.eliteTeam(rng, level, this.leagueStage, this.eliteUsed, { maxSize: this.matchSize(1) });
+    var t = W.eliteTeam(rng, level, this.leagueStage, this.eliteUsed, {
+      maxSize: this.matchSize(this.asc(3) ? 2 : 1)
+    });
     var bt = new PL.Battle(this.battleOpts({ team: t.team, trainer: t }));
     bt.aiLevel = 3;
     bt.reward = { money: 2200 + this.leagueStage * 400, kind: 'e4' };
@@ -488,7 +513,7 @@
 
       // Erfahrung: Teilnehmer voll, Bank anteilig
       var benchShare = this.mod('benchExp') || 0.25;
-      var expMult = this.mod('expMult', 1) * (1 + this.ascension * 0.05);
+      var expMult = this.mod('expMult', 1) * (this.asc(7) ? 0.8 : 1);
       var alive = this.party.filter(function (m) { return m.hp > 0; });
       beaten.forEach(function (loser) {
         var sp = dex.sp(loser.sp);
@@ -544,7 +569,9 @@
     }
 
     if (this.hasMod('autoCure')) this.cureTeam();
-    if (bt.reward && /boss|e4|champ/.test(bt.reward.kind) && (bt.outcome === 'win' || bt.outcome === 'caught')) {
+    if (bt.reward && /boss|e4|champ/.test(bt.reward.kind) &&
+        (bt.outcome === 'win' || bt.outcome === 'caught') &&
+        (!this.asc(8) || this.hasMod('healAfterBoss'))) {
       this.healTeam(1, true);
       this.restorePP();
     }
@@ -570,7 +597,13 @@
 
   /* ---------- 5) Belohnungen und Fänge ----------------------------------------- */
 
+  /** Nuzlocke erlaubt genau einen Fang je Region. */
+  R.catchAllowed = function () {
+    return !this.nuzlocke || (this.regionCatches || 0) < 1;
+  };
+
   R.acceptCatch = function (mon) {
+    this.regionCatches = (this.regionCatches || 0) + 1;
     mon.friendship = 90;
     var bonus = this.mod('catchLevelBonus');
     if (bonus) {
@@ -589,7 +622,7 @@
     var level = this.enemyLevel(0);
     var pool = W.encounterPool({ gen: this.leagueStage >= 0 ? null : region.gen, anyGen: this.leagueStage >= 0, level: level });
     var picks = [], seen = {}, i;
-    var count = 3 + (this.mod('extraReward') || 0);
+    var count = this.catchAllowed() ? 3 + (this.mod('extraReward') || 0) : 1;
     for (i = 0; i < count; i++) {
       var sp = W.pickEncounter(rng, pool, level, { exclude: seen, rare: i === 0 });
       seen[sp.id] = 1;
@@ -598,7 +631,12 @@
         shinyOdds: (1 / 300) * this.mod('shinyMult', 1)
       }));
     }
-    return { kind: 'catch', offers: picks, text: 'Drei Pokémon beäugen dich neugierig. Eines darf mitkommen.' };
+    return {
+      kind: 'catch', offers: picks, locked: !this.catchAllowed(),
+      text: this.catchAllowed()
+        ? 'Drei Pokémon beäugen dich neugierig. Eines darf mitkommen.'
+        : 'Nuzlocke: In dieser Region hast du deinen Fang schon gemacht. Schauen darfst du trotzdem.'
+    };
   };
 
   R.takeOffer = function (mon) {
@@ -703,6 +741,7 @@
       stock.push(PL.items.tm(tmPool.splice(rng.int(tmPool.length), 1)[0]));
     }
     var discount = opts.discount !== undefined ? opts.discount : this.mod('shopDiscount');
+    if (this.asc(2)) discount -= 0.25;                     // Aufstieg 2: teurere Läden
     return {
       kind: 'shop',
       stock: stock.map(function (it) {
@@ -767,8 +806,11 @@
   R.doRest = function (id, rng) {
     switch (id) {
       case 'heal':
-        this.healTeam(1, true); this.restorePP();
-        return 'Das Team ist wieder vollständig bei Kräften.';
+        var factor = this.asc(4) ? 0.5 : 1;
+        this.healTeam(factor, true);
+        this.restorePP();
+        return factor === 1 ? 'Das Team ist wieder vollständig bei Kräften.'
+          : 'Halbe Heilung — mehr gibt der Aufstieg nicht her.';
       case 'train':
         return this.grantExp(Math.round(this.levelCap * 45));
       default:
@@ -929,6 +971,8 @@
       leagueStage: this.leagueStage, eliteUsed: this.eliteUsed, stats: this.stats,
       history: this.history.slice(-40), map: this.map, pos: this.pos, rowIndex: this.rowIndex,
       bossesBeaten: this.bossesBeaten || 0, tms: this.tms || {},
+      regionCatches: this.regionCatches || 0,
+      pendingNode: this.pendingNode || null,
       seenEvents: this.seenEvents || {}, masterballUsed: this.masterballUsed, result: this.result,
       state: this.state === 'map' ? 'map' : 'map'
     };

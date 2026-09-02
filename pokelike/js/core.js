@@ -204,6 +204,89 @@
     electricterrain: 'Elektrofeld', grassyterrain: 'Grasfeld', mistyterrain: 'Nebelfeld', psychicterrain: 'Psychofeld'
   };
 
+  /* --- Attackenbeschreibung auf Deutsch -------------------------------------
+   * Die Quelldaten liefern nur englische Fließtexte. Statt sie zu übersetzen,
+   * wird hier aus den strukturierten Feldern ein sauberer deutscher Steckbrief
+   * gebaut — das ist ohnehin genauer als der Prosatext.
+   * ------------------------------------------------------------------------ */
+
+  var CATEGORY_DE = { P: 'Physisch', S: 'Spezial', T: 'Status' };
+
+  var VOLATILE_DE = {
+    confusion: 'verwirrt das Ziel', flinch: 'lässt das Ziel zurückschrecken',
+    leechseed: 'pflanzt Egelsamen', substitute: 'erschafft einen Delegator',
+    protect: 'schützt vor Angriffen', taunt: 'erzwingt Angriffe',
+    encore: 'erzwingt die Wiederholung', disable: 'blockiert eine Attacke',
+    partiallytrapped: 'hält das Ziel fest', focusenergy: 'erhöht die Volltrefferquote',
+    endure: 'lässt einen Treffer überleben', destinybond: 'reißt den Gegner mit',
+    curse: 'verflucht das Ziel', yawn: 'macht schläfrig', aquaring: 'heilt jede Runde',
+    saltcure: 'salzt das Ziel ein', lockedmove: 'wütet zwei bis drei Runden'
+  };
+  var SIDE_DE = {
+    stealthrock: 'legt Tarnsteine aus', spikes: 'legt Stachler aus',
+    toxicspikes: 'legt Giftspitzen aus', stickyweb: 'spannt ein Klebenetz',
+    reflect: 'errichtet einen Reflektor', lightscreen: 'errichtet einen Lichtschild',
+    auroraveil: 'errichtet einen Auroraschleier', safeguard: 'schützt vor Statusproblemen',
+    mist: 'schützt vor Wertsenkungen', tailwind: 'verdoppelt die Initiative'
+  };
+  var STATUS_VERB = {
+    brn: 'verbrennt', par: 'paralysiert', psn: 'vergiftet',
+    tox: 'vergiftet schwer', slp: 'versetzt in Schlaf', frz: 'friert ein'
+  };
+
+  function statList(boosts, self) {
+    var out = [], k, v;
+    for (k in boosts) {
+      v = boosts[k];
+      var name = k === 'acc' ? 'Genauigkeit' : k === 'eva' ? 'Fluchtwert' : STAT_DE[k];
+      out.push((v > 0 ? '+' : '') + v + ' ' + name);
+    }
+    return (self ? 'eigene Werte ' : '') + out.join(', ');
+  }
+
+  /** Kurzer Steckbrief einer Attacke, ohne den englischen Fließtext. */
+  function moveDesc(m) {
+    var head = [TYPE_DE[m.t] || m.t, CATEGORY_DE[m.c]];
+    if (m.c !== 'T') head.push('Stärke ' + (m.bp || '—'));
+    head.push(m.ac === 0 ? 'trifft immer' : 'Genauigkeit ' + m.ac + ' %');
+    head.push(m.pp + ' AP');
+
+    var fx = [];
+    if (m.pr > 0) fx.push('Erstschlag (+' + m.pr + ')');
+    if (m.pr < 0) fx.push('handelt zuletzt (' + m.pr + ')');
+    if (m.mh) fx.push('trifft ' + (typeof m.mh === 'number' ? m.mh : m.mh[0] + '–' + m.mh[1]) + '×');
+    if (m.dmg) fx.push(m.dmg === 'level' ? 'Schaden in Höhe des eigenen Levels' : 'fester Schaden: ' + m.dmg);
+    if (m.wc) fx.push('immer Volltreffer');
+    else if (m.cr) fx.push('erhöhte Volltrefferquote');
+    if (m.st) fx.push(STATUS_VERB[m.st] || m.st);
+    if (m.vs && VOLATILE_DE[m.vs]) fx.push(VOLATILE_DE[m.vs]);
+    if (m.bo) fx.push(m.tg === 'self' ? statList(m.bo, true) : statList(m.bo) + ' beim Ziel');
+    if (m.slf && m.slf.bo) fx.push(statList(m.slf.bo, true));
+    if (m.hl) fx.push('heilt ' + Math.round(m.hl[0] / m.hl[1] * 100) + ' % der KP');
+    if (m.dr) fx.push('saugt ' + Math.round(m.dr[0] / m.dr[1] * 100) + ' % des Schadens ab');
+    if (m.rc) fx.push('Rückstoß: ' + Math.round(m.rc[0] / m.rc[1] * 100) + ' % des Schadens');
+    if (m.w) fx.push('ruft ' + (WEATHER_DE[m.w] || m.w) + ' hervor');
+    if (m.tr) fx.push('erzeugt ' + (TERRAIN_DE[m.tr] || m.tr));
+    if (m.sc && SIDE_DE[m.sc]) fx.push(SIDE_DE[m.sc]);
+    if (m.slc === 'wish') fx.push('heilt den Nachrücker');
+    if (m.ss) fx.push('wechselt danach aus');
+    if (m.fs) fx.push('zwingt das Ziel zum Wechsel');
+    if (m.sec) {
+      m.sec.forEach(function (sec) {
+        var what = sec.st ? STATUS_VERB[sec.st] : sec.vs ? VOLATILE_DE[sec.vs]
+          : sec.bo ? statList(sec.bo) + ' beim Ziel' : sec.self ? statList(sec.self, true) : null;
+        if (what) fx.push(sec.c + ' % Chance: ' + what);
+      });
+    }
+    if (m.oos) fx.push('nutzt ' + STAT_DE[m.oos] + ' als Angriffswert');
+    if (m.ods) fx.push('trifft ' + STAT_DE[m.ods]);
+    if (m.fl && m.fl.indexOf('recharge') >= 0) fx.push('danach eine Runde Pause');
+    if (m.fl && m.fl.indexOf('contact') >= 0) fx.push('Berührung');
+    if (m.fl && m.fl.indexOf('sound') >= 0) fx.push('Lärm-Attacke');
+
+    return head.join(' · ') + (fx.length ? ' — ' + fx.join('; ') : '');
+  }
+
   var lang = 'de';   // wird von der Oberfläche gesetzt: 'de' oder 'en'
 
   var t = {
@@ -217,6 +300,8 @@
     status: function (st) { return STATUS_DE[st] || st; },
     statusShort: function (st) { return STATUS_SHORT[st] || st.toUpperCase(); },
     weather: function (w) { return WEATHER_DE[w] || w; },
+    moveDesc: function (m) { return lang === 'de' ? moveDesc(m) : (m.d || ''); },
+    category: function (c) { return CATEGORY_DE[c] || c; },
     terrain: function (tr) { return TERRAIN_DE[tr] || tr; },
     typeDE: TYPE_DE
   };
@@ -236,17 +321,22 @@
     return toID(sp.base) + '-' + toID(sp.f);
   }
 
-  /** Liste von Adressen, von hübsch nach robust. */
+  /**
+   * Adressen von hübsch nach robust. Showdown führt animierte Sprites unter
+   * `ani/` und gezeichnete unter `gen5/`; fehlt beides, springt PokeAPI ein.
+   * Die Oberfläche hängt sich an das error-Ereignis und rückt weiter.
+   */
   function spriteChain(sp, opts) {
     opts = opts || {};
     var sid = spriteId(sp), num = sp.num, shiny = opts.shiny, back = opts.back, out = [];
     if (back) {
       out.push(SHOWDOWN + (shiny ? 'ani-back-shiny/' : 'ani-back/') + sid + '.gif');
       out.push(SHOWDOWN + (shiny ? 'gen5-back-shiny/' : 'gen5-back/') + sid + '.png');
-    } else {
-      out.push(SHOWDOWN + (shiny ? 'ani-shiny/' : 'ani/') + sid + '.gif');
+      out.push(POKEAPI + 'back/' + (shiny ? 'shiny/' : '') + num + '.png');
     }
-    out.push(SHOWDOWN + (shiny ? 'home-shiny/' : 'home/') + sid + '.png');
+    out.push(SHOWDOWN + (shiny ? 'ani-shiny/' : 'ani/') + sid + '.gif');
+    out.push(SHOWDOWN + (shiny ? 'gen5-shiny/' : 'gen5/') + sid + '.png');
+    out.push(POKEAPI + 'other/official-artwork/' + (shiny ? 'shiny/' : '') + num + '.png');
     out.push(POKEAPI + (shiny ? 'shiny/' : '') + num + '.png');
     return out;
   }

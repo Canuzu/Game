@@ -247,12 +247,12 @@
     'Läden verlangen 25 % mehr.',
     'Arenaleiter führen ein Pokémon mehr.',
     'Rastplätze heilen nur noch zur Hälfte.',
-    'Wilde Pokémon fliehen häufiger — weniger Fänge.',
+    'Fangchancen sinken deutlich.',
     'Gegner tragen häufiger Gegenstände.',
     'Erfahrung um 20 % reduziert.',
     'Kein Vollheilen nach Arenaleitern.',
     'Gegner terakristallisieren immer.',
-    'Alles zusammen. Viel Glück.'
+    'Alles zusammen — und noch zwei Level obendrauf. Viel Glück.'
   ];
 
   function maxAscension() {

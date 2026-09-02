@@ -240,7 +240,8 @@
     }
 
     // Terakristall und Mega
-    if (level >= 3 && bt.canTera(me) && best && best.move.c !== 'T') {
+    if (bt.alwaysTera && sideId === 1 && bt.canTera(me)) action.tera = true;
+    else if (level >= 3 && bt.canTera(me) && best && best.move.c !== 'T') {
       var normal = estimate(bt, me, foe, best.move);
       me.tera = true;
       var teraTypes = me.types;

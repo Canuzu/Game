@@ -138,7 +138,9 @@ function packMove(m) {
     id: m.id,
     n: m.name,
     t: m.type,
-    c: m.category[0],                       // P | S | T(Status)
+    // P physisch, S speziell, T Status — 'Special' und 'Status' beginnen beide
+    // mit S, deshalb bekommt Status ausdrücklich das T.
+    c: m.category === 'Status' ? 'T' : m.category[0],
     bp: m.basePower,
     ac: m.accuracy === true ? 0 : m.accuracy, // 0 = trifft immer
     pp: m.pp,

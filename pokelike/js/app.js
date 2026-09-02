@@ -262,6 +262,15 @@
     var run = meta.loadRun();
     if (!run) { U.toast('Kein gespeicherter Run gefunden.', 'bad'); return; }
     App.run = run;
+    // Ein unterbrochener Knoten wird neu betreten — nichts wird übersprungen.
+    if (run.pendingNode) {
+      var scene = run.enterNode(run.pendingNode.row, run.pendingNode.col, true);
+      if (scene) {
+        U.toast('Der unterbrochene Knoten wird neu ausgespielt.');
+        openScene(scene);
+        return;
+      }
+    }
     show('map');
   }
 
@@ -432,6 +441,7 @@
     BV.frames[0] = mine;
 
     wrap.appendChild(el('div', { className: 'battle-field' }, [enemy, BV.field, mine]));
+    if (App.run && App.run.hasMod('scout') && !bt.wild) wrap.appendChild(scoutPanel(bt));
     wrap.appendChild(BV.log);
     wrap.appendChild(BV.controls);
 
@@ -441,6 +451,20 @@
     playLog(bt.log.slice(), function () { awaitInput(); });
     return wrap;
   };
+
+  /** Typenkompass: zeigt vor dem Kampf, was der Gegner im Ärmel hat. */
+  function scoutPanel(bt) {
+    return el('div', { className: 'scout' }, [
+      el('strong', { text: '🧭 Gegnerisches Team:' })
+    ].concat(bt.sides[1].team.map(function (m) {
+      var sp = dex.sp(m.sp);
+      return el('span', { className: 'scout-mon' + (m.hp <= 0 ? ' out' : '') }, [
+        U.sprite(m, { className: 'tiny' }),
+        el('span', { text: mons.name(m) + ' Lv' + m.lvl }),
+        el('span', {}, sp.t.map(function (t) { return U.typeChip(t, true); }))
+      ]);
+    })));
+  }
 
   /** Baut eine Kampfseite (Gegner oben, eigenes Pokémon unten) neu auf. */
   function renderSide(sideId) {
@@ -636,21 +660,32 @@
     var bt = App.battle, run = App.run;
     clear(BV.controls);
     var moves = bt.legalMoves(0);
+    var foe = bt.sides[1].active;
+    var me = bt.sides[0].active;
     var grid = el('div', { className: 'move-grid' });
     moves.forEach(function (mv) {
       var m = mv.move;
+      // Typenvorteil direkt am Knopf: das ist der Kern jeder Entscheidung.
+      var effTag = null;
+      if (m.c !== 'T' && foe && foe.mon.hp > 0) {
+        var eff = bt.effectiveness(m.t, foe, m, me);
+        if (eff === 0) effTag = { c: 'none', t: 'wirkungslos' };
+        else if (eff > 1) effTag = { c: 'super', t: eff >= 4 ? '×4' : '×2' };
+        else if (eff < 1) effTag = { c: 'weak', t: eff <= 0.25 ? '×¼' : '×½' };
+      }
       grid.appendChild(el('button', {
         className: 'move-btn' + (mv.disabled ? ' disabled' : ''),
         type: 'button', disabled: mv.disabled,
         style: { '--move-color': U.TYPE_COLOR[m.t] || '#777' },
-        title: (mv.why ? mv.why + ' — ' : '') + m.d + ' (Stärke ' + (m.bp || '—') + ', Genauigkeit ' + (m.ac === 0 ? '—' : m.ac) + ')',
+        title: (mv.why ? mv.why + ' — ' : '') + T.moveDesc(m),
         onclick: function () { submitAction({ type: 'move', index: mv.index, tera: BV.pendingTera }); }
       }, [
         el('span', { className: 'move-btn-name', text: m.n }),
         el('span', { className: 'move-btn-meta' }, [
           el('span', { className: 'move-btn-type', text: T.type(m.t) }),
           el('span', { text: U.CAT_ICON[m.c] }),
-          el('span', { text: mv.pp + '/' + mv.maxPP })
+          el('span', { text: mv.pp + '/' + mv.maxPP }),
+          effTag ? el('span', { className: 'move-eff ' + effTag.c, text: effTag.t }) : null
         ])
       ]));
     });
@@ -853,6 +888,8 @@
     if (run.party.length >= 6) meta.award('full_team');
     if (Object.keys(run.relics).length >= 10) meta.award('relic10');
     if (run.money >= 50000) meta.award('rich');
+    if (bt.outcome === 'win' && bt.sides[1].team.length >= 3 &&
+        Object.keys(bt.sides[0].used || {}).length === 1) meta.award('sweep');
     if (run.party.some(function (m) { return m.lvl >= 100; })) meta.award('level100');
     meta.refreshAchievements();
     meta.save();
@@ -979,6 +1016,13 @@
     }));
 
     function takeMon(mon) {
+      if (scene.locked) {
+        meta.noteSeen(mon.sp);
+        meta.save();
+        U.toast('Nuzlocke: In dieser Region darfst du niemanden mehr mitnehmen.', 'bad');
+        backToMap();
+        return;
+      }
       var res = run.takeOffer(mon);
       meta.noteCaught(mon);
       meta.save();
@@ -987,7 +1031,8 @@
     }
 
     return sceneFrame('Begegnung', scene.text, [grid, partyStrip()], [
-      el('button', { className: 'btn', type: 'button', onclick: backToMap }, 'Keines nehmen')
+      el('button', { className: 'btn', type: 'button', onclick: backToMap },
+        scene.locked ? 'Weitergehen' : 'Keines nehmen')
     ]);
   }
 
@@ -1126,10 +1171,7 @@
 
     function doRest(id) {
       if (id === 'heal') {
-        var factor = run.ascension >= 4 ? 0.5 : 1;
-        run.healTeam(factor, true);
-        run.restorePP();
-        U.toast(factor === 1 ? 'Das Team ist wieder topfit.' : 'Halb erholt (Aufstieg 4).');
+        U.toast(run.doRest('heal'));
         backToMap();
       } else if (id === 'train') {
         U.toast(run.doRest('train'));

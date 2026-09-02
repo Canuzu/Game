@@ -919,6 +919,22 @@
       bt.boost(a, { atk: 1, def: 1, spa: 1, spd: 1, spe: 1 }, a);
     }
   };
+  M.rest = {
+    beforeMove: function (bt, a) {
+      if (a.mon.hp >= bt.maxHP(a) && a.mon.status !== 'slp') {
+        bt.say('Es klappt nicht — die KP sind bereits voll.', 'text', {});
+        return false;
+      }
+      return true;
+    },
+    onHit: function (bt, a) {
+      a.mon.hp = bt.maxHP(a);
+      a.mon.status = 'slp';
+      a.mon.slp = 2;
+      bt.log.push({ k: 'heal', side: a.side.id, amount: 0, hp: a.mon.hp, max: bt.maxHP(a), s: '' });
+      bt.say(bt.name(a) + ' schläft und wird kerngesund!', 'status', { side: a.side.id, status: 'slp' });
+    }
+  };
   M.haze = {
     onHit: function (bt, a, d) {
       [a, d].forEach(function (x) {

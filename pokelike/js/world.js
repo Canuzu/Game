@@ -180,9 +180,13 @@
       var lvl = level - (i === size - 1 ? 0 : rng.range(0, 2));
       var sp = pickEncounter(rng, pool, lvl, { exclude: seen });
       seen[sp.id] = 1;
-      team.push(buildMon(rng, sp, Math.max(2, lvl), {
+      var member = buildMon(rng, sp, Math.max(2, lvl), {
         quality: opts.quality || 0.7, ivFloor: opts.ivFloor || 5
-      }));
+      });
+      if (opts.items && rng.chance(0.6)) {
+        member.item = rng.pick(['leftovers', 'sitrusberry', 'lifeorb', 'focussash', 'choicescarf', 'expertbelt']);
+      }
+      team.push(member);
     }
     return {
       team: team,
@@ -215,7 +219,9 @@
         quality: quality, ivFloor: 6 + index, hiddenChance: 0.25, shinyOdds: 1 / 120
       });
       // Nur der Ass-Kämpfer trägt einen Gegenstand
-      if (last && index > 0) mon.item = rng.pick(['leftovers', 'lifeorb', 'focussash', 'assaultvest', 'choicescarf', 'sitrusberry']);
+      if ((last && index > 0) || (opts && opts.items && rng.chance(0.6))) {
+        mon.item = rng.pick(['leftovers', 'lifeorb', 'focussash', 'assaultvest', 'choicescarf', 'sitrusberry']);
+      }
       mon.tera = type;
       mons.addEVs(mon, mon.ivs[1] >= mon.ivs[3] ? 'atk' : 'spa', Math.round(120 * evScale));
       mons.addEVs(mon, 'spe', Math.round(90 * evScale));

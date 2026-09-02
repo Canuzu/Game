@@ -40,6 +40,9 @@
     this.wild = !!opts.wild;
     this.trainer = opts.trainer || null;
     this.relics = opts.relics || {};
+    this.catchMult = opts.catchMult === undefined ? 1 : opts.catchMult;
+    this.alwaysTera = !!opts.alwaysTera;
+    this.nuzlockeLocked = !!opts.nuzlockeLocked;
     this.log = [];
     this.turn = 0;
     this.ended = false;
@@ -796,13 +799,6 @@
         this.healAct(actor, amount, false, move.n);
         ok = true;
       }
-      if (move.id === 'rest') {
-        actor.mon.hp = this.maxHP(actor);
-        actor.mon.status = 'slp';
-        actor.mon.slp = 2;
-        this.say(this.name(actor) + ' schläft und wird kerngesund!', 'status', { side: actor.side.id, status: 'slp' });
-        ok = true;
-      }
     }
     if (move.st && target) {
       if (this.setStatus(target, move.st, actor, move)) ok = true;
@@ -1009,6 +1005,8 @@
     }
     side.activeIndex = index;
     side.active = makeActive(mon, side);
+    side.used = side.used || {};
+    side.used[index] = true;
     if (!silent) {
       this.say((side.isPlayer ? 'Los, ' : (this.wild ? 'Ein wildes ' : 'Der Gegner schickt ')) +
         mons.name(mon) + (side.isPlayer ? '!' : (this.wild ? ' erscheint!' : ' in den Kampf!')),
@@ -1461,7 +1459,11 @@
     var ball = PL.items ? PL.items.get(ballId) : null;
     var mult = ball && ball.ball ? ball.ball(this, foe) : 1;
     this.say('Du wirfst ' + (ball ? ball.name : 'einen Ball') + '!', 'ball', { side: side.id });
-    var res = mons.tryCatch(foe.mon, mult, this.rng, { rateMult: this.hasRelic('honigtopf') ? 1.5 : 1 });
+    if (this.nuzlockeLocked) {
+      this.say('Nuzlocke: In dieser Region hast du deinen Fang schon gemacht.', 'text', {});
+      return false;
+    }
+    var res = mons.tryCatch(foe.mon, mult, this.rng, { rateMult: this.catchMult });
     if (res.caught) {
       this.ended = true;
       this.outcome = 'caught';

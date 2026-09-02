@@ -55,6 +55,10 @@ den Mega-Ring als Relikt gefunden hast (91 Mega-Formen).
 den Auto-Kampf ein und die KI übernimmt: Attackenwahl, Wechsel, Gegenstände,
 Terakristall. Auch für den Nachrücker nach einem K. o.
 
+**Typenvorteil auf einen Blick** — jeder Attackenknopf zeigt, was die Attacke
+beim aktuellen Gegner ausrichtet (×4, ×2, ×½, ×¼, wirkungslos). Kein Blättern
+in Tabellen, keine Rechnerei — die Entscheidung bleibt trotzdem deine.
+
 **52 Relikte** — dauerhafte Effekte für den ganzen Run: mehr Erfahrung, bessere
 Fangchancen, Fleißpunkte nach jedem Kampf, ein zweiter Terakristall, ein
 Notfallband, das ein besiegtes Pokémon zurückholt, Typen-Fokus für jeden der 18
@@ -76,8 +80,23 @@ Fähigkeits-Kapsel und -Pflaster, Silberkronkorken und Tera-Stücke.
 | Boss-Rush | Fast nur Arenaleiter |
 | Tages-Run | Fester Startwert aus dem Datum — heute für alle gleich |
 
-Dazu **Nuzlocke** als Zusatzregel (besiegte Pokémon verlassen das Team für
-immer) und **elf Aufstiegsstufen**, die sich nacheinander freischalten.
+Dazu **Nuzlocke** als Zusatzregel — besiegte Pokémon verlassen das Team für
+immer, und pro Region darfst du nur ein einziges Pokémon aufnehmen.
+
+**Elf Aufstiegsstufen** schalten sich nacheinander frei und stapeln sich:
+
+| Stufe | Erschwernis |
+|---|---|
+| 1 | Gegner starten zwei Level höher |
+| 2 | Läden verlangen 25 % mehr |
+| 3 | Arenaleiter und Top Vier führen ein Pokémon mehr |
+| 4 | Rastplätze heilen nur noch zur Hälfte |
+| 5 | Fangchancen sinken deutlich |
+| 6 | Gegner tragen häufiger Gegenstände |
+| 7 | 20 % weniger Erfahrung |
+| 8 | Kein Vollheilen nach Arenaleitern |
+| 9 | Gegner terakristallisieren immer |
+| 10 | Alles zusammen und noch zwei Level obendrauf |
 
 **Meta-Fortschritt** — der Pokédex sammelt über alle Runs hinweg, was du gesehen
 und gefangen hast (inklusive Schillernder). 40 Startpokémon schalten sich nach
