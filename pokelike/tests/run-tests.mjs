@@ -699,6 +699,83 @@ section('Spielstand sichern');
   delete globalThis.localStorage;
 }
 
+section('Arenaleiter');
+{
+  await import('../js/leaders.js');
+  const L = PL.leaders;
+  const regions = PL.world.REGIONS;
+  const named = regions.reduce((n, r) => n + r.leaders.length, 0);
+
+  eq('Alle 72 Arenaleiter sind hinterlegt', Object.keys(L.all).length, named);
+  const ohne = [];
+  regions.forEach((r) => r.leaders.forEach((l) => { if (!L.get(l[0])) ohne.push(r.name + '/' + l[0]); }));
+  check('Jeder Leiter aus den Regionen hat ein Team', ohne.length === 0, ohne.join(', '));
+
+  const unbekannt = [];
+  Object.keys(L.all).forEach((n) => L.all[n].team.forEach((id) => {
+    if (!dex.sp(id)) unbekannt.push(n + ': ' + id);
+  }));
+  check('Alle Arten der Aufstellungen gibt es', unbekannt.length === 0, unbekannt.join(', '));
+
+  const ohneLook = Object.keys(L.all).filter((n) => {
+    const k = L.all[n].look;
+    return !k || !k.shirt || !k.pants || !k.hair || !k.hairdo;
+  });
+  check('Jeder Leiter hat ein beschriebenes Aussehen', ohneLook.length === 0, ohneLook.join(', '));
+
+  // Das Ass eines Leiters sollte seinen Typ tragen — sonst stimmt die
+  // Aufstellung nicht mit dem Orden überein.
+  const falsch = [];
+  regions.forEach((r) => r.leaders.forEach((l) => {
+    const t = L.team(l[0]);
+    const passt = t.some((id) => dex.sp(id).t.indexOf(l[1]) >= 0);
+    if (!passt) falsch.push(l[0] + ' (' + l[1] + '): ' + t.join(', '));
+  }));
+  check('Jede Aufstellung enthält den Typ des Leiters', falsch.length === 0, falsch.join(' | '));
+
+  // Der Kampf gegen einen Leiter führt genau seine Aufstellung ins Feld.
+  const run = new PL.Run({ seed: 777, starter: 'charmander' });
+  const rng = PL.rng('boss-test');
+  const kanto = regions[0];
+  const bt = PL.world.bossTeam(rng, kanto, 20, 0, {});
+  const soll = L.team(bt.leader);
+  eq('Der Kampf nutzt die echte Aufstellung',
+    bt.team.map((m) => dex.sp(m.sp).id).join(','), soll.join(','));
+  check('… in der echten Reihenfolge und Größe', bt.team.length === soll.length);
+  check('… und der Leiter bringt sein Aussehen mit', !!bt.look && !!bt.look.shirt);
+
+  // Zu weit entwickelte Arten treten als Vorstufe an — sonst steht Mistys
+  // Starmie einem Level-10-Team gegenüber.
+  {
+    const W = PL.world;
+    eq('Starmie tritt auf Level 10 als Sterndu an', W.fitToLevel(dex.sp('starmie'), 10).id, 'staryu');
+    eq('… und ab Level 25 wieder als Starmie', W.fitToLevel(dex.sp('starmie'), 25).id, 'starmie');
+    eq('Gengar geht auf Level 10 bis zum Nebulak zurück', W.fitToLevel(dex.sp('gengar'), 10).id, 'gastly');
+    eq('… auf Level 25 bis zum Alpollo', W.fitToLevel(dex.sp('gengar'), 25).id, 'haunter');
+    eq('… und bleibt auf Level 45 Gengar', W.fitToLevel(dex.sp('gengar'), 45).id, 'gengar');
+    eq('Grundformen bleiben unangetastet', W.fitToLevel(dex.sp('onix'), 5).id, 'onix');
+    check('Nach oben wird nie entwickelt',
+      [5, 20, 50, 90].every((l) => W.fitToLevel(dex.sp('staryu'), l).id === 'staryu'));
+    const misty = W.bossTeam(PL.rng('misty-tief'), regions[0], 10, 1, {});
+    check('Mistys Team ist auf Level 10 nicht voll entwickelt',
+      misty.leader !== 'Misty' || misty.team.every((m) => dex.sp(m.sp).id === 'staryu'),
+      misty.team.map((m) => dex.sp(m.sp).id).join(', '));
+  }
+
+  // Fortschritt bestimmt, welcher Leiter antritt: vorn die frühen Orden.
+  const frueh = {}, spaet = {};
+  for (let i = 0; i < 40; i++) {
+    frueh[PL.world.bossTeam(PL.rng('f' + i), kanto, 20, 0, {}).leader] = 1;
+    spaet[PL.world.bossTeam(PL.rng('s' + i), kanto, 20, 8, {}).leader] = 1;
+  }
+  const idx = (n) => kanto.leaders.findIndex((l) => l[0] === n);
+  check('Im ersten Gebiet treten frühe Arenaleiter an',
+    Object.keys(frueh).every((n) => idx(n) <= 1), Object.keys(frueh).join(', '));
+  check('Im letzten Gebiet die späten',
+    Object.keys(spaet).every((n) => idx(n) >= 6), Object.keys(spaet).join(', '));
+  void run;
+}
+
 section('Engine-Lücken');
 {
   const rng = PL.rng('luecken');

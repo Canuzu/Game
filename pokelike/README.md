@@ -91,6 +91,33 @@ Auch die kniffligen Fälle sind dabei:
 * **Zustände, die wirklich beißen** — Anziehung, Folterknecht, Heilblockade,
   Albtraum, Klammergriff, Zielschuss, Ladung, Bodycheck und Teerschuss.
 
+**Arenaleiter wie im Original** — alle 72 treten mit ihrer echten Aufstellung
+an, in der Reihenfolge, in der sie ihre Pokémon in den Spielen schicken; das
+letzte ist das Ass. Rocko bringt Kleinstein und Onix, Misty Sterndu und
+Starmie, Giovanni seine fünf. Doppelte wie Kogas zwei Smogmog stehen so da,
+wie sie im Spiel vorkommen.
+
+Welcher Leiter einer Region antritt, richtet sich nach dem Fortschritt: die
+Listen stehen in Ordensfolge, im ersten Gebiet kommt einer vom Anfang, im
+letzten einer vom Ende — mit einem Zufallsschritt, damit sich die Runs
+unterscheiden.
+
+Eine Regel macht das erst spielbar: **eine Art, die für das Level des Kampfes
+zu weit entwickelt ist, tritt als Vorstufe an.** Misty trifft man in den
+Spielen auf Level 21 mit Starmie; hier richtet sich das Level nach dem eigenen
+Team, und ein Starmie gegen ein Level-10-Team ist kein Arenaleiter mehr,
+sondern eine Wand — gemessen 4 % Siegquote. Als Sterndu sind es 71 %. Die
+Spiele machen es selbst so: frühe Arenaleiter führen die jüngere Form
+derselben Art. Nach oben wird nie verändert; ab Level 25 steht Starmie wieder
+da, wo es hingehört.
+
+Die **Trainerfiguren** der Leiter sind nach ihren Vorlagen gezeichnet: Rockos
+braune Stachelfrisur und die orange Weste, Mistys seitlicher Zopf und das
+gelbe Top, Giovannis orangefarbener Anzug mit dunklem Umhang. Die
+Originalbilder liegen ausschließlich bei Pokémon Showdown und sind ohne Netz
+nicht zu haben — deshalb steht in `js/leaders.js` für jeden, was ihn erkennbar
+macht, und der Pixel-Zeichner setzt es im Stil des übrigen Spiels um.
+
 **Mega-Entwicklung** — 48 Pokémon haben eine Mega-Form (dazu die Protoformen
 von Kyogre und Groudon). Einmal pro Kampf, mit dem passenden Stein; Rayquaza
 kommt wie in den Spielen ohne Stein aus und verlangt stattdessen Zenitstürmer.

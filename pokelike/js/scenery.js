@@ -737,15 +737,34 @@
     if (back) taper(ctx, cx, headTop + 4, 15, 13, 8, hair);      // Hinterkopf ist ganz Haar
   }
 
-  /** Zeichnet eine Trainerfigur; back = Rückenansicht für den Spieler. */
-  function trainer(cls, seed, back) {
-    var key = cls + '|' + seed + '|' + (back ? 'b' : 'f');
+  /**
+   * Zeichnet eine Trainerfigur; back = Rückenansicht für den Spieler.
+   *
+   * `look` beschreibt eine bestimmte Person statt einer Klasse: Arenaleiter
+   * bekommen darüber ihre eigenen Farben, Frisuren und Umhänge (siehe
+   * leaders.js). Was darin fehlt, kommt weiter aus der Klasse und dem
+   * Startwert — so bleibt jeder namenlose Trainer ein anderer.
+   */
+  function trainer(cls, seed, back, look) {
+    var key = cls + '|' + seed + '|' + (back ? 'b' : 'f') +
+      (look ? '|' + [look.skin, look.hair, look.hairdo, look.shirt, look.pants,
+        look.cape, look.hat, look.skirt].join(',') : '');
     if (trainerCache[key]) return trainerCache[key];
-    var style = TRAINER_STYLE[cls] || TRAINER_STYLE['Ass-Trainer'];
+    var base = TRAINER_STYLE[cls] || TRAINER_STYLE['Ass-Trainer'];
+    // Ein `look` beschreibt eine Person vollständig: was er nicht nennt, hat
+    // sie auch nicht. Sonst schlüge der gelbe Umhang der Klasse Arenaleiter
+    // bei allen durch, die keinen eigenen haben.
+    var style = look ? {
+      shirt: look.shirt || base.shirt,
+      pants: look.pants || base.pants,
+      cape: look.cape || null,
+      hat: look.hat || null,
+      skirt: !!look.skirt
+    } : base;
     var n = Math.abs(seed | 0);
-    var skin = SKIN[n % SKIN.length];
-    var hair = HAIR[(n >> 3) % HAIR.length];
-    var hairdo = HAIRDO[(n >> 6) % HAIRDO.length];
+    var skin = (look && look.skin) || SKIN[n % SKIN.length];
+    var hair = (look && look.hair) || HAIR[(n >> 3) % HAIR.length];
+    var hairdo = (look && look.hairdo) || HAIRDO[(n >> 6) % HAIRDO.length];
 
     var W2 = 32, H2 = 48, cx = 16;
     var cv = root.document.createElement('canvas');

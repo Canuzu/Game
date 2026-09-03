@@ -44,6 +44,10 @@ function resolve(run, scene) {
       const bt = fight(run, scene.battle);
       const kind = (bt.reward && bt.reward.kind) || 'wild';
       if (/boss|e4|champ|elite/.test(kind)) note(kind, bt.outcome === 'win');
+      if (kind === 'boss' && bt.trainer && bt.trainer.leader) {
+        note('leiter:' + bt.trainer.leader + ' (' + bt.sides[1].team.length + ')',
+          bt.outcome === 'win');
+      }
       run.finishBattle(bt);
       if (bt.outcome === 'win') {
         const reward = run.battleRewards(bt);
@@ -100,6 +104,15 @@ for (let i = 0; i < N; i++) {
   const run = autoRun(5000 + i);
   if (run.state === 'victory') victories++;
   regionSum += run.region;
+}
+
+if (process.argv.includes('--leiter')) {
+  Object.keys(tally).filter((k) => k.startsWith('leiter:')).sort().forEach((k) => {
+    const [w, n] = tally[k];
+    if (n < 3) return;
+    console.log('  ' + k.slice(7).padEnd(22), (w / n * 100).toFixed(0).padStart(3) + ' %  (' + w + '/' + n + ')');
+  });
+  console.log();
 }
 
 const order = ['elite', 'boss', 'e4', 'champ'];

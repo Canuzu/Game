@@ -1790,8 +1790,11 @@
   /* ---------- 8) Schnittstelle ------------------------------------------------ */
 
   B.start = function () {
+    // Der Name trägt seine Anrede schon („Arenaleiter Misty", „Käfersammler
+    // Finn") — ein zusätzliches „Trainer" davor doppelt sie nur.
     this.log.push({ k: 'start', s: this.wild ? 'Ein wildes Pokémon greift an!' :
-      ('Trainer ' + (this.trainer ? this.trainer.name : '') + ' fordert dich heraus!') });
+      ((this.trainer && this.trainer.name ? this.trainer.name : 'Ein Trainer') +
+        ' fordert dich heraus!') });
     var first0 = firstAlive(this.sides[0]), first1 = firstAlive(this.sides[1]);
     this.switchIn(this.sides[1], first1);
     this.switchIn(this.sides[0], first0);

@@ -591,7 +591,7 @@
     BV.intro = bt.turn === 0 && PL.scenery;
     if (BV.intro) {
       placeTrainer(0, 'Spieler', true);
-      if (bt.trainer) placeTrainer(1, bt.trainer.cls, false);
+      if (bt.trainer) placeTrainer(1, bt.trainer.cls, false, bt.trainer.look);
       else renderSide(1);
     } else {
       renderSide(0);
@@ -603,14 +603,20 @@
   };
 
   /** Stellt eine Trainerfigur auf einen Standplatz. */
-  function placeTrainer(sideId, cls, back) {
+  function placeTrainer(sideId, cls, back, look) {
     var slot = BV.slots[sideId];
     if (!slot) return;
     var old = slot.querySelector('.mon-art, .trainer-art');
     if (old) slot.removeChild(old);
-    var seed = PL.util.hashSeed((cls || '') + sideId + (App.battle.biome || ''));
+    // Namentlich bekannte Gegner sollen immer gleich aussehen — deshalb geht
+    // ihr Name in den Startwert und nicht die Kulisse.
+    var who = (App.battle.trainer && App.battle.trainer.leader) || '';
+    var seed = PL.util.hashSeed(who || ((cls || '') + sideId + (App.battle.biome || '')));
     slot.appendChild(el('div', { className: 'trainer-art' },
-      el('img', { className: 'trainer-sprite', alt: '', src: PL.scenery.trainer(cls, seed, back) })));
+      el('img', {
+        className: 'trainer-sprite', alt: '',
+        src: PL.scenery.trainer(cls, seed, back, look || null)
+      })));
   }
 
   /** Lässt eine Trainerfigur zur Seite gehen, bevor das Pokémon erscheint. */

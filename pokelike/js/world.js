@@ -15,8 +15,9 @@
   if (typeof require === 'function') {
     if (!PL.mon) require('./pokemon.js');
     if (!PL.items) require('./items.js');
+    if (!PL.leaders) require('./leaders.js');
   }
-  var dex = PL.dex, mons = PL.mon, toID = PL.util.toID;
+  var dex = PL.dex, mons = PL.mon, toID = PL.util.toID, clamp = PL.util.clamp;
 
   /* ---------- 1) Regionen ---------------------------------------------------- */
 
@@ -205,26 +206,88 @@
     };
   }
 
-  /** Team eines Arenaleiters: Typenschwerpunkt, gute Werte, ein Ass zum Schluss. */
+  /**
+   * Wie tief eine Art in ihrer Entwicklungsreihe steht: 0 für Grundformen,
+   * 1 für die erste Entwicklung, 2 für die zweite.
+   */
+  function stageOf(sp) {
+    var depth = 0, cur = sp, guard = 0;
+    while (cur && cur.pv !== undefined && guard++ < 4) {
+      cur = dex.species[cur.pv];
+      depth++;
+    }
+    return depth;
+  }
+
+  // Ab welchem Level eine Stufe im Kampf angemessen ist.
+  var STAGE_LEVEL = [1, 20, 32];
+
+  /**
+   * Passt eine Art an das Level des Kampfes an, indem sie nötigenfalls eine
+   * Stufe zurückgesetzt wird.
+   *
+   * Die Aufstellungen sind die aus den Spielen — dort trifft man Misty aber
+   * auf Level 21 mit Starmie. Hier richtet sich das Level nach dem eigenen
+   * Team, und ein Starmie gegen ein Level-10-Team ist kein Arenaleiter mehr,
+   * sondern eine Wand. Die Spiele machen es selbst so: frühe Arenaleiter
+   * führen die Vorstufe derselben Art. Nach oben wird nie verändert.
+   */
+  function fitToLevel(sp, level) {
+    var guard = 0;
+    while (sp && sp.pv !== undefined && guard++ < 4) {
+      var need = STAGE_LEVEL[Math.min(2, stageOf(sp))];
+      if (level >= need) break;
+      sp = dex.species[sp.pv] || sp;
+    }
+    return sp;
+  }
+
+  /**
+   * Team eines Arenaleiters — die echte Aufstellung aus den Spielen, in der
+   * Reihenfolge, in der die Pokémon dort geschickt werden. Das letzte ist das
+   * Ass und bekommt zwei Level und einen Gegenstand.
+   *
+   * Welcher Leiter der Region antritt, richtet sich nach dem Fortschritt:
+   * `index` ist die laufende Region, und die Listen stehen in Ordensfolge.
+   * Im ersten Gebiet steht damit ein Leiter vom Anfang der Liste, im letzten
+   * einer vom Ende — so wie man sie in den Spielen der Reihe nach trifft.
+   * Ein Zufallsschritt von einem Platz hält die Runs auseinander.
+   *
+   * Nur wenn ein Leiter keine hinterlegte Aufstellung hat, wird wie früher
+   * eine aus dem Typenpool zusammengestellt.
+   */
   function bossTeam(rng, region, level, index, opts) {
-    var leader = rng.pick(region.leaders);
+    var list = region.leaders;
+    var slot = Math.round(index / 8 * (list.length - 1)) + rng.range(-1, 1);
+    var leader = list[clamp(slot, 0, list.length - 1)];
     var type = leader[1];
-    var pool = encounterPool({ gen: region.gen, level: level, types: [type] });
-    if (pool.length < 4) pool = encounterPool({ level: level, types: [type], anyGen: true });
-    var size = Math.min(5, 3 + Math.floor(index / 3));
-    if (opts && opts.maxSize) size = Math.min(size, opts.maxSize);
-    // Arenaleiter werden von Region zu Region ernster: der erste ist eine
-    // Prüfung, der neunte ein Brett.
+    var roster = PL.leaders ? PL.leaders.team(leader[0]) : null;
     var quality = Math.min(0.88, 0.70 + index * 0.023) - ((opts && opts.ease) || 0);
     var evScale = Math.min(0.9, 0.30 + index * 0.08);
-    var team = [], seen = {}, i;
-    for (i = 0; i < size; i++) {
-      var last = i === size - 1;
-      var sp = last
-        ? rng.weighted(pool, function (s) { return Math.pow(Math.max(1, s.bst - 350), 2) * (dex.evosLeft(s) ? 0.2 : 1) * (seen[s.id] ? 0.02 : 1); })
-        : pickEncounter(rng, pool, level, { exclude: seen });
-      seen[sp.id] = 1;
-      var mon = buildMon(rng, sp, level + (last ? 2 : 0), {
+
+    var species;
+    if (roster && roster.length) {
+      species = roster.map(function (id) { return dex.sp(id); }).filter(Boolean)
+        .map(function (sp) { return fitToLevel(sp, level); });
+    } else {
+      // Notnagel: kein hinterlegtes Team — dann wie früher aus dem Typenpool.
+      var pool = encounterPool({ gen: region.gen, level: level, types: [type] });
+      if (pool.length < 4) pool = encounterPool({ level: level, types: [type], anyGen: true });
+      var size = Math.min(5, 3 + Math.floor(index / 3));
+      if (opts && opts.maxSize) size = Math.min(size, opts.maxSize);
+      species = [];
+      var seen = {}, k;
+      for (k = 0; k < size; k++) {
+        var pick = pickEncounter(rng, pool, level, { exclude: seen });
+        seen[pick.id] = 1;
+        species.push(pick);
+      }
+    }
+
+    var team = [], i;
+    for (i = 0; i < species.length; i++) {
+      var last = i === species.length - 1;
+      var mon = buildMon(rng, species[i], level + (last ? 2 : 0), {
         quality: quality, ivFloor: 6 + index, hiddenChance: 0.25, shinyOdds: 1 / 120
       });
       // Nur der Ass-Kämpfer trägt einen Gegenstand — wenn er eine Mega-Form
@@ -238,7 +301,12 @@
       mons.addEVs(mon, 'hp', Math.round(80 * evScale));
       team.push(mon);
     }
-    return { team: team, name: 'Arenaleiter ' + leader[0], cls: 'Arenaleiter', type: type, level: 3 };
+    return {
+      team: team, name: 'Arenaleiter ' + leader[0], cls: 'Arenaleiter',
+      type: type, level: 3,
+      leader: leader[0],
+      look: PL.leaders ? PL.leaders.look(leader[0]) : null
+    };
   }
 
   function eliteTeam(rng, level, index, used, opts) {
@@ -811,6 +879,8 @@
     buildMon: buildMon,
     trainerTeam: trainerTeam,
     bossTeam: bossTeam,
+    fitToLevel: fitToLevel,
+    stageOf: stageOf,
     eliteTeam: eliteTeam,
     championTeam: championTeam,
     region: function (i) { return REGIONS[i % REGIONS.length]; }
