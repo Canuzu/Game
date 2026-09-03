@@ -711,7 +711,34 @@ button.move-row:hover { border-color: var(--accent); }
 .toast.out { opacity: 0; transition: opacity .5s ease; }
 @keyframes rise { from { transform: translateY(12px); opacity: 0; } }
 
-/* ---------- 11) Schmale Geräte ---------------------------------------------- */
+/* ---------- 11) Handy und Tablet --------------------------------------------
+ * Zwei Leitgedanken:
+ *   1. Nichts darf breiter werden als der Bildschirm. Sobald etwas übersteht,
+ *      zoomt der mobile Browser die ganze Seite heraus, und dann ist alles
+ *      zu klein — nicht nur das Überstehende.
+ *   2. Der Kampf gehört auf einen Bildschirm. Wer zum Angreifen scrollen
+ *      muss, spielt schlechter.
+ * Höhen stehen in dvh statt vh: auf dem Handy wächst und schrumpft die
+ * Adressleiste, und vh rechnet mit der größeren Variante — der untere Rand
+ * läge dann unter der Leiste.
+ * ------------------------------------------------------------------------- */
+
+/* Kein Doppeltipp-Zoom auf Bedienelementen, und Tippziele groß genug. */
+@media (pointer: coarse) {
+  button, a, .map-node, .mon-card, .offer, .relic-card, .item-row, .starter,
+  .choice, .option, .filter, .toggle, .dex-cell {
+    touch-action: manipulation;
+  }
+  .btn, .action-btn, .icon-btn, .filter { min-height: 44px; }
+  .move-btn { min-height: 56px; }
+  /* Auf dem Touchscreen gibt es keinen Mauszeiger — die Hover-Effekte
+     bleiben sonst nach dem Tippen kleben. */
+  .move-btn:hover:not(:disabled), .choice:hover, .option:hover:not(:disabled),
+  .offer:hover, .relic-card:hover, .starter:hover:not(:disabled),
+  .mon-card:hover:not(:disabled), .item-row:hover:not(:disabled), .filter:hover {
+    transform: none;
+  }
+}
 
 @media (max-width: 860px) {
   .team-cols { grid-template-columns: 1fr; }
@@ -719,32 +746,198 @@ button.move-row:hover { border-color: var(--accent); }
   .history-row { grid-template-columns: 1fr 1fr; }
   .frame-wrap { width: 48%; }
 }
+
+/* Kampf auf einen Bildschirm — gilt für jedes Touch-Gerät bis Tabletgröße,
+   also auch für das quer gehaltene Handy, das breiter als 560 px ist. */
+@media (pointer: coarse) and (max-width: 1024px) {
+  body[data-screen="battle"] { height: 100dvh; overflow: hidden; }
+  body[data-screen="battle"] #screen {
+    display: flex; min-height: 0;
+    padding: .45rem max(.5rem, env(safe-area-inset-left))
+             calc(.45rem + env(safe-area-inset-bottom)) max(.5rem, env(safe-area-inset-right));
+  }
+  body[data-screen="battle"] .battle { flex: 1 1 auto; min-height: 0; gap: .45rem; }
+  /* Die Kulisse ist 240 × 80 Pixel breit gezeichnet und wird mit
+     object-fit: cover eingepasst. In einem hohen Kasten bliebe davon nur ein
+     schmaler Ausschnitt in der Mitte übrig — deshalb ein festes, breites
+     Seitenverhältnis, gedeckelt auf einen Teil der Bildschirmhöhe. */
+  body[data-screen="battle"] .battle-stage {
+    flex: 0 0 auto; height: auto; aspect-ratio: 3 / 2; max-height: 40dvh;
+  }
+  /* Was an Höhe übrig bleibt, bekommt das Protokoll und zeigt mehr Verlauf. */
+  body[data-screen="battle"] .battle-log {
+    flex: 1 1 auto; height: auto; min-height: 3.4rem; font-size: .82rem;
+  }
+  body[data-screen="battle"] .battle-controls { flex: 0 0 auto; min-height: 0; gap: .4rem; }
+  body[data-screen="battle"] .move-grid { grid-auto-rows: minmax(56px, 76px); }
+  /* Die Mindesthöhe hält auf dem Rechner die Kacheln ruhig, während das
+     Protokoll läuft. Auf dem Handy zählt jeder Pixel — hier reicht der
+     Inhalt. */
+  body[data-screen="battle"] .move-area { min-height: 0; }
+  body[data-screen="battle"] .scout { display: none; }
+}
+
 @media (max-width: 560px) {
-  #screen { padding: .7rem .6rem 2.5rem; }
+
+  /* --- Kopfzeile: eine Zeile, die Angaben in der Mitte schiebbar --- */
+  #topbar {
+    gap: .4rem;
+    padding: .4rem max(.5rem, env(safe-area-inset-right)) .4rem max(.5rem, env(safe-area-inset-left));
+    /* Deckend statt durchscheinend: auf dem Handy scrollt der Inhalt direkt
+       darunter durch und wäre sonst durch die Leiste hindurch zu lesen. */
+    background: var(--bg);
+  }
+  .topbar-left, .topbar-right { flex: 0 0 auto; }
+  .topbar-left .logo > span:last-child { display: none; }   /* nur der Ball */
+  .topbar-mid {
+    flex: 1 1 auto; min-width: 0;
+    flex-wrap: nowrap; justify-content: flex-start;
+    overflow-x: auto; overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+  .topbar-mid::-webkit-scrollbar { display: none; }
+  .topbar-mid > * { flex: 0 0 auto; }
+  /* In die Kopfzeile passen auf dem Handy zwei Angaben. Es werden die
+     beiden, die man ständig braucht: Geld und Levelgrenze. Region und Route
+     stehen ohnehin groß über der Karte. */
+  .topbar-mid .region-badge, .topbar-mid .chip-region { display: none; }
+  .chip { font-size: .74rem; padding: .16rem .42rem; }
+  .chip-cap .cap-word { display: none; }          /* „⬆ 16“ genügt */
+  .icon-btn { padding: .4rem .55rem; min-width: 44px; justify-content: center; }
+
+  #screen {
+    padding: .7rem max(.6rem, env(safe-area-inset-left)) calc(2.2rem + env(safe-area-inset-bottom))
+             max(.6rem, env(safe-area-inset-right));
+  }
+
+  /* --- Karte --- */
   .map-node { width: 74px; }
   .node-badge { width: 46px; height: 46px; }
   .node-icon { font-size: 1.2rem; }
   .node-name { font-size: .68rem; }
   .map-row { gap: 1.1rem; }
   .map-stage { padding: 1.1rem .5rem; }
-  .party-strip { grid-template-columns: 1fr 1fr; }
-  .move-grid { grid-template-columns: 1fr 1fr; }
-  .battle-stage { height: clamp(250px, 37vh, 330px); }
+  /* minmax(0, 1fr) statt 1fr: sonst rechnet das Raster mit der Mindestbreite
+     des Inhalts und wird breiter als der Bildschirm. */
+  .party-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .4rem; }
+  .mon-card { padding: .35rem .4rem; gap: .35rem; }
+  .mon-card-art, .mon-card-sprite { width: 44px; height: 44px; }
+  .mon-card-head strong { font-size: .82rem; }
+  .mon-card-types { flex-wrap: wrap; }
+  .mon-card-hp { font-size: .7rem; }
+  .lvl { font-size: .72rem; }
+
+  .move-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .4rem; }
+  .move-btn { padding: .4rem .5rem; gap: .1rem; }
+  .move-btn-name { font-size: .86rem; }
+  .move-btn-meta { font-size: .68rem; gap: .3rem; }
+  .action-row { gap: .35rem; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .action-row::-webkit-scrollbar { display: none; }
+  .action-row > * { flex: 0 0 auto; }
+  .action-btn { padding: .4rem .6rem; font-size: .86rem; }
+
   .mon-art { width: 152px; height: 152px; }
   .slot-enemy .mon-art { width: 132px; height: 132px; }
   .battle-sprite { width: 146px; height: 146px; }
   .slot-enemy .battle-sprite { width: 126px; height: 126px; }
-  .frame-wrap { width: min(180px, 43%); }
+  .trainer-art { width: 128px; height: 128px; }
+  .slot-enemy .trainer-art { width: 110px; height: 110px; }
   .platform { width: 118px; height: 28px; }
   .slot-enemy .platform { width: 98px; height: 24px; }
-  .frame-wrap { width: 54%; }
-  .mon-frame { padding: .24rem .4rem; font-size: .78rem; }
-  .mon-frame .frame-head strong { font-size: .76rem; }
-  .mon-frame .frame-sub { font-size: .62rem; }
-  .field-effects { max-width: 90%; top: auto; bottom: 4px; }
-  .battle-log { height: 100px; }
+
+  /* Die Anzeigen sitzen auf der Bühne — auf dem Handy müssen sie klein
+     bleiben, sonst decken sie die Pokémon zu. */
+  .frame-wrap { width: 50%; }
+  .mon-frame { padding: .2rem .35rem; font-size: .7rem; line-height: 1.2; }
+  .mon-frame .frame-head strong { font-size: .72rem; }
+  .mon-frame .frame-head .lvl { font-size: .64rem; }
+  .mon-frame .frame-sub { font-size: .6rem; gap: .22rem; }
+  .mon-frame .frame-types { margin: .08rem 0; }
+  .mon-frame .hp-bar { height: 6px; }
+  .mon-frame .exp-bar { height: 3px; margin-top: .15rem; }
+  .team-dots .dot { width: 6px; height: 6px; }
+  .field-effects { max-width: 92%; top: auto; bottom: 3px; }
+  .field-chip { font-size: .62rem; padding: .06rem .3rem; }
+
+  /* --- Dialoge steigen von unten auf statt zu schweben --- */
+  .modal-back { place-items: end center; padding: 0; }
+  .modal, .modal.wide {
+    width: 100%; max-width: none; max-height: 88dvh;
+    padding: .9rem .8rem calc(.9rem + env(safe-area-inset-bottom));
+    animation: sheet-up .2s ease;
+  }
+  .modal-actions {
+    position: sticky; bottom: calc(-.9rem - env(safe-area-inset-bottom));
+    margin: .8rem -.8rem calc(-.9rem - env(safe-area-inset-bottom));
+    padding: .6rem .8rem calc(.6rem + env(safe-area-inset-bottom));
+    background: var(--bg); justify-content: stretch;
+  }
+  .modal-actions .btn { flex: 1 1 0; justify-content: center; text-align: center; }
+
+  .toast-host { bottom: calc(1rem + env(safe-area-inset-bottom)); }
+
+  /* --- Listen und Raster --- */
   .dex-grid { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); }
   .dex-cell img, .dex-silhouette { width: 48px; height: 48px; }
+  .switch-row, .switch-grid { grid-template-columns: minmax(0, 1fr); }
+  /* Vierzig Startpokémon auf einem Handy: kompakte Karten, sonst scrollt man
+     minutenlang. */
+  .starter-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .4rem; }
+  .starter { padding: .35rem .25rem; gap: .1rem; }
+  .starter-sprite { width: 52px; height: 52px; }
+  .starter-name { font-size: .76rem; }
+  .starter-types .type-chip { font-size: .58rem; padding: .02rem .28rem; }
+  .starter-types { flex-wrap: wrap; justify-content: center; }
+  .lock { top: .15rem; right: .2rem; font-size: .7rem; }
+
+  /* Der Schalter braucht auf schmalen Schirmen zwei Zeilen, sonst quetscht
+     sich der Beschreibungstext zwischen Titel und Zustand. */
+  .toggle { flex-wrap: wrap; padding: .5rem .6rem; gap: .3rem .5rem; }
+  .toggle > strong { flex: 0 0 auto; }
+  .toggle .toggle-state { margin-left: auto; }
+  .toggle > span:not(.toggle-state) { flex: 1 0 100%; order: 3; font-size: .82rem; color: var(--muted); }
+
+  /* Der Bestätigungsknopf bleibt stehen — sonst muss man nach der Wahl
+     wieder ans Ende der Liste scrollen. */
+  .newrun-actions {
+    position: sticky; bottom: 0; z-index: 5;
+    margin: .8rem -.6rem calc(-2.2rem - env(safe-area-inset-bottom));
+    padding: .6rem .6rem calc(.6rem + env(safe-area-inset-bottom));
+    background: color-mix(in srgb, var(--bg) 94%, transparent);
+    border-top: 2px solid var(--frame-edge);
+  }
+  .newrun-actions .btn { flex: 1; justify-content: center; }
+  .scene-actions { flex-direction: column; align-items: stretch; }
+  .scene-actions .btn { width: 100%; justify-content: center; }
+}
+
+@keyframes sheet-up { from { transform: translateY(14px); opacity: 0; } }
+
+/* Quer gehaltenes Handy: sehr wenig Höhe, dafür Breite. Die Bühne wird
+   flacher, damit die Attacken noch auf den Schirm passen. */
+@media (max-width: 900px) and (max-height: 480px) and (orientation: landscape) {
+  body[data-screen="battle"] .battle-stage { max-height: 38dvh; }
+  body[data-screen="battle"] .battle-log { min-height: 2.2rem; font-size: .76rem; }
+  body[data-screen="battle"] .move-grid { grid-auto-rows: minmax(44px, 50px); }
+  body[data-screen="battle"] .move-btn { min-height: 44px; }
+  body[data-screen="battle"] .action-btn, body[data-screen="battle"] .btn { min-height: 38px; }
+  /* Quer ist Platz in der Breite, nicht in der Höhe: die Anzeigen dürfen
+     schmal bleiben, sonst decken sie die halbe Bühne zu. */
+  .frame-wrap { width: min(260px, 31%); }
+  .mon-frame { padding: .22rem .4rem; font-size: .74rem; }
+  .mon-art { width: 116px; height: 116px; }
+  .slot-enemy .mon-art { width: 100px; height: 100px; }
+  #topbar { padding-top: .25rem; padding-bottom: .25rem; }
+  .icon-btn { min-height: 36px; padding: .25rem .5rem; }
+  .move-grid { grid-template-columns: repeat(4, 1fr); }
+  .move-btn { min-height: 44px; padding: .3rem .4rem; }
+  .move-btn-meta { display: none; }
+  .mon-art { width: 116px; height: 116px; }
+  .slot-enemy .mon-art { width: 100px; height: 100px; }
+  .battle-sprite { width: 112px; height: 112px; }
+  .slot-enemy .battle-sprite { width: 96px; height: 96px; }
+  .platform { width: 96px; height: 22px; }
+  .slot-enemy .platform { width: 80px; height: 20px; }
 }
 
 @media (prefers-reduced-motion: reduce) {

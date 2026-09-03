@@ -235,6 +235,30 @@ Team-Übersicht.
 
 | `Esc` | Menü bzw. Dialog schließen |
 
+### Auf dem Handy
+
+Das Spiel ist für das Telefon eigens eingerichtet, nicht nur geschrumpft:
+
+* **Der Kampf passt auf einen Bildschirm** — Bühne, Protokoll, vier
+  Attackenkacheln und die Aktionszeile, ohne Scrollen. Wer zum Angreifen erst
+  scrollen muss, spielt schlechter.
+* **Nichts ragt über den Rand.** Das ist wichtiger, als es klingt: sobald ein
+  einziges Element zu breit ist, zoomt der mobile Browser die *ganze* Seite
+  heraus — dann ist alles zu klein, nicht nur das Überstehende. Eine Prüfung
+  im Browser-Test misst das auf jedem Bildschirm nach.
+* **Tippziele ab 44 Pixel**, Attackenkacheln ab 56. Der übrige Platz geht an
+  die Kacheln, auf einem großen Telefon werden sie also größer.
+* **Dialoge steigen von unten auf** und haben ihre Knöpfe unten über die
+  volle Breite — in Daumenreichweite.
+* **Höhen rechnen in dvh**, nicht in vh: auf dem Handy wächst und schrumpft
+  die Adressleiste, und vh rechnet mit der größeren Variante — der untere
+  Rand läge sonst darunter. Dazu `env(safe-area-inset-*)` für Geräte mit
+  Aussparung.
+* In der Kopfzeile stehen die beiden Zahlen, die man ständig braucht: Geld
+  und Levelgrenze. Region und Route stehen ohnehin groß über der Karte.
+* **Quer gehalten** rücken die Attacken in eine Reihe zu viert und die Bühne
+  wird flacher.
+
 Alles ist auch mit Maus oder Finger bedienbar; auf schmalen Bildschirmen legt
 sich das Layout um. Auf Karte und Teambildschirm sitzt eine **Schnellheilung**:
 ein Klick belebt, heilt und kuriert mit dem, was im Beutel liegt — immer vom

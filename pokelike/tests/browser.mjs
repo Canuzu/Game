@@ -40,6 +40,7 @@ function check(name, cond, detail) {
 const launchOpts = {};
 if (process.env.CHROMIUM_PFAD) launchOpts.executablePath = process.env.CHROMIUM_PFAD;
 const browser = await chromium.launch(launchOpts);
+const browser2 = await chromium.launch(launchOpts);
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
 
 const consoleErrors = [];
@@ -349,15 +350,100 @@ check('Nach dem Neuladen bleibt der Fortschritt',
 console.log('\nKonsole');
 check('Keine Fehler in der Konsole', consoleErrors.length === 0, consoleErrors.slice(0, 4).join(' | '));
 
-// Schmale Ansicht
-await page.setViewportSize({ width: 390, height: 780 });
-await page.waitForTimeout(200);
-check('Kein waagerechtes Scrollen auf dem Handy',
-  await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 2),
-  await page.evaluate(() => document.documentElement.scrollWidth + ' > ' + window.innerWidth));
-if (SHOT_DIR) await page.screenshot({ path: join(SHOT_DIR, '09-handy.png') });
-
 await browser.close();
+
+/* ---------------------------------------------------------------- Handy --
+ * Eigene Sitzung mit Touch-Bedienung. Wichtigster Punkt: nichts darf breiter
+ * sein als der Bildschirm — sonst zoomt der mobile Browser die ganze Seite
+ * heraus und alles wird klein, nicht nur das Überstehende.
+ * ------------------------------------------------------------------------ */
+
+console.log('\nHandy');
+{
+  const phone = await browser2.newPage({
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 2, isMobile: true, hasTouch: true
+  });
+  phone.on('pageerror', (e) => consoleErrors.push('handy pageerror: ' + e.message));
+  await phone.route('**://play.pokemonshowdown.com/**', (r) => r.abort());
+  await phone.route('**://raw.githubusercontent.com/**', (r) => r.abort());
+  await phone.goto(PAGE);
+  await phone.waitForSelector('.title-screen', { timeout: 15000 });
+
+  const fits = async (name) => {
+    const m = await phone.evaluate(() => ({
+      w: document.documentElement.scrollWidth, iw: window.innerWidth
+    }));
+    check(name + ' passt in die Bildschirmbreite', m.w <= m.iw + 2, m.w + ' > ' + m.iw);
+  };
+
+  await fits('Titel');
+  await phone.click('text=✦ Neuer Run');
+  await phone.waitForSelector('.starter-grid');
+  await fits('Neuer Run');
+  check('Der Startknopf bleibt beim Scrollen stehen', await phone.evaluate(() =>
+    getComputedStyle(document.querySelector('.newrun-actions')).position === 'sticky'));
+  await phone.locator('.starter:not(.locked)').first().click();
+  await phone.click('text=Los geht’s');
+  await phone.waitForSelector('.map-screen', { timeout: 10000 });
+  await fits('Karte');
+
+  await phone.evaluate(() => {
+    const PL = globalThis.PL, App = globalThis.PokelikeApp;
+    PL.meta.setSetting('speed', 'sofort');
+    for (const id of ['pikachu', 'geodude', 'poliwag', 'machop']) {
+      App.run.party.push(PL.mon.create(id, 12, App.run.rng, { quality: 0.85 }));
+    }
+    App.show('map');
+  });
+  await fits('Karte mit vollem Team');
+
+  await phone.evaluate(() => {
+    const App = globalThis.PokelikeApp;
+    App.battle = App.run.makeTrainer(App.run.rng, {});
+    App.battle.start();
+    App.show('battle');
+  });
+  await phone.waitForSelector('.battle-stage');
+  await phone.waitForTimeout(400);
+  await fits('Kampf');
+
+  const battle = await phone.evaluate(() => ({
+    scrollH: document.documentElement.scrollHeight,
+    innerH: window.innerHeight,
+    move: Math.round((document.querySelector('.move-btn') || {}).getBoundingClientRect?.().height || 0),
+    action: Math.round((document.querySelector('.action-btn') || {}).getBoundingClientRect?.().height || 0),
+    stageBottom: Math.round(document.querySelector('.battle-stage').getBoundingClientRect().bottom)
+  }));
+  check('Der Kampf passt auf einen Bildschirm ohne Scrollen',
+    battle.scrollH <= battle.innerH + 2, battle.scrollH + ' > ' + battle.innerH);
+  check('Attackenkacheln sind groß genug zum Tippen', battle.move >= 44, battle.move + ' px');
+  check('Die Aktionsknöpfe auch', battle.action >= 44, battle.action + ' px');
+
+  // Dialoge steigen von unten auf und lassen sich mit einem Griff schließen
+  await phone.evaluate(() => globalThis.PokelikeApp.show('map'));
+  await phone.locator('.icon-btn').nth(1).tap();
+  await phone.waitForSelector('.modal');
+  const sheet = await phone.evaluate(() => {
+    const m = document.querySelector('.modal').getBoundingClientRect();
+    return { w: Math.round(m.width), iw: window.innerWidth,
+      bottom: Math.round(m.bottom), ih: window.innerHeight };
+  });
+  check('Der Beutel öffnet als Blatt über die volle Breite', sheet.w >= sheet.iw - 2,
+    sheet.w + ' von ' + sheet.iw);
+  check('… und sitzt am unteren Rand', sheet.bottom >= sheet.ih - 4,
+    sheet.bottom + ' von ' + sheet.ih);
+  await phone.locator('.modal-actions .btn').last().tap();
+  await phone.waitForSelector('.modal', { state: 'detached' });
+
+  for (const [screen, label] of [['team', 'Team'], ['dex', 'Pokédex'], ['settings', 'Einstellungen']]) {
+    await phone.evaluate((s) => globalThis.PokelikeApp.show(s), screen);
+    await phone.waitForTimeout(200);
+    await fits(label);
+  }
+  if (SHOT_DIR) await phone.screenshot({ path: join(SHOT_DIR, '09-handy.png') });
+  await browser2.close();
+}
 
 console.log('\n' + '─'.repeat(56));
 if (fails) {

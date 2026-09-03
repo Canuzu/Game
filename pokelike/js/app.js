@@ -93,9 +93,13 @@
     if (run && App.screen !== 'title' && App.screen !== 'newrun') {
       var region = run.leagueStage >= 0 ? { name: 'Pokémon-Liga', color: '#c9a227' } : run.currentRegion();
       mid.appendChild(el('span', { className: 'region-badge', style: { borderColor: region.color }, text: region.name }));
-      mid.appendChild(el('span', { className: 'chip', text: '👑 ' + (run.leagueStage >= 0 ? 'Finale' : 'Region ' + (run.region + 1) + '/' + (run.mode === 'endlos' ? '∞' : run.totalRegions())) }));
-      mid.appendChild(el('span', { className: 'chip', text: '💰 ' + U.money(run.money) }));
-      mid.appendChild(el('span', { className: 'chip', title: 'Höchstes erreichbares Level', text: '⬆ Lv ' + run.levelCap }));
+      mid.appendChild(el('span', { className: 'chip chip-region', text: '👑 ' + (run.leagueStage >= 0 ? 'Finale' : 'Region ' + (run.region + 1) + '/' + (run.mode === 'endlos' ? '∞' : run.totalRegions())) }));
+      mid.appendChild(el('span', { className: 'chip chip-money', text: '💰 ' + U.money(run.money) }));
+      mid.appendChild(el('span', { className: 'chip chip-cap', title: 'Höchstes erreichbares Level' }, [
+        el('span', { text: '⬆\u00a0' }),
+        el('span', { className: 'cap-word', text: 'Lv ' }),
+        el('span', { text: String(run.levelCap) })
+      ]));
       if (run.ascension) mid.appendChild(el('span', { className: 'chip warn', text: '🔥 Aufstieg ' + run.ascension }));
       if (run.nuzlocke) mid.appendChild(el('span', { className: 'chip warn', text: '💀 Nuzlocke' }));
     }
