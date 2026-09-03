@@ -60,13 +60,84 @@
     return layer;
   }
 
-  /** Ein Pokéball aus vier Blöcken — Deckel, Band, Knopf, Unterteil. */
+  /* ---------- Der Ball ------------------------------------------------------
+   * Gezeichnet statt gestapelt: für jede Bildzeile wird die Breite des
+   * Kreises ausgerechnet und ausgefüllt. So ist die Silhouette wirklich rund
+   * und trotzdem hart gerastert — genau wie ein Sprite auf dem GBA.
+   * ------------------------------------------------------------------------ */
+
+  var BALL_COLOR = {
+    poke:   { top: '#e8402f', shade: '#a3241a' },
+    super:  { top: '#3b7dd8', shade: '#255191' },
+    hyper:  { top: '#f2c53d', shade: '#b58c15' },
+    master: { top: '#7a4bbf', shade: '#4d2c80' },
+    timer:  { top: '#dcdcdc', shade: '#9a9a9a' },
+    net:    { top: '#2fa5a0', shade: '#1c6d6a' }
+  };
+
+  var ballCache = {};
+
+  /** Zeichnet einen Ball mit 16 × 16 Pixeln und gibt ihn als Bildadresse zurück. */
+  function ballImage(kind) {
+    if (ballCache[kind]) return ballCache[kind];
+    var col = BALL_COLOR[kind] || BALL_COLOR.poke;
+    var S = 16, R = S / 2, cv = doc.createElement('canvas');
+    cv.width = S; cv.height = S;
+    var ctx = cv.getContext('2d'), y;
+
+    // Eine Zeile des Kreises: von -span bis +span um die Mitte.
+    function span(row) {
+      var dy = (row + 0.5 - R) / R;
+      var v = 1 - dy * dy;
+      return v <= 0 ? 0 : Math.round(Math.sqrt(v) * R);
+    }
+    function row(y, x0, w, color) {
+      if (w <= 0) return;
+      ctx.fillStyle = color;
+      ctx.fillRect(x0, y, w, 1);
+    }
+
+    for (y = 0; y < S; y++) {
+      var sp = span(y);
+      if (!sp) continue;
+      var x0 = R - sp, w = sp * 2;
+      var isBand = y === 7 || y === 8;
+      var fill = isBand ? '#1b1b22' : (y < 7 ? col.top : '#f4f4f4');
+      row(y, x0, w, fill);
+      if (isBand) continue;
+      // Rand: eine Spur dunkler, damit der Kreis einen Kontur bekommt.
+      row(y, x0, 1, '#1b1b22');
+      row(y, x0 + w - 1, 1, '#1b1b22');
+      if (y === 0 || y === S - 1) row(y, x0, w, '#1b1b22');
+      // Untere Hälfte bekommt unten Schatten, obere oben ein Glanzlicht.
+      if (y >= 12) row(y, x0 + 1, w - 2, '#cfcfd6');
+      else if (y === 1 || y === 2) row(y, x0 + 2, Math.max(0, w - 5), lighten(col.top));
+      else if (y >= 4 && y < 7) row(y, x0 + w - 3, 2, col.shade);
+    }
+
+    // Knopf in der Mitte
+    ctx.fillStyle = '#1b1b22';
+    ctx.fillRect(6, 6, 4, 4);
+    ctx.fillStyle = '#f4f4f4';
+    ctx.fillRect(7, 7, 2, 2);
+
+    ballCache[kind] = cv.toDataURL('image/png');
+    return ballCache[kind];
+  }
+
+  function lighten(hex) {
+    var n = parseInt(hex.slice(1), 16);
+    function up(v) { return Math.min(255, Math.round(v + (255 - v) * 0.45)); }
+    return 'rgb(' + up((n >> 16) & 255) + ',' + up((n >> 8) & 255) + ',' + up(n & 255) + ')';
+  }
+
+  /** Der Ball als Bildelement — rund, hart skaliert. */
   function ballNode(kind) {
     var ball = doc.createElement('div');
     ball.className = 'moment-ball ball-' + (kind || 'poke');
-    ball.appendChild(doc.createElement('i'));   // obere Hälfte
-    ball.appendChild(doc.createElement('b'));   // Band
-    ball.appendChild(doc.createElement('u'));   // Knopf
+    if (doc.createElement('canvas').getContext) {
+      ball.style.backgroundImage = 'url(' + ballImage(kind || 'poke') + ')';
+    }
     return ball;
   }
 
@@ -96,8 +167,8 @@
     var from = { x: to.x - stage.clientWidth * 0.42, y: to.y + stage.clientHeight * 0.30 };
     var shakes = Math.max(0, Math.min(3, opts.shakes === undefined ? 3 : opts.shakes));
     var node = ballNode(kindOf(opts.item));
-    node.style.left = (from.x - 7) + 'px';
-    node.style.top = (from.y - 7) + 'px';
+    node.style.left = (from.x - 8) + 'px';
+    node.style.top = (from.y - 8) + 'px';
     layer.appendChild(node);
 
     var dx = to.x - from.x, dy = to.y - from.y, arc = Math.min(70, Math.abs(dx) * 0.32);
@@ -296,7 +367,7 @@
   PL.moments = {
     MS: MS,
     ball: ball, evolve: evolve, levelPanel: levelPanel,
-    ballNode: ballNode, kindOf: kindOf, reduced: reduced,
+    ballNode: ballNode, ballImage: ballImage, kindOf: kindOf, reduced: reduced,
     sound: null
   };
 

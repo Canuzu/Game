@@ -650,7 +650,8 @@
     var mon = act.mon, max = act.stats[0], isMine = sideId === 0;
 
     var art = el('div', { className: 'mon-art' }, [
-      U.sprite(mon, { back: isMine, eager: true, className: 'battle-sprite' + (mon.hp <= 0 ? ' fainted' : '') }),
+      U.sprite(mon, { back: isMine, eager: true, ground: true,
+        className: 'battle-sprite' + (mon.hp <= 0 ? ' fainted' : '') }),
       mon.shiny ? el('span', { className: 'shiny-mark', text: '✦' }) : null,
       act.vol.substitute ? el('span', { className: 'sub-mark', title: 'Delegator', text: '🪆' }) : null
     ]);

@@ -632,76 +632,255 @@
 
   var TRAINER_STYLE = {
     'Arenaleiter': { shirt: '#d84838', pants: '#2c3450', cape: '#e8c14a', hat: null },
-    'Top Vier': { shirt: '#4a3c78', pants: '#241f38', cape: '#8c6ad0', hat: null },
+    'Top Vier': { shirt: '#4a3c78', pants: '#241f38', cape: '#8c6ad0', hat: null, skirt: true },
     'Champ': { shirt: '#2c3860', pants: '#1b2038', cape: '#c9a227', hat: null },
     'Käfersammler': { shirt: '#6ba848', pants: '#4c6c30', cape: null, hat: '#d8c078' },
     'Angler': { shirt: '#4888c0', pants: '#2c4c70', cape: null, hat: '#d8c078' },
-    'Schwimmerin': { shirt: '#48b0c8', pants: '#2c7c94', cape: null, hat: null },
+    'Schwimmerin': { shirt: '#48b0c8', pants: '#2c7c94', cape: null, hat: null, skirt: true },
     'Wanderer': { shirt: '#a86838', pants: '#6c4828', cape: null, hat: '#8c5a38' },
     'Ruinenmaniac': { shirt: '#8c7048', pants: '#5c4830', cape: null, hat: '#6c5438' },
     'Rowdy': { shirt: '#3a3a44', pants: '#24242c', cape: null, hat: null },
     'Team-Rüpel': { shirt: '#2a2a32', pants: '#1a1a20', cape: null, hat: '#2a2a32' },
     'Ass-Trainer': { shirt: '#e8e8f0', pants: '#c03838', cape: null, hat: null },
-    'Ass-Trainerin': { shirt: '#e8e8f0', pants: '#c03838', cape: null, hat: null },
-    'Veteranin': { shirt: '#8c4870', pants: '#4c2c48', cape: null, hat: null },
+    'Ass-Trainerin': { shirt: '#e8e8f0', pants: '#c03838', cape: null, hat: null, skirt: true },
+    'Veteranin': { shirt: '#8c4870', pants: '#4c2c48', cape: null, hat: null, skirt: true },
     'Drachenzähmer': { shirt: '#6c4898', pants: '#3c2860', cape: null, hat: null },
-    'Psycho': { shirt: '#c06898', pants: '#6c3c58', cape: null, hat: null },
+    'Psycho': { shirt: '#c06898', pants: '#6c3c58', cape: null, hat: null, skirt: true },
     'Ninjajunge': { shirt: '#38484c', pants: '#243034', cape: null, hat: null },
     'Feuerwehrmann': { shirt: '#d85028', pants: '#8c3418', cape: null, hat: '#e8c14a' },
-    'Skaterin': { shirt: '#48b8a0', pants: '#2c6c60', cape: null, hat: null },
+    'Skaterin': { shirt: '#48b8a0', pants: '#2c6c60', cape: null, hat: null, skirt: true },
     'Spieler': { shirt: '#e05a47', pants: '#2c3450', cape: null, hat: '#e05a47' }
   };
 
   var trainerCache = {};
+
+  /* ---------- Trainerfiguren -------------------------------------------------
+   * 32 × 48 Pixel, gezeichnet in fünf Durchgängen:
+   *   1) Umhang oder Mantel hinter der Figur
+   *   2) Körper mit verjüngten Formen statt reiner Rechtecke
+   *   3) Schattenseite rechts, Glanzlicht links
+   *   4) Gesicht, Haare, Kopfbedeckung
+   *   5) eine dunkle Kontur rund um alles Gezeichnete
+   * Der letzte Durchgang macht den Unterschied: erst die Kontur lässt eine
+   * Pixelfigur wie ein Sprite aussehen und nicht wie ein Klötzchenhaufen.
+   * ------------------------------------------------------------------------ */
+
+  var OUTLINE = '#20141e';
+
+  function shade(c, f) {
+    var n = parseInt(c.slice(1), 16);
+    var r = ((n >> 16) & 255), g = ((n >> 8) & 255), b = (n & 255);
+    if (f >= 1) {
+      return 'rgb(' + Math.min(255, Math.round(r + (255 - r) * (f - 1))) + ',' +
+        Math.min(255, Math.round(g + (255 - g) * (f - 1))) + ',' +
+        Math.min(255, Math.round(b + (255 - b) * (f - 1))) + ')';
+    }
+    return 'rgb(' + Math.round(r * f) + ',' + Math.round(g * f) + ',' + Math.round(b * f) + ')';
+  }
+
+  /** Symmetrisches Trapez — Grundform für Rumpf, Beine und Haare. */
+  function taper(ctx, cx, y, topW, botW, h, color) {
+    var i, w;
+    ctx.fillStyle = color;
+    for (i = 0; i < h; i++) {
+      w = Math.round(topW + (botW - topW) * (i / Math.max(1, h - 1)));
+      ctx.fillRect(Math.round(cx - w / 2), y + i, w, 1);
+    }
+  }
+
+  /** Legt eine dunkle Kontur um jeden gezeichneten Bereich. */
+  function outline(ctx, w, h) {
+    var img = ctx.getImageData(0, 0, w, h), d = img.data;
+    var copy = new Uint8ClampedArray(d);
+    var x, y, i, j, hit;
+    function opaque(px, py) {
+      if (px < 0 || py < 0 || px >= w || py >= h) return false;
+      return copy[(py * w + px) * 4 + 3] > 8;
+    }
+    for (y = 0; y < h; y++) {
+      for (x = 0; x < w; x++) {
+        i = (y * w + x) * 4;
+        if (copy[i + 3] > 8) continue;
+        hit = opaque(x - 1, y) || opaque(x + 1, y) || opaque(x, y - 1) || opaque(x, y + 1);
+        if (!hit) continue;
+        d[i] = 0x20; d[i + 1] = 0x14; d[i + 2] = 0x1e; d[i + 3] = 255;
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+  }
+
+  /* Frisuren: jede zeichnet auf denselben Kopf, aber anders. */
+  var HAIRDO = ['kurz', 'lang', 'zopf', 'strubbel'];
+
+  function drawHair(ctx, style, hair, back, cx, headTop) {
+    var dark = shade(hair, 0.72);
+    if (style === 'lang') {
+      taper(ctx, cx, headTop + 2, 16, 14, 16, hair);            // fällt über die Schultern
+      taper(ctx, cx, headTop, 12, 16, 4, hair);
+      if (!back) { ctx.fillStyle = dark; ctx.fillRect(cx - 8, headTop + 6, 2, 10); ctx.fillRect(cx + 6, headTop + 6, 2, 10); }
+    } else if (style === 'zopf') {
+      taper(ctx, cx, headTop, 12, 15, 5, hair);
+      ctx.fillStyle = hair;
+      ctx.fillRect(cx + 6, headTop + 4, 3, 9);                   // Zopf seitlich
+      ctx.fillStyle = dark;
+      ctx.fillRect(cx + 6, headTop + 11, 3, 2);
+    } else if (style === 'strubbel') {
+      taper(ctx, cx, headTop - 1, 10, 16, 6, hair);
+      ctx.fillStyle = hair;
+      ctx.fillRect(cx - 8, headTop - 1, 3, 3);
+      ctx.fillRect(cx + 5, headTop - 2, 3, 4);
+      ctx.fillRect(cx - 2, headTop - 3, 4, 3);
+    } else {
+      taper(ctx, cx, headTop, 12, 15, 5, hair);
+      if (!back) { ctx.fillStyle = hair; ctx.fillRect(cx - 7, headTop + 4, 2, 5); ctx.fillRect(cx + 5, headTop + 4, 2, 5); }
+    }
+    if (back) taper(ctx, cx, headTop + 4, 15, 13, 8, hair);      // Hinterkopf ist ganz Haar
+  }
 
   /** Zeichnet eine Trainerfigur; back = Rückenansicht für den Spieler. */
   function trainer(cls, seed, back) {
     var key = cls + '|' + seed + '|' + (back ? 'b' : 'f');
     if (trainerCache[key]) return trainerCache[key];
     var style = TRAINER_STYLE[cls] || TRAINER_STYLE['Ass-Trainer'];
-    var skin = SKIN[Math.abs(seed | 0) % SKIN.length];
-    var hair = HAIR[Math.abs((seed | 0) >> 3) % HAIR.length];
+    var n = Math.abs(seed | 0);
+    var skin = SKIN[n % SKIN.length];
+    var hair = HAIR[(n >> 3) % HAIR.length];
+    var hairdo = HAIRDO[(n >> 6) % HAIRDO.length];
 
+    var W2 = 32, H2 = 48, cx = 16;
     var cv = root.document.createElement('canvas');
-    cv.width = 24; cv.height = 36;
+    cv.width = W2; cv.height = H2;
     var ctx = cv.getContext('2d');
     ctx.imageSmoothingEnabled = false;
 
-    function dark(c, f) {
-      var n = parseInt(c.slice(1), 16);
-      var r = Math.round(((n >> 16) & 255) * f), g = Math.round(((n >> 8) & 255) * f), b = Math.round((n & 255) * f);
-      return 'rgb(' + r + ',' + g + ',' + b + ')';
+    var shirt = style.shirt, pants = style.pants;
+    var headTop = 4, headH = 11, neckY = headTop + headH;
+    var skirt = !!style.skirt;
+
+    /* 1) Beine, Schuhe — die unterste Ebene */
+    if (skirt) {
+      taper(ctx, cx, 30, 16, 20, 8, shirt);                // Rock
+      ctx.fillStyle = shade(shirt, 0.75);
+      ctx.fillRect(cx + 2, 30, 8, 8);
+      taper(ctx, cx - 4, 38, 5, 4, 5, skin);               // Beine darunter
+      taper(ctx, cx + 4, 38, 5, 4, 5, skin);
+    } else {
+      taper(ctx, cx - 4, 30, 7, 6, 13, pants);
+      taper(ctx, cx + 4, 30, 7, 6, 13, pants);
+      ctx.fillStyle = shade(pants, 0.6);                   // Naht zwischen den Beinen
+      ctx.fillRect(cx - 1, 31, 2, 12);
+      ctx.fillStyle = shade(pants, 1.18);                  // Glanzlicht am linken Bein
+      ctx.fillRect(cx - 6, 31, 1, 11);
+    }
+    ctx.fillStyle = '#2a2028';                             // Schuhe, deutlich getrennt
+    ctx.fillRect(cx - 9, 43, 7, 3);
+    ctx.fillRect(cx + 2, 43, 7, 3);
+    ctx.fillStyle = '#4a3d46';
+    ctx.fillRect(cx - 9, 43, 7, 1);
+    ctx.fillRect(cx + 2, 43, 7, 1);
+
+    /* 2) Umhang oder Mantel — liegt über den Beinen, unter dem Rumpf, damit
+          er wie ein Stoff fällt und nicht wie zwei Träger wirkt. */
+    if (style.cape) {
+      // Knapp hinter den Schultern beginnen und nach unten ausstellen: so
+      // schaut der Stoff seitlich hervor, statt die Figur wie ein Poncho
+      // zuzudecken.
+      // Schmaler als die Schultern beginnen, damit der Rumpf ihn verdeckt,
+      // und erst unterhalb der Arme ausstellen — dann liest er als Umhang.
+      taper(ctx, cx, neckY + 6, 15, 24, 18, style.cape);
+      ctx.fillStyle = shade(style.cape, 0.74);             // Schattenseite
+      ctx.fillRect(cx + 7, neckY + 14, 5, 10);
+      ctx.fillStyle = shade(style.cape, 0.52);             // Saum
+      ctx.fillRect(cx - 12, neckY + 22, 24, 2);
+      ctx.fillStyle = shade(style.cape, 1.22);             // Falte
+      ctx.fillRect(cx - 9, neckY + 14, 1, 9);
     }
 
-    if (style.cape) {                                  // Umhang hinter der Figur
-      px(ctx, 4, 12, 16, 18, style.cape);
-      px(ctx, 4, 12, 16, 2, dark(style.cape, 0.75));
+    /* 3) Rumpf: an den Schultern breit, zur Hüfte schmaler */
+    taper(ctx, cx, neckY + 1, 17, 13, 16, shirt);
+    ctx.fillStyle = shade(shirt, 0.76);                    // Schattenseite rechts
+    ctx.fillRect(cx + 3, neckY + 2, 5, 15);
+    ctx.fillStyle = shade(shirt, 1.28);                    // Glanzlicht links
+    ctx.fillRect(cx - 7, neckY + 3, 2, 11);
+    if (style.cape) {                                       // Kragen des Umhangs
+      ctx.fillStyle = shade(style.cape, 0.85);
+      ctx.fillRect(cx - 9, neckY + 1, 18, 3);
     }
-    px(ctx, 7, 12, 10, 12, style.shirt);               // Rumpf
-    px(ctx, 7, 12, 10, 2, dark(style.shirt, 0.8));
-    px(ctx, 4, 13, 3, 9, style.shirt);                 // Arme
-    px(ctx, 17, 13, 3, 9, style.shirt);
-    px(ctx, 4, 21, 3, 3, skin);
-    px(ctx, 17, 21, 3, 3, skin);
-    px(ctx, 8, 24, 3, 8, style.pants);                 // Beine
-    px(ctx, 13, 24, 3, 8, style.pants);
-    px(ctx, 7, 32, 5, 3, '#2a2028');                   // Schuhe
-    px(ctx, 12, 32, 5, 3, '#2a2028');
-    px(ctx, 8, 4, 8, 9, skin);                         // Kopf
+    ctx.fillStyle = shade(pants, 0.85);                    // Gürtel
+    ctx.fillRect(cx - 7, neckY + 15, 14, 2);
+    ctx.fillStyle = shade(pants, 1.4);
+    ctx.fillRect(cx - 2, neckY + 15, 3, 2);                // Schnalle
+
+    /* 4) Arme — die Rückenansicht hebt den Wurfarm */
+    var armY = neckY + 3;
+    taper(ctx, cx - 10, armY, 5, 4, 10, shirt);            // linker Arm
+    ctx.fillStyle = skin;
+    ctx.fillRect(cx - 12, armY + 10, 4, 4);
     if (back) {
-      px(ctx, 7, 3, 10, 9, hair);                      // Hinterkopf
+      taper(ctx, cx + 10, armY - 6, 4, 5, 9, shirt);       // erhobener Wurfarm
+      ctx.fillStyle = shade(shirt, 0.76);
+      ctx.fillRect(cx + 10, armY - 6, 2, 9);
+      ctx.fillStyle = skin;
+      ctx.fillRect(cx + 9, armY - 9, 4, 4);
     } else {
-      px(ctx, 7, 3, 10, 4, hair);
-      px(ctx, 7, 3, 2, 8, hair);
-      px(ctx, 15, 3, 2, 8, hair);
-      px(ctx, 10, 8, 2, 2, '#2a2028');                 // Augen
-      px(ctx, 14, 8, 2, 2, '#2a2028');
+      taper(ctx, cx + 10, armY, 5, 4, 10, shirt);
+      ctx.fillStyle = shade(shirt, 0.76);
+      ctx.fillRect(cx + 9, armY, 3, 10);
+      ctx.fillStyle = skin;
+      ctx.fillRect(cx + 8, armY + 10, 4, 4);
     }
+
+    /* 5) Kopf, Gesicht, Haare */
+    ctx.fillStyle = shade(skin, 0.78);
+    ctx.fillRect(cx - 3, neckY - 2, 6, 3);                 // Hals im Schatten des Kopfes
+    taper(ctx, cx, headTop, 11, 9, headH, skin);           // Kopf mit Kinn
+    ctx.fillStyle = shade(skin, 0.86);                     // Wange im Schatten
+    ctx.fillRect(cx + 2, headTop + 3, 3, 7);
+    ctx.fillStyle = shade(skin, 1.2);
+    ctx.fillRect(cx - 5, headTop + 3, 1, 5);
+
+    drawHair(ctx, hairdo, hair, back, cx, headTop);
+
+    if (!back) {
+      ctx.fillStyle = OUTLINE;                             // Augen
+      ctx.fillRect(cx - 4, headTop + 6, 2, 3);
+      ctx.fillRect(cx + 2, headTop + 6, 2, 3);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(cx - 4, headTop + 6, 1, 1);
+      ctx.fillRect(cx + 2, headTop + 6, 1, 1);
+      ctx.fillStyle = shade(skin, 0.68);                   // Mund
+      ctx.fillRect(cx - 1, headTop + 10, 3, 1);
+    }
+
     if (style.hat) {
-      px(ctx, 6, 2, 12, 3, style.hat);
-      px(ctx, 8, 0, 8, 3, dark(style.hat, 0.85));
-      if (!back) px(ctx, 6, 5, 12, 1, dark(style.hat, 0.7));
+      ctx.fillStyle = style.hat;
+      ctx.fillRect(cx - 8, headTop, 16, 4);                // Kappe
+      taper(ctx, cx, headTop - 3, 10, 14, 3, style.hat);
+      ctx.fillStyle = shade(style.hat, 0.68);
+      ctx.fillRect(cx - 8, headTop + 3, 16, 1);
+      ctx.fillStyle = shade(style.hat, 1.25);
+      ctx.fillRect(cx - 6, headTop - 2, 5, 1);
+      if (!back) {                                          // Schirm nach vorn
+        ctx.fillStyle = shade(style.hat, 0.82);
+        ctx.fillRect(cx - 9, headTop + 4, 18, 2);
+      }
     }
+
+    /* Rückenansicht: ein Ball in der erhobenen Hand */
+    if (back) {
+      ctx.fillStyle = '#e8402f';
+      ctx.fillRect(cx + 9, armY - 13, 4, 2);
+      ctx.fillStyle = '#f4f4f4';
+      ctx.fillRect(cx + 9, armY - 11, 4, 2);
+      ctx.fillStyle = OUTLINE;
+      ctx.fillRect(cx + 9, armY - 12, 4, 1);
+      ctx.fillStyle = '#f4f4f4';
+      ctx.fillRect(cx + 10, armY - 12, 2, 1);
+    }
+
+    /* 5) Kontur um die fertige Figur */
+    outline(ctx, W2, H2);
+
     trainerCache[key] = cv.toDataURL('image/png');
     return trainerCache[key];
   }

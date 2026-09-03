@@ -455,6 +455,21 @@
 
   /* ---------- 4) Kämpfe -------------------------------------------------------- */
 
+  /**
+   * Wie hart die Gegner ausfallen. Alles an einer Stelle, damit sich die
+   * Schwierigkeit nachziehen lässt, ohne durch das halbe Modul zu suchen.
+   * Die Zahlen sind nicht geraten, sondern mit tools/balance.mjs eingestellt.
+   *
+   *   level    Level, die Trainergegner grundsätzlich zurückstehen
+   *   size     wie viele Pokémon sie weniger aufbieten als das eigene Team
+   *   quality  Abschlag auf Werte, Wesen und Attackensets der Gegner
+   *
+   * Wilde Pokémon bleiben bewusst außen vor: sie sind die Erfahrungsquelle,
+   * und schwächere Gegner dort würden das Team langsamer wachsen lassen —
+   * was die Erleichterung gleich wieder auffräße.
+   */
+  var EASE = { level: 2, size: 1, quality: 0.08 };
+
   /** Durchschnittslevel des Teams — die Messlatte für alle Gegner. */
   R.teamLevel = function () {
     if (!this.party.length) return 5;
@@ -540,12 +555,14 @@
   R.makeTrainer = function (rng, opts) {
     opts = opts || {};
     var region = this.leagueStage >= 0 ? null : this.currentRegion();
-    var level = this.enemyLevel(opts.elite ? 0 : -2);
+    // Ass-Trainer bleiben ein spürbarer Zwischenschritt: sie behalten ihr
+    // volles Aufgebot und geben nur einen Level ab.
+    var level = this.enemyLevel(opts.elite ? -1 : (-2 - EASE.level));
     var t = W.trainerTeam(rng, region, level, {
-      maxSize: this.matchSize(opts.elite ? 1 : 0),
+      maxSize: this.matchSize(opts.elite ? 1 : -EASE.size),
       items: this.asc(6),
       bonus: opts.elite ? 2 : 0,
-      quality: opts.elite ? 0.8 : 0.68,
+      quality: (opts.elite ? 0.8 : 0.68) - EASE.quality,
       ivFloor: opts.elite ? 10 : 4,
       cls: opts.elite ? { name: 'Ass-Trainer', types: null, size: 4 } : null
     });
@@ -572,8 +589,8 @@
    */
   R.makeRival = function (rng) {
     var stage = this.rival.stage;
-    var level = this.enemyLevel(1);
-    var t = W.rivalTeam(rng, this.rival, level, stage, this.currentRegion());
+    var level = this.enemyLevel(1 - EASE.level);
+    var t = W.rivalTeam(rng, this.rival, level, stage, this.currentRegion(), { ease: EASE.quality });
     var bt = new PL.Battle(this.battleOpts({ team: t.team, trainer: t }));
     bt.aiLevel = 3;
     bt.biome = this.biomeFor('trainer');
@@ -610,9 +627,10 @@
   R.makeBoss = function (rng) {
     var region = this.currentRegion();
     // Der erste Arenaleiter darf noch kein Bollwerk sein.
-    var level = this.enemyLevel(this.region === 0 ? 0 : 2);
+    var level = this.enemyLevel((this.region === 0 ? 0 : 2) - EASE.level);
     var t = W.bossTeam(rng, region, level, this.region, {
-      maxSize: this.matchSize(this.asc(3) ? 2 : 1), items: this.asc(6)
+      maxSize: this.matchSize((this.asc(3) ? 2 : 1) - EASE.size),
+      items: this.asc(6), ease: EASE.quality
     });
     var bt = new PL.Battle(this.battleOpts({ team: t.team, trainer: t }));
     bt.aiLevel = 3;
@@ -622,9 +640,9 @@
   };
 
   R.makeElite = function (rng) {
-    var level = this.enemyLevel(1);
+    var level = this.enemyLevel(1 - EASE.level);
     var t = W.eliteTeam(rng, level, this.leagueStage, this.eliteUsed, {
-      maxSize: this.matchSize(this.asc(3) ? 2 : 1)
+      maxSize: this.matchSize((this.asc(3) ? 2 : 1) - EASE.size), ease: EASE.quality
     });
     var bt = new PL.Battle(this.battleOpts({ team: t.team, trainer: t }));
     bt.aiLevel = 3;
@@ -634,7 +652,7 @@
   };
 
   R.makeChampion = function (rng) {
-    var t = W.championTeam(rng, this.enemyLevel(2));
+    var t = W.championTeam(rng, this.enemyLevel(2 - EASE.level), { ease: EASE.quality });
     var bt = new PL.Battle(this.battleOpts({ team: t.team, trainer: t }));
     bt.aiLevel = 3;
     bt.biome = 'liga';

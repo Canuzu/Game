@@ -66,6 +66,48 @@
     return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
   }
 
+  /* ---------- Sprites auf den Boden stellen ----------------------------------
+   * Die Bilder von PokeAPI sind 96 × 96 groß, das Pokémon steht darin mittig
+   * und füllt je nach Art nur ein Drittel bis vier Fünftel der Fläche. Mittig
+   * gesetzt schwebt ein kleines Pokémon deshalb über seiner Plattform.
+   * Deshalb wird einmal je Bild gemessen, wie viel Luft unter ihm ist, und
+   * das Bild um diesen Betrag nach unten geschoben.
+   *
+   * Die Messung braucht Lesezugriff auf das Bild. Kommt es von einer fremden
+   * Adresse, verweigert der Browser das — dann bleibt es beim Mittelwert.
+   * ------------------------------------------------------------------------ */
+
+  var groundCache = {};
+  var GROUND_TARGET = 0.11;      // so viel Luft darf unter den Füßen bleiben
+
+  function groundSprite(img, key) {
+    if (groundCache[key] !== undefined) { applyGround(img, groundCache[key]); return; }
+    var w = img.naturalWidth, h = img.naturalHeight;
+    if (!w || !h || w > 512 || h > 512) return;
+    var drop = 0;
+    try {
+      var cv = doc.createElement('canvas');
+      cv.width = w; cv.height = h;
+      var ctx = cv.getContext('2d', { willReadFrequently: true });
+      ctx.drawImage(img, 0, 0);
+      var d = ctx.getImageData(0, 0, w, h).data;
+      var y, x, bottom = -1;
+      for (y = h - 1; y >= 0 && bottom < 0; y--) {
+        for (x = 0; x < w; x++) if (d[(y * w + x) * 4 + 3] > 8) { bottom = y; break; }
+      }
+      if (bottom < 0) return;
+      drop = Math.max(0, (h - 1 - bottom) / h - GROUND_TARGET);
+    } catch (e) {
+      return;                     // fremde Adresse — Bild bleibt mittig
+    }
+    groundCache[key] = drop;
+    applyGround(img, drop);
+  }
+
+  function applyGround(img, drop) {
+    img.style.setProperty('--drop', (drop * 100).toFixed(1) + '%');
+  }
+
   function sprite(monOrSpecies, opts) {
     opts = opts || {};
     var mon = monOrSpecies && monOrSpecies.sp !== undefined ? monOrSpecies : null;
@@ -81,6 +123,12 @@
       i++;
       if (i < chain.length) img.src = chain[i];
     });
+    if (opts.ground) {
+      var key = sp.id + (opts.back ? ':b' : ':f') + ((opts.shiny || (mon && mon.shiny)) ? ':s' : '');
+      var measure = function () { groundSprite(img, key); };
+      if (img.complete && img.naturalWidth) measure();
+      else img.addEventListener('load', measure);
+    }
     return img;
   }
 

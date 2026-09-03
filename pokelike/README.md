@@ -104,6 +104,18 @@ Mega-Entwicklung, auch den Nachrücker nach einem K. o. Der Auto-Kampf spielt
 auf Sieg und würfelt nicht: Er rechnet jede Attacke gegen das aktuelle Ziel
 durch und nimmt die beste; bei Gleichstand entscheidet die zuverlässigere.
 
+**Wie schwer es zugeht** — Gegner richten sich nach dem eigenen Team, bleiben
+aber bewusst ein Stück dahinter: zwei Level, ein Pokémon weniger im Aufgebot
+und ein Abschlag auf Werte und Attackensets. Alle drei Zahlen stehen als
+`EASE` an einer Stelle in `js/run.js` und lassen sich in einer Minute
+nachziehen. Wilde Pokémon sind ausgenommen — sie sind die Erfahrungsquelle,
+und schwächere Gegner dort würden das eigene Team langsamer wachsen lassen.
+
+Ob eine Änderung wirkt, misst `node tools/balance.mjs 60`: das Werkzeug spielt
+Runs vollautomatisch durch und meldet die Siegquote gegen Ass-Trainer,
+Arenaleiter, Top Vier und Champ. Damit ist die Schwierigkeit belegbar statt
+geschätzt.
+
 **Typenvorteil auf einen Blick** — jeder Attackenknopf zeigt, was die Attacke
 beim aktuellen Gegner ausrichtet (×4, ×2, ×½, ×¼, wirkungslos). Kein Blättern
 in Tabellen, keine Rechnerei — die Entscheidung bleibt trotzdem deine.
@@ -127,6 +139,21 @@ kachelnde Bodentextur je Region.
 Arenaleiter, Siegesfanfare) werden zur Laufzeit auf vier Kanälen erzeugt:
 Melodie, Begleitung, Bass und ein Schlagzeug aus gefiltertem Rauschen. Keine
 Audiodatei, kein Download. Welches Stück läuft, entscheidet der Ort.
+
+Die Trainerfiguren werden mit 32 × 48 Pixeln gezeichnet — Silhouette mit
+verjüngtem Rumpf statt gestapelter Rechtecke, Schattenseite und Glanzlicht,
+vier Frisuren, Röcke, Kappen und Umhänge, und über allem eine dunkle Kontur.
+Erst die Kontur macht aus einem Klötzchenhaufen ein Sprite. Der Spieler steht
+von hinten mit erhobenem Wurfarm da. Auch die Bälle sind gezeichnet: für jede
+Bildzeile wird die Kreisbreite ausgerechnet, die Silhouette ist also wirklich
+rund und trotzdem hart gerastert.
+
+Im Kampf haben die Pokémon Vorrang: die Anzeigen mit Namen, Typen und
+Lebensbalken sind knapp gesetzt, die Pokémon selbst groß. Damit sie dabei
+nicht über ihren Plattformen schweben, wird beim Laden gemessen, wie viel
+leerer Rand unter jedem Bild liegt — die Bilder von PokeAPI füllen je nach
+Art nur ein Drittel bis vier Fünftel ihrer Fläche — und das Bild um genau
+diesen Betrag nach unten geschoben.
 
 Attacken werfen typgefärbte Pixel über die Bühne: Spezialattacken fliegen als
 Geschoss zum Ziel und zerplatzen, physische lassen den Angreifer vorstoßen und

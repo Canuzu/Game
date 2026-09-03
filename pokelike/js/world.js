@@ -215,7 +215,7 @@
     if (opts && opts.maxSize) size = Math.min(size, opts.maxSize);
     // Arenaleiter werden von Region zu Region ernster: der erste ist eine
     // Prüfung, der neunte ein Brett.
-    var quality = Math.min(0.88, 0.70 + index * 0.023);
+    var quality = Math.min(0.88, 0.70 + index * 0.023) - ((opts && opts.ease) || 0);
     var evScale = Math.min(0.9, 0.30 + index * 0.08);
     var team = [], seen = {}, i;
     for (i = 0; i < size; i++) {
@@ -256,7 +256,7 @@
         : pickEncounter(rng, pool, level, { rare: true, exclude: seen });
       seen[sp.id] = 1;
       var mon = buildMon(rng, sp, level + (last ? 1 : 0), {
-        quality: 0.9, ivFloor: 16, hiddenChance: 0.3, shinyOdds: 1 / 100
+        quality: 0.9 - ((opts && opts.ease) || 0), ivFloor: 16, hiddenChance: 0.3, shinyOdds: 1 / 100
       });
       if (last || i < 1) {
         var eStone = last ? megaStoneFor(mon, rng) : null;
@@ -270,12 +270,12 @@
     return { team: team, name: 'Top Vier ' + choice[0], cls: 'Top Vier', type: type, level: 3 };
   }
 
-  function championTeam(rng, level) {
+  function championTeam(rng, level, opts) {
     var champ = rng.pick(CHAMPIONS);
     var team = champ.team.map(function (id, i) {
       var sp = dex.sp(id) || dex.sp('pidgeot');
       var mon = buildMon(rng, sp, level + (i === 5 ? 2 : 0), {
-        quality: 0.9, ivFloor: 20, hiddenChance: 0.5, shinyOdds: 1 / 60
+        quality: 0.9 - ((opts && opts.ease) || 0), ivFloor: 20, hiddenChance: 0.5, shinyOdds: 1 / 60
       });
       var cStone = i === 5 ? megaStoneFor(mon, rng) : null;
       if (cStone) mon.item = cStone;
@@ -326,7 +326,8 @@
     return cur;
   }
 
-  function rivalTeam(rng, rival, level, stage, region) {
+  function rivalTeam(rng, rival, level, stage, region, opts) {
+    var ease = (opts && opts.ease) || 0;
     var size = Math.min(6, 2 + stage);
     var starter = evolveTo(rival.starter, stage >= 2 ? 2 : stage >= 1 ? 1 : 0);
     var pool = encounterPool({ level: level, anyGen: true });
@@ -336,12 +337,12 @@
       var sp = pickEncounter(rng, pool, level, { exclude: seen, rare: stage >= 2 });
       seen[sp.id] = 1;
       team.push(buildMon(rng, sp, level - (i === 0 ? 0 : 1), {
-        quality: 0.75 + stage * 0.05, ivFloor: 8 + stage * 4, hiddenChance: 0.2
+        quality: 0.75 + stage * 0.05 - ease, ivFloor: 8 + stage * 4, hiddenChance: 0.2
       }));
     }
     // Der Starter kommt zuletzt und ist sein Ass.
     var ace = buildMon(rng, starter, level + 1, {
-      quality: 0.9 + stage * 0.02, ivFloor: 16 + stage * 3, hiddenChance: 0.3
+      quality: 0.9 + stage * 0.02 - ease, ivFloor: 16 + stage * 3, hiddenChance: 0.3
     });
     if (stage >= 2) {
       ace.item = megaStoneFor(ace, rng) || rng.pick(['lifeorb', 'focussash', 'leftovers']);
