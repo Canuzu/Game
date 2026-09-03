@@ -100,24 +100,31 @@ const MOVE_SKIP_NS = new Set(['CAP', 'Custom', 'Future', 'Unobtainable']);
 // Attacken, deren Wirkung die Engine nicht sinnvoll nachbildet: bleiben in den
 // Daten (Lernsets zeigen darauf), werden aber nie zufällig vergeben.
 const NO_POOL = new Set([
-  'metronome', 'assist', 'sketch', 'mirrormove', 'copycat', 'naturepower',
-  'transform', 'mefirst', 'sleeptalk', 'bide', 'shadowforce', 'phantomforce',
-  'skydrop', 'bounce', 'dig', 'dive', 'fly', 'solarbeam', 'solarblade',
-  'skullbash', 'skyattack', 'razorwind', 'iceburn', 'freezeshock', 'geomancy',
-  'meteorbeam', 'electroshot', 'futuresight', 'doomdesire', 'lastresort',
-  'naturalgift', 'fling', 'magiccoat', 'snatch', 'allyswitch', 'celebrate',
-  'happyhour', 'holdhands', 'splash', 'teleport', 'roleplay', 'skillswap',
-  'entrainment', 'simplebeam', 'worryseed', 'gastroacid', 'powertrick',
-  'powersplit', 'guardsplit', 'heartswap', 'psychoshift', 'spite', 'grudge',
-  'imprison', 'conversion', 'conversion2', 'camouflage', 'reflecttype',
-  'trickortreat', 'forestscurse', 'magnetrise', 'ingrain', 'aquaring',
-  'lockon', 'mindreader', 'foresight', 'odorsleuth', 'miracleeye',
+  // Attacken, die andere Attacken aufrufen oder Attacken kopieren
+  'assist', 'sketch', 'mirrormove', 'copycat', 'naturepower', 'transform',
+  'mefirst', 'bide', 'mimic',
+  // Zwei-Runden-Attacken mit Sonderbau, die die Engine nicht abbildet
+  'skydrop', 'futuresight', 'doomdesire', 'shelltrap', 'beakblast', 'focuspunch',
+  // Doppelkämpfe, Dynamax oder reine Vorbereitungszüge ohne Wirkung im Einzel
+  'craftyshield', 'matblock', 'quickguard', 'wideguard', 'maxguard', 'allyswitch',
   'followme', 'ragepowder', 'spotlight', 'afteryou', 'quash', 'instruct',
-  'shelltrap', 'beakblast', 'focuspunch', 'auroraveil', 'craftyshield',
-  'matblock', 'quickguard', 'wideguard', 'kingsshield', 'obstruct',
-  'banefulbunker', 'burningbulwark', 'silktrap', 'maxguard', 'struggle',
-  'revivalblessing', 'lunarblessing', 'jungle healing', 'purify', 'floralhealing',
+  'gearup', 'magneticflux', 'flowershield', 'rototiller', 'teatime', 'holdhands',
+  'healpulse', 'lunarblessing', 'floralhealing', 'purify', 'jungle healing',
+  // Nichtstuer und Gimmicks
+  'celebrate', 'happyhour', 'splash', 'teleport', 'lastresort',
+  // Gegenstands- und Typenspielereien ohne Gegenstück in dieser Engine
+  'naturalgift', 'fling', 'magiccoat', 'snatch', 'bestow', 'recycle', 'stuffcheeks',
+  'roleplay', 'skillswap', 'entrainment', 'simplebeam', 'worryseed', 'gastroacid',
+  'doodle', 'magicpowder', 'powertrick', 'powersplit', 'guardsplit', 'heartswap',
+  'psychoshift', 'spite', 'grudge', 'imprison', 'conversion', 'conversion2',
+  'camouflage', 'reflecttype', 'trickortreat', 'forestscurse', 'magnetrise',
+  'ingrain', 'aquaring', 'lockon', 'mindreader', 'foresight', 'odorsleuth',
+  'miracleeye', 'guardswap', 'powerswap', 'speedswap', 'swallow', 'stockpile',
+  'spitup', 'dragoncheer', 'electrify', 'embargo', 'helpinghand', 'powder',
+  'telekinesis',
+  // Signaturattacken ohne Träger im Spiel
   'terastarstorm', 'dynamaxcannon', 'behemothblade', 'behemothbash',
+  'struggle',
 ]);
 
 const moveList = gen.moves.all()

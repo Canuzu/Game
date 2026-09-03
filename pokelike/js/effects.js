@@ -31,6 +31,82 @@
 
   var A = {};
 
+  /* --- Nachgereichte Fähigkeiten -------------------------------------------
+   * Diese standen lange nur im Datenbestand und blieben im Kampf stumm.
+   * ------------------------------------------------------------------------ */
+
+  A.synchronize = {
+    // Gift, Brand und Lähmung gehen an den Verursacher zurück.
+    afterStatus: function (bt, act, status, source) {
+      if (!source || source === act || !/psn|tox|brn|par/.test(status)) return;
+      if (source.mon.status) return;
+      bt.say(bt.name(act) + ' gibt den Zustand zurück!', 'ability', { side: act.side.id });
+      bt.setStatus(source, status === 'tox' ? 'psn' : status, act, null);
+    }
+  };
+
+  A.rivalry = {
+    modBP: function (bt, act, move, target) {   // target = Verteidiger
+      if (!target || !act.mon.gender || !target.mon.gender) return 1;
+      if (act.mon.gender === 'N' || target.mon.gender === 'N') return 1;
+      return act.mon.gender === target.mon.gender ? 1.25 : 0.75;
+    }
+  };
+
+  A.earlybird = { sleepSpeed: 2 };          // schläft doppelt so schnell aus
+  A.magnetpull = { traps: 'Steel' };
+  A.stickyhold = { keepsItem: true };
+  A.suctioncups = { keepsPlace: true };
+  A.klutz = { itemDead: true };
+  A.damp = { blocksBoom: true };
+  A.unseenfist = { ignoresProtect: 'contact' };
+  A.truant = {
+    beforeAction: function (bt, act) {
+      act.vol.truantCount = (act.vol.truantCount || 0) + 1;
+      if (act.vol.truantCount % 2 === 0) {
+        bt.say(bt.name(act) + ' faulenzt!', 'ability', { side: act.side.id });
+        return false;
+      }
+      return true;
+    }
+  };
+  A.stench = {
+    afterMove: function (bt, act, move, target, dealt) {
+      if (!target || !dealt || target.mon.hp <= 0 || move.c === 'T') return;
+      if (bt.rng.chance(0.1)) bt.addVolatile(target, 'flinch', act);
+    }
+  };
+  A.steadfast = {
+    onFlinch: function (bt, act) { bt.boost(act, { spe: 1 }, act); }
+  };
+  A.tangledfeet = {
+    modAccuracyTaken: function (bt, act) { return act.vol.confusion ? 0.5 : 1; }
+  };
+  A.pastelveil = {
+    blockStatus: function (bt, act, s) { return s === 'psn' || s === 'tox'; }
+  };
+  A.merciless = {
+    alwaysCrit: function (bt, act, target) { return !!(target && /psn|tox/.test(target.mon.status || '')); }
+  };
+  A.gluttony = { berryEarly: true };
+  A.ripen = { berryDouble: true };
+  A.cheekpouch = {
+    afterBerry: function (bt, act) { bt.healAct(act, frac(bt, act, 3), false, 'Backentaschen'); }
+  };
+  A.illuminate = { blockLower: function (bt, act, stat) { return stat === 'acc'; } };
+  A.forewarn = {
+    onSwitchIn: function (bt, act, foe) {
+      if (!foe) return;
+      var best = null, i, m;
+      for (i = 0; i < foe.mon.moves.length; i++) {
+        m = dex.move(foe.mon.moves[i].m);
+        if (m && (!best || m.bp > best.bp)) best = m;
+      }
+      if (best) bt.say(bt.name(act) + ' erahnt ' + best.n + '!', 'ability', { side: act.side.id });
+    }
+  };
+
+
   /* --- Angriffsverstärker --- */
   function pinchBoost(type) {
     return { modBP: function (bt, act, move) { return (move.t === type && pinch(bt, act)) ? 1.5 : 1; } };
@@ -556,6 +632,13 @@
 
   var I = {};
 
+  /** Beere verzehren — Backentaschen heilen danach zusätzlich. */
+  function eatBerry(bt, act) {
+    bt.consumeItem(act);
+    var ab = bt.effects.abilities[bt.abilityId(act)];
+    if (ab && ab.afterBerry) ab.afterBerry(bt, act);
+  }
+
   I.leftovers = { onResidual: function (bt, act) { bt.healAct(act, frac(bt, act, 16), false, 'Überreste'); } };
   I.blacksludge = {
     onResidual: function (bt, act) {
@@ -650,15 +733,18 @@
   // Beeren
   I.sitrusberry = {
     onResidual: function (bt, act) {
-      if (bt.hpFraction(act) <= 0.5) {
-        bt.healAct(act, frac(bt, act, 4), false, 'Tsitrubeere');
-        bt.consumeItem(act);
+      if (bt.hpFraction(act) <= bt.berryThreshold(act, 0.5)) {
+        bt.healAct(act, bt.berryAmount(act, frac(bt, act, 4)), false, 'Tsitrubeere');
+        eatBerry(bt, act);
       }
     }
   };
   I.oranberry = {
     onResidual: function (bt, act) {
-      if (bt.hpFraction(act) <= 0.5) { bt.healAct(act, 10, false, 'Amrenabeere'); bt.consumeItem(act); }
+      if (bt.hpFraction(act) <= bt.berryThreshold(act, 0.5)) {
+        bt.healAct(act, bt.berryAmount(act, 10), false, 'Amrenabeere');
+        eatBerry(bt, act);
+      }
     }
   };
   I.lumberry = {
@@ -813,6 +899,7 @@
   M.knockoff = {
     bp: function (bt, a, d) { return d.item ? 97 : 65; },
     onHit: function (bt, a, d, move, total) {
+      if (holdsTight(bt, d)) { bt.say(bt.name(d) + ' hält seinen Gegenstand fest.', 'ability', { side: d.side.id }); return; }
       if (total > 0 && d.item && d.mon.hp > 0) {
         bt.say(bt.name(d) + ' verliert ' + PL.items.label(d.item) + '!', 'item', { side: d.side.id });
         d.item = null; d.mon.item = null;
@@ -981,6 +1068,14 @@
     }
   };
   M.explosion = {
+    beforeMove: function (bt, a, d) {
+      var ab = d && bt.effects.abilities[bt.abilityId(d)];
+      if (ab && ab.blocksBoom) {
+        bt.say(bt.name(d) + ' erstickt die Explosion!', 'ability', { side: d.side.id });
+        return false;
+      }
+      return true;
+    },
     onHit: function (bt, a) {
       bt.say(bt.name(a) + ' opfert sich!', 'text', { side: a.side.id });
       bt.damage(a, a.mon.hp, { ignoreSub: true, trueDamage: true });
@@ -994,8 +1089,15 @@
       bt.damage(a, a.mon.hp, { ignoreSub: true, trueDamage: true });
     }
   };
+  /** Klebehülle & Co.: der Gegenstand lässt sich nicht abnehmen. */
+  function holdsTight(bt, act) {
+    var ab = act && bt.effects.abilities[bt.abilityId(act)];
+    return !!(ab && ab.keepsItem);
+  }
+
   M.trick = {
     onHit: function (bt, a, d) {
+      if (holdsTight(bt, d)) { bt.say(bt.name(d) + ' hält seinen Gegenstand fest.', 'ability', { side: d.side.id }); return; }
       var tmp = a.item;
       a.item = d.item; a.mon.item = d.item;
       d.item = tmp; d.mon.item = tmp;
@@ -1030,6 +1132,196 @@
   M.focusenergy = { onHit: function (bt, a) { a.vol.focusenergy = true; } };
   M.aquaring = { onHit: function (bt, a) { a.vol.aquaring = true; } };
   M.struggle = { mod: function () { return 1; } };
+
+  /* --- Zwei-Runden- und Sonderattacken, die eigene Regeln brauchen ---------- */
+
+  // Auroraschleier hält nur, solange Schnee oder Hagel liegt.
+  M.auroraveil = {
+    beforeMove: function (bt) {
+      var w = bt.weatherActive();
+      if (w === 'snowscape' || w === 'hail') return true;
+      bt.say('Dafür müsste es schneien.', 'text', {});
+      return false;
+    }
+  };
+
+  // Heilattacken, deren Menge vom Wetter abhängt. Die Engine kennt die
+  // Sonderfälle schon — hier fehlt nur der Anstoß, weil die Daten kein
+  // festes Heilmaß mitbringen.
+  function weatherHeal(kind) {
+    return {
+      onHit: function (bt, a) {
+        var w = bt.weatherActive(), max = bt.maxHP(a), amount;
+        if (kind === 'sand') amount = (w === 'sandstorm') ? Math.floor(max * 2 / 3) : Math.floor(max / 2);
+        else if (w === 'sunnyday') amount = Math.floor(max * 2 / 3);
+        else if (w) amount = Math.floor(max / 4);
+        else amount = Math.floor(max / 2);
+        if (a.mon.hp >= max) { bt.say('Es klappt nicht — die KP sind bereits voll.', 'text', {}); return; }
+        bt.healAct(a, amount, false, 'Erholung');
+      }
+    };
+  }
+  M.synthesis = weatherHeal('sun');
+  M.moonlight = weatherHeal('sun');
+  M.morningsun = weatherHeal('sun');
+  M.shoreup = weatherHeal('sand');
+
+  M.strengthsap = {
+    onHit: function (bt, a, d) {
+      var amount = bt.statOf(d, 'atk');
+      if (bt.boost(d, { atk: -1 }, a) <= 0) { bt.say('Es klappt nicht.', 'text', {}); return; }
+      bt.healAct(a, amount, false, 'Kraftabsauger');
+    }
+  };
+
+  M.refresh = {
+    onHit: function (bt, a) {
+      if (!a.mon.status) { bt.say('Es ist nichts passiert.', 'text', {}); return; }
+      bt.cureStatus(a);
+      bt.say(bt.name(a) + ' fühlt sich wieder wohl.', 'heal', { side: a.side.id });
+    }
+  };
+
+  M.psychup = {
+    onHit: function (bt, a, d) {
+      var k, copied = false;
+      for (k in d.boosts) if (d.boosts[k] !== a.boosts[k]) { a.boosts[k] = d.boosts[k]; copied = true; }
+      bt.say(copied ? bt.name(a) + ' kopiert die Statusveränderungen!' : 'Es ist nichts passiert.',
+        'boost', { side: a.side.id });
+    }
+  };
+
+  M.topsyturvy = {
+    onHit: function (bt, a, d) {
+      var k, any = false;
+      for (k in d.boosts) if (d.boosts[k]) { d.boosts[k] = -d.boosts[k]; any = true; }
+      bt.say(any ? bt.name(d) + ': Alle Veränderungen kehren sich um!' : 'Es ist nichts passiert.',
+        'boost', { side: d.side.id });
+    }
+  };
+
+  M.soak = {
+    onHit: function (bt, a, d) {
+      if (d.types.length === 1 && d.types[0] === 'Water') { bt.say('Es ist nichts passiert.', 'text', {}); return; }
+      d.types = ['Water'];
+      bt.say(bt.name(d) + ' wird zum Wasser-Pokémon!', 'text', { side: d.side.id });
+    }
+  };
+
+  function trap(name) {
+    return {
+      onHit: function (bt, a, d) {
+        if (d.vol.trapped) { bt.say('Es ist nichts passiert.', 'text', {}); return; }
+        d.vol.trapped = true;
+        bt.say(bt.name(d) + ' kann nicht mehr fliehen!', 'text', { side: d.side.id });
+      }
+    };
+  }
+  M.block = trap();
+  M.meanlook = trap();
+  M.spiderweb = trap();
+
+  M.acupressure = {
+    onHit: function (bt, a) {
+      var open = PL.battleInternals.BOOSTABLE.filter(function (k) { return (a.boosts[k] || 0) < 6; });
+      if (!open.length) { bt.say('Es ist nichts passiert.', 'text', {}); return; }
+      var pick = open[bt.rng.int(open.length)], b = {};
+      b[pick] = 2;
+      bt.boost(a, b, a);
+    }
+  };
+
+  M.venomdrench = {
+    onHit: function (bt, a, d) {
+      if (!/psn|tox/.test(d.mon.status || '')) { bt.say('Es klappt nicht.', 'text', {}); return; }
+      bt.boost(d, { atk: -1, spa: -1, spe: -1 }, a);
+    }
+  };
+
+  M.takeheart = {
+    onHit: function (bt, a) {
+      if (a.mon.status) bt.cureStatus(a);
+      bt.boost(a, { spa: 1, spd: 1 }, a);
+    }
+  };
+
+  M.tidyup = {
+    onHit: function (bt, a) {
+      [bt.sides[0], bt.sides[1]].forEach(function (side) {
+        side.hazards.stealthrock = 0;
+        side.hazards.spikes = 0;
+        side.hazards.toxicspikes = 0;
+        side.hazards.stickyweb = 0;
+      });
+      [a, a.side.other.active].forEach(function (act) { if (act) delete act.vol.substitute; });
+      bt.say('Das Feld wird aufgeräumt!', 'side', {});
+      bt.boost(a, { atk: 1, spe: 1 }, a);
+    }
+  };
+
+  M.courtchange = {
+    onHit: function (bt) {
+      var a = bt.sides[0], b = bt.sides[1], h = a.hazards, sc = a.screens;
+      a.hazards = b.hazards; b.hazards = h;
+      a.screens = b.screens; b.screens = sc;
+      bt.say('Die Seiten werden getauscht!', 'side', {});
+    }
+  };
+
+  // Attacken, die selbst wieder Attacken aufrufen — sonst dreht sich das im Kreis.
+  var CALLER_SKIP = {
+    metronome: 1, sleeptalk: 1, assist: 1, copycat: 1, mefirst: 1, mirrormove: 1,
+    naturepower: 1, sketch: 1, transform: 1, struggle: 1, revivalblessing: 1
+  };
+  // Zwei-Runden-Attacken taugen nicht als Zufallsgriff — sie blieben hängen.
+  var M_CHARGE = {
+    fly: 1, dig: 1, dive: 1, bounce: 1, phantomforce: 1, shadowforce: 1, skydrop: 1,
+    solarbeam: 1, solarblade: 1, razorwind: 1, skullbash: 1, skyattack: 1,
+    freezeshock: 1, iceburn: 1, meteorbeam: 1, electroshot: 1, geomancy: 1,
+    futuresight: 1, doomdesire: 1, bide: 1
+  };
+
+  // Schlafrede: greift blind auf eine der übrigen Attacken zurück.
+  M.sleeptalk = {
+    beforeMove: function (bt, a) {
+      if (a.mon.status !== 'slp') { bt.say('Es klappt nur im Schlaf.', 'text', {}); return false; }
+      return true;
+    },
+    onHit: function (bt, a) {
+      var usable = a.mon.moves.filter(function (mv) {
+        var m = dex.move(mv.m);
+        return m && m.id !== 'sleeptalk' && !CALLER_SKIP[m.id] && !M_CHARGE[m.id];
+      });
+      if (!usable.length) { bt.say('Es ist nichts passiert.', 'text', {}); return; }
+      var pick = dex.move(usable[bt.rng.int(usable.length)].m);
+      bt.useMove(a, { move: pick }, { free: true, locked: true, forced: true });
+    }
+  };
+
+  // Metronom: irgendeine Attacke aus dem gesamten Vorrat.
+  M.metronome = {
+    onHit: function (bt, a) {
+      var pool = dex.moves.filter(function (m) {
+        return !m.np && !CALLER_SKIP[m.id] && !M_CHARGE[m.id] && m.id !== 'metronome';
+      });
+      var pick = pool[bt.rng.int(pool.length)];
+      bt.say('Der Finger zeigt auf ' + pick.n + '!', 'text', { side: a.side.id });
+      bt.useMove(a, { move: pick }, { free: true, locked: true, forced: true });
+    }
+  };
+
+  // Wiederbelebung: holt ein besiegtes Teammitglied mit halben KP zurück.
+  M.revivalblessing = {
+    onHit: function (bt, a) {
+      var team = a.side.team, i, fallen = [];
+      for (i = 0; i < team.length; i++) if (team[i].hp <= 0) fallen.push(team[i]);
+      if (!fallen.length) { bt.say('Es ist niemand da, der zurückkäme.', 'text', {}); return; }
+      var mon = fallen[0];
+      mon.hp = Math.max(1, Math.floor(PL.mon.maxHP(mon) / 2));
+      mon.status = null;
+      bt.say(PL.mon.name(mon) + ' kehrt zurück!', 'heal', { side: a.side.id });
+    }
+  };
 
   /* ---------- Ausgabe ------------------------------------------------------- */
 

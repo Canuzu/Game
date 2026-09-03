@@ -63,9 +63,33 @@ Generation 5, Volltreffer, Zufallsstreuung, STAB, Typentabelle, Statusprobleme
 (Verbrennung, Paralyse, Gift, schweres Gift, Schlaf, Eis), Statusstufen,
 Verwirrung, Delegator, Schutzschild, Egelsamen, Wetter, Felder, Tarnsteine und
 Stachler, Lichtschild und Reflektor, Prioritäten, Mehrfachtreffer, Rückstoß,
-Absorption, Wahl-Gegenstände, Beeren — dazu **201 Fähigkeiten**, **82
-Tragegegenstände** und **87 Attacken mit Sonderregeln** (Bodycheck, Fassade,
+Absorption, Wahl-Gegenstände, Beeren — dazu **221 Fähigkeiten**, **82
+Tragegegenstände** und **109 Attacken mit Sonderregeln** (Bodycheck, Fassade,
 Abschlag, Konter, Bauchtrommel, Turbodreher, Auflockern …).
+
+Auch die kniffligen Fälle sind dabei:
+
+* **Zwei-Runden-Attacken** — Solarstrahl, Turbotempo, Himmelsfeger und die
+  übrigen laden erst auf und schlagen dann ein. In der Sonne (Solarstrahl,
+  Solarklinge) oder im Regen (Elektroschuss) entfällt das Laden, ebenso mit
+  der Kraftherb.
+* **Unangreifbarkeit** — wer fliegt, taucht, sich eingräbt oder verschwindet,
+  ist eine Runde lang nicht zu treffen. Nur die richtigen Gegenmittel
+  erwischen ihn: Erdbeben den Eingegrabenen (mit doppelter Wucht), Surfer den
+  Abgetauchten, Donner und Orkan den Fliegenden.
+* **Schutzschilde mit Nachspiel** — Bissige Dornen, Bunker, Brandwehr,
+  Königsschild, Blockade und Fadenfalle blocken wie Schutzschild, geben dem
+  Angreifer aber etwas mit: Schaden, Gift, Brand oder gesenkte Werte. Und
+  Königsschild, Blockade und Fadenfalle halten nur Angriffe auf, keine
+  Statusattacken.
+* **Aufrufende Attacken** — Metronom greift blind in den ganzen Vorrat,
+  Schlafrede spielt im Schlaf eine der eigenen Attacken. Beide zählen den
+  Schlaf nicht doppelt herunter und geraten nicht in Endlosschleifen.
+* **Auroraschleier** liegt nur bei Schnee oder Hagel, **Wiederbelebung** holt
+  ein gefallenes Teammitglied mit halben KP zurück, **Seitenwechsel** schiebt
+  Tarnsteine und Schilde auf die andere Feldhälfte.
+* **Zustände, die wirklich beißen** — Anziehung, Folterknecht, Heilblockade,
+  Albtraum, Klammergriff, Zielschuss, Ladung, Bodycheck und Teerschuss.
 
 **Mega-Entwicklung** — 48 Pokémon haben eine Mega-Form (dazu die Protoformen
 von Kyogre und Groudon). Einmal pro Kampf, mit dem passenden Stein; Rayquaza

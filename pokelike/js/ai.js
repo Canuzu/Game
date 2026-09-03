@@ -74,6 +74,10 @@
   var HAZARD = /stealthrock|spikes|toxicspikes|stickyweb/;
   var SCREEN = /reflect|lightscreen|auroraveil|tailwind|safeguard/;
 
+  // Attacken, die erst aufladen. Wer schon lädt, hat keine Wahl mehr — dann
+  // zählt die volle Wirkung; sonst wird die verlorene Runde eingepreist.
+  var TWO_TURN = /^(solarbeam|solarblade|razorwind|skullbash|skyattack|freezeshock|iceburn|meteorbeam|electroshot|geomancy|fly|bounce|dig|dive|phantomforce|shadowforce)$/;
+
   function scoreMove(bt, me, foe, entry, level) {
     var move = entry.move, s = 0;
     if (entry.disabled) return -1e9;
@@ -92,6 +96,14 @@
       }
       if (move.fl && move.fl.indexOf('recharge') >= 0 && dmg < foeHP) s -= 30;
       if (move.rc) s -= 8;
+      if (TWO_TURN.test(move.id) && !me.vol.twoturn) {
+        // Die Ladephase kostet eine Runde. Sie lohnt nur, wenn sie ungefährlich
+        // ist — bei Deckung (Fliegen, Schaufler) weniger schmerzhaft.
+        var hides = /^(fly|bounce|dig|dive|phantomforce|shadowforce)$/.test(move.id);
+        if (bt.weatherActive() === 'sunnyday' && /^solar/.test(move.id)) s += 0;
+        else if (bt.weatherActive() === 'raindance' && move.id === 'electroshot') s += 0;
+        else s -= hides ? 25 : 55;
+      }
       if (move.ss && myHP < 0.4) s += 10;
       return s;
     }
@@ -124,14 +136,25 @@
       var enemyLeft = foe ? foe.side.team.filter(function (m) { return m.hp > 0; }).length : 1;
       return enemyLeft >= 3 ? 60 : enemyLeft === 2 ? 35 : -10;
     }
+    if (id === 'auroraveil') return /snowscape|hail/.test(bt.weatherActive() || '') ? 55 : -60;
     if (SCREEN.test(id)) return me.turnsActive === 0 ? 45 : 25;
-    if (id === 'protect' || id === 'detect') {
+    if (/^(protect|detect|spikyshield|banefulbunker|burningbulwark|kingsshield|obstruct|silktrap)$/.test(id)) {
       if (me.protectStreak > 0) return -30;
       if (me.mon.status === 'tox' || (foe && foe.mon.status === 'tox')) return 30;
       return danger > 0.8 ? 30 : 5;
     }
     if (id === 'substitute') return (myHP > 0.6 && danger < 0.4) ? 45 : -10;
     if (id === 'leechseed') return (foe && !foe.vol.leechseed && foe.types.indexOf('Grass') < 0) ? 55 : -40;
+    if (id === 'sleeptalk') return me.mon.status === 'slp' ? 70 : -80;
+    if (id === 'revivalblessing') {
+      return me.side.team.some(function (m) { return m.hp <= 0; }) ? 80 : -80;
+    }
+    if (id === 'courtchange') {
+      var mine = me.side.hazards, theirs = me.side.other.hazards;
+      var mineN = mine.stealthrock + mine.spikes + mine.toxicspikes + mine.stickyweb;
+      var theirN = theirs.stealthrock + theirs.spikes + theirs.toxicspikes + theirs.stickyweb;
+      return mineN > theirN ? 60 : -30;
+    }
     if (id === 'taunt') return 30;
     if (id === 'trick' || id === 'switcheroo') return me.item ? 25 : -20;
     if (id === 'defog' || id === 'rapidspin') {

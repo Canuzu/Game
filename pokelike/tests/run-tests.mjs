@@ -699,6 +699,187 @@ section('Spielstand sichern');
   delete globalThis.localStorage;
 }
 
+section('Engine-Lücken');
+{
+  const rng = PL.rng('luecken');
+  const mk = (id, lvl, moves) => {
+    const m = PL.mon.create(id, lvl || 50, rng, { quality: 0.9, ivs: [20, 20, 20, 20, 20, 20], nature: 'Hardy' });
+    if (moves) m.moves = moves.map((n) => ({ m: dex.move(n).i, pp: dex.move(n).pp, ppUp: 0, used: 0 }));
+    return m;
+  };
+  const duel = (mine, foe, seed) =>
+    new PL.Battle({ teams: [[mine], [foe]], rng: PL.rng(seed || 'duell') });
+
+  // --- Zwei Runden: erst laden, dann treffen ---
+  {
+    const bt = duel(mk('venusaur', 50, ['solarbeam']), mk('snorlax', 50, ['splash']));
+    bt.start();
+    const max = bt.sides[1].active.stats[0];
+    bt.runTurn([{ type: 'move', index: 0 }, { type: 'move', index: 0 }]);
+    eq('Solarstrahl schlägt in der ersten Runde noch nicht ein', bt.sides[1].active.mon.hp, max);
+    check('… sondern lädt auf', !!bt.sides[0].active.vol.twoturn);
+    eq('… und kostet nur einmal AP', bt.sides[0].active.mon.moves[0].pp, dex.move('solarbeam').pp - 1);
+    bt.runTurn([{ type: 'move', index: 0 }, { type: 'move', index: 0 }]);
+    check('In der zweiten Runde trifft er', bt.sides[1].active.mon.hp < max);
+    eq('… ohne noch einmal AP zu kosten', bt.sides[0].active.mon.moves[0].pp, dex.move('solarbeam').pp - 1);
+  }
+  {
+    // In der Sonne entfällt die Ladephase
+    const bt = duel(mk('venusaur', 50, ['solarbeam']), mk('snorlax', 50, ['splash']));
+    bt.start();
+    bt.field.weather = 'sunnyday';
+    bt.field.weatherTurns = 5;
+    const max = bt.sides[1].active.stats[0];
+    bt.runTurn([{ type: 'move', index: 0 }, { type: 'move', index: 0 }]);
+    check('In der Sonne schlägt Solarstrahl sofort ein', bt.sides[1].active.mon.hp < max);
+  }
+
+  // --- Unangreifbarkeit ---
+  {
+    const bt = duel(mk('pidgeot', 50, ['fly']), mk('snorlax', 50, ['tackle']));
+    bt.start();
+    const myMax = bt.sides[0].active.stats[0];
+    bt.runTurn([{ type: 'move', index: 0 }, { type: 'move', index: 0 }]);
+    eq('Wer hochfliegt, ist mit Tackle nicht zu treffen', bt.sides[0].active.mon.hp, myMax);
+    eq('… und gilt als unangreifbar', bt.sides[0].active.vol.invuln, 'air');
+    bt.runTurn([{ type: 'move', index: 0 }, { type: 'move', index: 0 }]);
+    check('Nach dem Sturzflug ist die Deckung wieder weg', !bt.sides[0].active.vol.invuln);
+  }
+  {
+    const bt = duel(mk('sandslash', 50, ['dig']), mk('golem', 50, ['earthquake']));
+    bt.start();
+    const myMax = bt.sides[0].active.stats[0];
+    bt.runTurn([{ type: 'move', index: 0 }, { type: 'move', index: 0 }]);
+    check('Erdbeben erwischt einen Eingegrabenen trotzdem', bt.sides[0].active.mon.hp < myMax);
+  }
+
+  // --- Schutzschilde mit Nachspiel ---
+  {
+    const bt = duel(mk('chesnaught', 50, ['spikyshield']), mk('machamp', 50, ['closecombat']));
+    bt.start();
+    const foeMax = bt.sides[1].active.stats[0], myMax = bt.sides[0].active.stats[0];
+    bt.runTurn([{ type: 'move', index: 0 }, { type: 'move', index: 0 }]);
+    eq('Der Schutzschild hält den Angriff ab', bt.sides[0].active.mon.hp, myMax);
+    check('Bissige Dornen setzen dem Angreifer zu', bt.sides[1].active.mon.hp < foeMax);
+  }
+  {
+    const bt = duel(mk('aegislash', 50, ['kingsshield']), mk('machamp', 50, ['closecombat']));
+    bt.start();
+    bt.runTurn([{ type: 'move', index: 0 }, { type: 'move', index: 0 }]);
+    eq('Königsschild senkt den Angriff des Gegners', bt.sides[1].active.boosts.atk, -1);
+  }
+  {
+    // Statusattacken kommen am Königsschild vorbei
+    const bt = duel(mk('aegislash', 50, ['kingsshield']), mk('machamp', 50, ['growl']));
+    bt.start();
+    bt.runTurn([{ type: 'move', index: 0 }, { type: 'move', index: 0 }]);
+    eq('Statusattacken hält der Königsschild nicht auf', bt.sides[0].active.boosts.atk, -1);
+  }
+
+  // --- Auroraschleier braucht Schnee ---
+  {
+    const bt = duel(mk('ninetalesalola', 50, ['auroraveil']), mk('snorlax', 50, ['splash']));
+    bt.start();
+    bt.runTurn([{ type: 'move', index: 0 }, { type: 'move', index: 0 }]);
+    eq('Ohne Schnee kein Auroraschleier', bt.sides[0].screens.auroraveil || 0, 0);
+    bt.field.weather = 'snowscape';
+    bt.field.weatherTurns = 5;
+    bt.runTurn([{ type: 'move', index: 0 }, { type: 'move', index: 0 }]);
+    check('Im Schnee legt er sich über das Feld', bt.sides[0].screens.auroraveil > 0);
+  }
+
+  // --- Aufrufende Attacken ---
+  {
+    const bt = duel(mk('clefable', 50, ['metronome']), mk('snorlax', 50, ['splash']));
+    bt.start();
+    bt.runTurn([{ type: 'move', index: 0 }, { type: 'move', index: 0 }]);
+    check('Metronom zeigt auf irgendeine Attacke',
+      bt.log.some((e) => /Der Finger zeigt auf/.test(e.s || '')));
+  }
+  {
+    const mine = mk('snorlax', 50, ['sleeptalk', 'bodyslam']);
+    const bt = duel(mine, mk('gengar', 50, ['splash']));
+    bt.start();
+    bt.setStatus(bt.sides[0].active, 'slp', null, null, true);
+    bt.sides[0].active.mon.slp = 3;
+    const before = bt.sides[0].active.mon.slp;
+    bt.runTurn([{ type: 'move', index: 0 }, { type: 'move', index: 1 }]);
+    check('Schlafrede greift im Schlaf auf eine Attacke zurück',
+      bt.log.some((e) => /Body Slam/.test(e.s || '')));
+    eq('… und der Schlaf zählt dabei nur einmal herunter', bt.sides[0].active.mon.slp, before - 1);
+  }
+
+  // --- Wiederbelebung ---
+  {
+    const fallen = mk('pikachu', 50, ['thunderbolt']);
+    fallen.hp = 0;
+    const bt = new PL.Battle({
+      teams: [[mk('pecharunt', 50, ['revivalblessing']), fallen], [mk('snorlax', 50, ['splash'])]],
+      rng: PL.rng('revive')
+    });
+    bt.start();
+    bt.runTurn([{ type: 'move', index: 0 }, { type: 'move', index: 0 }]);
+    check('Wiederbelebung holt ein besiegtes Teammitglied zurück', fallen.hp > 0);
+  }
+
+  // --- Seitenwechsel ---
+  {
+    const bt = duel(mk('cinderace', 50, ['courtchange']), mk('snorlax', 50, ['splash']));
+    bt.start();
+    bt.sides[0].hazards.stealthrock = 1;
+    bt.runTurn([{ type: 'move', index: 0 }, { type: 'move', index: 0 }]);
+    eq('Seitenwechsel schiebt die Tarnsteine hinüber', bt.sides[1].hazards.stealthrock, 1);
+    eq('… und die eigene Seite ist frei', bt.sides[0].hazards.stealthrock, 0);
+  }
+
+  // --- Nachgereichte Fähigkeiten ---
+  {
+    const foe = mk('slaking', 50, ['tackle']);
+    const bt = duel(mk('snorlax', 50, ['splash']), foe);
+    bt.start();
+    const myMax = bt.sides[0].active.stats[0];
+    bt.runTurn([{ type: 'move', index: 0 }, { type: 'move', index: 0 }]);
+    const afterFirst = bt.sides[0].active.mon.hp;
+    bt.runTurn([{ type: 'move', index: 0 }, { type: 'move', index: 0 }]);
+    check('Faultier faulenzt jede zweite Runde',
+      bt.abilityId(bt.sides[1].active) !== 'truant' || bt.sides[0].active.mon.hp === afterFirst,
+      'HP ' + myMax + ' → ' + afterFirst + ' → ' + bt.sides[0].active.mon.hp);
+  }
+  {
+    const bt = duel(mk('umbreon', 50, ['splash']), mk('alakazam', 50, ['toxic']));
+    bt.start();
+    bt.sides[0].active.ability = 'synchronize';
+    bt.runTurn([{ type: 'move', index: 0 }, { type: 'move', index: 0 }]);
+    check('Synchro gibt die Vergiftung zurück',
+      /psn|tox/.test(bt.sides[1].active.mon.status || ''), String(bt.sides[1].active.mon.status));
+  }
+  {
+    // Heilblockade unterbindet jede Heilung
+    const bt = duel(mk('blissey', 50, ['softboiled']), mk('gengar', 50, ['healblock']));
+    bt.start();
+    bt.sides[0].active.mon.hp = 50;
+    bt.runTurn([{ type: 'move', index: 0 }, { type: 'move', index: 0 }]);
+    eq('Wer blockiert ist, heilt sich nicht', bt.sides[0].active.mon.hp, 50);
+  }
+
+  // Kein Zustand aus dem Datenbestand bleibt mehr stumm
+  {
+    const known = new Set(['confusion', 'substitute', 'leechseed', 'partiallytrapped', 'taunt',
+      'encore', 'disable', 'yawn', 'curse', 'flinch', 'lockedmove', 'protect', 'detect',
+      'spikyshield', 'banefulbunker', 'burningbulwark', 'kingsshield', 'obstruct', 'silktrap',
+      'destinybond', 'endure', 'focusenergy', 'aquaring', 'saltcure', 'mustrecharge',
+      'attract', 'torment', 'healblock', 'nightmare', 'octolock', 'laserfocus', 'charge',
+      'smackdown', 'tarshot']);
+    const mute = dex.moves.filter((m) => {
+      if (m.np || PL.effects.moves[m.id] || m.c !== 'T') return false;
+      return m.vs && !known.has(m.vs) &&
+        !(m.st || m.bo || m.w || m.tr || m.sc || m.slc || m.hl || m.ss || m.fs || m.pw);
+    });
+    check('Keine Statusattacke im Pool bleibt wirkungslos', mute.length === 0,
+      mute.map((m) => m.id).join(', '));
+  }
+}
+
 section('Momente');
 {
   await import('../js/moments.js');

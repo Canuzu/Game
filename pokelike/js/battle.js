@@ -164,6 +164,8 @@
     return act.vol.abilitysuppressed ? '' : act.ability;
   };
   B.itemOf = function (act) {
+    var ab = act && this.effects.abilities[this.abilityId(act)];
+    if (ab && ab.itemDead) return null;
     if (!act.item || act.vol.itemsuppressed) return null;
     return this.effects.items[PL.util.toID(act.item)] || null;
   };
@@ -353,6 +355,10 @@
 
   B.healAct = function (act, amount, silent, reason) {
     if (act.mon.hp <= 0 || this.simulating) return 0;
+    if (act.vol.healblock) {
+      if (!silent) this.say(this.name(act) + ' kann sich nicht heilen!', 'text', { side: act.side.id });
+      return 0;
+    }
     var max = act.stats[0], before = act.mon.hp;
     act.mon.hp = Math.min(max, act.mon.hp + Math.max(1, Math.floor(amount)));
     var got = act.mon.hp - before;
@@ -361,6 +367,18 @@
         s: this.name(act) + ' erholt sich' + (reason ? ' (' + reason + ')' : '') + '.' });
     }
     return got;
+  };
+
+  /** Beere: Menge je nach Fähigkeit, danach Heilung durch Backentaschen. */
+  B.berryAmount = function (act, amount) {
+    var ab = this.effects.abilities[this.abilityId(act)];
+    return (ab && ab.berryDouble) ? amount * 2 : amount;
+  };
+
+  /** Ab wann eine Notfallbeere anspricht — Munterkeit greift früher. */
+  B.berryThreshold = function (act, normal) {
+    var ab = this.effects.abilities[this.abilityId(act)];
+    return (ab && ab.berryEarly) ? Math.max(normal, 0.5) : normal;
   };
 
   B.consumeItem = function (act) {
@@ -384,6 +402,7 @@
 
   /** Typenfaktor unter Berücksichtigung von Sonderregeln. */
   B.effectiveness = function (moveType, target, move, attacker) {
+    var tarshot = (target && target.vol.tarshot && moveType === 'Fire') ? 2 : 1;
     var types = target.types, m = 1, k, e;
     for (k = 0; k < types.length; k++) {
       e = dex.raw.chart[moveType] ? dex.raw.chart[moveType][types[k]] : 1;
@@ -398,6 +417,7 @@
       }
       m *= e;
     }
+    m *= tarshot;
     if (m > 1 && this.abilityId(target) === 'wonderguard') return m;
     return m;
   };
@@ -406,6 +426,7 @@
     var s = 0;
     if (move.cr) s += (move.cr - 1);
     if (act.vol.focusenergy) s += 2;
+    if (act.vol.laserfocus) s += 3;                  // Zielschuss: sicherer Volltreffer
     if (this.abilityId(act) === 'superluck') s += 1;
     if (act.item === 'scopelens' || act.item === 'razorclaw') s += 1;
     if (act.side.isPlayer && this.relicMod('luck')) s += 1;
@@ -431,6 +452,9 @@
 
     var bp = move.bp;
     if (ov.bp) bp = ov.bp(this, atk, def, move) || bp;
+    // Erdbeben trifft einen Eingegrabenen doppelt, Surfer einen Abgetauchten.
+    if (def.vol.invuln && TOUCHES[def.vol.invuln][move.id] === 2) bp *= 2;
+    if (atk.vol.charge && moveType === 'Electric') bp *= 2;
     bp = Math.floor(bp * this.collect(atk, 'modBP', [move, def, moveType]));
     bp = Math.floor(bp * this.collect(def, 'modBPTaken', [move, atk, moveType]));
     if (this.abilityId(atk) === 'technician' && bp <= 60) bp = Math.floor(bp * 1.5);
@@ -451,7 +475,9 @@
 
     var crit = false;
     if (!opts.noCrit) {
+      var atkAb = this.effects.abilities[this.abilityId(atk)];
       if (move.wc) crit = true;
+      else if (atkAb && atkAb.alwaysCrit && atkAb.alwaysCrit(this, atk, def)) crit = true;
       else if (this.abilityId(def) === 'battlearmor' || this.abilityId(def) === 'shellarmor') crit = false;
       else crit = this.rng.next() < CRIT_CHANCE[Math.min(4, this.critStage(atk, move))];
     }
@@ -520,10 +546,60 @@
   };
 
   /** Kann das Pokémon diese Runde überhaupt handeln? */
+  /* ---------- Zwei-Runden-Attacken ------------------------------------------
+   * Erst laden, dann schlagen. `hide` macht das Pokémon in der Ladephase
+   * unangreifbar — nur die unter TOUCHES aufgeführten Attacken erwischen es
+   * dort, und die meisten davon mit doppelter Wucht.
+   * ------------------------------------------------------------------------ */
+
+  var CHARGE = {
+    razorwind:  { text: ' erzeugt einen Wirbelsturm!' },
+    skullbash:  { text: ' zieht den Kopf ein!', boost: { def: 1 } },
+    skyattack:  { text: ' hüllt sich in gleißendes Licht!' },
+    solarbeam:  { text: ' sammelt Licht!', skip: 'sunnyday' },
+    solarblade: { text: ' sammelt Licht!', skip: 'sunnyday' },
+    freezeshock: { text: ' lädt sich elektrisch auf!' },
+    iceburn:    { text: ' hüllt sich in eisige Kälte!' },
+    meteorbeam: { text: ' sammelt Weltraumkraft!', boost: { spa: 1 } },
+    electroshot: { text: ' sammelt Elektrizität!', boost: { spa: 1 }, skip: 'raindance' },
+    geomancy:   { text: ' sammelt Energie!' },
+    fly:         { text: ' fliegt hoch hinauf!', hide: 'air' },
+    bounce:      { text: ' springt hoch hinauf!', hide: 'air' },
+    dig:         { text: ' gräbt sich ein!', hide: 'under' },
+    dive:        { text: ' taucht ab!', hide: 'water' },
+    phantomforce: { text: ' verschwindet!', hide: 'gone' },
+    shadowforce:  { text: ' verschwindet!', hide: 'gone' }
+  };
+
+  // Was ein unangreifbares Ziel trotzdem trifft — und ob mit doppelter Wucht.
+  var TOUCHES = {
+    air:   { gust: 2, twister: 2, thunder: 1, hurricane: 1, skyuppercut: 1, smackdown: 1, thousandarrows: 1 },
+    under: { earthquake: 2, magnitude: 2, fissure: 1 },
+    water: { surf: 2, whirlpool: 2 },
+    gone:  {}
+  };
+
+  /* ---------- Schutzschilde --------------------------------------------------
+   * Alle Spielarten laufen über dieselbe Mechanik; sie unterscheiden sich nur
+   * darin, was dem Angreifer danach zustößt und ob Statusattacken durchkommen.
+   * ------------------------------------------------------------------------ */
+
+  var SHIELDS = {
+    protect: {},
+    detect: {},
+    spikyshield:   { contact: true, chip: 8 },
+    banefulbunker: { contact: true, status: 'psn' },
+    burningbulwark: { contact: true, status: 'brn' },
+    kingsshield:   { contact: true, boosts: { atk: -1 }, damagingOnly: true },
+    obstruct:      { contact: true, boosts: { def: -2 }, damagingOnly: true },
+    silktrap:      { contact: true, boosts: { spe: -1 }, damagingOnly: true }
+  };
+
   B.canAct = function (act, move) {
     if (act.mon.hp <= 0) return false;
     if (act.vol.flinch) {
       this.say(this.name(act) + ' zuckt zurück!', 'flinch', { side: act.side.id });
+      this.hook(act, 'onFlinch', []);
       return false;
     }
     if (act.vol.mustrecharge) {
@@ -532,7 +608,8 @@
       return false;
     }
     if (act.mon.status === 'slp') {
-      if (act.mon.slp > 0) act.mon.slp--;
+      var ab = this.abilityOf(act);
+      if (act.mon.slp > 0) act.mon.slp -= (ab && ab.sleepSpeed) || 1;
       if (act.mon.slp <= 0) {
         this.cureStatus(act);
         this.say(this.name(act) + ' wacht auf!', 'text', { side: act.side.id });
@@ -547,6 +624,15 @@
         this.say(this.name(act) + ' taut auf!', 'text', { side: act.side.id });
       } else {
         this.say(this.name(act) + IMMOBILE_MSG.frz, 'text', { side: act.side.id });
+        return false;
+      }
+    }
+    if (act.vol.attract) {
+      var lover = act.side.other.active;
+      this.say(this.name(act) + ' ist verliebt in ' + (lover ? this.name(lover) : 'den Gegner') + '!',
+        'text', { side: act.side.id });
+      if (this.rng.chance(0.5)) {
+        this.say(this.name(act) + ' ist zu verliebt zum Kämpfen!', 'text', { side: act.side.id });
         return false;
       }
     }
@@ -581,6 +667,7 @@
     if (this.abilityId(atk) === 'noguard' || this.abilityId(def) === 'noguard') return true;
     var acc = move.ac;
     acc = acc * this.collect(atk, 'modAccuracy', [move, def]);
+    acc = acc * this.collect(def, 'modAccuracyTaken', [move, atk]);
     var stage = (atk.boosts.acc || 0) - (move.ige ? 0 : (def.boosts.eva || 0));
     if (this.abilityId(atk) === 'unaware') stage = atk.boosts.acc || 0;
     acc = acc * accMult(clamp(stage, -6, 6));
@@ -633,12 +720,29 @@
       entry = actor.mon.moves.filter(function (m) { return m.m === move.i; })[0] || entry;
     }
 
-    if (!this.canAct(actor, move)) { actor.lastMoveFailed = true; return; }
+    // Eine geladene Attacke wird in der zweiten Runde erzwungen.
+    if (actor.vol.twoturn && !opts.locked) {
+      move = dex.move(actor.vol.twoturn.move);
+      entry = actor.mon.moves.filter(function (m) { return m.m === move.i; })[0] || entry;
+    }
+
+    // opts.forced: die Attacke wurde von einer anderen aufgerufen (Schlafrede,
+    // Metronom). Schlaf und Verwirrung dürfen dann nicht ein zweites Mal
+    // geprüft werden — sonst zählte der Schlaf doppelt herunter.
+    if (!opts.forced && !this.canAct(actor, move)) {
+      // Wer in der Ladephase ausfällt, verliert sie samt Deckung.
+      if (actor.vol.twoturn) { delete actor.vol.twoturn; delete actor.vol.invuln; }
+      actor.lastMoveFailed = true;
+      return;
+    }
 
     var ov = this.effects.moves[move.id] || {};
     var target = this.targetFor(actor, move);
 
-    if (entry && !opts.free && !actor.vol.lockedmove) {
+    // In der Ausführungsrunde kostet eine geladene Attacke keine AP mehr —
+    // die sind schon beim Aufladen abgezogen worden.
+    var releasing = !!(actor.vol.twoturn && actor.vol.twoturn.move === move.i);
+    if (entry && !opts.free && !actor.vol.lockedmove && !releasing) {
       if (entry.pp <= 0) {
         this.say(this.name(actor) + ' hat keine AP mehr für ' + move.n + '!', 'text', { side: actor.side.id });
         return;
@@ -651,6 +755,16 @@
     }
 
     actor.lastMove = move.i;
+
+    // Erste Runde einer Zwei-Runden-Attacke: laden statt schlagen.
+    if (CHARGE[move.id] && !actor.vol.twoturn) {
+      if (this.beginCharge(actor, move)) return;
+    }
+    if (actor.vol.twoturn && actor.vol.twoturn.move === move.i) {
+      delete actor.vol.twoturn;
+      delete actor.vol.invuln;
+    }
+
     this.say(this.name(actor) + ' setzt ' + move.n + ' ein!', 'move',
       { side: actor.side.id, move: move.i, type: move.t, cat: move.c });
 
@@ -660,8 +774,18 @@
     }
 
     // Schutzschild
-    if (target && target !== actor && target.vol.protect && move.fl && move.fl.indexOf('protect') >= 0 && !move.bpr) {
+    if (target && target !== actor && this.shieldBlocks(target, move)) {
       this.say(this.name(target) + ' schützt sich!', 'protect', { side: target.side.id });
+      actor.lastMoveFailed = true;
+      this.shieldPunish(target, actor, move);
+      if (move.crash) this.damage(actor, Math.floor(this.maxHP(actor) / 2), { ignoreSub: true });
+      return;
+    }
+
+    // Ein abgetauchtes oder hochgeflogenes Ziel ist meist nicht zu erwischen.
+    if (target && target !== actor && target.vol.invuln && !TOUCHES[target.vol.invuln][move.id]) {
+      this.say(this.name(actor) + ' verfehlt — ' + this.name(target) + ' ist nicht zu fassen!',
+        'miss', { side: actor.side.id });
       actor.lastMoveFailed = true;
       if (move.crash) this.damage(actor, Math.floor(this.maxHP(actor) / 2), { ignoreSub: true });
       return;
@@ -885,12 +1009,69 @@
     aquaring: ' hüllt sich in einen Wasserring.',
     substitute: ' erschafft einen Delegator!',
     protect: '',
-    saltcure: ' wurde eingesalzen!'
+    saltcure: ' wurde eingesalzen!',
+    attract: ' hat sich verliebt!',
+    torment: ' darf sich nicht wiederholen!',
+    healblock: ' kann sich nicht mehr heilen!',
+    nightmare: ' wird von einem Albtraum geplagt!',
+    octolock: ' sitzt im Klammergriff fest!',
+    laserfocus: ' ist hochkonzentriert!',
+    charge: ' lädt sich auf!',
+    smackdown: ' wurde zu Boden geholt!',
+    tarshot: ' ist mit Teer überzogen!'
+  };
+
+  /**
+   * Erste Runde einer Zwei-Runden-Attacke. Gibt true zurück, wenn nur
+   * geladen wurde — dann ist der Zug vorbei.
+   */
+  B.beginCharge = function (actor, move) {
+    var spec = CHARGE[move.id];
+    // Sonne, Regen oder die Kraftherbe sparen die Ladephase.
+    if (spec.skip && this.weatherActive() === spec.skip) return false;
+    if (this.itemOf(actor) && actor.item === 'powerherb') {
+      this.say(this.name(actor) + ' lädt dank Kraftherb sofort auf!', 'item', { side: actor.side.id });
+      this.consumeItem(actor);
+      return false;
+    }
+    this.say(this.name(actor) + spec.text, 'charge', { side: actor.side.id, move: move.i });
+    if (spec.boost) this.boost(actor, spec.boost, actor);
+    actor.vol.twoturn = { move: move.i };
+    if (spec.hide) actor.vol.invuln = spec.hide;
+    this.hook(actor, 'afterMove', [move, null, 0]);
+    return true;
+  };
+
+  /** Fängt der Schild diese Attacke ab? */
+  B.shieldBlocks = function (target, move) {
+    var kind = target.vol.protect;
+    if (!kind) return false;
+    if (move.bpr) return false;                       // durchbricht Schilde
+    if (!move.fl || move.fl.indexOf('protect') < 0) return false;
+    var atk = target.side.other.active;
+    var atkAb = atk && this.effects.abilities[this.abilityId(atk)];
+    if (atkAb && atkAb.ignoresProtect && move.fl.indexOf(atkAb.ignoresProtect) >= 0) return false;
+    var spec = SHIELDS[kind] || SHIELDS.protect;
+    if (spec.damagingOnly && move.c === 'T') return false;
+    return true;
+  };
+
+  /** Was dem Angreifer nach einem geblockten Treffer zustößt. */
+  B.shieldPunish = function (target, actor, move) {
+    var spec = SHIELDS[target.vol.protect];
+    if (!spec || !actor || actor.mon.hp <= 0) return;
+    var contact = move.fl && move.fl.indexOf('contact') >= 0;
+    if (spec.contact && !contact) return;
+    if (spec.chip && this.abilityId(actor) !== 'magicguard') {
+      this.damage(actor, Math.max(1, Math.floor(this.maxHP(actor) / spec.chip)), { ignoreSub: true });
+    }
+    if (spec.status) this.setStatus(actor, spec.status, target, move);
+    if (spec.boosts) this.boost(actor, spec.boosts, target);
   };
 
   B.addVolatile = function (act, id, source, move) {
     if (!act || act.mon.hp <= 0) return false;
-    if (id === 'protect') {
+    if (SHIELDS[id]) {
       // Schutzschilde werden bei Wiederholung unzuverlässig
       var chance = 1 / Math.pow(3, act.protectStreak);
       if (act.protectStreak > 0 && !this.rng.chance(chance)) {
@@ -898,7 +1079,7 @@
         act.protectStreak = 0;
         return false;
       }
-      act.vol.protect = true;
+      act.vol.protect = id;
       act.protectStreak++;
       this.say(this.name(act) + ' schützt sich!', 'protect', { side: act.side.id });
       return true;
@@ -939,6 +1120,25 @@
       case 'flinch':
         act.vol.flinch = true;
         break;
+      case 'attract':
+        if (!source || !act.mon.gender || !source.mon.gender ||
+            act.mon.gender === source.mon.gender || act.mon.gender === 'N') {
+          this.say('Es klappt nicht.', 'text', {});
+          return false;
+        }
+        act.vol.attract = true;
+        break;
+      case 'torment': act.vol.torment = true; break;
+      case 'healblock': act.vol.healblock = { turns: 5 }; break;
+      case 'nightmare':
+        if (act.mon.status !== 'slp') { this.say('Es klappt nur im Schlaf.', 'text', {}); return false; }
+        act.vol.nightmare = true;
+        break;
+      case 'octolock': act.vol.octolock = true; act.vol.trapped = true; break;
+      case 'laserfocus': act.vol.laserfocus = 2; break;
+      case 'charge': act.vol.charge = 2; break;
+      case 'smackdown': act.vol.smackdown = true; break;
+      case 'tarshot': act.vol.tarshot = true; break;
       case 'lockedmove':
         return false;   // wird in useMove behandelt
       default:
@@ -1125,7 +1325,7 @@
     for (i = 0; i < 2; i++) {
       act = this.sides[i].active;
       if (act) {
-        act.vol.protect = false;
+        act.vol.protect = null;
         act.vol.flinch = false;
         act.damagedThisTurn = 0;
         act.switchedInThisTurn = false;
@@ -1164,6 +1364,10 @@
 
   B.doAction = function (side, action) {
     var act = side.active;
+    if (action.type === 'move' && act) {
+      var ab = this.effects.abilities[this.abilityId(act)];
+      if (ab && ab.beforeAction && ab.beforeAction(this, act) === false) return;
+    }
     switch (action.type) {
       case 'move':
         if (act.vol.encore) {
@@ -1193,6 +1397,13 @@
   };
 
   B.resolveSelfVolatiles = function (act) {
+    if (act.vol.healblock && --act.vol.healblock.turns <= 0) {
+      delete act.vol.healblock;
+      this.say(this.name(act) + ' kann sich wieder heilen.', 'text', { side: act.side.id });
+    }
+    if (act.vol.laserfocus && --act.vol.laserfocus <= 0) delete act.vol.laserfocus;
+    if (act.vol.charge && --act.vol.charge <= 0) delete act.vol.charge;
+    if (act.vol.nightmare && act.mon.status !== 'slp') delete act.vol.nightmare;
     if (act.vol.encore && --act.vol.encore.turns <= 0) {
       delete act.vol.encore;
       this.say(this.name(act) + ': Die Zugabe endet.', 'text', { side: act.side.id });
@@ -1280,6 +1491,14 @@
         this.say(this.name(act) + ' leidet unter dem Fluch.', 'text', { side: act.side.id });
         this.damage(act, Math.floor(this.maxHP(act) / 4), { ignoreSub: true });
       }
+      if (act.vol.nightmare && this.abilityId(act) !== 'magicguard') {
+        if (act.mon.status !== 'slp') delete act.vol.nightmare;
+        else {
+          this.say(this.name(act) + ' wird von einem Albtraum geplagt!', 'text', { side: act.side.id });
+          this.damage(act, Math.floor(this.maxHP(act) / 4), { ignoreSub: true });
+        }
+      }
+      if (act.vol.octolock) this.boost(act, { def: -1, spd: -1 }, act.side.other.active);
       if (act.vol.partiallytrapped) {
         this.damage(act, Math.floor(this.maxHP(act) / 8), { ignoreSub: true });
         if (--act.vol.partiallytrapped.turns <= 0) {
@@ -1422,6 +1641,11 @@
 
   B.forceOut = function (act) {
     var side = act.side;
+    var ab = this.effects.abilities[this.abilityId(act)];
+    if (ab && ab.keepsPlace) {
+      this.say(this.name(act) + ' steht wie festgesaugt.', 'ability', { side: act.side.id });
+      return false;
+    }
     if (!this.hasBackup(side)) return false;
     if (this.wild && !side.isPlayer) {
       this.ended = true;
@@ -1640,6 +1864,8 @@
       else if (act.vol.disable && act.vol.disable.move === mv.m) why = 'Blockiert';
       else if (act.vol.encore && act.vol.encore.move !== mv.m) why = 'Zugabe';
       else if (act.vol.lockedmove && act.vol.lockedmove.move !== mv.m) why = 'Festgelegt';
+      else if (act.vol.twoturn && act.vol.twoturn.move !== mv.m) why = 'Lädt auf';
+      else if (act.vol.torment && act.lastMove === mv.m) why = 'Folterknecht';
       out.push({ index: i, move: m, pp: mv.pp, maxPP: m.pp + mv.ppUp * Math.floor(m.pp / 5), disabled: !!why, why: why });
     });
     if (out.every(function (o) { return o.disabled; })) {
@@ -1656,10 +1882,12 @@
 
   B.canSwitch = function (sideId) {
     var side = this.sides[sideId], act = side.active;
-    if (act && (act.vol.partiallytrapped || act.vol.lockedmove)) return false;
+    if (act && (act.vol.partiallytrapped || act.vol.lockedmove || act.vol.twoturn || act.vol.trapped)) return false;
     var foe = side.other.active;
     if (foe && this.abilityId(foe) === 'shadowtag' && this.abilityId(act) !== 'shadowtag') return false;
     if (foe && this.abilityId(foe) === 'arenatrap' && this.grounded(act)) return false;
+    var foeAb = foe && this.effects.abilities[this.abilityId(foe)];
+    if (foeAb && foeAb.traps && act && act.types.indexOf(foeAb.traps) >= 0) return false;
     return this.hasBackup(side);
   };
 
