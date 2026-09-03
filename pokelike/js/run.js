@@ -57,9 +57,13 @@
   /**
    * opts: { seed, mode, ascension, nuzlocke, starter (Spezies-ID), meta }
    */
+  // Erhöht sich, sobald sich das Speicherformat ändert. Ein Run aus einer
+  // älteren Fassung wird beim Laden verworfen, statt still kaputtzugehen.
+  var RUN_VERSION = 2;
+
   function Run(opts) {
     opts = opts || {};
-    this.version = 1;
+    this.version = RUN_VERSION;
     this.mode = MODES[opts.mode] ? opts.mode : 'standard';
     this.seed = opts.seed !== undefined ? opts.seed : (Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0;
     this.ascension = opts.ascension || 0;
@@ -304,6 +308,7 @@
     this.rowIndex = row;
     this.pos = { row: row, col: col };
     node.done = true;
+    this.rerollUsed = false;
     // Merken, was gerade offen ist: wer mitten im Kampf das Fenster schließt,
     // soll denselben Knoten wiederfinden statt ihn zu überspringen.
     this.pendingNode = { row: row, col: col };
@@ -523,6 +528,8 @@
       hiddenChance: 0.12
     });
     if (mon.shiny) this.stats.shinies++;
+    var free = this.mod('freeBalls');
+    if (free) this.addItem('pokeball', free);
     var bt = new PL.Battle(this.battleOpts({ team: [mon], wild: true }));
     bt.aiLevel = 0;
     bt.canCatch = true;
@@ -670,11 +677,28 @@
             mult: expMult * (participated ? 1 : benchShare) / Math.max(1, alive.length * 0.6),
             targetLevel: self.levelCap
           });
+          var was = mons.stats(m);
           var gain = mons.gainExp(m, amount, { levelCap: self.levelCap });
           if (gain.gained) res.exp.push({ mon: m, amount: gain.gained });
-          if (gain.levels.length) res.levelUps.push({ mon: m, levels: gain.levels, learned: gain.learned });
+          if (gain.levels.length) {
+            res.levelUps.push({ mon: m, levels: gain.levels, learned: gain.learned,
+              before: was, after: mons.stats(m) });
+          }
         });
       });
+
+      // Mehrere Gegner können dasselbe Pokémon zweimal aufsteigen lassen —
+      // für die Anzeige zählt nur ein Eintrag je Pokémon.
+      var merged = [];
+      res.levelUps.forEach(function (up) {
+        var prev = null, j;
+        for (j = 0; j < merged.length; j++) if (merged[j].mon === up.mon) { prev = merged[j]; break; }
+        if (!prev) { merged.push(up); return; }
+        prev.levels = prev.levels.concat(up.levels);
+        prev.learned = (prev.learned || []).concat(up.learned || []);
+        prev.after = up.after;
+      });
+      res.levelUps = merged;
 
       if (bt.reward && /boss|e4|champ/.test(bt.reward.kind)) {
         this.bossesBeaten = (this.bossesBeaten || 0) + 1;
@@ -706,15 +730,16 @@
           })[0] || null;
         }
         if (evo) {
-          var from = mons.name(m);
+          var from = mons.name(m), fromSp = m.sp;
           mons.evolve(m, evo.to, self.rng);
           self.stats.evolutions++;
-          res.evolutions.push({ mon: m, from: from, to: mons.name(m) });
+          res.evolutions.push({ mon: m, from: from, fromSp: fromSp, to: mons.name(m) });
         }
       });
     }
 
     if (this.hasMod('autoCure')) this.cureTeam();
+    if (this.hasMod('moveTutor') && (bt.outcome === 'win' || bt.outcome === 'caught')) res.tutor = true;
     if (bt.reward && /boss|e4|champ/.test(bt.reward.kind) &&
         (bt.outcome === 'win' || bt.outcome === 'caught') &&
         (!this.asc(8) || this.hasMod('healAfterBoss'))) {
@@ -879,6 +904,31 @@
     var n = (count || 3) + (this.mod('extraReward') || 0);
     var offers = PL.relics.draw(rng, this.relics, n);
     return { kind: 'relic', offers: offers, text: text || 'Wähle ein Relikt.' };
+  };
+
+  /** Kann die aktuelle Auswahl noch einmal gewürfelt werden? */
+  R.canReroll = function () {
+    if (!this.hasMod('reroll') || this.rerollUsed) return false;
+    return !!this.scene && /catch|item|relic|shop/.test(this.scene.kind);
+  };
+
+  /** Würfelt die offene Auswahl neu — einmal je Knoten. */
+  R.reroll = function () {
+    if (!this.canReroll()) return null;
+    this.rerollUsed = true;
+    var kind = this.scene.kind, fresh;
+    if (kind === 'catch') fresh = this.makeCatchOffer(this.rng);
+    else if (kind === 'item') fresh = this.makeItemFind(this.rng);
+    else if (kind === 'relic') fresh = this.makeRelicChoice(this.rng, 3, this.scene.text);
+    else fresh = this.makeShop(this.rng);
+    this.setScene(fresh);
+    return fresh;
+  };
+
+  /** Glückswürfel: manchmal gibt es eine Belohnung doppelt. */
+  R.luckyDouble = function () {
+    var chance = this.mod('doubleReward');
+    return chance ? this.rng.chance(chance) : false;
   };
 
   R.takeRelic = function (id) {
@@ -1063,6 +1113,7 @@
   };
 
   R.giveRandomItem = function (rng, count) {
+    if (this.luckyDouble()) count = (count || 1) + 1;
     var pools = this.itemPool(), out = [], i;
     for (i = 0; i < (count || 1) && pools.length; i++) {
       var pick = rng.weighted(pools, function (p) { return p.w; });
@@ -1281,6 +1332,7 @@
     return run;
   };
 
+  Run.VERSION = RUN_VERSION;
   Run.BLESSINGS = BLESSINGS;
   Run.MODES = MODES;
   Run.NODE_INFO = NODE_INFO;

@@ -334,7 +334,12 @@
 
   function continueRun() {
     var run = meta.loadRun();
-    if (!run) { U.toast('Kein gespeicherter Run gefunden.', 'bad'); return; }
+    if (!run) {
+      U.toast('Kein fortsetzbarer Run gefunden — ein Stand aus einer älteren Fassung wurde verworfen. ' +
+        'Pokédex und Erfolge bleiben erhalten.', 'bad');
+      show('title');
+      return;
+    }
     App.run = run;
     // Ein unterbrochener Knoten wird neu betreten — nichts wird übersprungen.
     if (run.pendingNode) {
@@ -754,7 +759,7 @@
       }
       var e = entries[i++];
       pushLine(e);
-      var extra = applyLogVisual(e) || 0;
+      var extra = applyLogVisual(e, entries, i) || 0;
       var wait = Math.max(speed, speed === 0 ? 0 : extra);
       if (!e.s) wait = Math.min(speed, 90);
       if (e.k === 'turn') wait = Math.min(speed, 140);
@@ -765,7 +770,26 @@
     step();
   }
 
-  function applyLogVisual(e) {
+  /**
+   * Momente laufen in ihrem eigenen, festen Tempo — unabhängig davon, wie
+   * schnell das Protokoll sonst abgespielt wird. Bei »Sofort« entfallen sie.
+   */
+  function momentsOn() { return settings().speed !== 'sofort' && PL.moments && !PL.moments.reduced(); }
+
+  function applyLogVisual(e, entries, next) {
+    // Der Ballwurf: das Ergebnis steht schon in den nächsten Zeilen.
+    if (e.k === 'ball' && momentsOn() && BV.stage && BV.art1) {
+      var verdict = null, j;
+      for (j = next; j < (entries || []).length && j < next + 4; j++) {
+        if (entries[j].k === 'caught' || entries[j].k === 'ballfail') { verdict = entries[j]; break; }
+      }
+      return PL.moments.ball({
+        stage: BV.stage, target: BV.art1, item: e.item,
+        caught: !!(verdict && verdict.k === 'caught'),
+        shakes: verdict && verdict.k === 'caught' ? 3 : (verdict ? verdict.shakes : 1)
+      });
+    }
+
     // Attackeneffekt: fliegt vom Angreifer zum Ziel, je nach Kategorie.
     if (e.k === 'move' && PL.fx && BV.art0 !== undefined) {
       var mv = dex.move(e.move);
@@ -1118,6 +1142,20 @@
     }
   };
 
+  /** Der Knopf für das Relikt "Zweite Chance". */
+  function rerollButton() {
+    var run = App.run;
+    if (!run.canReroll()) return null;
+    return el('button', {
+      className: 'btn', type: 'button',
+      title: 'Einmal je Knoten: die Auswahl neu würfeln.',
+      onclick: function () {
+        var fresh = run.reroll();
+        if (fresh) { sfx('select'); openScene(fresh); }
+      }
+    }, '🔁 Neu würfeln');
+  }
+
   function sceneFrame(title, subtitle, body, actions) {
     return el('div', { className: 'scene' }, [
       el('h2', { text: title }),
@@ -1135,10 +1173,10 @@
     }
     if (res.money) lines.push(el('p', { text: 'Du erhältst ' + U.money(res.money) + '.' }));
     res.levelUps.forEach(function (up) {
-      lines.push(el('p', { text: mons.name(up.mon) + ' steigt auf Level ' + up.mon.lvl + '!' }));
+      lines.push(levelUpBlock(up));
     });
     res.evolutions.forEach(function (evo) {
-      lines.push(el('p', { className: 'good', text: 'Was? ' + evo.from + ' entwickelt sich zu ' + evo.to + '!' }));
+      lines.push(evolutionBlock(evo));
     });
     res.faintedOut.forEach(function (name) {
       lines.push(el('p', { className: 'bad', text: name + ' ist für immer gegangen (Nuzlocke).' }));
@@ -1161,6 +1199,10 @@
       className: 'btn big primary', type: 'button',
       onclick: function () {
         processMoveLearning(pending, function () {
+          if (res.tutor) {
+            openTutor(function () { if (reward) openScene(reward); else backToMap(); });
+            return;
+          }
           if (reward) openScene(reward);
           else backToMap();
         });
@@ -1168,6 +1210,49 @@
     }, reward ? 'Belohnung ansehen' : 'Weiter')];
 
     return sceneFrame(bt.outcome === 'caught' ? 'Gefangen!' : 'Kampf gewonnen', null, body, actions);
+  }
+
+  /**
+   * Levelaufstieg: Sprite, Text und die Werte-Tafel mit den Zugewinnen.
+   * Ohne Vorher-Werte (alte Spielstände) bleibt es beim Satz.
+   */
+  function levelUpBlock(up) {
+    var text = mons.name(up.mon) + ' steigt auf Level ' + up.mon.lvl + '!';
+    if (!up.before || !up.after || !PL.moments) return el('p', { text: text });
+    var panel = PL.moments.levelPanel({ before: up.before, after: up.after, title: text });
+    return el('div', { className: 'level-up-block' }, [
+      U.sprite(up.mon, { className: 'level-sprite' }),
+      panel.node
+    ]);
+  }
+
+  /**
+   * Entwicklung: die alte Gestalt blinkt in die neue hinüber. Der Moment
+   * läuft in festem Tempo und wird bei »Sofort« übersprungen.
+   */
+  function evolutionBlock(evo) {
+    var text = 'Was? ' + evo.from + ' entwickelt sich zu ' + evo.to + '!';
+    var caption = el('p', { className: 'good', text: text });
+    if (!evo.fromSp || !PL.moments || !dex.sp(evo.fromSp)) return caption;
+
+    var host = el('div', { className: 'evo-host' });
+    var before = U.sprite({ sp: evo.fromSp, shiny: evo.mon.shiny, ivs: evo.mon.ivs },
+      { className: 'evo-sprite' });
+    var afterImg = U.sprite(evo.mon, { className: 'evo-sprite' });
+    var block = el('div', { className: 'evo-scene' }, [host, caption]);
+
+    if (!momentsOn()) {
+      host.appendChild(afterImg);
+      return block;
+    }
+    caption.style.opacity = '0';
+    root.setTimeout(function () {
+      PL.moments.evolve({ host: host, before: before, after: afterImg }, function () {
+        caption.style.opacity = '';
+        sfx('mega');
+      });
+    }, 0);
+    return block;
   }
 
   /** Fragt nacheinander ab, ob neu gelernte Attacken übernommen werden. */
@@ -1268,6 +1353,7 @@
     }
 
     return sceneFrame('Begegnung', scene.text, [grid, partyStrip()], [
+      rerollButton(),
       el('button', { className: 'btn', type: 'button', onclick: backToMap },
         scene.locked ? 'Weitergehen' : 'Keines nehmen')
     ]);
@@ -1279,12 +1365,15 @@
       return U.itemRow(item, {
         onClick: function () {
           run.addItem(item.id, 1);
-          U.toast(item.name + ' eingesteckt.');
+          var extra = run.luckyDouble();
+          if (extra) run.addItem(item.id, 1);
+          U.toast(item.name + (extra ? ' — der Glückswürfel legt einen zweiten dazu!' : ' eingesteckt.'));
           backToMap();
         }
       });
     }));
     return sceneFrame('Fundstück', scene.text, [list], [
+      rerollButton(),
       el('button', { className: 'btn', type: 'button', onclick: backToMap }, 'Nichts nehmen')
     ]);
   }
@@ -1305,6 +1394,7 @@
       ]);
     }));
     return sceneFrame('Relikt wählen', scene.text, [grid], [
+      rerollButton(),
       el('button', { className: 'btn', type: 'button', onclick: backToMap }, 'Nichts nehmen')
     ]);
   }
@@ -1339,6 +1429,7 @@
       el('p', { className: 'muted', text: 'Dein Geld: ' + U.money(run.money) }),
       listHost
     ], [
+      rerollButton(),
       sellBtn,
       el('button', { className: 'btn primary', type: 'button', onclick: backToMap }, 'Weiterziehen')
     ]);
@@ -2140,6 +2231,15 @@
           meta.setSetting('volume', v);
           if (PL.audio) PL.audio.setVolume(v);
         })),
+      el('div', { className: 'save-zone' }, [
+        el('h3', { text: 'Spielstand' }),
+        el('p', { className: 'muted', text: 'Alles liegt nur in diesem Browser. Sichere den Stand als Text, ' +
+          'wenn du ihn behalten oder auf ein anderes Gerät bringen willst.' }),
+        el('div', { className: 'setting-actions' }, [
+          el('button', { className: 'btn', type: 'button', onclick: openSaveExport }, '⬇ Spielstand sichern'),
+          el('button', { className: 'btn', type: 'button', onclick: openSaveImport }, '⬆ Spielstand einspielen')
+        ])
+      ]),
       el('div', { className: 'danger-zone' }, [
         el('h3', { text: 'Gefahrenzone' }),
         el('button', {
@@ -2154,6 +2254,72 @@
       el('p', { className: 'muted small', text: 'Gespeichert wird ausschließlich im Browser dieses Geräts. Es werden keine Daten übertragen; die Pokémon-Bilder kommen von Pokémon Showdown und PokeAPI.' })
     ]);
   };
+
+  /* --- Spielstand sichern und einspielen ------------------------------------- */
+
+  function openSaveExport() {
+    var text = meta.exportSave();
+    var area = el('textarea', { className: 'save-area', readonly: true, rows: 8, spellcheck: 'false' });
+    area.value = text;
+    var box = U.modal({
+      title: 'Spielstand sichern',
+      wide: true,
+      content: el('div', {}, [
+        el('p', { className: 'muted', text: 'Der ganze Fortschritt als Text — Pokédex, Erfolge, Statistik und der ' +
+          'laufende Run. Kopiere ihn und lege ihn irgendwo ab, wo du ihn wiederfindest.' }),
+        area,
+        el('p', { className: 'muted small', text: 'Größe: ' + (text.length / 1024).toFixed(1) + ' KB' })
+      ]),
+      actions: [
+        { label: '📋 Kopieren', primary: true, close: false, onClick: function () {
+          area.focus();
+          area.select();
+          var done = false;
+          try {
+            if (root.navigator && root.navigator.clipboard && root.navigator.clipboard.writeText) {
+              root.navigator.clipboard.writeText(text);
+              done = true;
+            }
+          } catch (e) { done = false; }
+          U.toast(done ? 'In die Zwischenablage kopiert.' : 'Markiert — jetzt mit Strg+C bzw. Cmd+C kopieren.');
+        } },
+        { label: 'Schließen' }
+      ]
+    });
+    root.setTimeout(function () { area.focus(); area.select(); }, 50);
+    return box;
+  }
+
+  function openSaveImport() {
+    var area = el('textarea', { className: 'save-area', rows: 8, spellcheck: 'false',
+      placeholder: 'Gesicherten Spielstand hier einfügen …' });
+    U.modal({
+      title: 'Spielstand einspielen',
+      wide: true,
+      content: el('div', {}, [
+        el('p', { className: 'warn-note', text: 'Achtung: Der eingespielte Stand ersetzt deinen aktuellen ' +
+          'Fortschritt vollständig. Sichere ihn vorher, falls du ihn behalten willst.' }),
+        area
+      ]),
+      actions: [
+        { label: 'Einspielen', primary: true, danger: true, onClick: function () {
+          var res = meta.importSave(area.value);
+          U.toast(res.text, res.ok ? 'good' : 'bad');
+          if (res.ok) {
+            App.run = null;
+            App.battle = null;
+            applyTheme();
+            if (PL.audio) {
+              PL.audio.setVolume(settings().volume === undefined ? 0.5 : settings().volume);
+              PL.audio.setEnabled(!!settings().music);
+            }
+            show('title');
+          }
+        } },
+        { label: 'Abbrechen' }
+      ]
+    });
+  }
 
   /* ---------- 8) Ende, Töne, Start ---------------------------------------------------- */
 
@@ -2200,6 +2366,24 @@
   /* --- Töne: kurze, synthetische Klänge, keine Dateien -------------------------------- */
 
   var audio = null;
+  /** Ein einzelner kurzer Ton — die Momente bedienen sich daran. */
+  function tone(freq, len) {
+    if (!settings().sound) return;
+    try {
+      if (!audio) audio = new (root.AudioContext || root.webkitAudioContext)();
+      if (audio.state === 'suspended') audio.resume();
+      var now = audio.currentTime, d = len || 0.06;
+      var osc = audio.createOscillator(), gain = audio.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(freq, now);
+      gain.gain.setValueAtTime(0.04, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + d);
+      osc.connect(gain).connect(audio.destination);
+      osc.start(now);
+      osc.stop(now + d + 0.02);
+    } catch (e) { /* Ton ist Beiwerk */ }
+  }
+
   function sfx(kind) {
     if (!settings().sound) return;
     try {
@@ -2266,6 +2450,7 @@
 
   function boot() {
     applyTheme();
+    if (PL.moments) PL.moments.sound = tone;
     if (PL.audio) {
       PL.audio.setVolume(settings().volume === undefined ? 0.5 : settings().volume);
       PL.audio.setEnabled(!!settings().music);

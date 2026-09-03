@@ -21,6 +21,8 @@
 
   var KEY = 'pokelike.plus.v1';
   var RUN_KEY = 'pokelike.plus.run.v1';
+  var SAVE_FORMAT = 'pokelike-save';
+  var SAVE_VERSION = 2;
 
   /* ---------- 1) Speicher ---------------------------------------------------- */
 
@@ -304,18 +306,84 @@
     if (!s || !run) return false;
     try { s.setItem(RUN_KEY, JSON.stringify(run.toJSON())); return true; } catch (e) { return false; }
   }
+
+  /** Liest den gespeicherten Run — aber nur, wenn das Format noch passt. */
   function loadRun() {
     var s = storage(), raw = s && s.getItem(RUN_KEY);
     if (!raw) return null;
-    try { return PL.Run.fromJSON(JSON.parse(raw)); } catch (e) { return null; }
+    try {
+      var data = JSON.parse(raw);
+      if (data.version !== PL.Run.VERSION) { clearRun(); return null; }
+      return PL.Run.fromJSON(data);
+    } catch (e) {
+      clearRun();
+      return null;
+    }
   }
+
   function clearRun() {
     var s = storage();
     if (s) { try { s.removeItem(RUN_KEY); } catch (e) {} }
   }
+
   function hasRun() {
+    var s = storage(), raw = s && s.getItem(RUN_KEY);
+    if (!raw) return false;
+    try { return JSON.parse(raw).version === PL.Run.VERSION; } catch (e) { return false; }
+  }
+
+  /* ---------- Sichern und Einspielen ------------------------------------------
+   * Als Text, nicht als Datei: In eingebetteten Fenstern sind Downloads
+   * gesperrt, Kopieren und Einfügen funktioniert überall.
+   * -------------------------------------------------------------------------- */
+
+  function exportSave() {
     var s = storage();
-    return !!(s && s.getItem(RUN_KEY));
+    var runRaw = s && s.getItem(RUN_KEY);
+    return JSON.stringify({
+      format: SAVE_FORMAT,
+      version: SAVE_VERSION,
+      runVersion: PL.Run ? PL.Run.VERSION : null,
+      exported: new Date().toISOString(),
+      meta: load(),
+      run: runRaw ? JSON.parse(runRaw) : null
+    });
+  }
+
+  /**
+   * Spielt einen gesicherten Stand ein. Gibt { ok, text } zurück und fasst
+   * nichts an, solange die Datei nicht plausibel ist.
+   */
+  function importSave(text) {
+    var data;
+    try { data = JSON.parse(String(text || '').trim()); }
+    catch (e) { return { ok: false, text: 'Das ist kein gültiger Spielstand — der Text lässt sich nicht lesen.' }; }
+    if (!data || data.format !== SAVE_FORMAT) {
+      return { ok: false, text: 'Das ist kein Pokélike-Spielstand.' };
+    }
+    if (!data.meta || typeof data.meta !== 'object') {
+      return { ok: false, text: 'Dem Spielstand fehlt der Fortschritt.' };
+    }
+    var s = storage();
+    if (!s) return { ok: false, text: 'Dieser Browser lässt kein Speichern zu.' };
+
+    cache = emptyMeta();
+    Object.keys(cache).forEach(function (k) {
+      if (data.meta[k] === undefined) return;
+      if (k === 'settings' || k === 'totals') Object.assign(cache[k], data.meta[k]);
+      else cache[k] = data.meta[k];
+    });
+    save();
+
+    var runNote = '';
+    if (data.run && PL.Run && data.run.version === PL.Run.VERSION) {
+      try { s.setItem(RUN_KEY, JSON.stringify(data.run)); runNote = ' Der laufende Run wurde mitgeladen.'; }
+      catch (e) { runNote = ' Der laufende Run passte nicht mehr ins Format.'; }
+    } else {
+      clearRun();
+      if (data.run) runNote = ' Der laufende Run stammt aus einer älteren Fassung und wurde ausgelassen.';
+    }
+    return { ok: true, text: 'Spielstand eingespielt.' + runNote };
   }
 
   function settings() { return load().settings; }
@@ -329,6 +397,8 @@
     ASCENSIONS: ASCENSIONS, maxAscension: maxAscension,
     recordRun: recordRun,
     saveRun: saveRun, loadRun: loadRun, clearRun: clearRun, hasRun: hasRun,
+    exportSave: exportSave, importSave: importSave,
+    SAVE_FORMAT: SAVE_FORMAT, SAVE_VERSION: SAVE_VERSION,
     settings: settings, setSetting: setSetting,
     available: function () { return !!storage(); }
   };

@@ -197,6 +197,31 @@ Lautstärke in drei Stufen und die Sprache der Pokémon-Namen (deutsch oder
 englisch). Attacken- und Fähigkeitsnamen bleiben
 englisch — so heißen sie in Wettbewerb und Datenbanken überall.
 
+### Spielstand sichern
+
+Alles liegt im Browser dieses Geräts — wird der Speicher geleert, ist der
+Fortschritt weg. Unter *Einstellungen → Spielstand* liegen deshalb zwei
+Knöpfe:
+
+* **Spielstand sichern** legt den kompletten Stand (Pokédex, Erfolge,
+  Statistik, Einstellungen und den laufenden Run) als Text vor, den du
+  kopieren und irgendwo ablegen kannst.
+* **Spielstand einspielen** nimmt so einen Text wieder entgegen und ersetzt
+  damit den aktuellen Fortschritt.
+
+Der Text trägt eine Formatkennung und eine Versionsnummer. Stammt ein
+laufender Run aus einer älteren Fassung des Spiels, wird nur er ausgelassen —
+Pokédex und Erfolge kommen trotzdem mit.
+
+### Momente
+
+Drei Augenblicke laufen als kleine Einlage ab: der **geworfene Ball** samt
+Wackeln und Klicken, die **Entwicklung** mit Blinken und Blitz und die
+**Werte-Tafel** beim Levelaufstieg. Sie laufen bewusst in eigenem, festem
+Tempo — sie werden bei »langsam« nicht länger und dauern nie mehr als eine
+knappe Sekunde. Wer das Kampftempo auf **Sofort** stellt, bekommt sie gar
+nicht erst zu sehen; `prefers-reduced-motion` schaltet sie ebenfalls ab.
+
 ---
 
 ## Für Entwickler

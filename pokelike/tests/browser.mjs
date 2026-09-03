@@ -95,6 +95,16 @@ while (guard++ < 45) {
   const screen = await page.evaluate(() => document.body.getAttribute('data-screen'));
   scenes[screen] = (scenes[screen] || 0) + 1;
 
+  // Ein Dialog ("Attacke lernen", "Wen soll es ersetzen?") liegt über allem
+  // und fängt jeden Klick ab — deshalb zuerst wegräumen.
+  if (await page.locator('.modal').count()) {
+    const btn = page.locator('.modal-actions .btn').last();
+    if (await btn.count()) await btn.click({ timeout: 4000 }).catch(() => {});
+    else await page.locator('.modal .btn, .modal .mon-card').first().click({ timeout: 4000 }).catch(() => {});
+    await page.waitForTimeout(120);
+    continue;
+  }
+
   if (screen === 'map') {
     const open = page.locator('.map-node.open');
     if (!(await open.count())) break;
@@ -143,7 +153,11 @@ while (guard++ < 45) {
     // aufgehen (etwa "Attacke lernen") — dann greift der Modal-Zweig oben
     // beim nächsten Durchlauf, deshalb hier nur kurz versuchen.
     const offer = page.locator('.offer, .relic-card, .item-row:not(:disabled), .option:not(:disabled)').first();
-    const primary = page.locator('.scene-actions .btn.primary, .scene-actions .btn').first();
+    // "Weiterziehen" steht immer am Ende — die erste Schaltfläche wäre beim
+    // Händler "Verkaufen" und würde die Szene nie verlassen.
+    const primary = (await page.locator('.scene-actions .btn.primary').count())
+      ? page.locator('.scene-actions .btn.primary').first()
+      : page.locator('.scene-actions .btn').last();
     if (await offer.count()) await offer.click({ timeout: 6000 }).catch(() => {});
     else if (await primary.count()) await primary.click({ timeout: 6000 }).catch(() => {});
     await page.waitForTimeout(150);
@@ -177,8 +191,14 @@ async function closeModals() {
 await closeModals();
 
 console.log('\nNeue Bedienelemente');
+// Der Durchlauf oben kann im Bildschirmtod geendet sein — für die folgenden
+// Prüfungen wird deshalb ein frischer Run aufgesetzt.
 await page.evaluate(() => {
   const PL = globalThis.PL, App = globalThis.PokelikeApp;
+  App.run = new PL.Run({ seed: 20260903, starter: 'bulbasaur' });
+  for (const id of ['pikachu', 'geodude', 'poliwag']) {
+    App.run.party.push(PL.mon.create(id, 9, App.run.rng, { quality: 0.85 }));
+  }
   App.run.party[0].hp = 3;
   App.run.addItem('hyperpotion', 2);
   App.show('map');
@@ -214,6 +234,57 @@ await page.waitForSelector('.team-list .mon-card.draggable');
 }
 await closeModals();
 
+console.log('\nMomente');
+{
+  const built = await page.evaluate(() => {
+    const PL = globalThis.PL, doc = document;
+    const stage = doc.createElement('div');
+    stage.id = 'moment-probe';
+    stage.style.cssText = 'position:fixed;left:0;top:0;width:240px;height:120px;opacity:0;pointer-events:none';
+    const target = doc.createElement('div');
+    target.className = 'mon-art';
+    target.style.cssText = 'position:absolute;left:170px;top:20px;width:40px;height:40px';
+    stage.appendChild(target);
+    doc.body.appendChild(stage);
+    const ms = PL.moments.ball({ stage: stage, target: target, item: 'hyperball',
+      caught: true, shakes: 3 }, function () { stage.dataset.done = '1'; });
+    return { ms: ms, ball: !!stage.querySelector('.moment-ball.ball-hyper') };
+  });
+  check('Der Ball fliegt und trägt die richtige Farbe', built.ball);
+  check('Der Ballwurf bleibt kurz', built.ms > 0 && built.ms < 1000, built.ms + ' ms');
+
+  await page.waitForFunction(() => document.querySelector('#moment-probe').dataset.done === '1',
+    null, { timeout: 4000 });
+  const after = await page.evaluate(() => {
+    const stage = document.querySelector('#moment-probe');
+    const out = {
+      absorbed: !!stage.querySelector('.mon-art.being-caught'),
+      clicked: !!stage.querySelector('.moment-ball.clicked')
+    };
+    stage.remove();
+    return out;
+  });
+  check('Das Pokémon verschwindet im Ball', after.absorbed);
+  check('Der Ball klickt beim Fang zu', after.clicked);
+
+  const panel = await page.evaluate(() => {
+    const p = globalThis.PL.moments.levelPanel({
+      before: [40, 20, 21, 22, 23, 24], after: [44, 23, 21, 25, 23, 27], title: 'Level 12'
+    });
+    const rows = Array.from(p.node.querySelectorAll('.level-row'));
+    return {
+      ms: p.ms,
+      rows: rows.length,
+      ups: rows.filter((r) => r.classList.contains('up')).length,
+      first: rows[0].querySelector('.ls-gain').textContent
+    };
+  });
+  check('Die Werte-Tafel zeigt alle sechs Werte', panel.rows === 6, String(panel.rows));
+  check('Nur gewachsene Werte werden hervorgehoben', panel.ups === 4, String(panel.ups));
+  check('Der Zugewinn steht dabei', panel.first === '+4', panel.first);
+  check('Auch die Tafel bleibt kurz', panel.ms < 1000, panel.ms + ' ms');
+}
+
 console.log('\nWeitere Bildschirme');
 await page.evaluate(() => globalThis.PokelikeApp.show('team'));
 await page.waitForSelector('.team-screen');
@@ -237,6 +308,24 @@ check('Erfolge erscheinen', (await page.locator('.ach').count()) >= 20);
 await page.evaluate(() => globalThis.PokelikeApp.show('settings'));
 await page.waitForSelector('.settings-screen');
 check('Einstellungen erscheinen', (await page.locator('.setting').count()) >= 4);
+
+// Spielstand sichern und wieder einspielen
+await page.getByRole('button', { name: /Spielstand sichern/ }).click();
+await page.waitForSelector('.save-area');
+const saveText = await page.locator('.save-area').inputValue();
+check('Der Export enthält einen lesbaren Spielstand', saveText.indexOf('pokelike-save') > 0, saveText.slice(0, 40));
+await page.getByRole('button', { name: 'Schließen' }).click();
+await page.waitForSelector('.save-area', { state: 'detached' });
+
+await page.getByRole('button', { name: /Spielstand einspielen/ }).click();
+await page.waitForSelector('.save-area');
+await page.locator('.save-area').fill(saveText);
+await page.getByRole('button', { name: 'Einspielen', exact: true }).click();
+await page.waitForSelector('.title-screen');
+check('Ein eingespielter Spielstand führt zurück zum Titel', true);
+await page.evaluate(() => globalThis.PokelikeApp.show('settings'));
+await page.waitForSelector('.settings-screen');
+
 await page.locator('button.filter', { hasText: /^Hell$/ }).first().click();
 check('Helles Thema greift',
   (await page.evaluate(() => document.documentElement.getAttribute('data-app-theme'))) === 'light');

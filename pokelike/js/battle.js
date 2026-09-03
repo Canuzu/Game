@@ -131,6 +131,30 @@
 
   B.hasRelic = function (id) { return !!this.relics[id]; };
 
+  /**
+   * Zahlenwert einer Reliktwirkung. Die Relikttabelle bleibt damit die einzige
+   * Wahrheit — die Engine fragt nach der Wirkung, nicht nach dem Namen.
+   */
+  B.relicMod = function (key) {
+    var out = null, id, r;
+    for (id in this.relics) {
+      r = PL.relics && PL.relics.get(id);
+      if (!r || !r.mods || r.mods[key] === undefined) continue;
+      out = typeof r.mods[key] === 'number' ? (out || 0) + r.mods[key] : r.mods[key];
+    }
+    return out;
+  };
+
+  /** Alle Werte einer Wirkung — für Relikte, die mehrfach vorkommen können. */
+  B.relicList = function (key) {
+    var out = [], id, r;
+    for (id in this.relics) {
+      r = PL.relics && PL.relics.get(id);
+      if (r && r.mods && r.mods[key] !== undefined) out.push(r.mods[key]);
+    }
+    return out;
+  };
+
   /** Fähigkeit eines Pokémon, sofern sie nicht unterdrückt ist. */
   B.abilityOf = function (act) {
     if (act.vol.abilitysuppressed) return null;
@@ -176,6 +200,10 @@
     if (foe && foe !== act && foe.mon.hp > 0) {
       var foeAb = this.abilityOf(foe);
       if (foeAb && foeAb.ruinStat === stat) v = Math.floor(v * 0.75);
+    }
+    if (act.side.isPlayer) {
+      var full = this.relicMod('fullTeamStats');
+      if (full && act.side.team.length >= 6) v = Math.floor(v * full);
     }
     if (stat === 'spe') {
       if (act.side.screens.tailwind > 0) v *= 2;
@@ -380,6 +408,7 @@
     if (act.vol.focusenergy) s += 2;
     if (this.abilityId(act) === 'superluck') s += 1;
     if (act.item === 'scopelens' || act.item === 'razorclaw') s += 1;
+    if (act.side.isPlayer && this.relicMod('luck')) s += 1;
     return s;
   };
 
@@ -459,6 +488,7 @@
       var sc = def.side.screens;
       if (sc.auroraveil > 0 || (physical && sc.reflect > 0) || (!physical && sc.lightscreen > 0)) m *= 0.5;
     }
+    if (atk.side.isPlayer && this.relicList('typeBoost').indexOf(moveType) >= 0) m *= 1.3;
     if (eff > 1) m *= this.collect(def, 'modSuperEffective', [move, atk]);
     m *= this.collect(atk, 'modDamage', [move, def, eff, moveType]);
     m *= this.collect(def, 'modDamageTaken', [move, atk, eff, moveType]);
@@ -547,6 +577,7 @@
   /** Trefferwahrscheinlichkeit und Wurf. */
   B.accuracyCheck = function (atk, def, move) {
     if (move.ac === 0) return true;
+    if (atk.side.isPlayer && move.c === 'T' && this.relicMod('statusNeverMiss')) return true;
     if (this.abilityId(atk) === 'noguard' || this.abilityId(def) === 'noguard') return true;
     var acc = move.ac;
     acc = acc * this.collect(atk, 'modAccuracy', [move, def]);
@@ -813,6 +844,7 @@
     if (!move.sec || !move.sec.length) return;
     if (this.abilityId(actor) === 'sheerforce') return;
     var serene = this.abilityId(actor) === 'serenegrace' ? 2 : 1, i, s;
+    if (actor.side.isPlayer && this.relicMod('luck')) serene *= 1.3;
     for (i = 0; i < move.sec.length; i++) {
       s = move.sec[i];
       var chance = Math.min(100, (s.c || 100) * serene);
@@ -1016,6 +1048,7 @@
   B.applyHazards = function (act) {
     var h = act.side.hazards, max = this.stats0(act);
     if (act.item === 'heavydutyboots') return;
+    if (act.side.isPlayer && this.relicMod('hazardImmune')) return;
     if (h.stealthrock) {
       var e = this.effectiveness('Rock', act, null, null);
       var dmg = Math.floor(max * e / 8);
@@ -1057,6 +1090,7 @@
     // Nach einem gegnerischen Wechsel handelt der Spieler zuerst — unabhängig
     // von Initiative und Priorität.
     if (this.playerFirstNextTurn && (a0 || a1)) return [0, 1];
+    if (this.turn === 1 && (a0 || a1) && this.relicMod('firstTurnPriority')) return [0, 1];
     function prio(action, act) {
       if (!action) return -99;
       if (action.type !== 'move') return 6;
@@ -1182,7 +1216,8 @@
         act = this.sides[order[oi]].active;
         if (!act || act.mon.hp <= 0) continue;
         var safeTypes = w === 'sandstorm' ? ['Rock', 'Ground', 'Steel'] : ['Ice'];
-        var immune = safeTypes.some(function (t) { return act.types.indexOf(t) >= 0; }) ||
+        var immune = (act.side.isPlayer && this.relicMod('weatherImmune')) ||
+          safeTypes.some(function (t) { return act.types.indexOf(t) >= 0; }) ||
           /sandveil|sandrush|sandforce|magicguard|overcoat|icebody|snowcloak|slushrush/.test(this.abilityId(act)) ||
           act.item === 'safetygoggles';
         if (!immune) {
@@ -1292,6 +1327,18 @@
     for (var i = 0; i < 2; i++) {
       var side = this.sides[i], act = side.active;
       if (!act || act.mon.hp > 0 || act.fainted) continue;
+      // Notfallband: das erste besiegte Pokémon steht noch einmal auf.
+      if (side.isPlayer && !side.emergencyUsed) {
+        var rescue = this.relicMod('emergencyRevive');
+        if (rescue) {
+          side.emergencyUsed = true;
+          act.mon.hp = Math.max(1, Math.round(act.stats[0] * rescue));
+          act.mon.status = null;
+          this.say(this.name(act) + ' rappelt sich am Notfallband noch einmal auf!', 'heal',
+            { side: i, amount: act.mon.hp, hp: act.mon.hp, max: act.stats[0] });
+          continue;
+        }
+      }
       act.fainted = true;
       side.fainted++;
       side.lastFainted = act;
@@ -1302,6 +1349,13 @@
       this.say(this.name(act) + ' wurde besiegt!', 'faint', { side: i, mon: side.activeIndex });
       var foe = side.other.active;
       if (foe && foe.mon.hp > 0) this.hook(foe, 'onFoeFaint', [act]);
+      // Kampfgeist: ein Sieg im Kampf beflügelt.
+      if (!side.isPlayer && foe && foe.mon.hp > 0 && this.relicMod('koBoost')) {
+        var pick = {};
+        pick[PL.STATS[1 + this.rng.int(5)]] = 1;
+        this.say('Kampfgeist!', 'ability', { side: foe.side.id });
+        this.boost(foe, pick, foe);
+      }
       if (act.vol.destinybond && foe && foe.mon.hp > 0) {
         this.say('Es reißt ' + this.name(foe) + ' mit sich!', 'text', { side: foe.side.id });
         this.damage(foe, foe.mon.hp, { ignoreSub: true, trueDamage: true });
@@ -1408,7 +1462,7 @@
   };
 
   B.megaCharges = function (side) {
-    return this.hasRelic('mega_armband') && side.isPlayer ? 2 : 1;
+    return side.isPlayer ? (this.relicMod('megaCharges') || 1) : 1;
   };
 
   B.canMega = function (act) {
@@ -1469,7 +1523,8 @@
     }
     var ball = PL.items ? PL.items.get(ballId) : null;
     var mult = ball && ball.ball ? ball.ball(this, foe) : 1;
-    this.say('Du wirfst ' + (ball ? ball.name : 'einen Ball') + '!', 'ball', { side: side.id });
+    if (this.relicMod('timerBalls')) mult *= 1 + Math.min(2, this.turn * 0.15);
+    this.say('Du wirfst ' + (ball ? ball.name : 'einen Ball') + '!', 'ball', { side: side.id, item: ballId });
     if (this.nuzlockeLocked) {
       this.say('Nuzlocke: In dieser Region hast du deinen Fang schon gemacht.', 'text', {});
       return false;

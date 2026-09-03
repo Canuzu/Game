@@ -8,6 +8,11 @@
  * ========================================================================== */
 import '../js/run.js';
 import '../js/ai.js';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const SRC_DIR = join(dirname(fileURLToPath(import.meta.url)), '..', 'js');
 
 const PL = globalThis.PL;
 const { dex, mon: mons } = PL;
@@ -424,6 +429,130 @@ section('Durchgespielter Run');
   check('Runs kommen spürbar voran', totalBattles / 6 >= 4, 'Ø ' + (totalBattles / 6).toFixed(1) + ' Kämpfe');
 }
 
+section('Relikte');
+{
+  // Statische Prüfung: jede Reliktwirkung muss irgendwo ausgewertet werden.
+  // Genau hier sind 30 Relikte jahrelang wirkungslos durchgerutscht.
+  const files = ['run', 'battle', 'app', 'ai', 'world', 'meta', 'ui', 'effects'];
+  const src = files.map((f) => readFileSync(join(SRC_DIR, f + '.js'), 'utf8')).join('\n');
+  const dead = PL.relics.all().filter((r) => {
+    if (src.indexOf("'" + r.id + "'") >= 0) return false;
+    return !Object.keys(r.mods || {}).some((k) => new RegExp("['\"]" + k + "['\"]").test(src));
+  });
+  check('Jedes Relikt wird irgendwo ausgewertet', dead.length === 0,
+    dead.map((r) => r.name).join(', '));
+  check('Jedes Relikt hat mindestens eine Wirkung',
+    PL.relics.all().every((r) => r.mods && Object.keys(r.mods).length > 0));
+
+  const rng = PL.rng('relikte');
+  // Immer dieselben Pokémon, damit Vergleiche nur die Relikte messen.
+  const blueprint = {};
+  function fixed(id) {
+    if (!blueprint[id]) {
+      blueprint[id] = PL.mon.create(id, 50, rng, {
+        quality: 0.9, ivs: [20, 20, 20, 20, 20, 20], nature: 'Hardy'
+      });
+    }
+    return JSON.parse(JSON.stringify(blueprint[id]));
+  }
+  function armed(relics, mons2) {
+    const run = new PL.Run({ seed: 55, starter: 'charmander' });
+    (relics || []).forEach((id) => run.takeRelic(id));
+    run.party = (mons2 || ['charizard']).map(fixed);
+    return run;
+  }
+  function duel(run, foeId) {
+    const foe = fixed(foeId || 'snorlax');
+    const bt = new PL.Battle(run.battleOpts({ team: [foe], trainer: { name: 'Test' } }));
+    bt.start();
+    return bt;
+  }
+
+  // Typen-Fokus
+  {
+    const plain = duel(armed([]));
+    const boosted = duel(armed(['fokus_fire']));
+    const avg = (bt) => {
+      let t = 0;
+      for (let i = 0; i < 300; i++) {
+        t += bt.calcDamage(bt.sides[0].active, bt.sides[1].active, dex.move('flamethrower'), { noCrit: true }).dmg;
+      }
+      return t / 300;
+    };
+    const ratio = avg(boosted) / avg(plain);
+    near('Fokus: Feuer verstärkt Feuerattacken um 30 %', ratio, 1.3, 0.06);
+    const other = duel(armed(['fokus_water']));
+    near('… und lässt andere Typen unberührt', avg(other) / avg(plain), 1, 0.05);
+  }
+
+  // Notfallband
+  {
+    const bt = duel(armed(['notfallband']));
+    bt.damage(bt.sides[0].active, 99999);
+    bt.checkFaints();
+    check('Das Notfallband fängt den ersten K. o. ab', bt.sides[0].active.mon.hp > 0,
+      'KP ' + bt.sides[0].active.mon.hp);
+    bt.damage(bt.sides[0].active, 99999);
+    bt.checkFaints();
+    eq('… aber nur einmal pro Kampf', bt.sides[0].active.mon.hp, 0);
+  }
+
+  // Schutzhelm
+  {
+    const bt = duel(armed(['schutzhelm'], ['charizard', 'pikachu']));
+    bt.addSideCondition(bt.sides[0], 'stealthrock', bt.sides[1].active);
+    const before = bt.sides[0].team[1].hp;
+    bt.switchIn(bt.sides[0], 1);
+    eq('Der Schutzhelm hält Tarnsteine ab', bt.sides[0].team[1].hp, before);
+  }
+
+  // Teamgeist
+  {
+    const six = ['charizard', 'pikachu', 'gengar', 'lapras', 'onix', 'snorlax'];
+    const plain = duel(armed([], six));
+    const team = duel(armed(['teamgeist'], six));
+    check('Teamgeist stärkt ein volles Team',
+      team.statOf(team.sides[0].active, 'atk') > plain.statOf(plain.sides[0].active, 'atk'));
+  }
+
+  // Wunderkerze
+  {
+    const bt = duel(armed(['wunderkerze']));
+    let hits = 0;
+    for (let i = 0; i < 60; i++) {
+      if (bt.accuracyCheck(bt.sides[0].active, bt.sides[1].active, dex.move('hypnosis'))) hits++;
+    }
+    eq('Die Wunderkerze lässt Statusattacken nie danebengehen', hits, 60);
+  }
+
+  // Mega-Armband
+  {
+    const run = armed(['mega_armband'], ['charizard', 'gengar']);
+    run.party[0].item = 'charizarditey';
+    run.party[1].item = 'gengarite';
+    const bt = duel(run);
+    eq('Das Mega-Armband erlaubt zwei Mega-Entwicklungen', bt.megaCharges(bt.sides[0]), 2);
+  }
+
+  // Eilekarte
+  {
+    const bt = duel(armed(['eilekarte']), 'jolteon');
+    bt.turn = 1;
+    const order = bt.actionOrder({ type: 'move', index: 0 }, { type: 'move', index: 0 });
+    eq('Die Eilekarte lässt dich die erste Runde eröffnen', order[0], 0);
+  }
+
+  // Zweite Chance
+  {
+    const run = armed(['zweite_chance']);
+    run.enterNode(0, 0);
+    run.setScene(run.makeItemFind(run.rng));
+    check('Zweite Chance erlaubt einen neuen Wurf', run.canReroll());
+    run.reroll();
+    check('… und nur einen', !run.canReroll());
+  }
+}
+
 section('Neue Systeme');
 {
   const run = new PL.Run({ seed: 4242, mode: 'standard', starter: 'charmander' });
@@ -525,6 +654,86 @@ section('Speichern und Laden');
   eq('Der Rivale übersteht das Speichern', back2.rival.name, run.rival.name);
   const a = PL.rng(back.rngState).int(1e6), b = PL.rng(run.rng.save()).int(1e6);
   eq('Zufallsstrom läuft identisch weiter', a, b);
+}
+
+section('Spielstand sichern');
+{
+  const store = {};
+  globalThis.localStorage = {
+    getItem: (k) => (k in store ? store[k] : null),
+    setItem: (k, v) => { store[k] = String(v); },
+    removeItem: (k) => { delete store[k]; }
+  };
+  await import('../js/meta.js');
+  const meta = PL.meta;
+  check('Der Fortschrittsspeicher steht bereit', meta.available());
+  meta.reset();
+  const run = new PL.Run({ seed: 321, starter: 'squirtle' });
+  meta.noteCaught(run.party[0]);
+  meta.saveRun(run);
+
+  const text = meta.exportSave();
+  const parsed = JSON.parse(text);
+  eq('Der Export trägt eine Kennung', parsed.format, meta.SAVE_FORMAT);
+  eq('… und eine Version', parsed.version, meta.SAVE_VERSION);
+  check('… und enthält Fortschritt und Run', !!parsed.meta && !!parsed.run);
+
+  meta.reset();
+  eq('Nach dem Zurücksetzen ist der Pokédex leer', Object.keys(meta.load().caught).length, 0);
+  const res = meta.importSave(text);
+  check('Der Import meldet Erfolg', res.ok, res.text);
+  eq('… und stellt den Pokédex wieder her', Object.keys(meta.load().caught).length, 1);
+  check('… samt laufendem Run', meta.hasRun());
+
+  check('Unsinn wird abgelehnt', !meta.importSave('{}').ok);
+  check('Kaputter Text wird abgelehnt', !meta.importSave('kein json').ok);
+  check('Fremde Dateien werden abgelehnt', !meta.importSave('{"format":"anderes-spiel"}').ok);
+
+  // Alte Runs werden verworfen statt still kaputtzugehen
+  const old = JSON.parse(JSON.stringify(run.toJSON()));
+  old.version = 0;
+  globalThis.localStorage.setItem('pokelike.plus.run.v1', JSON.stringify(old));
+  eq('Ein Run aus einer alten Fassung gilt nicht als fortsetzbar', meta.hasRun(), false);
+  eq('… und wird nicht geladen', meta.loadRun(), null);
+  check('Der übrige Fortschritt bleibt dabei erhalten', Object.keys(meta.load().caught).length === 1);
+  delete globalThis.localStorage;
+}
+
+section('Momente');
+{
+  await import('../js/moments.js');
+  const M = PL.moments;
+  const MS = M.MS;
+  const ballMs = MS.throw + MS.absorb + MS.drop + 3 * MS.shake + MS.verdict + 50;
+  const evoMs = MS.morph + MS.flash + MS.reveal;
+  const lvlMs = 6 * MS.stat + 140;
+  check('Der Ballwurf bleibt unter einer Sekunde', ballMs < 1000, ballMs + ' ms');
+  check('Die Entwicklung bleibt unter 1,2 Sekunden', evoMs < 1200, evoMs + ' ms');
+  check('Die Werte-Tafel bleibt unter einer Sekunde', lvlMs < 1000, lvlMs + ' ms');
+  check('Kein Moment hängt am Kampftempo',
+    !readFileSync(join(SRC_DIR, 'moments.js'), 'utf8').includes('delayMs'));
+  eq('Der Hyperball wird als solcher gezeichnet', M.kindOf('hyperball'), 'hyper');
+  eq('Unbekannte Bälle fallen auf den Pokéball zurück', M.kindOf('irgendwas'), 'poke');
+
+  // Die Oberfläche braucht Vorher-/Nachher-Werte und die alte Gestalt.
+  const run = new PL.Run({ seed: 4242, starter: 'charmander' });
+  run.party[0].lvl = 15;
+  run.party[0].exp = 0;
+  const foe = PL.mon.create('rattata', 14, PL.rng('moment-foe'), {});
+  const bt = new PL.Battle(run.battleOpts({ team: [foe], wild: true }));
+  bt.sides[1].team.forEach((m) => { m.hp = 0; });
+  bt.outcome = 'win';
+  bt.ended = true;
+  const res = run.finishBattle(bt);
+  const ups = res.levelUps;
+  check('Levelaufstiege bringen Vorher- und Nachher-Werte mit',
+    ups.every((u) => Array.isArray(u.before) && Array.isArray(u.after) && u.before.length === 6));
+  check('Je Pokémon steht höchstens ein Levelaufstieg in der Liste',
+    new Set(ups.map((u) => u.mon)).size === ups.length);
+  check('Die Werte wachsen beim Aufstieg',
+    ups.every((u) => u.after.every((v, i) => v >= u.before[i])));
+  check('Entwicklungen nennen die alte Gestalt',
+    res.evolutions.every((e) => !!e.fromSp && !!dex.sp(e.fromSp)));
 }
 
 section('Inhalte');
