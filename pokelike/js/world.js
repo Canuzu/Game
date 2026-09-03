@@ -58,7 +58,10 @@
     ['Flint', 'Fire'], ['Lucian', 'Psychic'], ['Shauntal', 'Ghost'], ['Marshal', 'Fighting'],
     ['Grimsley', 'Dark'], ['Caitlin', 'Psychic'], ['Malva', 'Fire'], ['Siebold', 'Water'],
     ['Wikstrom', 'Steel'], ['Drasna', 'Dragon'], ['Hala', 'Fighting'], ['Olivia', 'Rock'],
-    ['Rika', 'Ground'], ['Poppy', 'Steel'], ['Hassel', 'Dragon'], ['Kahili', 'Flying']
+    ['Rika', 'Ground'], ['Poppy', 'Steel'], ['Hassel', 'Dragon'], ['Kahili', 'Flying'],
+    // Galar hat keine Top Vier — hier treten die Halbfinalgegner des
+    // Pokal-Turniers an, damit die Region in der Liga nicht fehlt.
+    ['Marnie', 'Dark'], ['Bede', 'Fairy'], ['Piers', 'Dark']
   ];
 
   var CHAMPIONS = [
@@ -309,22 +312,43 @@
     };
   }
 
+  /**
+   * Ein Mitglied der Top Vier — wie bei den Arenaleitern die Aufstellung aus
+   * dem Hauptspiel, mit derselben Vorstufen-Regel für zu weit entwickelte
+   * Arten. Nur wer keine hinterlegte Aufstellung hat, bekommt eine aus dem
+   * Typenpool gebaut.
+   */
   function eliteTeam(rng, level, index, used, opts) {
     var choice, guard = 0;
     do { choice = rng.pick(ELITE); } while (used && used[choice[0]] && guard++ < 40);
     if (used) used[choice[0]] = true;
     var type = choice[1];
-    var pool = encounterPool({ level: level, types: [type], anyGen: true, allowLegendary: level > 60 });
-    var count = Math.min(5, (opts && opts.maxSize) || 5);
-    var team = [], seen = {}, i;
-    for (i = 0; i < count; i++) {
-      var last = i === count - 1;
-      var sp = last
-        ? rng.weighted(pool, function (s) { return Math.pow(Math.max(1, s.bst - 400), 2) * (seen[s.id] ? 0.02 : 1); })
-        : pickEncounter(rng, pool, level, { rare: true, exclude: seen });
-      seen[sp.id] = 1;
-      var mon = buildMon(rng, sp, level + (last ? 1 : 0), {
-        quality: 0.9 - ((opts && opts.ease) || 0), ivFloor: 16, hiddenChance: 0.3, shinyOdds: 1 / 100
+    var roster = PL.leaders ? PL.leaders.team(choice[0]) : null;
+    var quality = 0.9 - ((opts && opts.ease) || 0);
+
+    var species;
+    if (roster && roster.length) {
+      species = roster.map(function (id) { return dex.sp(id); }).filter(Boolean)
+        .map(function (sp) { return fitToLevel(sp, level); });
+    } else {
+      var pool = encounterPool({ level: level, types: [type], anyGen: true, allowLegendary: level > 60 });
+      var count = Math.min(5, (opts && opts.maxSize) || 5);
+      species = [];
+      var seen = {}, k;
+      for (k = 0; k < count; k++) {
+        var pick = k === count - 1
+          ? rng.weighted(pool, function (sp) { return Math.pow(Math.max(1, sp.bst - 400), 2) * (seen[sp.id] ? 0.02 : 1); })
+          : pickEncounter(rng, pool, level, { rare: true, exclude: seen });
+        seen[pick.id] = 1;
+        species.push(pick);
+      }
+    }
+
+    var team = [], i;
+    for (i = 0; i < species.length; i++) {
+      var last = i === species.length - 1;
+      var mon = buildMon(rng, species[i], level + (last ? 1 : 0), {
+        quality: quality, ivFloor: 16, hiddenChance: 0.3, shinyOdds: 1 / 100
       });
       if (last || i < 1) {
         var eStone = last ? megaStoneFor(mon, rng) : null;
@@ -335,13 +359,17 @@
       mons.addEVs(mon, 'hp', 70);
       team.push(mon);
     }
-    return { team: team, name: 'Top Vier ' + choice[0], cls: 'Top Vier', type: type, level: 3 };
+    return {
+      team: team, name: 'Top Vier ' + choice[0], cls: 'Top Vier', type: type, level: 3,
+      leader: choice[0],
+      look: PL.leaders ? PL.leaders.look(choice[0]) : null
+    };
   }
 
   function championTeam(rng, level, opts) {
     var champ = rng.pick(CHAMPIONS);
     var team = champ.team.map(function (id, i) {
-      var sp = dex.sp(id) || dex.sp('pidgeot');
+      var sp = fitToLevel(dex.sp(id) || dex.sp('pidgeot'), level);
       var mon = buildMon(rng, sp, level + (i === 5 ? 2 : 0), {
         quality: 0.9 - ((opts && opts.ease) || 0), ivFloor: 20, hiddenChance: 0.5, shinyOdds: 1 / 60
       });
@@ -352,7 +380,11 @@
       mons.addEVs(mon, 'spe', 140);
       return mon;
     });
-    return { team: team, name: 'Champ ' + champ.name, cls: 'Champ', level: 3 };
+    return {
+      team: team, name: 'Champ ' + champ.name, cls: 'Champ', level: 3,
+      leader: champ.name,
+      look: PL.leaders ? PL.leaders.look(champ.name) : null
+    };
   }
 
   /* ---------- 5) Der Rivale ------------------------------------------------------

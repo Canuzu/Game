@@ -762,6 +762,37 @@ section('Arenaleiter');
       misty.team.map((m) => dex.sp(m.sp).id).join(', '));
   }
 
+  // Top Vier und Champ nach demselben Muster.
+  {
+    const W = PL.world;
+    const ohneTeam = W.ELITE.filter((e) => !L.team(e[0])).map((e) => e[0]);
+    check('Jedes Mitglied der Top Vier hat eine echte Aufstellung',
+      ohneTeam.length === 0, ohneTeam.join(', '));
+    const ohneBild = W.ELITE.filter((e) => !L.look(e[0])).map((e) => e[0])
+      .concat(W.CHAMPIONS.filter((c) => !L.look(c.name)).map((c) => c.name));
+    check('Top Vier und Champs haben ein beschriebenes Aussehen',
+      ohneBild.length === 0, ohneBild.join(', '));
+
+    const schlecht = [];
+    Object.keys(L.elite).forEach((n) => L.elite[n].team.forEach((id) => {
+      if (!dex.sp(id)) schlecht.push(n + ': ' + id);
+    }));
+    check('Alle Arten der Liga-Aufstellungen gibt es', schlecht.length === 0, schlecht.join(', '));
+
+    const e4 = W.eliteTeam(PL.rng('liga-test'), 60, 0, {}, {});
+    const soll4 = L.team(e4.leader);
+    eq('Der Liga-Kampf nutzt die echte Aufstellung',
+      e4.team.map((m) => dex.sp(m.sp).id).join(','), soll4.join(','));
+    check('… und das Mitglied bringt sein Aussehen mit', !!e4.look && !!e4.look.shirt);
+
+    const ch = W.championTeam(PL.rng('champ-test'), 66, {});
+    check('Auch der Champ bringt sein Aussehen mit', !!ch.look && !!ch.look.shirt, ch.name);
+    check('Der Typ des Liga-Mitglieds kommt in seiner Aufstellung vor',
+      W.ELITE.every((e) => L.team(e[0]).some((id) => dex.sp(id).t.indexOf(e[1]) >= 0)),
+      W.ELITE.filter((e) => !L.team(e[0]).some((id) => dex.sp(id).t.indexOf(e[1]) >= 0))
+        .map((e) => e[0]).join(', '));
+  }
+
   // Fortschritt bestimmt, welcher Leiter antritt: vorn die frühen Orden.
   const frueh = {}, spaet = {};
   for (let i = 0; i < 40; i++) {

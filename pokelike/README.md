@@ -111,12 +111,22 @@ Spiele machen es selbst so: frühe Arenaleiter führen die jüngere Form
 derselben Art. Nach oben wird nie verändert; ab Level 25 steht Starmie wieder
 da, wo es hingehört.
 
-Die **Trainerfiguren** der Leiter sind nach ihren Vorlagen gezeichnet: Rockos
+Dasselbe gilt für die **Liga**: die Top Vier treten mit ihren Aufstellungen
+aus dem Hauptspiel an — Lorelei mit Jugong und Lapras, Agatha mit ihren zwei
+Gengar, Drasna mit Dragalgon und UHaFnir. Galar hat keine Top Vier; dort
+treten die Halbfinalgegner des Pokal-Turniers an (Marnie, Bede, Piers), damit
+die Region in der Liga nicht fehlt. Die neun **Champions** hatten ihre echten
+Sechserteams schon immer.
+
+Die **Trainerfiguren** aller 112 — Arenaleiter, Top Vier und Champions — sind
+nach ihren Vorlagen gezeichnet: Rockos
 braune Stachelfrisur und die orange Weste, Mistys seitlicher Zopf und das
 gelbe Top, Giovannis orangefarbener Anzug mit dunklem Umhang. Die
 Originalbilder liegen ausschließlich bei Pokémon Showdown und sind ohne Netz
 nicht zu haben — deshalb steht in `js/leaders.js` für jeden, was ihn erkennbar
-macht, und der Pixel-Zeichner setzt es im Stil des übrigen Spiels um.
+macht, und der Pixel-Zeichner setzt es im Stil des übrigen Spiels um. Lances
+rote Stachelfrisur und der orange Umhang, Cynthias blondes langes Haar über
+dem schwarzen Mantel, Leons violettes Haar unter der Kappe.
 
 **Mega-Entwicklung** — 48 Pokémon haben eine Mega-Form (dazu die Protoformen
 von Kyogre und Groudon). Einmal pro Kampf, mit dem passenden Stein; Rayquaza

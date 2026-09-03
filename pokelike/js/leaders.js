@@ -198,11 +198,124 @@
                     look: { skin: C.haut, hair: '#8ac8e0', hairdo: 'lang', shirt: '#e8f0f8', pants: '#3a5a8a' } }
   };
 
+  /* ========================================================== Top Vier ==
+   * Dieselbe Machart: die Aufstellung aus dem Hauptspiel, das Ass zuletzt.
+   * Galar hat keine Top Vier — dort treten die Halbfinalgegner des
+   * Pokal-Turniers an, damit die Region in der Liga nicht fehlt.
+   * ==================================================================== */
+
+  var ELITE = {
+
+    /* --- Kanto --- */
+    'Lorelei':  { team: ['dewgong', 'cloyster', 'slowbro', 'jynx', 'lapras'],
+                  look: { skin: C.haut, hair: '#8a5a3a', hairdo: 'lang', shirt: '#5a8ad8', pants: '#3a5a9a', skirt: true } },
+    'Bruno':    { team: ['onix', 'hitmonchan', 'hitmonlee', 'onix', 'machamp'],
+                  look: { skin: C.hautX, hair: C.dunkel, hairdo: 'kurz', shirt: '#c08050', pants: '#8a5a2a' } },
+    'Agatha':   { team: ['gengar', 'golbat', 'haunter', 'arbok', 'gengar'],
+                  look: { skin: C.haut, hair: C.silber, hairdo: 'lang', shirt: '#7a5a9a', pants: '#4a3a6a', cape: '#5a4278', skirt: true } },
+    'Lance':    { team: ['gyarados', 'dragonair', 'dragonair', 'aerodactyl', 'dragonite'],
+                  look: { skin: C.haut, hair: '#d8442a', hairdo: 'strubbel', shirt: C.dunkel, pants: '#2a2a38', cape: '#e8a02a' } },
+
+    /* --- Johto --- */
+    'Will':     { team: ['xatu', 'jynx', 'exeggutor', 'slowbro', 'xatu'],
+                  look: { skin: C.haut, hair: '#4a9a5a', hairdo: 'kurz', shirt: C.weiss, pants: '#c8c8d8' } },
+    'Karen':    { team: ['umbreon', 'murkrow', 'vileplume', 'gengar', 'houndoom'],
+                  look: { skin: C.haut, hair: C.silber, hairdo: 'lang', shirt: '#c8384a', pants: '#8a2434', skirt: true } },
+
+    /* --- Hoenn --- */
+    'Sidney':   { team: ['mightyena', 'shiftry', 'cacturne', 'crawdaunt', 'absol'],
+                  look: { skin: C.hautM, hair: '#c83a2a', hairdo: 'strubbel', shirt: '#3a3a44', pants: '#2a2a32' } },
+    'Phoebe':   { team: ['dusclops', 'banette', 'sableye', 'banette', 'dusclops'],
+                  look: { skin: C.hautD, hair: C.dunkel, hairdo: 'lang', shirt: '#e8b83c', pants: '#c86a3a', skirt: true } },
+    'Glacia':   { team: ['sealeo', 'glalie', 'sealeo', 'glalie', 'walrein'],
+                  look: { skin: C.haut, hair: C.silber, hairdo: 'lang', shirt: '#9a8ad0', pants: '#5a4a8a', skirt: true } },
+    'Drake':    { team: ['shelgon', 'altaria', 'kingdra', 'flygon', 'salamence'],
+                  look: { skin: C.hautM, hair: C.silber, hairdo: 'kurz', shirt: '#2a3a6a', pants: '#1e2a4a', cape: '#4a5a8a' } },
+
+    /* --- Sinnoh --- */
+    'Aaron':    { team: ['dustox', 'beautifly', 'vespiquen', 'heracross', 'drapion'],
+                  look: { skin: C.haut, hair: '#3a8a5a', hairdo: 'lang', shirt: '#e8e8f0', pants: '#4a8a5a' } },
+    'Bertha':   { team: ['quagsire', 'sudowoodo', 'golem', 'whiscash', 'hippowdon'],
+                  look: { skin: C.hautM, hair: C.silber, hairdo: 'kurz', shirt: '#8a7a4a', pants: '#5a4a3a', skirt: true } },
+    'Flint':    { team: ['rapidash', 'steelix', 'drifblim', 'lopunny', 'infernape'],
+                  look: { skin: C.hautM, hair: '#e8542a', hairdo: 'strubbel', shirt: '#3a3a44', pants: '#2a2a34' } },
+    'Lucian':   { team: ['mrmime', 'girafarig', 'medicham', 'alakazam', 'bronzong'],
+                  look: { skin: C.haut, hair: C.lila, hairdo: 'kurz', shirt: C.weiss, pants: '#6a5a9a' } },
+
+    /* --- Einall --- */
+    'Shauntal': { team: ['cofagrigus', 'drifblim', 'golurk', 'chandelure'],
+                  look: { skin: C.haut, hair: '#5a3a6a', hairdo: 'lang', shirt: '#8a6a4a', pants: '#5a4a3a', skirt: true } },
+    'Grimsley': { team: ['scrafty', 'krookodile', 'liepard', 'bisharp'],
+                  look: { skin: C.haut, hair: C.dunkel, hairdo: 'lang', shirt: C.weiss, pants: C.dunkel, cape: '#2a2a34' } },
+    'Caitlin':  { team: ['musharna', 'sigilyph', 'reuniclus', 'gothitelle'],
+                  look: { skin: C.haut, hair: C.blond, hairdo: 'lang', shirt: '#f0d8e8', pants: '#c87a9a', skirt: true } },
+    'Marshal':  { team: ['throh', 'sawk', 'conkeldurr', 'mienshao'],
+                  look: { skin: C.hautD, hair: C.dunkel, hairdo: 'kurz', shirt: '#3a6ac8', pants: '#e8e8f0' } },
+
+    /* --- Kalos --- */
+    'Malva':    { team: ['pyroar', 'torkoal', 'chandelure', 'talonflame'],
+                  look: { skin: C.haut, hair: '#d83a3a', hairdo: 'lang', shirt: '#c8384a', pants: C.dunkel, skirt: true } },
+    'Siebold':  { team: ['clawitzer', 'gyarados', 'starmie', 'barbaracle'],
+                  look: { skin: C.haut, hair: C.blond, hairdo: 'kurz', shirt: C.weiss, pants: '#3a6a9a' } },
+    'Wikstrom': { team: ['klefki', 'probopass', 'scizor', 'aegislash'],
+                  look: { skin: C.haut, hair: C.blond, hairdo: 'kurz', shirt: C.silber, pants: '#7a7a8a', cape: '#c8b84a' } },
+    'Drasna':   { team: ['dragalge', 'druddigon', 'altaria', 'noivern'],
+                  look: { skin: C.haut, hair: '#c89ad8', hairdo: 'lang', shirt: '#5a9a6a', pants: '#3a6a4a', skirt: true } },
+
+    /* --- Alola --- */
+    'Hala':     { team: ['hariyama', 'primeape', 'bewear', 'crabominable'],
+                  look: { skin: C.hautX, hair: C.silber, hairdo: 'strubbel', shirt: '#e8a83c', pants: '#8a5a2a' } },
+    'Olivia':   { team: ['armaldo', 'cradily', 'relicanth', 'lycanroc'],
+                  look: { skin: C.hautD, hair: '#4a2a20', hairdo: 'lang', shirt: '#f0d8e0', pants: '#c87a8a', skirt: true } },
+    'Kahili':   { team: ['braviary', 'hawlucha', 'oricorio', 'toucannon'],
+                  look: { skin: C.haut, hair: '#6a8ab0', hairdo: 'lang', shirt: C.weiss, pants: '#3a5a8a', hat: '#e8e8f0' } },
+
+    /* --- Galar: die Halbfinalgegner des Pokal-Turniers --- */
+    'Marnie':   { team: ['liepard', 'toxicroak', 'scrafty', 'morpeko'],
+                  look: { skin: C.haut, hair: C.schwarz, hairdo: 'zopf', shirt: '#2a2a34', pants: '#c8386a', skirt: true } },
+    'Bede':     { team: ['mawile', 'gothorita', 'rapidashgalar', 'hatterene'],
+                  look: { skin: C.haut, hair: '#e8d8e8', hairdo: 'kurz', shirt: '#e8e8f0', pants: '#7a5ab0' } },
+    'Piers':    { team: ['scrafty', 'malamar', 'skuntank', 'obstagoon'],
+                  look: { skin: C.haut, hair: C.silber, hairdo: 'lang', shirt: '#2a2a34', pants: '#1e1e26', cape: '#4a4a56' } },
+
+    /* --- Paldea --- */
+    'Rika':     { team: ['whiscash', 'camerupt', 'donphan', 'dugtrio', 'clodsire'],
+                  look: { skin: C.hautD, hair: C.dunkel, hairdo: 'kurz', shirt: '#c86a3a', pants: '#5a4a3a' } },
+    'Poppy':    { team: ['copperajah', 'bronzong', 'corviknight', 'magnezone', 'tinkaton'],
+                  look: { skin: C.haut, hair: C.pink, hairdo: 'zopf', shirt: C.silber, pants: '#8a8a9a', skirt: true } },
+    'Hassel':   { team: ['noivern', 'haxorus', 'flapple', 'dragalge', 'baxcalibur'],
+                  look: { skin: C.hautX, hair: '#3ab0a0', hairdo: 'lang', shirt: '#3a8a7a', pants: '#2a5a4a' } }
+  };
+
+  /* ========================================================== Champions ==
+   * Ihre Aufstellungen stehen bereits in world.js — hier fehlt nur, wie sie
+   * aussehen.
+   * ==================================================================== */
+
+  var CHAMPIONS = {
+    'Blue':     { look: { skin: C.haut, hair: '#8a5a2a', hairdo: 'strubbel', shirt: '#6a4a9a', pants: C.dunkel } },
+    'Lance':    { look: { skin: C.haut, hair: '#d8442a', hairdo: 'strubbel', shirt: C.dunkel, pants: '#2a2a38', cape: '#e8a02a' } },
+    'Steven':   { look: { skin: C.haut, hair: C.silber, hairdo: 'kurz', shirt: '#2a2a34', pants: '#1e1e28', cape: '#7a5ab0' } },
+    'Cynthia':  { look: { skin: C.haut, hair: C.blond, hairdo: 'lang', shirt: '#2a2a34', pants: '#1e1e28', cape: '#3a3a48' } },
+    'Alder':    { look: { skin: C.hautD, hair: '#d8642a', hairdo: 'lang', shirt: '#c84a2a', pants: '#8a3a1a', cape: '#e8843a' } },
+    'Diantha':  { look: { skin: C.haut, hair: '#7a5a3a', hairdo: 'kurz', shirt: C.weiss, pants: '#2a2a34', skirt: true } },
+    'Kukui':    { look: { skin: C.hautX, hair: C.dunkel, hairdo: 'strubbel', shirt: '#c08050', pants: '#3a3a48', cape: '#f0f0f8' } },
+    'Leon':     { look: { skin: C.hautX, hair: C.lila, hairdo: 'lang', shirt: '#e8e8f0', pants: '#c8384a', cape: '#3a3a6a', hat: '#c8384a' } },
+    'Geeta':    { look: { skin: C.haut, hair: '#9a7ac8', hairdo: 'lang', shirt: '#f0e8d8', pants: '#c8a83c', cape: '#e8d84a', skirt: true } }
+  };
+
+  /** Sucht eine Person in allen drei Tabellen. */
+  function find(name) {
+    return LEADERS[name] || ELITE[name] || CHAMPIONS[name] || null;
+  }
+
   PL.leaders = {
     all: LEADERS,
-    get: function (name) { return LEADERS[name] || null; },
-    team: function (name) { var l = LEADERS[name]; return l ? l.team.slice() : null; },
-    look: function (name) { var l = LEADERS[name]; return l ? l.look : null; }
+    elite: ELITE,
+    champions: CHAMPIONS,
+    get: find,
+    team: function (name) { var l = find(name); return l && l.team ? l.team.slice() : null; },
+    look: function (name) { var l = find(name); return l ? l.look : null; }
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = PL.leaders;
