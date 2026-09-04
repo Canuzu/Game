@@ -128,6 +128,25 @@ macht, und der Pixel-Zeichner setzt es im Stil des übrigen Spiels um. Lances
 rote Stachelfrisur und der orange Umhang, Cynthias blondes langes Haar über
 dem schwarzen Mantel, Leons violettes Haar unter der Kappe.
 
+**Lebensräume statt Zufallsliste** — jeder Knoten weiß, in welcher Kulisse er
+liegt, und die Begegnungen richten sich danach: im Wald Käfer und Pflanzen, in
+der Höhle Gestein und Boden, am Wasser Wasser-Pokémon. Es ist eine Gewichtung,
+keine Sperre — gelegentlich steht eben doch etwas Unerwartetes im Wald.
+
+Dazu zwei Änderungen an der Auswahl, beide gemessen:
+
+* **Charakterköpfe statt Routenfüller.** Vorher wurde nach der aktuellen
+  Basiswertsumme gewürfelt, und in Region 1 waren 94 % der Angebote
+  unentwickelte Füller — Rattfratz, Raupy, Hornliu. Jetzt zählt, was am *Ende*
+  der Entwicklungsreihe steht: Raupy wird an Smettbo gemessen (395), Abra an
+  Simsala (500). Der Anteil echter Füller fiel damit von rund der Hälfte auf
+  5–7 %.
+* **Kein zweites Mal dasselbe.** Der Run merkt sich, welche Arten schon
+  aufgetaucht sind, und wählt sie danach seltener. Wiederholungen innerhalb
+  eines Runs: von 11 % auf 4 %, 103 verschiedene Arten bei 108 Angeboten.
+
+Die Regionen bleiben dabei streng bei sich: in Kanto begegnet dir Kanto.
+
 **Formen sehen aus wie Formen** — Alola-Raichu surft auf seinem Schweif,
 Galar-Smogmog hat Schornsteine, und ein mega-entwickeltes Glurak wird
 schwarzblau. PokeAPI führt Regionalformen und Mega-Formen unter eigenen

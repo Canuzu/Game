@@ -141,15 +141,99 @@
    * summe sorgt dafür, dass in Kanto Raupy und im Endspiel Despotar auftaucht —
    * und nicht umgekehrt.
    */
+  /* ---------- Lebensräume ---------------------------------------------------
+   * Jeder Knoten weiß, in welcher Kulisse er liegt (siehe scenery.js). Diese
+   * Zuordnung macht daraus einen Lebensraum: im Wald begegnen dir Käfer und
+   * Pflanzen, in der Höhle Gestein und Boden. Es ist eine Gewichtung, keine
+   * Sperre — sonst wäre der Vorrat in kleinen Regionen schnell leer, und man
+   * träfe im Wald nie etwas Überraschendes.
+   * ------------------------------------------------------------------------ */
+
+  var HABITAT = {
+    wiese:     ['Normal', 'Grass', 'Bug', 'Flying', 'Fairy'],
+    wald:      ['Bug', 'Grass', 'Poison', 'Flying'],
+    hoehle:    ['Rock', 'Ground', 'Steel', 'Dark'],
+    berg:      ['Rock', 'Ground', 'Fighting', 'Steel', 'Flying'],
+    schnee:    ['Ice', 'Water', 'Steel'],
+    strand:    ['Water', 'Ground', 'Flying', 'Normal'],
+    wasser:    ['Water', 'Ice', 'Dragon'],
+    vulkan:    ['Fire', 'Rock', 'Ground'],
+    wueste:    ['Ground', 'Rock', 'Fire', 'Poison'],
+    stadt:     ['Normal', 'Electric', 'Steel', 'Poison', 'Fairy'],
+    ruine:     ['Ghost', 'Psychic', 'Dark', 'Rock'],
+    dschungel: ['Grass', 'Bug', 'Poison', 'Fighting'],
+    nacht:     ['Dark', 'Ghost', 'Psychic', 'Fairy'],
+    arena:     [],
+    liga:      []
+  };
+
+  /**
+   * Wie sehr eine Art zum Lebensraum passt: doppelte Wertung, wenn beide
+   * Typen dazugehören, anderthalbfach bei einem.
+   */
+  function habitatFit(sp, biome) {
+    var types = HABITAT[biome];
+    if (!types || !types.length) return 1;
+    var hits = 0, i;
+    for (i = 0; i < sp.t.length; i++) if (types.indexOf(sp.t[i]) >= 0) hits++;
+    // Deutlich genug, damit ein Knoten als Ort erkennbar wird, aber ohne
+    // Sperre: gelegentlich steht eben doch etwas Unerwartetes im Wald.
+    return hits === 0 ? 0.25 : hits >= 2 ? 4 : 2.5;
+  }
+
+  /**
+   * Was am Ende der Entwicklungsreihe steht. Raupy hat 195 Basiswerte, wird
+   * aber nur Smettbo (395); Abra hat 310 und wird Simsala (500). Für die
+   * Frage »lohnt es sich, das mitzunehmen« zählt das Ziel, nicht der Anfang —
+   * so kommen die Charakterköpfe nach vorn und die Routenfüller nach hinten.
+   */
+  function potential(sp) {
+    var cur = sp, guard = 0;
+    while (cur.ev && cur.ev.length && guard++ < 4) cur = dex.species[cur.ev[0]];
+    return cur.bst;
+  }
+
+  var HABITAT_TEXT = {
+    wiese:     'Auf der Wiese raschelt es im hohen Gras.',
+    wald:      'Zwischen den Bäumen regt sich etwas.',
+    hoehle:    'Aus dem Dunkel der Höhle blinzeln dich Augen an.',
+    berg:      'Am Hang lösen sich Steine — du bist nicht allein.',
+    schnee:    'Im Schnee zeichnen sich frische Spuren ab.',
+    strand:    'Am Ufer tummelt sich etwas zwischen den Wellen.',
+    wasser:    'Unter der Oberfläche zieht ein Schatten vorbei.',
+    vulkan:    'Über dem heißen Gestein flimmert die Luft.',
+    wueste:    'Im Sand bewegt sich etwas unter der Oberfläche.',
+    stadt:     'Zwischen den Häusern lungern ein paar Pokémon herum.',
+    ruine:     'In den alten Mauern flüstert es.',
+    dschungel: 'Im Dickicht raschelt und ruft es durcheinander.',
+    nacht:     'Im Schein des Lagerfeuers nähern sich Schatten.'
+  };
+
+  /** Was am Fangknoten steht — je nach Ort ein anderer Satz. */
+  function habitatText(biome) {
+    return (HABITAT_TEXT[biome] || 'Drei Pokémon beäugen dich neugierig.') +
+      ' Eines darf mitkommen.';
+  }
+
   function pickEncounter(rng, pool, level, opts) {
     opts = opts || {};
     var target = 250 + level * 4.6;
     return rng.weighted(pool, function (sp) {
-      var d = (sp.bst - target) / 80;
+      // Die Glocke ist breiter als früher (110 statt 80): eine schmale Kurve
+      // liefert zwar viele verschiedene Namen, aber immer aus derselben
+      // Leistungsschicht — und genau das fühlt sich gleichförmig an.
+      var d = (sp.bst - target) / 110;
       var w = Math.exp(-d * d) * 100 + 0.4;
+
+      // Charakterköpfe nach vorn, Routenfüller nach hinten.
+      w *= 0.55 + Math.max(0, Math.min(1.6, (potential(sp) - 330) / 190));
+
       if (dex.evosLeft(sp) > 0 && level > 34) w *= 0.4;
       if (dex.isLegendary(sp)) w *= 0.15;
       if (opts.rare) w *= 1 + Math.max(0, (sp.bst - 450) / 120);
+      if (opts.biome) w *= habitatFit(sp, opts.biome);
+      // Wer in diesem Run schon aufgetaucht ist, tritt seltener wieder an.
+      if (opts.met && opts.met[sp.id]) w *= 0.12;
       if (opts.exclude && opts.exclude[sp.id]) w *= 0.02;
       return w;
     });
@@ -908,6 +992,10 @@
     rivalBanter: rivalBanter,
     STARTER_TRIOS: STARTER_TRIOS,
     pickEncounter: pickEncounter,
+    HABITAT: HABITAT,
+    habitatText: habitatText,
+    habitatFit: habitatFit,
+    potential: potential,
     buildMon: buildMon,
     trainerTeam: trainerTeam,
     bossTeam: bossTeam,

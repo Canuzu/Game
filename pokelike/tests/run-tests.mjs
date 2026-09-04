@@ -703,6 +703,65 @@ section('Spielstand sichern');
   delete globalThis.localStorage;
 }
 
+section('Vielfalt der Begegnungen');
+{
+  const W = PL.world;
+
+  // Lebensräume
+  check('Jede Kulisse hat einen Lebensraum', Object.keys(W.HABITAT).length >= 13);
+  const wald = dex.sp('caterpie'), feuer = dex.sp('charmander');
+  check('Käfer passen in den Wald', W.habitatFit(wald, 'wald') > 1);
+  check('… ein Feuer-Pokémon dort weniger', W.habitatFit(feuer, 'wald') < 1);
+  check('In der Höhle ist es umgekehrt herum',
+    W.habitatFit(dex.sp('geodude'), 'hoehle') > W.habitatFit(wald, 'hoehle'));
+  eq('Ohne Lebensraum zählt alles gleich', W.habitatFit(wald, 'arena'), 1);
+
+  // Endstufen-Potenzial statt reiner Basiswerte
+  eq('Raupy wird an Smettbo gemessen', W.potential(dex.sp('caterpie')), dex.sp('butterfree').bst);
+  eq('Abra an Simsala', W.potential(dex.sp('abra')), dex.sp('alakazam').bst);
+  check('Abra hat mehr Potenzial als Raupy',
+    W.potential(dex.sp('abra')) > W.potential(dex.sp('caterpie')));
+
+  // Ein Fangknoten trifft sein Thema
+  const pool = W.encounterPool({ gen: 1, level: 16 });
+  let treffer = 0;
+  for (let i = 0; i < 60; i++) {
+    const sp = W.pickEncounter(PL.rng('h' + i), pool, 16, { biome: 'hoehle' });
+    if (W.habitatFit(sp, 'hoehle') > 1) treffer++;
+  }
+  check('In der Höhle passt die Mehrheit zum Ort', treffer > 33, treffer + ' von 60');
+
+  // Füller treten zurück
+  let fueller = 0;
+  for (let i = 0; i < 90; i++) {
+    const sp = W.pickEncounter(PL.rng('f' + i), pool, 14, {});
+    if (W.potential(sp) < 400) fueller++;
+  }
+  check('Echte Füller sind die Ausnahme', fueller < 27, fueller + ' von 90');
+
+  // Gedächtnis über den Run
+  const run = new PL.Run({ seed: 88, starter: 'charmander' });
+  const erst = [];
+  for (let i = 0; i < 12; i++) {
+    run.rowIndex = i % 9;
+    run.pos = { col: i % 3 };
+    run.makeCatchOffer(PL.rng('m' + i)).offers.forEach((m) => erst.push(dex.sp(m.sp).id));
+  }
+  const doppelt = erst.length - new Set(erst).size;
+  check('Innerhalb eines Runs wiederholt sich wenig', doppelt <= erst.length * 0.12,
+    doppelt + ' Doppelte bei ' + erst.length + ' Angeboten');
+  check('Der Run merkt sich, wem er begegnet ist', Object.keys(run.met).length > 20,
+    String(Object.keys(run.met).length));
+
+  const zurueck = PL.Run.fromJSON(JSON.parse(JSON.stringify(run.toJSON())));
+  eq('Das Gedächtnis übersteht das Speichern',
+    Object.keys(zurueck.met).length, Object.keys(run.met).length);
+
+  // Der Fangknoten sagt, wo man ist
+  const szene = run.makeCatchOffer(PL.rng('t'));
+  check('Der Fangknoten nennt seinen Ort', !!szene.biome && szene.text.length > 20, szene.text);
+}
+
 section('Deutsche Namen');
 {
   const T = PL.t;

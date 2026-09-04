@@ -92,6 +92,9 @@
     this.masterballUsed = false;
     this.freeRerollUsed = false;
     this.graveyard = [];
+    // Wer in diesem Run schon aufgetaucht ist. Damit begegnet man nicht
+    // dreimal derselben Art, während der halbe Pokédex ungesehen bleibt.
+    this.met = {};
     this.rival = {
       name: this.rng.pick(['Blau', 'Silber', 'Barry', 'Bell', 'Trace', 'Hugo', 'Nemila', 'Kieran']),
       stage: 0, wins: 0, losses: 0, starter: null
@@ -540,7 +543,9 @@
       level: level,
       allowLegendary: opts.rare && this.region >= 5
     });
-    var sp = W.pickEncounter(rng, pool, level, { rare: opts.rare });
+    var biome = this.biomeFor(opts.rare ? 'wild' : 'wild');
+    var sp = W.pickEncounter(rng, pool, level, { rare: opts.rare, biome: biome, met: this.met });
+    this.noteMet(sp);
     var mon = W.buildMon(rng, sp, level + (opts.rare ? 3 : 0), {
       quality: 0.55 + this.region * 0.03,
       shinyOdds: (1 / 400) * this.mod('shinyMult', 1),
@@ -552,7 +557,7 @@
     var bt = new PL.Battle(this.battleOpts({ team: [mon], wild: true }));
     bt.aiLevel = 0;
     bt.canCatch = true;
-    bt.biome = this.biomeFor(opts.rare ? 'wild' : 'wild');
+    bt.biome = biome;
     return bt;
   };
 
@@ -850,25 +855,35 @@
     return { to: 'box', mon: mon };
   };
 
+  /** Vermerkt eine Art als in diesem Run gesehen. */
+  R.noteMet = function (sp) {
+    if (!this.met) this.met = {};
+    if (sp && sp.id) this.met[sp.id] = 1;
+  };
+
   R.makeCatchOffer = function (rng) {
     var region = this.currentRegion();
     // Neuzugänge steigen auf Teamhöhe ein, sonst schleppt man sie nur mit.
     var level = this.enemyLevel(0);
+    var biome = this.biomeFor('catch');
     var pool = W.encounterPool({ gen: this.leagueStage >= 0 ? null : region.gen, anyGen: this.leagueStage >= 0, level: level });
     var picks = [], seen = {}, i;
     var count = this.catchAllowed() ? 3 + (this.mod('extraReward') || 0) : 1;
     for (i = 0; i < count; i++) {
-      var sp = W.pickEncounter(rng, pool, level, { exclude: seen, rare: i === 0 });
+      var sp = W.pickEncounter(rng, pool, level, {
+        exclude: seen, rare: i === 0, biome: biome, met: this.met
+      });
       seen[sp.id] = 1;
+      this.noteMet(sp);
       picks.push(W.buildMon(rng, sp, level, {
         quality: 0.85, ivFloor: 12,
         shinyOdds: (1 / 300) * this.mod('shinyMult', 1)
       }));
     }
     return {
-      kind: 'catch', offers: picks, locked: !this.catchAllowed(),
+      kind: 'catch', offers: picks, locked: !this.catchAllowed(), biome: biome,
       text: this.catchAllowed()
-        ? 'Drei Pokémon beäugen dich neugierig. Eines darf mitkommen.'
+        ? W.habitatText(biome)
         : 'Nuzlocke: In dieser Region hast du deinen Fang schon gemacht. Schauen darfst du trotzdem.'
     };
   };
@@ -1353,7 +1368,7 @@
       money: this.money, region: this.region, regionOrder: this.regionOrder,
       leagueStage: this.leagueStage, eliteUsed: this.eliteUsed, stats: this.stats,
       history: this.history.slice(-40), map: this.map, pos: this.pos, rowIndex: this.rowIndex,
-      bossesBeaten: this.bossesBeaten || 0, tms: this.tms || {},
+      bossesBeaten: this.bossesBeaten || 0, tms: this.tms || {}, met: this.met || {},
       regionCatches: this.regionCatches || 0,
       graveyard: this.graveyard || [], rival: this.rival,
       levelBonus: this.levelBonus || 0, pendingBlessing: this.pendingBlessing || null,
