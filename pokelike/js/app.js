@@ -234,8 +234,28 @@
   }
 
   SCREENS.newrun = function () {
-    var chosen = { mode: 'standard', ascension: 0, nuzlocke: false, starter: null };
+    var chosen = {
+      mode: 'standard', ascension: 0, nuzlocke: false, starter: null,
+      tempo: settings().tempo || 'gemuetlich'
+    };
     var maxAsc = meta.maxAscension();
+
+    // Gangart: die Grundeinstellung unterhalb der Aufstiege.
+    var tempoBox = el('div', { className: 'choice-row' });
+    Object.keys(PL.Run.TEMPO).forEach(function (key) {
+      var t = PL.Run.TEMPO[key];
+      var btn = el('button', {
+        className: 'choice' + (key === chosen.tempo ? ' selected' : ''), type: 'button',
+        onclick: function () {
+          chosen.tempo = key;
+          meta.setSetting('tempo', key);
+          meta.save();
+          Array.prototype.forEach.call(tempoBox.children, function (c) { c.classList.remove('selected'); });
+          btn.classList.add('selected');
+        }
+      }, [el('strong', { text: t.name }), el('span', { text: t.text })]);
+      tempoBox.appendChild(btn);
+    });
 
     var modeBox = el('div', { className: 'choice-row' });
     Object.keys(PL.Run.MODES).forEach(function (key) {
@@ -304,7 +324,13 @@
       el('h2', { text: 'Neuer Run' }),
       el('section', {}, [el('h3', { text: 'Modus' }), modeBox]),
       el('section', {}, [
-        el('h3', { text: 'Schwierigkeit' }),
+        el('h3', { text: 'Gangart' }),
+        el('p', { className: 'muted', text: 'Wie viel Widerstand du willst. Lässt sich für jeden Run neu wählen.' }),
+        tempoBox
+      ]),
+      el('section', {}, [
+        el('h3', { text: 'Aufstieg' }),
+        el('p', { className: 'muted', text: 'Zusätzliche Erschwernisse obendrauf — freigespielt durch gewonnene Runs.' }),
         el('div', { className: 'asc-box' }, [
           ascInput, ascLabel,
           maxAsc === 0 ? el('span', { className: 'muted', text: 'Höhere Aufstiege schaltest du frei, indem du Runs gewinnst.' }) : null
@@ -328,7 +354,7 @@
     if (chosen.mode === 'taeglich') seed = PL.util.hashSeed('daily-' + new Date().toISOString().slice(0, 10));
     App.run = new PL.Run({
       mode: chosen.mode, ascension: chosen.ascension, nuzlocke: chosen.nuzlocke,
-      starter: chosen.starter, seed: seed
+      tempo: chosen.tempo, starter: chosen.starter, seed: seed
     });
     App.run.party.forEach(function (m) { meta.noteCaught(m); });
     meta.save();

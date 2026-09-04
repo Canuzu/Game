@@ -141,8 +141,25 @@ Mega-Entwicklung, auch den Nachrücker nach einem K. o. Der Auto-Kampf spielt
 auf Sieg und würfelt nicht: Er rechnet jede Attacke gegen das aktuelle Ziel
 durch und nimmt die beste; bei Gleichstand entscheidet die zuverlässigere.
 
-**Wie schwer es zugeht** — Gegner richten sich nach dem eigenen Team, bleiben
-aber bewusst ein Stück dahinter: zwei Level, ein Pokémon weniger im Aufgebot
+**Wie schwer es zugeht** — vor jedem Run wählst du eine **Gangart**:
+
+| | Gegner | Zwischen den Kämpfen | Ausrüstung |
+|---|---|---|---|
+| **Gemütlich** (Vorgabe) | sechs Level zurück, ein Pokémon weniger | Team erholt sich nach jedem Sieg um ein Drittel | doppelte Ausstattung |
+| **Normal** | vier Level zurück | kleine Erholung | einfach |
+| **Fordernd** | drei Level zurück, bessere Werte | nichts geschenkt | knapp |
+
+Darüber liegen die elf **Aufstiege** als zusätzliche Erschwernis. Gemessen mit
+`tools/balance.mjs`: Arenaleiter 93 % auf Gemütlich, 79 % auf Normal, 72 % auf
+Fordernd.
+
+Vor Arenaleiter, Top Vier und Champ erholt sich das Team immer vollständig —
+in den Spielen steht vor jeder Arena ein Center. Das war der gemessene Grund
+fürs Scheitern: nicht die Stärke des Leiters, sondern dass man mit leerem
+Beutel bei ihm ankam.
+
+Gegner richten sich nach dem eigenen Team, bleiben
+aber bewusst ein Stück dahinter: mehrere Level, ein Pokémon weniger im Aufgebot
 und ein Abschlag auf Werte und Attackensets. Alle drei Zahlen stehen als
 `EASE` an einer Stelle in `js/run.js` und lassen sich in einer Minute
 nachziehen. Wilde Pokémon sind ausgenommen — sie sind die Erfahrungsquelle,

@@ -74,7 +74,8 @@ function resolve(run, scene) {
 }
 
 function autoRun(seed) {
-  const run = new PL.Run({ seed, starter: 'charmander' });
+  const run = new PL.Run({ seed, starter: 'charmander',
+    tempo: process.argv.find((a) => a.startsWith('--tempo='))?.slice(8) || 'gemuetlich' });
   let guard = 0;
   while (run.state !== 'gameover' && run.state !== 'victory' && guard++ < 4000) {
     const options = run.available();
@@ -100,10 +101,30 @@ function autoRun(seed) {
 }
 
 let victories = 0, regionSum = 0;
+const endet = {};
 for (let i = 0; i < N; i++) {
   const run = autoRun(5000 + i);
   if (run.state === 'victory') victories++;
   regionSum += run.region;
+  const k = 'Region ' + run.region + ' / Reihe ' + run.rowIndex;
+  endet[k] = (endet[k] || 0) + 1;
+  const team = run.party.length;
+  endet['_teamgroesse'] = (endet['_teamgroesse'] || 0) + team;
+  endet['_level'] = (endet['_level'] || 0) + run.teamLevel();
+  endet['_cap'] = (endet['_cap'] || 0) + run.levelCap;
+  endet['_geld'] = (endet['_geld'] || 0) + run.money;
+  endet['_traenke'] = (endet['_traenke'] || 0) +
+    Object.keys(run.bag).filter((k2) => /potion|trank|revive/i.test(k2))
+      .reduce((a, k2) => a + run.bag[k2], 0);
+}
+if (process.argv.includes('--ende')) {
+  console.log('Beim Aus im Schnitt: Team ' + (endet._teamgroesse / N).toFixed(1) +
+    ' Pokémon, Level ' + (endet._level / N).toFixed(1) +
+    ' bei Grenze ' + (endet._cap / N).toFixed(1) +
+    ', ' + Math.round(endet._geld / N) + ' ₽, ' + (endet._traenke / N).toFixed(1) + ' Heilmittel');
+  Object.keys(endet).filter((k) => !k.startsWith('_')).sort()
+    .forEach((k) => console.log('  ' + k.padEnd(24), endet[k]));
+  console.log();
 }
 
 if (process.argv.includes('--leiter')) {

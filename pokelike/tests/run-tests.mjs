@@ -562,6 +562,10 @@ section('Neue Systeme');
   run.party[1].hp = 5;
   run.party[2].hp = 0;
   run.party[3].status = 'brn';
+  // Der Beutel wird bewusst geleert: die Startausrüstung hängt an der
+  // Gangart, und die Schnellheilung nimmt immer den kleinsten passenden
+  // Gegenstand — sonst prüft der Test die Startausrüstung statt sich selbst.
+  run.bag = {};
   run.addItem('hyperpotion', 2); run.addItem('revive', 1); run.addItem('burnheal', 1);
   const stock = { revive: run.bag.revive, burnheal: run.bag.burnheal, hyperpotion: run.bag.hyperpotion };
   const used = run.quickHeal();
@@ -697,6 +701,47 @@ section('Spielstand sichern');
   eq('… und wird nicht geladen', meta.loadRun(), null);
   check('Der übrige Fortschritt bleibt dabei erhalten', Object.keys(meta.load().caught).length === 1);
   delete globalThis.localStorage;
+}
+
+section('Gangart');
+{
+  const T = PL.Run.TEMPO;
+  check('Drei Gangarten stehen bereit', Object.keys(T).length === 3, Object.keys(T).join(', '));
+  check('Jede hat Namen und Erklärung',
+    Object.keys(T).every((k) => T[k].name && T[k].text));
+  check('Gemütlich lässt Gegner weiter zurück als Fordernd',
+    T.gemuetlich.level > T.normal.level && T.normal.level > T.fordernd.level);
+  check('Gemütlich gibt mehr Ausrüstung mit',
+    T.gemuetlich.supplies > T.fordernd.supplies);
+
+  const leicht = new PL.Run({ seed: 11, starter: 'squirtle', tempo: 'gemuetlich' });
+  const hart = new PL.Run({ seed: 11, starter: 'squirtle', tempo: 'fordernd' });
+  check('Auf Gemütlich sind die Gegner niedriger',
+    leicht.enemyLevel(0) < hart.enemyLevel(0),
+    leicht.enemyLevel(0) + ' vs ' + hart.enemyLevel(0));
+  check('Auf Gemütlich liegt mehr im Beutel',
+    leicht.bag.potion > hart.bag.potion, leicht.bag.potion + ' vs ' + hart.bag.potion);
+  eq('Ohne Angabe wird gemütlich gespielt', new PL.Run({ seed: 1, starter: 'squirtle' }).tempo, 'gemuetlich');
+  eq('Eine unbekannte Gangart fällt auf gemütlich zurück',
+    new PL.Run({ seed: 1, starter: 'squirtle', tempo: 'quatsch' }).tempo, 'gemuetlich');
+
+  const back = PL.Run.fromJSON(JSON.parse(JSON.stringify(hart.toJSON())));
+  eq('Die Gangart übersteht das Speichern', back.tempo, 'fordernd');
+  const alt = JSON.parse(JSON.stringify(hart.toJSON()));
+  delete alt.tempo;
+  eq('Ein Stand ohne Gangart wird gemütlich', PL.Run.fromJSON(alt).tempo, 'gemuetlich');
+
+  // Verschnaufen nach dem Kampf
+  const run = new PL.Run({ seed: 5, starter: 'charmander', tempo: 'gemuetlich' });
+  run.party[0].hp = 1;
+  const foe = PL.mon.create('rattata', 6, PL.rng('atem'), {});
+  foe.hp = 0;
+  const bt = new PL.Battle(run.battleOpts({ team: [foe], wild: true }));
+  bt.outcome = 'win';
+  bt.ended = true;
+  run.finishBattle(bt);
+  check('Nach dem Sieg erholt sich das Team ein Stück', run.party[0].hp > 1,
+    'HP ' + run.party[0].hp);
 }
 
 section('Arenaleiter');
