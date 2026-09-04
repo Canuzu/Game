@@ -1,8 +1,13 @@
 # Veröffentlicht das Spiel unter https://canuzu.github.io/Game/
 #
-# Läuft bei jedem Push auf den Hauptzweig. Die Tests laufen vorher mit: geht
-# einer schief, wird nichts veröffentlicht — die erreichbare Seite bleibt dann
-# lieber auf dem letzten funktionierenden Stand.
+# Bei jedem Push auf den Hauptzweig laufen erst die Tests; nur wenn die
+# durchgehen, wird die Seite neu gebaut und auf den Zweig gh-pages geschoben,
+# von dem GitHub Pages ausliefert. Geht ein Test schief, bleibt die erreichbare
+# Seite auf dem letzten funktionierenden Stand.
+#
+# Der Weg über einen Zweig ist hier bewusst gewählt: den Actions-Weg müsste man
+# in den Repo-Einstellungen freischalten, den Zweig richtet GitHub von selbst
+# ein — der Workflow-Token darf keine Pages-Seite anlegen.
 name: Seite veröffentlichen
 
 on:
@@ -11,24 +16,21 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
-# Nie zwei Veröffentlichungen gleichzeitig
 concurrency:
-  group: pages
+  group: seite
   cancel-in-progress: true
 
 jobs:
-  bauen:
+  veroeffentlichen:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Regelwerk und Spielstärke prüfen
         run: npm test
@@ -41,26 +43,23 @@ jobs:
           mkdir -p _site
           cp index.html _site/
           cp -r css js _site/
-          # Zum Herunterladen und Weitergeben: alles in einer Datei
+          # Zum Herunterladen und Weitergeben: alles in einer einzigen Datei
           cp dist/schach.html _site/schach-einzeldatei.html
+          # Ohne diese Datei schickt GitHub die Seite durch Jekyll
+          touch _site/.nojekyll
 
-      # Einmalig nötig, bevor das hier greift:
-      #   Repo -> Settings -> Pages -> Build and deployment -> Source: GitHub Actions
-      # Das Anlegen der Seite kann der Workflow-Token nicht selbst erledigen
-      # ("Resource not accessible by integration"), das Ausliefern danach schon.
-      - name: Pages einrichten
-        uses: actions/configure-pages@v5
+      - name: Auf gh-pages schieben
+        run: |
+          cd _site
+          git init -q
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Schach als Webseite — Stand ${GITHUB_SHA::7}
 
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: _site
-
-  veroeffentlichen:
-    needs: bauen
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          Erzeugt aus dem Hauptzweig. Nicht von Hand bearbeiten."
+          git push -f \
+            "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" \
+            HEAD:gh-pages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

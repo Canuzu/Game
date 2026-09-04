@@ -4,9 +4,16 @@ Ein vollständiges Schachspiel für den Browser: gegen den Computer in vier
 Schwierigkeitsstufen oder zu zweit an einem Gerät — mit Partieanalyse, heller
 und dunkler Ansicht und vollständiger Tastaturbedienung.
 
-**Zum Spielen einfach `index.html` im Browser öffnen.** Kein Server, keine
-Installation, keine Abhängigkeiten — auch nicht zur Laufzeit. Alles läuft
-lokal, es werden keine Daten übertragen.
+### 👉 [Hier spielen: canuzu.github.io/Game](https://canuzu.github.io/Game/)
+
+Der Link funktioniert ohne Konto und ohne Anmeldung und lässt sich beliebig
+weitergeben. Wer das Spiel lieber offline hat, lädt sich
+[die Einzeldatei](https://canuzu.github.io/Game/schach-einzeldatei.html)
+herunter — darin steckt alles, sie läuft per Doppelklick.
+
+**Aus dem Projektordner heraus** genügt ebenfalls ein Doppelklick auf
+`index.html`. Kein Server, keine Installation, keine Abhängigkeiten — auch
+nicht zur Laufzeit. Alles läuft lokal, es werden keine Daten übertragen.
 
 ---
 
@@ -145,6 +152,19 @@ nicht laden, und das Spiel soll per Doppelklick startbar bleiben.
 
 Gegen die Uhr passt die KI ihr Zeitbudget an die Restzeit an, damit sie in
 einer Blitzpartie nicht an der eigenen Bedenkzeit scheitert.
+
+---
+
+## Veröffentlichung
+
+Jeder Push auf den Hauptzweig löst `.github/workflows/seite.yml` aus: erst
+laufen die Tests, dann wird die Seite gebaut und auf den Zweig `gh-pages`
+geschoben, von dem GitHub Pages ausliefert. Schlägt ein Test fehl, wird nichts
+ausgeliefert — die erreichbare Seite bleibt dann auf dem letzten
+funktionierenden Stand.
+
+Der Zweig `gh-pages` wird vom Workflow erzeugt und sollte nicht von Hand
+bearbeitet werden.
 
 ---
 
