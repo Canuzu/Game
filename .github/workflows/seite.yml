@@ -44,10 +44,12 @@ jobs:
           # Zum Herunterladen und Weitergeben: alles in einer Datei
           cp dist/schach.html _site/schach-einzeldatei.html
 
+      # Einmalig nötig, bevor das hier greift:
+      #   Repo -> Settings -> Pages -> Build and deployment -> Source: GitHub Actions
+      # Das Anlegen der Seite kann der Workflow-Token nicht selbst erledigen
+      # ("Resource not accessible by integration"), das Ausliefern danach schon.
       - name: Pages einrichten
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
 
       - uses: actions/upload-pages-artifact@v3
         with:
