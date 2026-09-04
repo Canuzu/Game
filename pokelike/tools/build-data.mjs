@@ -145,6 +145,88 @@ function packSecondary(s) {
   return o;
 }
 
+/* ---------------------------------------------- Deutsche Bezeichnungen ---
+ * Showdown führt nur englische Namen. Die deutschen kommen aus den CSV-
+ * Dateien von PokeAPI: eine Zeile je Name und Sprache, Deutsch ist Sprache 6.
+ * Die Kennungen dort sind mit Bindestrich geschrieben (karate-chop), die von
+ * Showdown ohne (karatechop) — deshalb wird beim Abgleich der Bindestrich
+ * entfernt.
+ * ------------------------------------------------------------------------ */
+
+const CSV = 'https://raw.githubusercontent.com/PokeAPI/pokeapi/master/data/v2/csv/';
+const GERMAN = '6';
+
+async function csv(name) {
+  const res = await fetch(CSV + name);
+  if (!res.ok) throw new Error(`${name}: HTTP ${res.status}`);
+  const text = await res.text();
+  const rows = text.trim().split('\n');
+  const head = rows[0].split(',');
+  return rows.slice(1).map((line) => {
+    // Namen können Kommas enthalten, deshalb nur an den ersten Feldern trennen.
+    const parts = line.split(',');
+    const o = {};
+    head.forEach((h, i) => {
+      o[h] = i === head.length - 1 ? parts.slice(i).join(',') : parts[i];
+    });
+    return o;
+  });
+}
+
+/** id ohne Bindestriche → deutscher Name */
+async function germanNames(idFile, nameFile, idKey) {
+  const ids = await csv(idFile);
+  const names = await csv(nameFile);
+  const byId = new Map(ids.map((r) => [r.id, r.identifier.replace(/-/g, '')]));
+  const out = new Map();
+  for (const row of names) {
+    if (row.local_language_id !== GERMAN) continue;
+    const key = byId.get(row[idKey]);
+    if (key) out.set(key, row.name.trim());
+  }
+  return out;
+}
+
+/**
+ * Kennung ohne Bindestriche → PokeAPI-Nummer. Regionalformen und Mega-Formen
+ * haben dort eigene Nummern ab 10001 und damit eigene Bilder; ohne diese
+ * Zuordnung zeigt das Spiel für Alola-Raichu das Bild des gewöhnlichen.
+ *
+ * PokeAPI hängt an manche Grundformen einen Zusatz an (deoxys-normal,
+ * giratina-altered), deshalb wird bei einem Fehlschlag mit diesen Endungen
+ * nachgesehen.
+ */
+const FORM_SUFFIX = ['normal', 'standard', 'altered', 'land', 'ordinary', 'aria',
+  'midday', 'average', 'plant', 'overcast', 'west', 'spring', 'natural', 'male',
+  'disguised', 'solo', 'baile', 'red', 'amped', 'fullbelly', 'single', 'zero',
+  'curlyform', 'family4', 'greenplumage', 'twosegment', 'combat'];
+
+async function pokeApiIds() {
+  const rows = await csv('pokemon.csv');
+  const byKey = new Map();
+  for (const r of rows) byKey.set(r.identifier.replace(/-/g, ''), Number(r.id));
+  return function (id) {
+    if (byKey.has(id)) return byKey.get(id);
+    for (const suf of FORM_SUFFIX) if (byKey.has(id + suf)) return byKey.get(id + suf);
+    return 0;
+  };
+}
+
+let MOVE_DE = new Map(), ABILITY_DE = new Map();
+let pidOf = () => 0;
+try {
+  MOVE_DE = await germanNames('moves.csv', 'move_names.csv', 'move_id');
+  ABILITY_DE = await germanNames('abilities.csv', 'ability_names.csv', 'ability_id');
+  console.log(`Deutsche Namen: ${MOVE_DE.size} Attacken, ${ABILITY_DE.size} Fähigkeiten`);
+} catch (e) {
+  console.warn('Deutsche Attacken-/Fähigkeitsnamen nicht erreichbar:', e.message);
+}
+try {
+  pidOf = await pokeApiIds();
+} catch (e) {
+  console.warn('PokeAPI-Formnummern nicht erreichbar:', e.message);
+}
+
 function packMove(m) {
   const o = {
     id: m.id,
@@ -204,6 +286,8 @@ function packMove(m) {
   if (m.isFutureMove) o.fut = 1;
   if (m.smartTarget) o.smart = 1;
   if (NO_POOL.has(m.id) || m.isNonstandard === 'LGPE') o.np = 1; // nicht im Zufallspool
+  const de = MOVE_DE.get(m.id);
+  if (de && de !== m.name) o.dn = de;
   return o;
 }
 
@@ -236,7 +320,12 @@ async function learnsetFor(species) {
 
 const abilityList = gen.abilities.all()
   .filter((a) => !a.isNonstandard || a.isNonstandard === 'Past')
-  .map((a) => ({ id: a.id, n: a.name, d: a.shortDesc || a.desc || '', g: a.gen }))
+  .map((a) => {
+    const o = { id: a.id, n: a.name, d: a.shortDesc || a.desc || '', g: a.gen };
+    const de = ABILITY_DE.get(a.id);
+    if (de && de !== a.name) o.dn = de;
+    return o;
+  })
   .sort((a, b) => a.n.localeCompare(b.n));
 
 const species = [];
@@ -287,6 +376,9 @@ for (const s of speciesList) {
   const de = germanName(s.num);
   if (de && de !== s.name) entry.dn = s.forme ? `${de}-${s.forme}` : de;
   if (s.forme) { entry.f = s.forme; entry.base = s.baseSpecies; }
+  // Eigenes Bild, wenn die Form bei PokeAPI eine eigene Nummer hat.
+  const pid = pidOf(s.id);
+  if (pid && pid !== s.num) entry.pid = pid;
   if (s.tags?.length) entry.tag = s.tags;
   else if (UNTAGGED_PARADOX.has(s.id)) entry.tag = ['Paradox'];
   if (s.prevo && idxOf.has(gen.species.get(s.prevo).id)) entry.pv = idxOf.get(gen.species.get(s.prevo).id);
@@ -309,6 +401,20 @@ for (let i = 0; i < species.length; i++) {
 }
 
 const natures = gen.natures.all().map((n) => ({ n: n.name, p: n.plus || null, m: n.minus || null }));
+
+/* Mega-Formen bekommen ihren deutschen Namen und ihre eigene Bildnummer
+   erst hier — beim Aufbau der Liste stand beides noch nicht bereit. */
+for (const baseId of Object.keys(megas)) {
+  for (const form of megas[baseId]) {
+    const pid = pidOf(form.n.toLowerCase().replace(/[^a-z0-9]+/g, ''));
+    if (pid) form.pid = pid;
+    const base = gen.species.get(baseId);
+    const de = base ? germanName(base.num) : null;
+    if (de && de !== base.name) {
+      form.dn = form.n.replace(new RegExp('^' + base.name + '(?=-|$)'), de);
+    }
+  }
+}
 
 const DEX = {
   version: 1,

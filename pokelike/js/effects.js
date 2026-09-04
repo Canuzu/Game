@@ -389,7 +389,7 @@
       if (!foe || !foe.ability) return;
       act.ability = foe.ability;
       act.abilityName = foe.abilityName;
-      bt.say(bt.name(act) + ' kopiert ' + foe.abilityName + '!', 'ability', { side: act.side.id });
+      bt.say(bt.name(act) + ' kopiert ' + PL.t.ability(foe.ability) + '!', 'ability', { side: act.side.id });
     }
   };
   A.anticipation = {

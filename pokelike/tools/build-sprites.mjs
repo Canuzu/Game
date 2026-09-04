@@ -12,6 +12,8 @@ import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { createRequire } from 'node:module';
+
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const BASE = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/';
 const MAX = 1025;
@@ -41,10 +43,34 @@ async function fetchOne(url, tries = 3) {
 const out = {};
 let done = 0, missing = 0;
 
+/* Regionalformen und Mega-Formen führt PokeAPI unter eigenen Nummern ab
+   10001. Ohne sie zeigt Alola-Raichu das Bild des gewöhnlichen Raichu und
+   ein mega-entwickeltes Pokémon sein Ausgangsbild. Welche Nummern gebraucht
+   werden, steht im fertigen Pokédex. */
+function formIds() {
+  const require = createRequire(import.meta.url);
+  const DEX = require('../data/dex.js');
+  const ids = new Set();
+  for (const sp of DEX.species) if (sp.pid) ids.add(sp.pid);
+  for (const base of Object.keys(DEX.megas || {})) {
+    for (const form of DEX.megas[base]) if (form.pid) ids.add(form.pid);
+  }
+  return [...ids].sort((a, b) => a - b);
+}
+
+let FORMS = [];
+try {
+  FORMS = formIds();
+  console.log('Zusätzliche Formen:', FORMS.length);
+} catch (e) {
+  console.warn('data/dex.js noch nicht gebaut — Formen werden ausgelassen.');
+}
+
 for (const set of sets) {
   out[set.key] = {};
   const ids = [];
   for (let i = 1; i <= MAX; i++) ids.push(i);
+  for (const id of FORMS) ids.push(id);
 
   while (ids.length) {
     const batch = ids.splice(0, PARALLEL);
@@ -55,7 +81,7 @@ for (const set of sets) {
       else missing++;
     });
     if (done % 320 < PARALLEL) {
-      process.stdout.write('\r  ' + done + ' / ' + (MAX * sets.length) + ' geladen');
+      process.stdout.write('\r  ' + done + ' / ' + ((MAX + FORMS.length) * sets.length) + ' geladen');
     }
   }
 }

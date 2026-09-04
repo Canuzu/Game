@@ -128,6 +128,12 @@ macht, und der Pixel-Zeichner setzt es im Stil des übrigen Spiels um. Lances
 rote Stachelfrisur und der orange Umhang, Cynthias blondes langes Haar über
 dem schwarzen Mantel, Leons violettes Haar unter der Kappe.
 
+**Formen sehen aus wie Formen** — Alola-Raichu surft auf seinem Schweif,
+Galar-Smogmog hat Schornsteine, und ein mega-entwickeltes Glurak wird
+schwarzblau. PokeAPI führt Regionalformen und Mega-Formen unter eigenen
+Nummern ab 10001; die stehen jetzt als `pid` im Pokédex, und die Bilder
+liegen mit im Paket. Vorher zeigte jede Form das Bild ihrer Grundform.
+
 **Mega-Entwicklung** — 48 Pokémon haben eine Mega-Form (dazu die Protoformen
 von Kyogre und Groudon). Einmal pro Kampf, mit dem passenden Stein; Rayquaza
 kommt wie in den Spielen ohne Stein aus und verlangt stattdessen Zenitstürmer.
@@ -141,17 +147,15 @@ Mega-Entwicklung, auch den Nachrücker nach einem K. o. Der Auto-Kampf spielt
 auf Sieg und würfelt nicht: Er rechnet jede Attacke gegen das aktuelle Ziel
 durch und nimmt die beste; bei Gleichstand entscheidet die zuverlässigere.
 
-**Wie schwer es zugeht** — vor jedem Run wählst du eine **Gangart**:
+**Wie schwer es zugeht** — der Grundlauf ist freundlich eingestellt: Gegner
+bleiben sechs Level hinter dem eigenen Team, bieten zwei Pokémon weniger auf
+und tragen schwächere Werte; nach jedem gewonnenen Kampf erholt sich das Team
+um ein Drittel. Härter wird es über die elf **Aufstiege**, und die schaltet
+man frei, indem man Runs gewinnt — es gibt also keine Schwierigkeitsauswahl
+zu Beginn, sondern eine, die man sich erspielt.
 
-| | Gegner | Zwischen den Kämpfen | Ausrüstung |
-|---|---|---|---|
-| **Gemütlich** (Vorgabe) | sechs Level zurück, ein Pokémon weniger | Team erholt sich nach jedem Sieg um ein Drittel | doppelte Ausstattung |
-| **Normal** | vier Level zurück | kleine Erholung | einfach |
-| **Fordernd** | drei Level zurück, bessere Werte | nichts geschenkt | knapp |
-
-Darüber liegen die elf **Aufstiege** als zusätzliche Erschwernis. Gemessen mit
-`tools/balance.mjs`: Arenaleiter 93 % auf Gemütlich, 79 % auf Normal, 72 % auf
-Fordernd.
+Gemessen mit `tools/balance.mjs`: Siegquote gegen die harten Kämpfe 89 %,
+durchschnittlich erreichte Region 4 von 9.
 
 Vor Arenaleiter, Top Vier und Champ erholt sich das Team immer vollständig —
 in den Spielen steht vor jeder Arena ein Center. Das war der gemessene Grund

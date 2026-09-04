@@ -703,45 +703,134 @@ section('Spielstand sichern');
   delete globalThis.localStorage;
 }
 
-section('Gangart');
+section('Deutsche Namen');
 {
-  const T = PL.Run.TEMPO;
-  check('Drei Gangarten stehen bereit', Object.keys(T).length === 3, Object.keys(T).join(', '));
-  check('Jede hat Namen und Erklärung',
-    Object.keys(T).every((k) => T[k].name && T[k].text));
-  check('Gemütlich lässt Gegner weiter zurück als Fordernd',
-    T.gemuetlich.level > T.normal.level && T.normal.level > T.fordernd.level);
-  check('Gemütlich gibt mehr Ausrüstung mit',
-    T.gemuetlich.supplies > T.fordernd.supplies);
+  const T = PL.t;
+  T.setLang('de');
+  eq('Attacken heißen deutsch', T.move('thunderbolt'), 'Donnerblitz');
+  eq('Auch mehrteilige', T.move('closecombat'), 'Nahkampf');
+  eq('Fähigkeiten heißen deutsch', T.ability('levitate'), 'Schwebe');
+  T.setLang('en');
+  eq('Auf Englisch bleibt es englisch', T.move('thunderbolt'), 'Thunderbolt');
+  eq('… auch bei Fähigkeiten', T.ability('levitate'), 'Levitate');
+  T.setLang('de');
 
-  const leicht = new PL.Run({ seed: 11, starter: 'squirtle', tempo: 'gemuetlich' });
-  const hart = new PL.Run({ seed: 11, starter: 'squirtle', tempo: 'fordernd' });
-  check('Auf Gemütlich sind die Gegner niedriger',
-    leicht.enemyLevel(0) < hart.enemyLevel(0),
-    leicht.enemyLevel(0) + ' vs ' + hart.enemyLevel(0));
-  check('Auf Gemütlich liegt mehr im Beutel',
-    leicht.bag.potion > hart.bag.potion, leicht.bag.potion + ' vs ' + hart.bag.potion);
-  eq('Ohne Angabe wird gemütlich gespielt', new PL.Run({ seed: 1, starter: 'squirtle' }).tempo, 'gemuetlich');
-  eq('Eine unbekannte Gangart fällt auf gemütlich zurück',
-    new PL.Run({ seed: 1, starter: 'squirtle', tempo: 'quatsch' }).tempo, 'gemuetlich');
+  const ohne = dex.moves.filter((m) => !m.np && !m.dn && !/^[A-Z][a-z]*$/.test(m.n));
+  check('Fast alle Attacken haben einen deutschen Namen',
+    dex.moves.filter((m) => m.dn).length > dex.moves.length * 0.9,
+    dex.moves.filter((m) => m.dn).length + ' von ' + dex.moves.length);
+  void ohne;
+  check('Fast alle Fähigkeiten auch',
+    dex.abilities.filter((a) => a.dn).length > dex.abilities.length * 0.9,
+    dex.abilities.filter((a) => a.dn).length + ' von ' + dex.abilities.length);
 
-  const back = PL.Run.fromJSON(JSON.parse(JSON.stringify(hart.toJSON())));
-  eq('Die Gangart übersteht das Speichern', back.tempo, 'fordernd');
-  const alt = JSON.parse(JSON.stringify(hart.toJSON()));
-  delete alt.tempo;
-  eq('Ein Stand ohne Gangart wird gemütlich', PL.Run.fromJSON(alt).tempo, 'gemuetlich');
+  // Ein Kampfprotokoll spricht deutsch
+  const rng = PL.rng('sprache');
+  const a = PL.mon.create('pikachu', 30, rng, {});
+  a.moves = [{ m: dex.move('thunderbolt').i, pp: 15, ppUp: 0, used: 0 }];
+  const b2 = PL.mon.create('snorlax', 30, rng, {});
+  b2.moves = [{ m: dex.move('bodyslam').i, pp: 15, ppUp: 0, used: 0 }];
+  const bt = new PL.Battle({ teams: [[a], [b2]], rng: PL.rng('kampf') });
+  bt.start();
+  bt.runTurn([{ type: 'move', index: 0 }, { type: 'move', index: 0 }]);
+  check('Das Kampfprotokoll nennt die deutschen Namen',
+    bt.log.some((e) => /Donnerblitz/.test(e.s || '')),
+    bt.log.filter((e) => e.s).map((e) => e.s).join(' / ').slice(0, 120));
+}
+
+section('Formen und Bilder');
+{
+  const T = PL.t;
+  const eigen = dex.species.filter((sp) => sp.pid);
+  check('Regionalformen haben eine eigene Bildnummer', eigen.length > 80, String(eigen.length));
+  ['raichualola', 'ninetalesalola', 'weezinggalar', 'marowakalola', 'persianalola'].forEach((id) => {
+    const sp = dex.sp(id);
+    check(id + ' zeigt ein eigenes Bild', !!sp.pid && sp.pid !== sp.num,
+      'pid ' + sp.pid + ', num ' + sp.num);
+  });
+
+  const megas = Object.keys(dex.megas);
+  const ohnePid = [];
+  megas.forEach((k) => dex.megas[k].forEach((f) => { if (!f.pid) ohnePid.push(f.n); }));
+  check('Jede Mega-Form hat eine eigene Bildnummer', ohnePid.length === 0, ohnePid.join(', '));
+
+  T.setLang('de');
+  const mega = dex.megas.charizard[0];
+  eq('Mega-Formen tragen einen deutschen Namen', mega.dn, 'Glurak-Mega-X');
+
+  // Die eingebetteten Bilder liegen nur im Browser vor; für die Prüfung
+  // genügt ein Platzhalter-Vorrat, der zeigt, welche Nummer gezogen wird.
+  {
+    const echte = globalThis.PL_SPRITES;
+    globalThis.PL_SPRITES = { f: {}, b: {}, s: {} };
+    const put = (n, tag) => { globalThis.PL_SPRITES.f[n] = tag; };
+    put(dex.sp('raichu').num, 'RAICHU');
+    put(dex.sp('raichualola').pid, 'ALOLA');
+    put(dex.sp('charizard').num, 'GLURAK');
+    put(mega.pid, 'MEGA');
+    const first = (sp, o) => PL.sprite.chain(sp, o || {})[0];
+    check('Alola-Raichu zieht sein eigenes Bild',
+      /ALOLA/.test(first(dex.sp('raichualola'))), first(dex.sp('raichualola')).slice(0, 40));
+    check('Raichu bleibt bei seinem', /RAICHU/.test(first(dex.sp('raichu'))));
+    check('Die Mega-Form zieht ihr eigenes Bild',
+      /MEGA/.test(first(dex.sp('charizard'), { pid: mega.pid })));
+    check('Ohne Form bleibt es die Grundform',
+      /GLURAK/.test(first(dex.sp('charizard'))));
+    globalThis.PL_SPRITES = echte;
+  }
+
+  // Im Kampf merkt sich der Aktive seine Form
+  const rng = PL.rng('mega');
+  const mon = PL.mon.create('charizard', 60, rng, {});
+  mon.item = 'charizarditex';
+  const foe = PL.mon.create('snorlax', 60, rng, {});
+  const bt = new PL.Battle({ teams: [[mon], [foe]], rng: PL.rng('mk') });
+  bt.start();
+  bt.megaEvolve(bt.sides[0].active);
+  check('Der Aktive merkt sich seine Mega-Form',
+    !!bt.sides[0].active.megaForm && !!bt.sides[0].active.megaForm.pid);
+  eq('… und heißt deutsch', bt.sides[0].active.megaName, 'Glurak-Mega-X');
+}
+
+section('Grundschwierigkeit');
+{
+  const run = new PL.Run({ seed: 11, starter: 'squirtle' });
+  check('Der Grundlauf startet mit Vorrat', run.bag.potion >= 8 && run.bag.revive >= 3,
+    JSON.stringify(run.bag));
+  // EASE greift an den Aufrufstellen, nicht in enemyLevel selbst — deshalb
+  // wird über einen echten Kampf geprüft.
+  run.party.push(PL.mon.create('pikachu', 20, run.rng, {}));
+  run.party.push(PL.mon.create('geodude', 20, run.rng, {}));
+  const lvlOf = (r) => {
+    const bt = r.makeTrainer(PL.rng('t'), {});
+    return Math.max.apply(null, bt.sides[1].team.map((m) => m.lvl));
+  };
+  const mein = run.teamLevel();
+  check('Trainergegner bleiben deutlich hinter dem Team', lvlOf(run) <= mein - 4,
+    lvlOf(run) + ' bei Teamlevel ' + mein.toFixed(1));
+
+  const hart = new PL.Run({ seed: 11, starter: 'squirtle', ascension: 1 });
+  hart.party.push(PL.mon.create('pikachu', 20, hart.rng, {}));
+  hart.party.push(PL.mon.create('geodude', 20, hart.rng, {}));
+  check('Aufstiege ziehen die Gegner wieder hoch', lvlOf(hart) > lvlOf(run),
+    lvlOf(hart) + ' vs ' + lvlOf(run));
 
   // Verschnaufen nach dem Kampf
-  const run = new PL.Run({ seed: 5, starter: 'charmander', tempo: 'gemuetlich' });
-  run.party[0].hp = 1;
+  const r2 = new PL.Run({ seed: 5, starter: 'charmander' });
+  r2.party[0].hp = 1;
   const foe = PL.mon.create('rattata', 6, PL.rng('atem'), {});
   foe.hp = 0;
-  const bt = new PL.Battle(run.battleOpts({ team: [foe], wild: true }));
+  const bt = new PL.Battle(r2.battleOpts({ team: [foe], wild: true }));
   bt.outcome = 'win';
   bt.ended = true;
-  run.finishBattle(bt);
-  check('Nach dem Sieg erholt sich das Team ein Stück', run.party[0].hp > 1,
-    'HP ' + run.party[0].hp);
+  r2.finishBattle(bt);
+  check('Nach dem Sieg erholt sich das Team ein Stück', r2.party[0].hp > 1, 'HP ' + r2.party[0].hp);
+
+  // Vor den großen Kämpfen ist das Team frisch
+  const r3 = new PL.Run({ seed: 7, starter: 'bulbasaur' });
+  r3.party[0].hp = 1;
+  r3.makeBoss(PL.rng('boss'));
+  eq('Vor dem Arenaleiter ist das Team geheilt', r3.party[0].hp, mons.maxHP(r3.party[0]));
 }
 
 section('Arenaleiter');
@@ -958,7 +1047,8 @@ section('Engine-Lücken');
     const before = bt.sides[0].active.mon.slp;
     bt.runTurn([{ type: 'move', index: 0 }, { type: 'move', index: 1 }]);
     check('Schlafrede greift im Schlaf auf eine Attacke zurück',
-      bt.log.some((e) => /Body Slam/.test(e.s || '')));
+      bt.log.some((e) => new RegExp(PL.t.move('bodyslam')).test(e.s || '')),
+      bt.log.filter((e) => e.s).map((e) => e.s).join(' / ').slice(0, 160));
     eq('… und der Schlaf zählt dabei nur einmal herunter', bt.sides[0].active.mon.slp, before - 1);
   }
 

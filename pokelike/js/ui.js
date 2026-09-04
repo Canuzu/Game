@@ -112,7 +112,9 @@
     opts = opts || {};
     var mon = monOrSpecies && monOrSpecies.sp !== undefined ? monOrSpecies : null;
     var sp = mon ? dex.sp(mon.sp) : monOrSpecies;
-    var chain = PL.sprite.chain(sp, { shiny: opts.shiny || (mon && mon.shiny), back: opts.back });
+    var chain = PL.sprite.chain(sp, {
+      shiny: opts.shiny || (mon && mon.shiny), back: opts.back, pid: opts.pid
+    });
     chain = chain.concat([placeholder(sp)]);
     var i = 0;
     var img = el('img', {
@@ -124,7 +126,8 @@
       if (i < chain.length) img.src = chain[i];
     });
     if (opts.ground) {
-      var key = sp.id + (opts.back ? ':b' : ':f') + ((opts.shiny || (mon && mon.shiny)) ? ':s' : '');
+      var key = (opts.pid || sp.id) + (opts.back ? ':b' : ':f') +
+        ((opts.shiny || (mon && mon.shiny)) ? ':s' : '');
       var measure = function () { groundSprite(img, key); };
       if (img.complete && img.naturalWidth) measure();
       else img.addEventListener('load', measure);
@@ -298,7 +301,7 @@
       title: T.moveDesc(m)
     }, [
       el('span', { className: 'move-type', style: { background: TYPE_COLOR[m.t] }, text: T.type(m.t) }),
-      el('span', { className: 'move-name', text: m.n }),
+      el('span', { className: 'move-name', text: T.move(m) }),
       el('span', { className: 'move-cat', text: CAT_ICON[m.c], title: CAT_NAME[m.c] }),
       el('span', { className: 'move-power', text: m.c === 'T' ? '—' : m.bp }),
       pp !== null ? el('span', { className: 'move-pp' + (pp === 0 ? ' empty' : ''), text: pp + '/' + maxPP }) : null

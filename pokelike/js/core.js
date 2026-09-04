@@ -293,6 +293,18 @@
     setLang: function (l) { lang = l === 'en' ? 'en' : 'de'; },
     lang: function () { return lang; },
     species: function (sp) { return (lang === 'de' && sp.dn) ? sp.dn : sp.n; },
+    /* Attacken und Fähigkeiten führen ihren deutschen Namen als dn mit;
+       fehlt er, heißt die Sache auf Deutsch genauso wie auf Englisch. */
+    move: function (m) {
+      var rec = typeof m === 'string' || typeof m === 'number' ? dex.move(m) : m;
+      if (!rec) return '';
+      return (lang === 'de' && rec.dn) ? rec.dn : rec.n;
+    },
+    ability: function (a) {
+      var rec = typeof a === 'string' ? dex.ability(a) : a;
+      if (!rec) return typeof a === 'string' ? a : '';
+      return (lang === 'de' && rec.dn) ? rec.dn : rec.n;
+    },
     type: function (ty) { return lang === 'de' ? (TYPE_DE[ty] || ty) : ty; },
     nature: function (n) { return lang === 'de' ? (NATURE_DE[n] || n) : n; },
     stat: function (st) { return lang === 'de' ? STAT_DE[st] : st.toUpperCase(); },
@@ -346,7 +358,12 @@
   function spriteChain(sp, opts) {
     opts = opts || {};
     var sid = spriteId(sp), num = sp.num, shiny = opts.shiny, back = opts.back, out = [];
-    var local = embedded(num, opts);
+    // Regionalformen und Mega-Formen haben ein eigenes Bild unter pid; ohne
+    // das zeigte Alola-Raichu das Bild des gewöhnlichen Raichu.
+    // opts.pid überschreibt die Form — so zeigt ein mega-entwickeltes
+    // Pokémon sein Mega-Bild, ohne dass seine Art sich ändert.
+    var pid = opts.pid || sp.pid;
+    var local = (pid && embedded(pid, opts)) || embedded(num, opts);
     if (local) out.push(local);
     if (back) {
       out.push(SHOWDOWN + (shiny ? 'ani-back-shiny/' : 'ani-back/') + sid + '.gif');

@@ -227,7 +227,7 @@
       delta = boosts[k];
       if (delta < 0 && !self) {
         if (this.hook(act, 'blockLower', [k, source])) {
-          if (!silent) this.say(this.name(act) + ': ' + act.abilityName + ' verhindert die Senkung.', 'ability', { side: act.side.id });
+          if (!silent) this.say(this.name(act) + ': ' + T.ability(act.ability) + ' verhindert die Senkung.', 'ability', { side: act.side.id });
           continue;
         }
         if (act.side.screens.mist > 0) continue;
@@ -744,7 +744,7 @@
     var releasing = !!(actor.vol.twoturn && actor.vol.twoturn.move === move.i);
     if (entry && !opts.free && !actor.vol.lockedmove && !releasing) {
       if (entry.pp <= 0) {
-        this.say(this.name(actor) + ' hat keine AP mehr für ' + move.n + '!', 'text', { side: actor.side.id });
+        this.say(this.name(actor) + ' hat keine AP mehr für ' + T.move(move) + '!', 'text', { side: actor.side.id });
         return;
       }
       entry.pp--;
@@ -765,7 +765,7 @@
       delete actor.vol.invuln;
     }
 
-    this.say(this.name(actor) + ' setzt ' + move.n + ' ein!', 'move',
+    this.say(this.name(actor) + ' setzt ' + T.move(move) + ' ein!', 'move',
       { side: actor.side.id, move: move.i, type: move.t, cat: move.c });
 
     if (ov.beforeMove && ov.beforeMove(this, actor, target, move) === false) {
@@ -944,7 +944,7 @@
       if (actor.mon.hp >= this.maxHP(actor)) {
         this.say('Es klappt nicht — die KP sind bereits voll.', 'text', { side: actor.side.id });
       } else {
-        this.healAct(actor, amount, false, move.n);
+        this.healAct(actor, amount, false, T.move(move));
         ok = true;
       }
     }
@@ -1703,10 +1703,11 @@
     act.types = form.t.slice();
     act.ability = PL.util.toID(form.a);
     act.abilityName = form.a;
-    act.megaName = form.n;
+    act.megaName = T.lang() === 'de' && form.dn ? form.dn : form.n;
+    act.megaForm = form;
     act.stats = megaStats(act.mon, form.bs);
     var primal = /Primal/.test(form.n);
-    this.say(this.name(act) + (primal ? ' erwacht als ' : ' mega-entwickelt sich zu ') + form.n + '!',
+    this.say(this.name(act) + (primal ? ' erwacht als ' : ' mega-entwickelt sich zu ') + act.megaName + '!',
       'mega', { side: act.side.id, primal: primal });
     this.onSwitchInEffects(act);
     return true;

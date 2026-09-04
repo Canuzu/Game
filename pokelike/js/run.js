@@ -68,7 +68,6 @@
     this.seed = opts.seed !== undefined ? opts.seed : (Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0;
     this.ascension = opts.ascension || 0;
     this.nuzlocke = !!opts.nuzlocke;
-    this.tempo = TEMPO[opts.tempo] ? opts.tempo : 'gemuetlich';
     this.rng = PL.rng(this.seed);
     this.started = new Date().toISOString();
 
@@ -101,11 +100,10 @@
     this.state = 'map';
     this.result = null;
 
-    var supply = TEMPO[this.tempo].supplies;
-    this.addItem('pokeball', 5 + supply * 3);
-    this.addItem('potion', 4 + supply * 3);
-    this.addItem('revive', 1 + supply);
-    if (supply >= 2) this.addItem('superpotion', 3);
+    this.addItem('pokeball', 11);
+    this.addItem('potion', 10);
+    this.addItem('superpotion', 3);
+    this.addItem('revive', 3);
     if (opts.starter) {
       this.gainPokemon(this.rng, opts.starter, 8, 'Starter', {
         quality: 0.9, ivFloor: 14, hiddenChance: 0.2
@@ -459,36 +457,22 @@
   /* ---------- 4) Kämpfe -------------------------------------------------------- */
 
   /**
-   * Wie hart die Gegner ausfallen. Alles an einer Stelle, damit sich die
-   * Schwierigkeit nachziehen lässt, ohne durch das halbe Modul zu suchen.
-   * Die Zahlen sind nicht geraten, sondern mit tools/balance.mjs eingestellt.
+   * Wie weit die Gegner hinter dem eigenen Team zurückbleiben. Das Grundspiel
+   * ist bewusst freundlich eingestellt — wer mehr Widerstand will, spielt
+   * einen Aufstieg, und die schaltet man frei, indem man gewinnt.
    *
-   *   level    Level, die Trainergegner grundsätzlich zurückstehen
+   *   level    Level, die Trainergegner zurückstehen
    *   size     wie viele Pokémon sie weniger aufbieten als das eigene Team
-   *   quality  Abschlag auf Werte, Wesen und Attackensets der Gegner
+   *   quality  Abschlag auf Werte, Wesen und Attackensets
+   *   heal     wie viel das Team nach jedem gewonnenen Kampf zurückbekommt
    *
-   * Wilde Pokémon bleiben bewusst außen vor: sie sind die Erfahrungsquelle,
-   * und schwächere Gegner dort würden das Team langsamer wachsen lassen —
-   * was die Erleichterung gleich wieder auffräße.
-   */
-  var EASE = { level: 4, size: 1, quality: 0.08 };
-
-  /**
-   * Drei Gangarten unterhalb der Aufstiege. `ease` verschiebt die Werte oben,
-   * `heal` regelt, wie viel das Team zwischen den Kämpfen zurückbekommt,
-   * `supplies` die Ausrüstung zu Beginn.
+   * Die Zahlen sind mit tools/balance.mjs eingestellt, nicht geraten.
    *
-   * Voreingestellt ist »Gemütlich« — das Spiel soll Spaß machen, wer mehr
-   * Widerstand will, stellt eine Stufe höher oder nimmt einen Aufstieg.
+   * Wilde Pokémon bleiben ausgenommen: sie sind die Erfahrungsquelle, und
+   * schwächere Gegner dort ließen das Team langsamer wachsen — was die
+   * Erleichterung gleich wieder auffräße.
    */
-  var TEMPO = {
-    gemuetlich: { name: 'Gemütlich', level: 2, quality: 0.06, size: 1, heal: 0.35, supplies: 2,
-                  text: 'Gegner bleiben deutlich zurück, das Team erholt sich nach jedem Kampf.' },
-    normal:     { name: 'Normal', level: 0, quality: 0, size: 0, heal: 0.15, supplies: 1,
-                  text: 'Ausgewogen — so war das Spiel gedacht.' },
-    fordernd:   { name: 'Fordernd', level: -1, quality: -0.04, size: 0, heal: 0, supplies: 0,
-                  text: 'Gegner ziehen gleich, zwischen den Kämpfen gibt es nichts geschenkt.' }
-  };
+  var EASE = { level: 6, size: 2, quality: 0.14, heal: 0.35 };
 
   /** Durchschnittslevel des Teams — die Messlatte für alle Gegner. */
   R.teamLevel = function () {
@@ -503,11 +487,8 @@
    * springen. Wer trainiert, trifft auf stärkere Gegner — wer durchhetzt,
    * bleibt in seiner Liga.
    */
-  /** Die Gangart dieses Runs. */
-  R.tempoSpec = function () { return TEMPO[this.tempo] || TEMPO.gemuetlich; };
-
   R.enemyLevel = function (delta) {
-    var bonus = (this.asc(1) ? 2 : 0) + (this.asc(10) ? 2 : 0) - this.tempoSpec().level;
+    var bonus = (this.asc(1) ? 2 : 0) + (this.asc(10) ? 2 : 0);
     var base = this.teamLevel() + (delta || 0) + bonus;
     return clamp(Math.round(Math.min(base, this.levelCap)), 2, 100);
   };
@@ -582,10 +563,10 @@
     // volles Aufgebot und geben nur einen Level ab.
     var level = this.enemyLevel(opts.elite ? -1 : (-2 - EASE.level));
     var t = W.trainerTeam(rng, region, level, {
-      maxSize: this.matchSize(opts.elite ? 1 : -EASE.size - this.tempoSpec().size),
+      maxSize: this.matchSize(opts.elite ? 1 : -EASE.size),
       items: this.asc(6),
       bonus: opts.elite ? 2 : 0,
-      quality: (opts.elite ? 0.8 : 0.68) - EASE.quality - this.tempoSpec().quality,
+      quality: (opts.elite ? 0.8 : 0.68) - EASE.quality,
       ivFloor: opts.elite ? 10 : 4,
       cls: opts.elite ? { name: 'Ass-Trainer', types: null, size: 4 } : null
     });
@@ -665,8 +646,8 @@
     // Der erste Arenaleiter darf noch kein Bollwerk sein.
     var level = this.enemyLevel((this.region === 0 ? 0 : 2) - EASE.level);
     var t = W.bossTeam(rng, region, level, this.region, {
-      maxSize: this.matchSize((this.asc(3) ? 2 : 1) - EASE.size - this.tempoSpec().size),
-      items: this.asc(6), ease: EASE.quality + this.tempoSpec().quality
+      maxSize: this.matchSize((this.asc(3) ? 2 : 1) - EASE.size),
+      items: this.asc(6), ease: EASE.quality
     });
     var bt = new PL.Battle(this.battleOpts({ team: t.team, trainer: t }));
     bt.aiLevel = 3;
@@ -679,8 +660,8 @@
     this.restBeforeBoss();
     var level = this.enemyLevel(1 - EASE.level);
     var t = W.eliteTeam(rng, level, this.leagueStage, this.eliteUsed, {
-      maxSize: this.matchSize((this.asc(3) ? 2 : 1) - EASE.size - this.tempoSpec().size),
-      ease: EASE.quality + this.tempoSpec().quality
+      maxSize: this.matchSize((this.asc(3) ? 2 : 1) - EASE.size),
+      ease: EASE.quality
     });
     var bt = new PL.Battle(this.battleOpts({ team: t.team, trainer: t }));
     bt.aiLevel = 3;
@@ -691,8 +672,7 @@
 
   R.makeChampion = function (rng) {
     this.restBeforeBoss();
-    var t = W.championTeam(rng, this.enemyLevel(2 - EASE.level),
-      { ease: EASE.quality + this.tempoSpec().quality });
+    var t = W.championTeam(rng, this.enemyLevel(2 - EASE.level), { ease: EASE.quality });
     var bt = new PL.Battle(this.battleOpts({ team: t.team, trainer: t }));
     bt.aiLevel = 3;
     bt.biome = 'liga';
@@ -801,10 +781,7 @@
     // Zwischen den Kämpfen erholt sich das Team ein Stück — wie viel,
     // entscheidet die Gangart. Das war der gemessene Grund fürs Scheitern:
     // man kam ausgezehrt beim Arenaleiter an.
-    var breather = this.tempoSpec().heal;
-    if (breather > 0 && (bt.outcome === 'win' || bt.outcome === 'caught')) {
-      this.healTeam(breather, false);
-    }
+    if (bt.outcome === 'win' || bt.outcome === 'caught') this.healTeam(EASE.heal, false);
     if (this.hasMod('autoCure')) this.cureTeam();
     if (this.hasMod('moveTutor') && (bt.outcome === 'win' || bt.outcome === 'caught')) res.tutor = true;
     if (bt.reward && /boss|e4|champ/.test(bt.reward.kind) &&
@@ -1371,7 +1348,7 @@
   R.toJSON = function () {
     return {
       version: this.version, mode: this.mode, seed: this.seed, ascension: this.ascension,
-      nuzlocke: this.nuzlocke, tempo: this.tempo, rngState: this.rng.save(), started: this.started,
+      nuzlocke: this.nuzlocke, rngState: this.rng.save(), started: this.started,
       party: this.party, box: this.box, bag: this.bag, tms: this.tms || {}, relics: this.relics,
       money: this.money, region: this.region, regionOrder: this.regionOrder,
       leagueStage: this.leagueStage, eliteUsed: this.eliteUsed, stats: this.stats,
@@ -1396,7 +1373,6 @@
     run.state = 'map';
     run.pendingLevelUps = [];
     run.history = run.history || [];
-    if (!TEMPO[run.tempo]) run.tempo = 'gemuetlich';   // Stände vor der Gangart
     return run;
   };
 
@@ -1404,7 +1380,6 @@
   Run.BLESSINGS = BLESSINGS;
   Run.MODES = MODES;
   Run.NODE_INFO = NODE_INFO;
-  Run.TEMPO = TEMPO;
   PL.Run = Run;
 
   if (typeof module !== 'undefined' && module.exports) module.exports = Run;

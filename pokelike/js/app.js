@@ -234,28 +234,8 @@
   }
 
   SCREENS.newrun = function () {
-    var chosen = {
-      mode: 'standard', ascension: 0, nuzlocke: false, starter: null,
-      tempo: settings().tempo || 'gemuetlich'
-    };
+    var chosen = { mode: 'standard', ascension: 0, nuzlocke: false, starter: null };
     var maxAsc = meta.maxAscension();
-
-    // Gangart: die Grundeinstellung unterhalb der Aufstiege.
-    var tempoBox = el('div', { className: 'choice-row' });
-    Object.keys(PL.Run.TEMPO).forEach(function (key) {
-      var t = PL.Run.TEMPO[key];
-      var btn = el('button', {
-        className: 'choice' + (key === chosen.tempo ? ' selected' : ''), type: 'button',
-        onclick: function () {
-          chosen.tempo = key;
-          meta.setSetting('tempo', key);
-          meta.save();
-          Array.prototype.forEach.call(tempoBox.children, function (c) { c.classList.remove('selected'); });
-          btn.classList.add('selected');
-        }
-      }, [el('strong', { text: t.name }), el('span', { text: t.text })]);
-      tempoBox.appendChild(btn);
-    });
 
     var modeBox = el('div', { className: 'choice-row' });
     Object.keys(PL.Run.MODES).forEach(function (key) {
@@ -324,13 +304,8 @@
       el('h2', { text: 'Neuer Run' }),
       el('section', {}, [el('h3', { text: 'Modus' }), modeBox]),
       el('section', {}, [
-        el('h3', { text: 'Gangart' }),
-        el('p', { className: 'muted', text: 'Wie viel Widerstand du willst. Lässt sich für jeden Run neu wählen.' }),
-        tempoBox
-      ]),
-      el('section', {}, [
-        el('h3', { text: 'Aufstieg' }),
-        el('p', { className: 'muted', text: 'Zusätzliche Erschwernisse obendrauf — freigespielt durch gewonnene Runs.' }),
+        el('h3', { text: 'Schwierigkeit' }),
+        el('p', { className: 'muted', text: 'Der Grundlauf ist freundlich eingestellt. Härtere Stufen schaltest du frei, indem du Runs gewinnst.' }),
         el('div', { className: 'asc-box' }, [
           ascInput, ascLabel,
           maxAsc === 0 ? el('span', { className: 'muted', text: 'Höhere Aufstiege schaltest du frei, indem du Runs gewinnst.' }) : null
@@ -354,7 +329,7 @@
     if (chosen.mode === 'taeglich') seed = PL.util.hashSeed('daily-' + new Date().toISOString().slice(0, 10));
     App.run = new PL.Run({
       mode: chosen.mode, ascension: chosen.ascension, nuzlocke: chosen.nuzlocke,
-      tempo: chosen.tempo, starter: chosen.starter, seed: seed
+      starter: chosen.starter, seed: seed
     });
     App.run.party.forEach(function (m) { meta.noteCaught(m); });
     meta.save();
@@ -685,8 +660,12 @@
 
     var mon = act.mon, max = act.stats[0], isMine = sideId === 0;
 
+    // Ein mega-entwickeltes Pokémon sieht auch so aus: die Form bringt ihre
+    // eigene Bildnummer mit (siehe tools/build-data.mjs).
+    var formPid = act.mega && act.megaForm ? act.megaForm.pid : 0;
+
     var art = el('div', { className: 'mon-art' }, [
-      U.sprite(mon, { back: isMine, eager: true, ground: true,
+      U.sprite(mon, { back: isMine, eager: true, ground: true, pid: formPid,
         className: 'battle-sprite' + (mon.hp <= 0 ? ' fainted' : '') }),
       mon.shiny ? el('span', { className: 'shiny-mark', text: '✦' }) : null,
       act.vol.substitute ? el('span', { className: 'sub-mark', title: 'Delegator', text: '🪆' }) : null
@@ -936,7 +915,7 @@
         title: (mv.why ? mv.why + ' — ' : '') + T.moveDesc(m),
         onclick: function () { submitAction({ type: 'move', index: mv.index }); }
       }, [
-        el('span', { className: 'move-btn-name', text: m.n }),
+        el('span', { className: 'move-btn-name', text: T.move(m) }),
         el('span', { className: 'move-btn-meta' }, [
           el('span', { className: 'move-btn-type', text: T.type(m.t) }),
           el('span', { text: U.CAT_ICON[m.c] }),
@@ -970,7 +949,8 @@
       var form = bt.megaFormFor(bt.sides[0].active);
       var primal = /Primal/.test(form.n);
       BV.actionRow.appendChild(actionBtn(
-        (primal ? '☀ Proto' : '◈ Mega') + ' ' + form.n.replace(/^[^-]+-/, ''),
+        (primal ? '☀ Proto' : '◈ Mega') + ' ' +
+          (T.lang() === 'de' && form.dn ? form.dn : form.n).replace(/^[^-]+-/, ''),
         !busy,
         function () {
           BV.pendingMega = !BV.pendingMega;
@@ -1300,12 +1280,12 @@
     if (mon.moves.some(function (s) { return s.m === item.move; })) { processMoveLearning(queue, done); return; }
     if (mon.moves.length < 4) {
       mon.moves.push({ m: item.move, pp: move.pp, ppUp: 0, used: 0 });
-      U.toast(mons.name(mon) + ' lernt ' + move.n + '!');
+      U.toast(mons.name(mon) + ' lernt ' + T.move(move) + '!');
       processMoveLearning(queue, done);
       return;
     }
     var box = U.modal({
-      title: mons.name(mon) + ' will ' + move.n + ' lernen',
+      title: mons.name(mon) + ' will ' + T.move(move) + ' lernen',
       wide: true,
       dismissable: false,
       content: el('div', {}, [
@@ -1316,7 +1296,7 @@
             onClick: function () {
               mon.moves[i] = { m: item.move, pp: move.pp, ppUp: 0, used: 0 };
               box.close();
-              U.toast(mons.name(mon) + ' lernt ' + move.n + '!');
+              U.toast(mons.name(mon) + ' lernt ' + T.move(move) + '!');
               processMoveLearning(queue, done);
             }
           });
@@ -1369,7 +1349,7 @@
         el('strong', { text: mons.name(mon) }),
         el('span', { className: 'offer-types' }, sp.t.map(function (t) { return U.typeChip(t, true); })),
         el('span', { className: 'muted', text: 'Lv ' + mon.lvl + ' · ' + T.nature(mon.nat) }),
-        el('span', { className: 'muted', text: mon.ab }),
+        el('span', { className: 'muted', text: T.ability(mon.ab) }),
         el('span', { className: 'muted small', text: 'BWS ' + sp.bst + (dex.evosLeft(sp) ? ' · entwickelt sich noch' : '') })
       ]);
     }));
@@ -2148,7 +2128,8 @@
         el('h3', { text: T.species(sp) + ' · Nr. ' + sp.num }),
         el('div', { className: 'mon-detail-types' }, sp.t.map(function (t) { return U.typeChip(t); })),
         el('p', { className: 'muted', text: 'Generation ' + sp.g + ' · ' + sp.wt + ' kg · ' + sp.ht + ' m' }),
-        el('p', { className: 'muted', text: 'Fähigkeiten: ' + mons.abilityOptions(sp).join(', ') }),
+        el('p', { className: 'muted', text: 'Fähigkeiten: ' +
+          mons.abilityOptions(sp).map(function (a) { return T.ability(a); }).join(', ') }),
         el('div', { className: 'stat-block' }, PL.STATS.map(function (key, i) {
           return el('div', { className: 'stat-row' }, [
             el('span', { className: 'stat-name', text: T.statShort(key) }),
@@ -2246,7 +2227,7 @@
       row('Ansicht', 'Automatisch richtet sich nach deinem System.', picker(
         [{ value: 'auto', label: 'Automatisch' }, { value: 'dark', label: 'Dunkel' }, { value: 'light', label: 'Hell' }],
         s.theme, function (v) { meta.setSetting('theme', v); applyTheme(); })),
-      row('Sprache der Pokémon-Namen', 'Attacken und Fähigkeiten bleiben englisch — so heißen sie überall.', picker(
+      row('Sprache der Pokémon-Namen', 'Gilt auch für Attacken und Fähigkeiten.', picker(
         [{ value: 'de', label: 'Deutsch' }, { value: 'en', label: 'Englisch' }], s.lang,
         function (v) { meta.setSetting('lang', v); applyTheme(); })),
       row('Kampftempo', 'Wie schnell das Protokoll durchläuft.', picker(
