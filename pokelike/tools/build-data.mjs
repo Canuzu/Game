@@ -70,9 +70,10 @@ const speciesList = gen.species.all()
 
 const idxOf = new Map(speciesList.map((s, i) => [s.id, i]));
 
-// Megas und Protoformen: baseId -> [{ item, name, types, baseStats, ability }]
-// Showdown führt auch spekulative Megas eines Fan-Formats ("Future") — die
-// bleiben draußen, hier zählen nur die aus den Spielen.
+// Megas und Protoformen: baseId -> [{ name, types, baseStats, ability }]
+// Steine und Ringe gibt es hier nicht: wer ausgewachsen ist, entwickelt sich
+// mega. Showdown führt auch spekulative Megas eines Fan-Formats ("Future") —
+// die bleiben draußen, hier zählen nur die aus den Spielen.
 const megas = {};
 for (const s of gen.species.all()) {
   if (!s.forme || !/^(Mega|Primal)/.test(s.forme) || s.num > 1025) continue;
@@ -81,13 +82,25 @@ for (const s of gen.species.all()) {
   if (!base || !idxOf.has(base.id)) continue;
   (megas[base.id] ??= []).push({
     n: s.name,
-    it: s.requiredItem || '',
-    // Rayquaza braucht keinen Stein, sondern die Attacke Zenitstürmer.
-    mv: s.requiredMove || (base.id === 'rayquaza' ? 'Dragon Ascent' : ''),
     t: s.types,
     bs: [s.baseStats.hp, s.baseStats.atk, s.baseStats.def, s.baseStats.spa, s.baseStats.spd, s.baseStats.spe],
     a: s.abilities[0],
   });
+}
+
+// Gigadynamax-Formen: baseId -> { Name, Bildnummer, G-Max-Attacke }. Werte und
+// Typen bleiben die der Grundform — Gigadynamax ändert in den Spielen nur
+// Größe, Aussehen und die Attacke. Die Kraft kommt aus der Verwandlung selbst,
+// deshalb steht hier nichts weiter als der Name und das Bild.
+const gmax = {};
+for (const s of gen.species.all()) {
+  if (!/Gmax$/.test(s.forme || '') || s.num > 1025) continue;
+  const base = gen.species.get(s.name.replace(/-Gmax$/, ''));
+  if (!base || !idxOf.has(base.id)) continue;
+  gmax[base.id] = {
+    n: 'Gigantamax ' + base.name,
+    fid: s.id                       // nur für die Bildnummer, fliegt unten raus
+  };
 }
 
 const germanName = (num) => {
@@ -416,6 +429,20 @@ for (const baseId of Object.keys(megas)) {
   }
 }
 
+/* Gigadynamax-Formen bekommen Bildnummer und deutschen Namen genauso spät —
+   und heißen im Deutschen "Gigadynamax-Glurak", nicht "Glurak-Gigadynamax". */
+// Zwei Formen heißen bei PokeAPI nach ihrer Standardvariante, die Showdown im
+// Namen weglässt — die beiden Nummern stehen deshalb hier von Hand.
+const GMAX_PID = { toxtricitygmax: 10219, urshifugmax: 10226 };
+for (const baseId of Object.keys(gmax)) {
+  const form = gmax[baseId];
+  const pid = pidOf(form.fid) || GMAX_PID[form.fid] || 0;
+  if (pid) form.pid = pid;
+  delete form.fid;
+  const sp = species[idxOf.get(baseId)];
+  form.dn = 'Gigadynamax-' + (sp.dn || sp.n);
+}
+
 const DEX = {
   version: 1,
   generated: new Date().toISOString().slice(0, 10),
@@ -426,6 +453,7 @@ const DEX = {
   moves: moveList.map(packMove),
   abilities: abilityList,
   megas,
+  gmax,
 };
 
 const json = JSON.stringify(DEX);
@@ -447,6 +475,7 @@ console.log(`Spezies:      ${species.length}`);
 console.log(`Attacken:     ${moveList.length}  (davon ${moveList.filter((m) => NO_POOL.has(m.id)).length} nicht im Zufallspool)`);
 console.log(`Fähigkeiten:  ${abilityList.length}`);
 console.log(`Megas:        ${Object.values(megas).reduce((a, v) => a + v.length, 0)} für ${Object.keys(megas).length} Spezies`);
+console.log(`Gigadynamax:  ${Object.keys(gmax).length} Spezies (${Object.values(gmax).filter((f) => f.pid).length} mit eigenem Bild)`);
 console.log(`Ohne Lernset: ${missingLearnsets}`);
 console.log(`Deutsch:      ${species.filter((s) => s.dn).length}`);
 const thin = species.filter((s) => s.lv.length / 2 + s.tm.length < 8);

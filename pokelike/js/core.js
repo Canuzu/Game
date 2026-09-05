@@ -107,6 +107,7 @@
     abilities: DEX.abilities,
     natures: DEX.natures,
     megas: DEX.megas,
+    gmax: DEX.gmax,
 
     sp: function (ref) {
       if (typeof ref === 'number') return DEX.species[ref];
@@ -167,7 +168,10 @@
     isRestricted: function (sp) {
       return !!(sp.tag && sp.tag.some(function (t) { return /Restricted|Mythical/.test(t); }));
     },
-    megasFor: function (sp) { return DEX.megas[sp.id] || DEX.megas[toID(sp.base || '')] || null; }
+    megasFor: function (sp) { return DEX.megas[sp.id] || DEX.megas[toID(sp.base || '')] || null; },
+    /* Anders als bei Mega zählt hier nur die Form selbst: Alola-Raichu hat kein
+       Gigadynamax, bloß weil Raichu eines hätte. */
+    gmaxFor: function (sp) { return (DEX.gmax && DEX.gmax[sp.id]) || null; }
   };
 
   /* ---------- 4) Deutsche Bezeichnungen ----------------------------------- */
@@ -305,6 +309,8 @@
       if (!rec) return typeof a === 'string' ? a : '';
       return (lang === 'de' && rec.dn) ? rec.dn : rec.n;
     },
+    /** Name einer Mega- oder Gigadynamax-Form. */
+    form: function (f) { return f ? ((lang === 'de' && f.dn) ? f.dn : f.n) : ''; },
     type: function (ty) { return lang === 'de' ? (TYPE_DE[ty] || ty) : ty; },
     nature: function (n) { return lang === 'de' ? (NATURE_DE[n] || n) : n; },
     stat: function (st) { return lang === 'de' ? STAT_DE[st] : st.toUpperCase(); },
@@ -365,6 +371,12 @@
     var pid = opts.pid || sp.pid;
     var local = (pid && embedded(pid, opts)) || embedded(num, opts);
     if (local) out.push(local);
+    // Ohne eingebettete Bilder (Mehrdatei-Fassung) holt PokeAPI die Form aus
+    // dem Netz — Showdown kennt sie unter dieser Nummer nicht.
+    if (!local && pid && pid !== num) {
+      if (back) out.push(POKEAPI + 'back/' + (shiny ? 'shiny/' : '') + pid + '.png');
+      out.push(POKEAPI + (shiny ? 'shiny/' : '') + pid + '.png');
+    }
     if (back) {
       out.push(SHOWDOWN + (shiny ? 'ani-back-shiny/' : 'ani-back/') + sid + '.gif');
       out.push(SHOWDOWN + (shiny ? 'gen5-back-shiny/' : 'gen5-back/') + sid + '.png');

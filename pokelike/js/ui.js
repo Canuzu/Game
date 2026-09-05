@@ -252,7 +252,7 @@
           el('div', { className: 'mon-detail-line small' }, [
             el('span', { text: 'Wesen ' + T.nature(mon.nat) }),
             el('span', { text: 'Fähigkeit ' + mon.ab }),
-            megaNote(sp)
+            megaNote(sp, mon)
           ]),
           el('div', { className: 'mon-detail-line small' }, [
             el('span', { text: 'Gegenstand: ' + (mon.item ? PL.items.label(mon.item) : '—') }),
@@ -273,17 +273,28 @@
     ]);
   }
 
-  /** Hinweis auf eine mögliche Mega-Form — inklusive des nötigen Steins. */
-  function megaNote(sp) {
-    var list = dex.megasFor(sp);
-    if (!list || !list.length) return null;
-    var names = list.map(function (f) {
-      return f.it ? PL.items.label(PL.util.toID(f.it)) : (f.mv || '—');
-    });
-    return el('span', {
-      className: 'mega-note',
-      title: 'Mega-Form: ' + list.map(function (f) { return f.n; }).join(' / ')
-    }, '◈ Mega mit ' + names.join(' oder '));
+  /**
+   * Hinweis auf die Verwandlungen, die in diesem Pokémon stecken. Mega verlangt
+   * eine abgeschlossene Entwicklung, Gigadynamax nichts. Wer sich einmal
+   * entschieden hat, sieht nur noch seine Wahl.
+   */
+  function megaNote(sp, mon) {
+    var megas = dex.megasFor(sp), gmax = dex.gmaxFor(sp);
+    var grown = dex.evosLeft(sp) === 0;
+    var chosen = mon && mon.form;
+    var parts = [], title = [];
+    if (megas && megas.length && chosen !== 'gmax') {
+      parts.push(grown ? '◈ Mega' : '◈ Mega (erst ausgewachsen)');
+      title.push(megas.map(function (f) { return T.form(f); }).join(' / '));
+    }
+    if (gmax && chosen !== 'mega') {
+      parts.push('◈ Gigadynamax');
+      title.push(T.form(gmax));
+    }
+    if (!parts.length) return null;
+    if (chosen) title.push('Diese Form ist gewählt — die andere bleibt zu.');
+    else if (parts.length > 1) title.push('Nur eine von beiden — die Wahl gilt für den ganzen Run.');
+    return el('span', { className: 'mega-note', title: title.join(' · ') }, parts.join(' · '));
   }
 
   var CAT_ICON = { P: '💥', S: '✨', T: '🌀' };

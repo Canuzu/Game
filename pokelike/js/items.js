@@ -372,20 +372,6 @@
     desc: 'Löst jede Entwicklung aus, die sonst besondere Umstände braucht.'
   });
 
-  /* ---------- Mega-Steine ---------------------------------------------------- */
-
-  Object.keys(dex.megas).forEach(function (baseId) {
-    dex.megas[baseId].forEach(function (m) {
-      if (!m.it) return;
-      var id = toID(m.it);
-      if (ITEMS[id]) return;
-      def(id, {
-        name: m.it, kind: 'hold', hold: true, mega: baseId, price: 4000,
-        desc: 'Lässt ' + PL.t.species(dex.sp(baseId)) + ' im Kampf mega-entwickeln.'
-      });
-    });
-  });
-
   /* ---------- Zugriff -------------------------------------------------------- */
 
   function get(id) { return ITEMS[toID(id)] || null; }

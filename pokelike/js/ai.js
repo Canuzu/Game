@@ -267,9 +267,13 @@
       }
     }
 
-    // Mega-Entwicklung: fast immer richtig, sobald sie möglich ist — die
-    // Mega-Form ist in jedem Wert stärker als die Ausgangsform.
-    if (bt.canMega(me) && (level >= 2 || bt.alwaysMega)) action.mega = true;
+    // Verwandeln: fast immer richtig, sobald es möglich ist. Mega geht vor —
+    // die Mega-Form ist in jedem Wert stärker und hält den ganzen Kampf,
+    // Gigadynamax nur drei Runden.
+    if (level >= 2 || bt.alwaysMega) {
+      if (bt.canMega(me)) action.mega = true;
+      else if (bt.canGmax(me)) action.gmax = true;
+    }
 
     return action;
   }

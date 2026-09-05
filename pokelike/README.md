@@ -48,7 +48,7 @@ ins Team holt, bekommt es auf Teamhöhe statt hinterher.
 **Dein Rivale** nimmt den Starter, der deinen kontert — wählst du Glumanda,
 nimmt er Schiggy. Er stellt sich dir in jeder zweiten Region in den Weg, sein
 Team wächst von zwei auf sechs Pokémon, sein Starter entwickelt sich mit und
-trägt ab der dritten Begegnung einen Mega-Stein. Vor und nach jedem Kampf hat
+trägt ab der dritten Begegnung einen Gegenstand. Vor und nach jedem Kampf hat
 er etwas zu sagen.
 
 **Der Schrein der Legenden** taucht ab der sechsten Region auf: hinter dem
@@ -148,21 +148,32 @@ Dazu zwei Änderungen an der Auswahl, beide gemessen:
 Die Regionen bleiben dabei streng bei sich: in Kanto begegnet dir Kanto.
 
 **Formen sehen aus wie Formen** — Alola-Raichu surft auf seinem Schweif,
-Galar-Smogmog hat Schornsteine, und ein mega-entwickeltes Glurak wird
-schwarzblau. PokeAPI führt Regionalformen und Mega-Formen unter eigenen
-Nummern ab 10001; die stehen jetzt als `pid` im Pokédex, und die Bilder
-liegen mit im Paket. Vorher zeigte jede Form das Bild ihrer Grundform.
+Galar-Smogmog hat Schornsteine, ein mega-entwickeltes Glurak wird schwarzblau
+und Gigadynamax-Relaxo trägt einen Berg auf dem Bauch. PokeAPI führt
+Regionalformen, Mega- und Gigadynamax-Formen unter eigenen Nummern ab 10001;
+die stehen als `pid` im Pokédex, und die Bilder liegen mit im Paket. Vorher
+zeigte jede Form das Bild ihrer Grundform.
 
-**Mega-Entwicklung** — 48 Pokémon haben eine Mega-Form (dazu die Protoformen
-von Kyogre und Groudon). Einmal pro Kampf, mit dem passenden Stein; Rayquaza
-kommt wie in den Spielen ohne Stein aus und verlangt stattdessen Zenitstürmer.
-Der Händler führt immer einen Stein, der zu deinem Team passt — Mega ist damit
-ein Ziel, auf das du hinspielen kannst, keine Glückssache. Mit dem Relikt
-Mega-Armband sind es zwei Mega-Entwicklungen pro Kampf.
+**Verwandlung: Mega oder Gigadynamax** — es gibt keine Megasteine und keinen
+Megaring. Wer seine letzte Entwicklung erreicht hat und eine Mega-Form besitzt,
+kann sich mega-entwickeln — 48 Pokémon, dazu die Protoformen von Kyogre und
+Groudon. Wer eine Gigadynamax-Form hat, kann gigadynamaximieren — 33 Pokémon,
+dafür ohne Bedingung: auch Pikachu, Mauzi und Evoli können es.
+
+Wer beides kann, muss sich entscheiden, und die Entscheidung gilt für den
+ganzen Run: einmal mega-entwickelt heißt nie gigadynamaximiert und umgekehrt.
+Hin und her geht nicht.
+
+Die beiden Formen fühlen sich verschieden an. **Mega** hält den ganzen Kampf,
+ändert Typen, Fähigkeit und alle Werte. **Gigadynamax** hält drei Runden, gibt
+die Hälfte mehr Lebenspunkte und 30 % mehr Angriffskraft; danach schrumpft das
+Pokémon auf denselben Bruchteil seiner gewohnten Lebenspunkte zurück. Beides
+zusammen einmal pro Kampf und Seite — mit dem Relikt Mega-Armband zweimal.
+Normales Dynamax gibt es nicht, nur Gigadynamax.
 
 **Manuell oder automatisch** — du wählst jede Attacke selbst, oder du schaltest
 den Auto-Kampf ein und die KI übernimmt: Attackenwahl, Wechsel, Gegenstände,
-Mega-Entwicklung, auch den Nachrücker nach einem K. o. Der Auto-Kampf spielt
+Verwandlung, auch den Nachrücker nach einem K. o. Der Auto-Kampf spielt
 auf Sieg und würfelt nicht: Er rechnet jede Attacke gegen das aktuelle Ziel
 durch und nimmt die beste; bei Gleichstand entscheidet die zuverlässigere.
 
@@ -245,20 +256,20 @@ und schicken ihr Pokémon ins Feld.
 **Bedienung** — unter der Bühne steht das Kampfprotokoll in einem Textfenster,
 darunter die vier Attacken als Kacheln mit Typ, Kategorie, AP und Wirksamkeit
 gegen das aktuelle Ziel. Die Zeile darunter (Wechseln, Beutel, Ball, Fliehen,
-Mega, Auto) bleibt immer stehen — auch während das Protokoll abläuft, damit
+Verwandeln, Auto) bleibt immer stehen — auch während das Protokoll abläuft, damit
 sich der Auto-Kampf jederzeit abschalten lässt. Rahmen, Balken und Knöpfe sind
 flächig und hart umrandet: keine runden Ecken, keine weichen Schatten.
 
 **52 Relikte** — dauerhafte Effekte für den ganzen Run: mehr Erfahrung, bessere
-Fangchancen, Fleißpunkte nach jedem Kampf, eine zweite Mega-Entwicklung, ein
+Fangchancen, Fleißpunkte nach jedem Kampf, eine zweite Verwandlung, ein
 Notfallband, das ein besiegtes Pokémon zurückholt, Typen-Fokus für jeden der 18
 Typen, und mehr.
 
 **Volle Pokémon-Tiefe** — Wesen, Determinationswerte, Fleißpunkte, versteckte
 Fähigkeiten, Schillernde (mit Schillerpin achtmal so häufig), Geschlecht,
 Freundschaft, Entwicklung über Level, Steine, Freundschaft, Tausch und
-Attacken. 251 Gegenstände, darunter alle Entwicklungssteine, Vitamine, Minzen,
-Fähigkeits-Kapsel und -Pflaster, Silberkronkorken und alle 50 Mega-Steine.
+Attacken. 158 Gegenstände, darunter alle Entwicklungssteine, Vitamine, Minzen,
+Fähigkeits-Kapsel und -Pflaster und Silberkronkorken.
 
 **Modi**
 
@@ -292,7 +303,7 @@ Begleiter, 10 000 ₽ oder eine Feldapotheke.
 | 6 | Gegner tragen häufiger Gegenstände |
 | 7 | 20 % weniger Erfahrung |
 | 8 | Kein Vollheilen nach Arenaleitern |
-| 9 | Gegner mega-entwickeln, sobald sie können |
+| 9 | Gegner verwandeln sich, sobald sie können |
 | 10 | Alles zusammen und noch zwei Level obendrauf |
 
 **Meta-Fortschritt** — der Pokédex sammelt über alle Runs hinweg, was du gesehen

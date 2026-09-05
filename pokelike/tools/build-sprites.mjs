@@ -43,9 +43,9 @@ async function fetchOne(url, tries = 3) {
 const out = {};
 let done = 0, missing = 0;
 
-/* Regionalformen und Mega-Formen führt PokeAPI unter eigenen Nummern ab
-   10001. Ohne sie zeigt Alola-Raichu das Bild des gewöhnlichen Raichu und
-   ein mega-entwickeltes Pokémon sein Ausgangsbild. Welche Nummern gebraucht
+/* Regional-, Mega- und Gigadynamax-Formen führt PokeAPI unter eigenen Nummern
+   ab 10001. Ohne sie zeigt Alola-Raichu das Bild des gewöhnlichen Raichu und
+   ein verwandeltes Pokémon sein Ausgangsbild. Welche Nummern gebraucht
    werden, steht im fertigen Pokédex. */
 function formIds() {
   const require = createRequire(import.meta.url);
@@ -54,6 +54,9 @@ function formIds() {
   for (const sp of DEX.species) if (sp.pid) ids.add(sp.pid);
   for (const base of Object.keys(DEX.megas || {})) {
     for (const form of DEX.megas[base]) if (form.pid) ids.add(form.pid);
+  }
+  for (const base of Object.keys(DEX.gmax || {})) {
+    if (DEX.gmax[base].pid) ids.add(DEX.gmax[base].pid);
   }
   return [...ids].sort((a, b) => a - b);
 }

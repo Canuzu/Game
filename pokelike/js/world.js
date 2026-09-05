@@ -241,15 +241,6 @@
 
   /* ---------- 4) Teams bauen ---------------------------------------------------- */
 
-  /** Der Mega-Stein zu einem Pokémon, sofern es eine Mega-Form hat. */
-  function megaStoneFor(mon, rng) {
-    var list = dex.megasFor(dex.sp(mon.sp));
-    if (!list || !list.length) return null;
-    var withStone = list.filter(function (m) { return m.it; });
-    if (!withStone.length) return null;
-    return toID(rng.pick(withStone).it);
-  }
-
   function buildMon(rng, sp, level, opts) {
     opts = opts || {};
     return mons.create(sp, level, rng, {
@@ -377,11 +368,9 @@
       var mon = buildMon(rng, species[i], level + (last ? 2 : 0), {
         quality: quality, ivFloor: 6 + index, hiddenChance: 0.25, shinyOdds: 1 / 120
       });
-      // Nur der Ass-Kämpfer trägt einen Gegenstand — wenn er eine Mega-Form
-      // hat, bekommt er ab der dritten Region den passenden Stein.
+      // Nur der Ass-Kämpfer trägt einen Gegenstand.
       if ((last && index > 0) || (opts && opts.items && rng.chance(0.6))) {
-        var stone = index >= 2 && last ? megaStoneFor(mon, rng) : null;
-        mon.item = stone || rng.pick(['leftovers', 'lifeorb', 'focussash', 'assaultvest', 'choicescarf', 'sitrusberry']);
+        mon.item = rng.pick(['leftovers', 'lifeorb', 'focussash', 'assaultvest', 'choicescarf', 'sitrusberry']);
       }
       mons.addEVs(mon, mon.ivs[1] >= mon.ivs[3] ? 'atk' : 'spa', Math.round(120 * evScale));
       mons.addEVs(mon, 'spe', Math.round(90 * evScale));
@@ -435,8 +424,7 @@
         quality: quality, ivFloor: 16, hiddenChance: 0.3, shinyOdds: 1 / 100
       });
       if (last || i < 1) {
-        var eStone = last ? megaStoneFor(mon, rng) : null;
-        mon.item = eStone || rng.pick(['leftovers', 'lifeorb', 'focussash', 'choiceband', 'choicespecs', 'choicescarf', 'assaultvest', 'sitrusberry']);
+        mon.item = rng.pick(['leftovers', 'lifeorb', 'focussash', 'choiceband', 'choicespecs', 'choicescarf', 'assaultvest', 'sitrusberry']);
       }
       mons.addEVs(mon, mon.ivs[1] >= mon.ivs[3] ? 'atk' : 'spa', 120);
       mons.addEVs(mon, 'spe', 90);
@@ -457,8 +445,7 @@
       var mon = buildMon(rng, sp, level + (i === 5 ? 2 : 0), {
         quality: 0.9 - ((opts && opts.ease) || 0), ivFloor: 20, hiddenChance: 0.5, shinyOdds: 1 / 60
       });
-      var cStone = i === 5 ? megaStoneFor(mon, rng) : null;
-      if (cStone) mon.item = cStone;
+      if (i === 5) mon.item = 'lifeorb';
       else if (i < 4) mon.item = ['leftovers', 'lifeorb', 'focussash', 'choicescarf'][i];
       mons.addEVs(mon, mon.ivs[1] >= mon.ivs[3] ? 'atk' : 'spa', 160);
       mons.addEVs(mon, 'spe', 140);
@@ -528,9 +515,7 @@
     var ace = buildMon(rng, starter, level + 1, {
       quality: 0.9 + stage * 0.02 - ease, ivFloor: 16 + stage * 3, hiddenChance: 0.3
     });
-    if (stage >= 2) {
-      ace.item = megaStoneFor(ace, rng) || rng.pick(['lifeorb', 'focussash', 'leftovers']);
-    }
+    if (stage >= 2) ace.item = rng.pick(['lifeorb', 'focussash', 'leftovers']);
     mons.addEVs(ace, ace.ivs[1] >= ace.ivs[3] ? 'atk' : 'spa', 80 + stage * 30);
     mons.addEVs(ace, 'spe', 60 + stage * 20);
     team.push(ace);
@@ -771,8 +756,8 @@
       id: 'steinhoehle', title: 'Kristallhöhle',
       text: 'Die Wände sind von Kristallen überzogen. Einer davon pulsiert in einem Rhythmus, den du aus deinem eigenen Team zu kennen glaubst.',
       options: [
-        { label: 'Den pulsierenden Kristall lösen', desc: 'Ein Mega-Stein, der zu einem deiner Pokémon passt — falls einer passt.',
-          run: function (run, rng) { return run.giveMegaStone(rng); } },
+        { label: 'Den pulsierenden Kristall lösen', desc: 'Er antwortet einem Pokémon, das eine verborgene Form trägt.',
+          run: function (run, rng) { return run.giveCrystal(rng); } },
         { label: 'Kristallsplitter verkaufen', desc: 'Sicheres Geld.',
           run: function (run) { return run.giveMoney(1200 + run.region * 200); } }
       ]
@@ -986,7 +971,6 @@
     CHAMPIONS: CHAMPIONS,
     EVENTS: EVENTS,
     encounterPool: encounterPool,
-    megaStoneFor: megaStoneFor,
     counterStarter: counterStarter,
     rivalTeam: rivalTeam,
     rivalBanter: rivalBanter,

@@ -419,6 +419,8 @@ button { font: inherit; color: inherit; }
 .mon-frame .exp-bar { height: 4px; }
 .hp-num { color: var(--muted); }
 .mega-mark { color: #d9a5ff; font-size: .95rem; text-shadow: 0 0 8px rgba(176,122,224,.9); }
+/* Gigadynamax zählt sichtbar herunter — drei Runden, dann ist Schluss. */
+.mega-mark.gmax { color: #ff9ec4; text-shadow: 0 0 8px rgba(224,90,140,.9); font-variant-numeric: tabular-nums; }
 .team-dots { display: flex; gap: .16rem; margin-top: .28rem; }
 .team-dots .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--good); border: 1px solid rgba(0,0,0,.3); }
 .team-dots .dot.out { background: var(--panel-2); border-color: var(--line); }

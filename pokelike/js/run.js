@@ -927,35 +927,16 @@
     // Tragegegenstände
     PL.items.all().forEach(function (it) {
       if (it.kind !== 'hold') return;
-      if (it.mega) return;                                   // Megasteine unten, gezielt
       var w = it.berry ? 6 : 5;
       if (it.price > 2200 && deep < 3) w = 1;
       out.push({ item: it, w: w });
     });
-    // Mega-Steine nur, wenn sie zu jemandem im Team passen — ein Stein für ein
-    // Pokémon, das man gar nicht hat, ist bloß toter Platz im Angebot.
-    this.matchingMegaStones().forEach(function (id) { add(id, deep > 1 ? 16 : 8); });
     // Entwicklungssteine, wenn sie jemandem im Team helfen
     var needed = {};
     this.party.forEach(function (m) {
       mons.evolutions(m, {}).forEach(function (e) { if (e.item) needed[PL.util.toID(e.item)] = true; });
     });
     Object.keys(needed).forEach(function (id) { add(id, 14); });
-    return out;
-  };
-
-  /** Alle Mega-Steine, die zu einem Pokémon im Team gehören. */
-  R.matchingMegaStones = function () {
-    var out = [];
-    this.party.forEach(function (m) {
-      var list = dex.megasFor(dex.sp(m.sp));
-      if (!list) return;
-      list.forEach(function (form) {
-        if (!form.it) return;
-        var id = PL.util.toID(form.it);
-        if (out.indexOf(id) < 0) out.push(id);
-      });
-    });
     return out;
   };
 
@@ -1018,15 +999,6 @@
     opts = opts || {};
     var size = opts.size || 7;
     var pools = this.itemPool(), stock = [], i;
-    // Ein passender Mega-Stein liegt immer aus, solange das Team einen
-    // gebrauchen kann und ihn noch nicht hat.
-    var stones = this.matchingMegaStones().filter(function (id) { return !this.bag[id]; }, this);
-    if (stones.length) {
-      var owned = {};
-      this.party.forEach(function (m) { if (m.item) owned[m.item] = 1; });
-      stones = stones.filter(function (id) { return !owned[id]; });
-      if (stones.length) stock.push(PL.items.get(rng.pick(stones)));
-    }
     if (this.hasMod('shopHold')) {
       var holds = pools.filter(function (p) { return p.item.kind === 'hold'; });
       if (holds.length) { stock.push(rng.pick(holds).item); }
@@ -1152,23 +1124,21 @@
     this.tms[moveIndex] = (this.tms[moveIndex] || 0) + 1;
   };
 
-  /** Ein Mega-Stein, der zu einem Teammitglied passt. */
-  R.giveMegaStone = function (rng) {
-    var options = [];
-    this.party.forEach(function (m) {
-      var list = dex.megasFor(dex.sp(m.sp));
-      if (!list) return;
-      list.forEach(function (form) {
-        if (form.it) options.push({ mon: m, id: PL.util.toID(form.it), name: form.it });
-      });
+  /** Der Kristall antwortet einem Pokémon, das eine verborgene Form in sich trägt. */
+  R.giveCrystal = function (rng) {
+    var carriers = this.party.filter(function (m) {
+      var sp = dex.sp(m.sp);
+      return !!dex.gmaxFor(sp) || (!!dex.megasFor(sp) && dex.evosLeft(sp) === 0);
     });
-    if (!options.length) {
-      this.giveMoney(900);
-      return 'Der Kristall bleibt stumm — niemand in deinem Team antwortet ihm. Du verkaufst ihn für 900 ₽.';
+    if (!carriers.length) {
+      this.giveMoney(1200);
+      return 'Der Kristall bleibt stumm — niemand in deinem Team antwortet ihm. Du verkaufst ihn für 1200 ₽.';
     }
-    var pick = rng.pick(options);
-    this.addItem(pick.id, 1);
-    return PL.items.label(pick.id) + ' gefunden — er gehört zu ' + mons.name(pick.mon) + '.';
+    var mon = rng.pick(carriers);
+    var id = rng.pick(['leftovers', 'lifeorb', 'focussash', 'assaultvest', 'choicescarf', 'expertbelt']);
+    this.addItem(id, 1);
+    return mons.name(mon) + ' antwortet dem Kristall — er zerfällt in deiner Hand zu ' +
+      PL.items.label(id) + '.';
   };
 
   R.giveRandomItem = function (rng, count) {
@@ -1388,6 +1358,13 @@
     run.state = 'map';
     run.pendingLevelUps = [];
     run.history = run.history || [];
+    // Aus älteren Spielständen können Megasteine kommen, die es nicht mehr gibt.
+    Object.keys(run.bag || {}).forEach(function (id) {
+      if (!PL.items.get(id)) delete run.bag[id];
+    });
+    (run.party || []).concat(run.box || []).forEach(function (m) {
+      if (m && m.item && !PL.items.get(m.item)) m.item = null;
+    });
     return run;
   };
 

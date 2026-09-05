@@ -97,6 +97,8 @@
       hurtBySource: null,
       protectStreak: 0,
       mega: false,
+      gmax: false,
+      gmaxTurns: 0,
       switchedInThisTurn: true,
       itemUsed: false,
       illusion: null
@@ -466,6 +468,8 @@
     if (this.field.terrain === 'psychicterrain' && moveType === 'Psychic' && this.grounded(atk)) bp = Math.floor(bp * 1.3);
     if (this.field.terrain === 'mistyterrain' && moveType === 'Dragon' && this.grounded(def)) bp = Math.floor(bp * 0.5);
     if (this.field.terrain === 'grassyterrain' && (move.id === 'earthquake' || move.id === 'bulldoze') && this.grounded(def)) bp = Math.floor(bp * 0.5);
+    // Ein gigadynamaximiertes Pokémon schlägt für seine drei Runden härter zu.
+    if (atk.gmax) bp = Math.floor(bp * GMAX_POWER);
 
     var physical = move.c === 'P';
     var atkStat = physical ? 'atk' : 'spa';
@@ -1220,6 +1224,8 @@
     var mon = side.team[index];
     if (!mon || mon.hp <= 0) return false;
     if (side.active) {
+      // Wer das Feld verlässt, schrumpft — sonst nähme er die geliehenen KP mit.
+      this.endGmax(side.active, true);
       this.hook(side.active, 'onSwitchOut', []);
       if (this.abilityId(side.active) === 'regenerator' && side.active.mon.hp > 0) {
         side.active.mon.hp = Math.min(side.active.stats[0],
@@ -1337,10 +1343,12 @@
       }
     }
 
-    // Mega-Entwicklung geschieht vor allen Aktionen der Runde
+    // Verwandlungen geschehen vor allen Aktionen der Runde
     for (i = 0; i < 2; i++) {
       action = actions[i];
-      if (action && action.mega) this.megaEvolve(this.sides[i].active);
+      if (!action) continue;
+      if (action.mega) this.megaEvolve(this.sides[i].active);
+      else if (action.gmax) this.gigantamax(this.sides[i].active);
     }
 
     order = this.actionOrder(actions[0], actions[1]);
@@ -1536,6 +1544,8 @@
     for (i = 0; i < 2; i++) {
       var sc = this.sides[i].screens, key;
       for (key in sc) if (sc[key] > 0) sc[key]--;
+      act = this.sides[i].active;
+      if (act && act.gmax && --act.gmaxTurns <= 0) this.endGmax(act);
     }
     this.checkFaints();
   };
@@ -1590,6 +1600,7 @@
     var alive1 = this.sides[1].team.some(function (m) { return m.hp > 0; });
     if (!alive0 || !alive1) {
       this.ended = true;
+      this.settleForms();
       this.winner = alive0 ? 0 : 1;
       this.outcome = alive0 ? 'win' : 'loss';
       this.say(alive0 ? 'Kampf gewonnen!' : 'Alle Pokémon sind kampfunfähig …', 'end', { winner: this.winner });
@@ -1649,6 +1660,7 @@
     if (!this.hasBackup(side)) return false;
     if (this.wild && !side.isPlayer) {
       this.ended = true;
+      this.settleForms();
       this.outcome = 'fled';
       this.winner = 0;
       this.say('Das wilde Pokémon ist geflohen!', 'end', { winner: 0 });
@@ -1662,37 +1674,60 @@
     return true;
   };
 
-  /* --- Mega-Entwicklung -------------------------------------------------------
-   * Einmal pro Kampf (mit dem passenden Relikt zweimal). Es braucht den Stein
-   * der Spezies; Rayquaza kommt wie in den Spielen ohne aus, verlangt dafür
-   * Zenitstürmer.
+  /* --- Verwandlung: Mega und Gigadynamax --------------------------------------
+   * Ohne Stein und ohne Ring. Wer ausgewachsen ist, kann sich mega-entwickeln;
+   * wer eine Gigadynamax-Form hat, kann gigadynamaximieren. Einmal pro Kampf
+   * und Seite — und wer sich einmal entschieden hat, bleibt für den ganzen Run
+   * dabei: hin und her geht nicht.
    * -------------------------------------------------------------------------- */
+
+  var GMAX_TURNS = 3;    // so lange hält die Riesengestalt
+  var GMAX_HP = 1.5;     // so viel mehr Lebenspunkte
+  var GMAX_POWER = 1.3;  // so viel härter schlagen die Attacken
+
+  /* Wer zwei Mega-Formen hat (Glurak, Mewtu), bekommt die, die zu ihm passt:
+     der Draufgänger die körperliche, der Denker die geistige. */
+  function pickMega(list, act) {
+    if (list.length < 2) return list[0];
+    var physical = act.stats[1] >= act.stats[3], best = null, bestScore = -Infinity;
+    for (var i = 0; i < list.length; i++) {
+      var f = list[i], score = physical ? f.bs[1] - f.bs[3] : f.bs[3] - f.bs[1];
+      if (score > bestScore) { bestScore = score; best = f; }
+    }
+    return best;
+  }
 
   /** Die Mega-Form, die dieses Pokémon gerade erreichen könnte. */
   B.megaFormFor = function (act) {
-    if (!act || act.mega || act.mon.hp <= 0) return null;
+    if (!act || act.mega || act.gmax || act.mon.hp <= 0) return null;
+    if (act.mon.form === 'gmax') return null;      // hat sich anders entschieden
+    if (dex.evosLeft(act.species) > 0) return null; // erst ausgewachsen
     var list = dex.megasFor(act.species);
-    if (!list) return null;
-    for (var i = 0; i < list.length; i++) {
-      var form = list[i];
-      if (form.mv) {
-        var knows = act.mon.moves.some(function (mv) { return dex.move(mv.m).n === form.mv; });
-        if (knows) return form;
-      } else if (form.it && act.item === PL.util.toID(form.it)) {
-        return form;
-      }
-    }
-    return null;
+    return list && list.length ? pickMega(list, act) : null;
   };
 
+  /** Die Gigadynamax-Form. Anders als Mega verlangt sie keine fertige Entwicklung. */
+  B.gmaxFormFor = function (act) {
+    if (!act || act.mega || act.gmax || act.mon.hp <= 0) return null;
+    if (act.mon.form === 'mega') return null;
+    return dex.gmaxFor(act.species);
+  };
+
+  /** Wie viele Verwandlungen eine Seite pro Kampf hat. */
   B.megaCharges = function (side) {
     return side.isPlayer ? (this.relicMod('megaCharges') || 1) : 1;
   };
 
+  B.canTransform = function (act) {
+    return !!act && act.side.megaUsed < this.megaCharges(act.side);
+  };
+
   B.canMega = function (act) {
-    if (!act) return false;
-    if (act.side.megaUsed >= this.megaCharges(act.side)) return false;
-    return !!this.megaFormFor(act);
+    return this.canTransform(act) && !!this.megaFormFor(act);
+  };
+
+  B.canGmax = function (act) {
+    return this.canTransform(act) && !!this.gmaxFormFor(act);
   };
 
   B.megaEvolve = function (act) {
@@ -1700,10 +1735,11 @@
     if (!form) return false;
     act.mega = true;
     act.side.megaUsed++;
+    act.mon.form = 'mega';
     act.types = form.t.slice();
     act.ability = PL.util.toID(form.a);
     act.abilityName = form.a;
-    act.megaName = T.lang() === 'de' && form.dn ? form.dn : form.n;
+    act.megaName = T.form(form);
     act.megaForm = form;
     act.stats = megaStats(act.mon, form.bs);
     var primal = /Primal/.test(form.n);
@@ -1711,6 +1747,47 @@
       'mega', { side: act.side.id, primal: primal });
     this.onSwitchInEffects(act);
     return true;
+  };
+
+  /* Gigadynamax lässt Werte und Typen, wie sie sind, und leiht dafür drei
+     Runden lang Größe: mehr KP, härtere Attacken. Danach schrumpft das
+     Pokémon auf denselben Bruchteil seiner gewohnten KP zurück. */
+  B.gigantamax = function (act) {
+    var form = this.canGmax(act) ? this.gmaxFormFor(act) : null;
+    if (!form) return false;
+    act.gmax = true;
+    act.gmaxTurns = GMAX_TURNS;
+    act.gmaxForm = form;
+    act.gmaxName = T.form(form);
+    act.side.megaUsed++;
+    act.mon.form = 'gmax';
+    act.baseMaxHP = act.stats[0];
+    act.stats[0] = Math.floor(act.baseMaxHP * GMAX_HP);
+    act.mon.hp = Math.min(act.stats[0], Math.floor(act.mon.hp * GMAX_HP));
+    this.say(this.name(act) + ' gigadynamaximiert zu ' + act.gmaxName + '!',
+      'mega', { side: act.side.id, gmax: true, hp: act.mon.hp, max: act.stats[0] });
+    return true;
+  };
+
+  /** Zurück auf Normalgröße — nach drei Runden, beim Wechsel, am Kampfende. */
+  B.endGmax = function (act, silent) {
+    if (!act || !act.gmax) return false;
+    var base = act.baseMaxHP || act.stats[0];
+    var frac = act.stats[0] > 0 ? act.mon.hp / act.stats[0] : 0;
+    act.gmax = false;
+    act.gmaxTurns = 0;
+    act.stats[0] = base;
+    act.mon.hp = act.mon.hp <= 0 ? 0 : Math.max(1, Math.min(base, Math.round(frac * base)));
+    if (!silent) {
+      this.say(this.name(act) + ' schrumpft auf seine gewohnte Größe.', 'unmega',
+        { side: act.side.id, hp: act.mon.hp, max: base });
+    }
+    return true;
+  };
+
+  /** Am Kampfende darf niemand geliehene KP mitnehmen. */
+  B.settleForms = function () {
+    for (var i = 0; i < 2; i++) this.endGmax(this.sides[i].active, true);
   };
 
   function megaStats(mon, base) {
@@ -1757,6 +1834,7 @@
     var res = mons.tryCatch(foe.mon, mult, this.rng, { rateMult: this.catchMult });
     if (res.caught) {
       this.ended = true;
+      this.settleForms();
       this.outcome = 'caught';
       this.winner = 0;
       this.caught = foe.mon;
@@ -1779,6 +1857,7 @@
     this.fleeTries = (this.fleeTries || 1) + 1;
     if (this.rng.next() < odds) {
       this.ended = true;
+      this.settleForms();
       this.outcome = 'fled';
       this.winner = null;
       this.say('Du bist entkommen!', 'end', { winner: null });
@@ -1820,13 +1899,15 @@
           index: side.activeIndex,
           name: mons.name(a.mon),
           species: a.species,
-          megaName: a.megaName || null,
+          megaName: a.megaName || a.gmaxName || null,
           level: a.mon.lvl,
           hp: a.mon.hp,
           max: a.stats[0],
           status: a.mon.status,
           types: a.types.slice(),
           mega: a.mega,
+          gmax: a.gmax,
+          gmaxTurns: a.gmaxTurns || 0,
           boosts: a.boosts,
           ability: a.abilityName,
           item: a.item,
@@ -1834,8 +1915,11 @@
           gender: a.mon.gender,
           vol: Object.keys(a.vol).filter(function (k) { return a.vol[k]; })
         } : null,
-        team: side.team.map(function (m) {
-          return { name: mons.name(m), hp: m.hp, max: mons.maxHP(m), status: m.status, species: dex.sp(m.sp), level: m.lvl };
+        team: side.team.map(function (m, i) {
+          // Wer gerade gigadynamaximiert ist, hat mehr KP als sonst — sonst
+          // stünde in der Teamliste 150 von 100.
+          var max = (a && i === side.activeIndex) ? a.stats[0] : mons.maxHP(m);
+          return { name: mons.name(m), hp: m.hp, max: max, status: m.status, species: dex.sp(m.sp), level: m.lvl };
         }),
         hazards: side.hazards,
         screens: side.screens,

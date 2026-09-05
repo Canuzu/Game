@@ -180,33 +180,61 @@ section('Kampfmechanik im Einzelnen');
   eq('Rauflust durchbricht die Geist-Immunität',
     bt.effectiveness('Normal', bt.sides[0].active, dex.move('bodyslam'), bt.sides[1].active), 1);
 
-  // Mega-Entwicklung
+  // Mega-Entwicklung: kein Stein, kein Ring — wer ausgewachsen ist, kann es
   bt = duel('charizard', 'blastoise');
-  bt.sides[0].active.item = 'charizarditey';
-  check('Mega ist mit passendem Stein möglich', bt.canMega(bt.sides[0].active));
+  eq('Kein Pokémon trägt noch einen Stein', bt.sides[0].active.item, null);
+  check('Ausgewachsen heißt mega-fähig', bt.canMega(bt.sides[0].active));
   const plainAtk = bt.statOf(bt.sides[0].active, 'spa');
+  const wantsX = bt.sides[0].active.stats[1] >= bt.sides[0].active.stats[3];
   eq('Mega-Entwicklung gelingt', bt.megaEvolve(bt.sides[0].active), true);
-  check('Mega-Form ist stärker', bt.statOf(bt.sides[0].active, 'spa') > plainAtk,
+  eq('Zwei Mega-Formen: die passende wird gewählt',
+    /Mega-X$/.test(bt.sides[0].active.megaForm.n), wantsX);
+  check('Mega-Form ist stärker', bt.statOf(bt.sides[0].active, 'spa') > plainAtk ||
+    bt.statOf(bt.sides[0].active, 'atk') > plainAtk,
     plainAtk + ' → ' + bt.statOf(bt.sides[0].active, 'spa'));
-  eq('Mega-Form bringt ihre Fähigkeit mit', bt.sides[0].active.abilityName, 'Drought');
   eq('Mega geht nur einmal pro Kampf', bt.canMega(bt.sides[0].active), false);
 
+  // Ein halb entwickeltes Pokémon bleibt außen vor
   bt = duel('charizard', 'blastoise');
-  eq('Ohne Stein keine Mega-Entwicklung', bt.canMega(bt.sides[0].active), false);
+  bt.sides[0].active.species = dex.sp('charmander');
+  eq('Wer noch wächst, entwickelt sich nicht mega', bt.canMega(bt.sides[0].active), false);
 
   bt = duel('rayquaza', 'blastoise');
-  bt.sides[0].active.mon.moves = [{ m: dex.move('dragonascent').i, pp: 5, ppUp: 0, used: 0 }];
-  check('Rayquaza mega-entwickelt sich über Zenitstürmer', bt.canMega(bt.sides[0].active));
+  check('Rayquaza braucht keinen Zenitstürmer mehr', bt.canMega(bt.sides[0].active));
 
   bt = duel('groudon', 'blastoise');
-  bt.sides[0].active.item = 'redorb';
-  if (bt.canMega(bt.sides[0].active)) {
-    bt.megaEvolve(bt.sides[0].active);
-    check('Protoform trägt ihren Namen', /Primal/.test(bt.sides[0].active.megaName || ''),
-      bt.sides[0].active.megaName);
-  } else {
-    check('Protoform von Groudon ist erreichbar', false, 'Roter Edelstein greift nicht');
-  }
+  check('Protoform ist ohne Edelstein erreichbar', bt.canMega(bt.sides[0].active));
+  bt.megaEvolve(bt.sides[0].active);
+  check('Protoform trägt ihren Namen', /Proto|Primal/.test(bt.sides[0].active.megaName || ''),
+    bt.sides[0].active.megaName);
+
+  // Gigadynamax: drei Runden groß, dann zurück
+  bt = duel('snorlax', 'blastoise');
+  const gAct = bt.sides[0].active;
+  const normalMax = gAct.stats[0];
+  check('Gigadynamax ist möglich', bt.canGmax(gAct));
+  eq('Gigadynamax gelingt', bt.gigantamax(gAct), true);
+  check('Gigadynamax gibt Lebenspunkte', gAct.stats[0] > normalMax,
+    normalMax + ' → ' + gAct.stats[0]);
+  check('Gigadynamax schlägt härter',
+    bt.calcDamage(gAct, bt.sides[1].active, dex.move('bodyslam'), { noRandom: true }).dmg > 0);
+  eq('Neben Gigadynamax kein Mega mehr', bt.canMega(gAct), false);
+  eq('Und auch kein zweites Gigadynamax', bt.canGmax(gAct), false);
+  for (let t = 0; t < 3; t++) bt.endOfTurn();
+  eq('Nach drei Runden ist die Riesengestalt vorbei', gAct.gmax, false);
+  eq('… und die Lebenspunkte stehen wieder normal', gAct.stats[0], normalMax);
+  check('… ohne geliehene KP mitzunehmen', gAct.mon.hp <= normalMax,
+    gAct.mon.hp + ' / ' + normalMax);
+
+  // Die Wahl gilt für den ganzen Run
+  bt = duel('venusaur', 'blastoise');
+  check('Venusaur kann beides', bt.canMega(bt.sides[0].active) && bt.canGmax(bt.sides[0].active));
+  bt.megaEvolve(bt.sides[0].active);
+  bt = duel('venusaur', 'blastoise');
+  bt.sides[0].active.mon.form = 'mega';
+  eq('Wer Mega gewählt hat, giga-dynamaximiert nie', bt.canGmax(bt.sides[0].active), false);
+  bt.sides[0].active.mon.form = 'gmax';
+  eq('Wer Giga gewählt hat, entwickelt sich nie mega', bt.canMega(bt.sides[0].active), false);
 
   // Wetter
   bt = duel('charizard', 'blastoise');
@@ -269,7 +297,10 @@ section('Kampfmechanik im Einzelnen');
   eq('Schwerttanz erhöht den Angriff um zwei Stufen', bt.sides[0].active.boosts.atk, 2);
 
   bt = duel('pikachu', 'snorlax');
-  bt.useMove(bt.sides[0].active, { move: dex.move('thunderwave') });
+  // Donnerwelle trifft zu neun Zehnteln — der Test darf nicht am Würfel hängen.
+  for (let i = 0; i < 8 && !bt.sides[1].active.mon.status; i++) {
+    bt.useMove(bt.sides[0].active, { move: dex.move('thunderwave') });
+  }
   eq('Donnerwelle paralysiert', bt.sides[1].active.mon.status, 'par');
 
   bt = duel('blissey', 'snorlax');
@@ -689,6 +720,18 @@ section('Spielstand sichern');
   eq('… und stellt den Pokédex wieder her', Object.keys(meta.load().caught).length, 1);
   check('… samt laufendem Run', meta.hasRun());
 
+  // Ältere Spielstände können Megasteine enthalten, die es nicht mehr gibt.
+  {
+    const alt = new PL.Run({ seed: 77, starter: 'charmander' }).toJSON();
+    alt.bag.charizarditex = 1;
+    alt.party[0].item = 'charizarditey';
+    const wieder = PL.Run.fromJSON(JSON.parse(JSON.stringify(alt)));
+    check('Alte Megasteine fliegen aus dem Beutel', !wieder.bag.charizarditex,
+      JSON.stringify(wieder.bag));
+    eq('… und aus der Hand', wieder.party[0].item, null);
+    check('… echte Gegenstände bleiben', wieder.bag.potion > 0);
+  }
+
   check('Unsinn wird abgelehnt', !meta.importSave('{}').ok);
   check('Kaputter Text wird abgelehnt', !meta.importSave('kein json').ok);
   check('Fremde Dateien werden abgelehnt', !meta.importSave('{"format":"anderes-spiel"}').ok);
@@ -827,12 +870,15 @@ section('Formen und Bilder');
     put(dex.sp('raichualola').pid, 'ALOLA');
     put(dex.sp('charizard').num, 'GLURAK');
     put(mega.pid, 'MEGA');
+    put(dex.gmax.charizard.pid, 'GIGA');
     const first = (sp, o) => PL.sprite.chain(sp, o || {})[0];
     check('Alola-Raichu zieht sein eigenes Bild',
       /ALOLA/.test(first(dex.sp('raichualola'))), first(dex.sp('raichualola')).slice(0, 40));
     check('Raichu bleibt bei seinem', /RAICHU/.test(first(dex.sp('raichu'))));
     check('Die Mega-Form zieht ihr eigenes Bild',
       /MEGA/.test(first(dex.sp('charizard'), { pid: mega.pid })));
+    check('Die Gigadynamax-Form zieht ihr eigenes Bild',
+      /GIGA/.test(first(dex.sp('charizard'), { pid: dex.gmax.charizard.pid })));
     check('Ohne Form bleibt es die Grundform',
       /GLURAK/.test(first(dex.sp('charizard'))));
     globalThis.PL_SPRITES = echte;
@@ -841,14 +887,26 @@ section('Formen und Bilder');
   // Im Kampf merkt sich der Aktive seine Form
   const rng = PL.rng('mega');
   const mon = PL.mon.create('charizard', 60, rng, {});
-  mon.item = 'charizarditex';
   const foe = PL.mon.create('snorlax', 60, rng, {});
   const bt = new PL.Battle({ teams: [[mon], [foe]], rng: PL.rng('mk') });
   bt.start();
   bt.megaEvolve(bt.sides[0].active);
   check('Der Aktive merkt sich seine Mega-Form',
     !!bt.sides[0].active.megaForm && !!bt.sides[0].active.megaForm.pid);
-  eq('… und heißt deutsch', bt.sides[0].active.megaName, 'Glurak-Mega-X');
+  check('… und heißt deutsch', /^Glurak-Mega-[XY]$/.test(bt.sides[0].active.megaName),
+    bt.sides[0].active.megaName);
+
+  // Dasselbe für Gigadynamax: eigenes Bild, eigener Name
+  const gm = PL.mon.create('snorlax', 60, rng, {});
+  const gb = new PL.Battle({ teams: [[gm], [PL.mon.create('pikachu', 60, rng, {})]], rng: PL.rng('gk') });
+  gb.start();
+  gb.gigantamax(gb.sides[0].active);
+  check('Der Aktive merkt sich seine Gigadynamax-Form',
+    !!gb.sides[0].active.gmaxForm && !!gb.sides[0].active.gmaxForm.pid);
+  eq('… und heißt deutsch', gb.sides[0].active.gmaxName, 'Gigadynamax-Relaxo');
+  check('Gigadynamax hat eine eigene Bildnummer',
+    gb.sides[0].active.gmaxForm.pid !== dex.sp('snorlax').num,
+    'pid ' + gb.sides[0].active.gmaxForm.pid);
 }
 
 section('Grundschwierigkeit');
@@ -1235,12 +1293,22 @@ section('Inhalte');
   check('Mega-Formen sind auf die echten beschränkt',
     Object.keys(dex.megas).length === 48,
     Object.keys(dex.megas).length + ' Spezies');
-  check('Jede Mega-Form hat Stein oder Attacke',
-    Object.keys(dex.megas).every((k) => dex.megas[k].every((f) => f.it || f.mv)));
-  check('Zu jedem Mega-Stein gibt es einen Gegenstand',
-    Object.keys(dex.megas).every((k) => dex.megas[k].every((f) => !f.it || PL.items.get(f.it))));
+  check('Jede Mega-Form bringt Werte, Typen und Bild mit',
+    Object.keys(dex.megas).every((k) => dex.megas[k].every((f) =>
+      f.bs && f.bs.length === 6 && f.t && f.t.length && f.a && f.pid)));
+  check('Jede Mega-Spezies ist ausgewachsen',
+    Object.keys(dex.megas).every((k) => dex.evosLeft(dex.sp(k)) === 0),
+    Object.keys(dex.megas).filter((k) => dex.evosLeft(dex.sp(k)) > 0).join(','));
+  check('Keine Megasteine mehr im Spiel',
+    !PL.items.get('charizarditex') && !PL.items.get('venusaurite') &&
+    PL.items.all().every((i) => !i.mega));
   check('Kein Terakristall mehr im Spiel',
     !PL.items.get('terashard') && !PL.relics.get('terakristall_splitter') && !PL.relics.get('mega_ring'));
+  check('Gigadynamax-Formen sind auf die echten beschränkt',
+    Object.keys(dex.gmax).length === 33, Object.keys(dex.gmax).length + ' Spezies');
+  check('Jede Gigadynamax-Form hat Bild und deutschen Namen',
+    Object.keys(dex.gmax).every((k) => dex.gmax[k].pid && /^Gigadynamax-/.test(dex.gmax[k].dn)),
+    Object.keys(dex.gmax).filter((k) => !dex.gmax[k].pid).join(','));
 
   check('Alle Champ-Teams verweisen auf echte Spezies',
     PL.world.CHAMPIONS.every((c) => c.team.every((id) => !!dex.sp(id))),

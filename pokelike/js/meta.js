@@ -173,6 +173,7 @@
     { id: 'sweep', name: 'Alleingang', desc: 'Besiege ein volles Gegnerteam mit einem einzigen Pokémon.', manual: true },
     { id: 'mega', name: 'Mega', desc: 'Mega-entwickle ein Pokémon.', manual: true },
     { id: 'primal', name: 'Urgewalt', desc: 'Löse eine Protoform aus (Kyogre oder Groudon).', manual: true },
+    { id: 'gigadynamax', name: 'Riesenwuchs', desc: 'Lass ein Pokémon gigadynamaximieren.', manual: true },
     { id: 'rich', name: 'Wohlhabend', desc: 'Besitze 50 000 ₽ in einem Run.', manual: true },
     { id: 'level100', name: 'Maximum', desc: 'Bringe ein Pokémon auf Level 100.', manual: true },
     { id: 'daily', name: 'Tagwerk', desc: 'Beende einen Tages-Run.', manual: true },

@@ -567,7 +567,7 @@
       controls: el('div', { className: 'battle-controls' }),
       field: el('div', { className: 'field-effects' }),
       stage: stage,
-      pendingMega: false,
+      pendingMega: null,
       busy: false
     };
 
@@ -660,9 +660,10 @@
 
     var mon = act.mon, max = act.stats[0], isMine = sideId === 0;
 
-    // Ein mega-entwickeltes Pokémon sieht auch so aus: die Form bringt ihre
-    // eigene Bildnummer mit (siehe tools/build-data.mjs).
-    var formPid = act.mega && act.megaForm ? act.megaForm.pid : 0;
+    // Ein verwandeltes Pokémon sieht auch so aus: Mega- und Gigadynamax-Form
+    // bringen ihre eigene Bildnummer mit (siehe tools/build-data.mjs).
+    var formPid = (act.mega && act.megaForm && act.megaForm.pid) ||
+      (act.gmax && act.gmaxForm && act.gmaxForm.pid) || 0;
 
     var art = el('div', { className: 'mon-art' }, [
       U.sprite(mon, { back: isMine, eager: true, ground: true, pid: formPid,
@@ -675,10 +676,15 @@
     var bar = U.hpBar(mon.hp, max);
     frameHost.appendChild(el('div', { className: 'mon-frame' }, [
       el('div', { className: 'frame-head' }, [
-        el('strong', { text: act.megaName ? act.megaName : mons.name(mon) }),
+        el('strong', { text: act.megaName || act.gmaxName || mons.name(mon) }),
         U.genderMark(mon.gender),
         el('span', { className: 'lvl', text: 'Lv ' + mon.lvl }),
-        act.mega ? el('span', { className: 'mega-mark', title: 'Mega-entwickelt', text: '◈' }) : null
+        act.mega ? el('span', { className: 'mega-mark', title: 'Mega-entwickelt', text: '◈' }) : null,
+        act.gmax ? el('span', {
+          className: 'mega-mark gmax',
+          title: 'Gigadynamaximiert — noch ' + act.gmaxTurns + (act.gmaxTurns === 1 ? ' Runde' : ' Runden'),
+          text: '◈' + act.gmaxTurns
+        }) : null
       ]),
       el('div', { className: 'frame-types' }, act.types.map(function (t) { return U.typeChip(t, true); })),
       bar,
@@ -847,6 +853,8 @@
       renderSide(e.side);
       if (BV['art' + e.side]) flash(BV['art' + e.side], 'shine');
       sfx('mega');
+    } else if (e.k === 'unmega') {
+      renderSide(e.side);
     } else if (e.k === 'boost' || e.k === 'status') {
       renderSide(e.side);
     } else if (e.k === 'weather' || e.k === 'field' || e.k === 'side') {
@@ -876,7 +884,7 @@
         if (App.autoPlay && !BV.busy && App.battle === bt && !bt.ended) {
           var a = PL.ai.chooseAction(bt, 0, 4, { bag: App.run ? App.run.bag : null });
           if (a.type === 'item' && App.run) App.run.removeItem(a.item, 1);
-          BV.pendingMega = false;
+          BV.pendingMega = null;
           submitAction(a);
         }
       }, Math.max(120, delayMs() * 0.6));
@@ -934,6 +942,21 @@
     }, label);
   }
 
+  /** "Glurak-Mega-X" → "Mega-X", "Gigadynamax-Glurak" → "Glurak". */
+  function shortForm(form) {
+    var n = T.form(form);
+    return /^Gigadynamax-|^Gigantamax /.test(n) ? n.replace(/^Gigadynamax-|^Gigantamax /, '') : n.replace(/^[^-]+-/, '');
+  }
+
+  /** Ein Knopf, der eine Verwandlung für diese Runde vormerkt. */
+  function transformBtn(kind, label, hint, busy) {
+    return actionBtn(label, !busy, function () {
+      BV.pendingMega = BV.pendingMega === kind ? null : kind;
+      renderActions();
+      U.toast(BV.pendingMega ? hint : 'Verwandlung abgewählt.');
+    }, 'mega' + (BV.pendingMega === kind ? ' on' : ''));
+  }
+
   function renderActions() {
     var bt = App.battle, run = App.run;
     clear(BV.actionRow);
@@ -945,22 +968,21 @@
       BV.actionRow.appendChild(actionBtn('🔴 Ball', !busy, function () { openBallDialog(); }));
       BV.actionRow.appendChild(actionBtn('🏃 Fliehen', !busy, function () { submitAction({ type: 'run' }); }));
     }
-    if (bt.canMega(bt.sides[0].active)) {
-      var form = bt.megaFormFor(bt.sides[0].active);
-      var primal = /Primal/.test(form.n);
-      BV.actionRow.appendChild(actionBtn(
-        (primal ? '☀ Proto' : '◈ Mega') + ' ' +
-          (T.lang() === 'de' && form.dn ? form.dn : form.n).replace(/^[^-]+-/, ''),
-        !busy,
-        function () {
-          BV.pendingMega = !BV.pendingMega;
-          renderActions();
-          U.toast(BV.pendingMega
-            ? (primal ? 'Protoform vorgemerkt — wähle deine Attacke.' : 'Mega-Entwicklung vorgemerkt — wähle deine Attacke.')
-            : 'Mega-Entwicklung abgewählt.');
-        },
-        'mega' + (BV.pendingMega ? ' on' : '')
-      ));
+    // Verwandlung: Mega und Gigadynamax stehen nebeneinander, solange das
+    // Pokémon sich noch nicht entschieden hat. Danach bleibt nur die Wahl.
+    var me = bt.sides[0].active;
+    if (bt.canMega(me)) {
+      var mForm = bt.megaFormFor(me);
+      var primal = /Primal/.test(mForm.n);
+      BV.actionRow.appendChild(transformBtn('mega',
+        (primal ? '☀ Proto ' : '◈ Mega ') + shortForm(mForm),
+        primal ? 'Protoform vorgemerkt — wähle deine Attacke.'
+               : 'Mega-Entwicklung vorgemerkt — wähle deine Attacke.',
+        busy));
+    }
+    if (bt.canGmax(me)) {
+      BV.actionRow.appendChild(transformBtn('gmax', '◈ Giga ' + shortForm(bt.gmaxFormFor(me)),
+        'Gigadynamax vorgemerkt — drei Runden groß, dann zurück.', busy));
     }
     // Der Auto-Schalter ist immer bedienbar, auch mitten im Ablauf.
     BV.actionRow.appendChild(el('button', {
@@ -978,8 +1000,8 @@
   function submitAction(action) {
     var bt = App.battle;
     if (!bt || BV.busy || bt.ended) return;
-    if (BV.pendingMega && action.type === 'move') action.mega = true;
-    BV.pendingMega = false;
+    if (BV.pendingMega && action.type === 'move') action[BV.pendingMega] = true;
+    BV.pendingMega = null;
     var enemyAction = PL.ai.chooseAction(bt, 1, bt.aiLevel === undefined ? 1 : bt.aiLevel);
     var entries = bt.runTurn([action, enemyAction]);
     App.run.stats.turns++;
@@ -1128,6 +1150,7 @@
     run.party.forEach(function (m) { if (m.hp === 1) meta.award('notafraid'); });
     bt.sides[0].team.forEach(function (m) { void m; });
     if (bt.sides[0].megaUsed) meta.award('mega');
+    if (bt.sides[0].team.some(function (m) { return m.form === 'gmax'; })) meta.award('gigadynamax');
     if (bt.sides[0].active && /Primal/.test(bt.sides[0].active.megaName || '')) meta.award('primal');
     if (run.party.length >= 6) meta.award('full_team');
     if (Object.keys(run.relics).length >= 10) meta.award('relic10');
@@ -2022,7 +2045,7 @@
     U.modal({
       title: 'Menü',
       content: el('div', { className: 'menu-hint' }, [
-        el('p', { className: 'muted', text: 'Tasten: 1–4 Attacken · W Wechseln · B Beutel · M Mega · A Auto · Esc Menü' })
+        el('p', { className: 'muted', text: 'Tasten: 1–4 Attacken · W Wechseln · B Beutel · M Verwandeln · A Auto · Esc Menü' })
       ]),
       actions: actions
     });
@@ -2460,7 +2483,9 @@
       renderActions();
       if (App.autoPlay && !BV.busy) awaitInput();
     } else if (e.key.toLowerCase() === 'm') {
-      if (App.battle.canMega(App.battle.sides[0].active)) { BV.pendingMega = !BV.pendingMega; renderControls(); }
+      var mine = App.battle.sides[0].active;
+      var kind = App.battle.canMega(mine) ? 'mega' : (App.battle.canGmax(mine) ? 'gmax' : null);
+      if (kind) { BV.pendingMega = BV.pendingMega === kind ? null : kind; renderControls(); }
     }
   }
 
