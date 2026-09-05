@@ -713,6 +713,36 @@ button.move-row:hover { border-color: var(--accent); }
 .toast.out { opacity: 0; transition: opacity .5s ease; }
 @keyframes rise { from { transform: translateY(12px); opacity: 0; } }
 
+/* ---------- 10b) Reise-Automat ----------------------------------------------
+ * Ein kleiner Schalter unten rechts, der über allem schwebt: Er bleibt auf
+ * jedem Bildschirm erreichbar, auch mitten im Kampf, damit man das Steuer
+ * jederzeit zurücknehmen kann. Läuft er, pulst er ruhig vor sich hin.
+ * ------------------------------------------------------------------------- */
+
+.autopilot-btn {
+  position: fixed; z-index: 45;
+  right: calc(.9rem + env(safe-area-inset-right));
+  bottom: calc(.9rem + env(safe-area-inset-bottom));
+  display: inline-flex; align-items: center; gap: .4rem;
+  padding: .5rem .75rem; border-radius: var(--radius); cursor: pointer;
+  background: var(--panel); border: 2px solid var(--line); color: var(--text);
+  box-shadow: 3px 3px 0 rgba(0,0,0,.35);
+}
+.autopilot-btn:hover { border-color: var(--accent); }
+.autopilot-btn.on {
+  background: var(--accent); color: #201a06; border-color: transparent; font-weight: 650;
+  animation: autopilot-pulse 1.8s ease-in-out infinite;
+}
+.autopilot-icon { font-size: 1.1rem; line-height: 1; }
+.autopilot-label { font-size: .85rem; }
+@keyframes autopilot-pulse {
+  0%, 100% { box-shadow: 3px 3px 0 rgba(0,0,0,.35), 0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent); }
+  50% { box-shadow: 3px 3px 0 rgba(0,0,0,.35), 0 0 0 8px color-mix(in srgb, var(--accent) 0%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .autopilot-btn.on { animation: none; }
+}
+
 /* ---------- 11) Handy und Tablet --------------------------------------------
  * Zwei Leitgedanken:
  *   1. Nichts darf breiter werden als der Bildschirm. Sobald etwas übersteht,
@@ -877,6 +907,10 @@ button.move-row:hover { border-color: var(--accent); }
   .modal-actions .btn { flex: 1 1 0; justify-content: center; text-align: center; }
 
   .toast-host { bottom: calc(1rem + env(safe-area-inset-bottom)); }
+
+  /* Unten rechts ist auf dem Handy wenig Platz: nur noch das Symbol. */
+  .autopilot-btn { padding: .5rem .55rem; right: calc(.6rem + env(safe-area-inset-right)); }
+  .autopilot-label { display: none; }
 
   /* --- Listen und Raster --- */
   .dex-grid { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); }

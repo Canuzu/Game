@@ -23,6 +23,7 @@
     screen: 'title',
     battle: null,
     autoPlay: false,
+    screenArg: null,
     speeds: { sofort: 0, schnell: 180, normal: 420, langsam: 820 }
   };
 
@@ -44,10 +45,129 @@
     if (App.run && App.run.state !== 'gameover' && App.run.state !== 'victory') meta.saveRun(App.run);
   }
 
+  /* ---------- Der Reise-Automat -------------------------------------------------
+   * Ein Schalter, der den ganzen Run übernimmt: er sucht den Weg, betritt die
+   * Knoten, entscheidet in den Szenen und schaltet im Kampf den Auto-Kampf an.
+   * Was zu tun ist, weiß autopilot.js; hier wird nur gedrückt — und zwar genau
+   * die Knöpfe, die auch von Hand gedrückt würden.
+   *
+   * AUTO.act setzt jede Ansicht selbst: "Wenn der Automat läuft, tu das hier."
+   * Ist nichts gesetzt, wartet der Automat einfach weiter.
+   * -------------------------------------------------------------------------- */
+
+  var AUTO = { on: false, timer: null, act: null, wasBattleAuto: false, idle: 0, pause: 0 };
+
+  function autoPilot() { return PL.autopilot; }
+
+  function setAuto(on) {
+    if (AUTO.on === on) return;
+    AUTO.on = on;
+    if (on) {
+      AUTO.wasBattleAuto = App.autoPlay;
+      App.autoPlay = true;                    // im Kampf übernimmt ai.js
+    } else {
+      App.autoPlay = AUTO.wasBattleAuto;
+      if (AUTO.timer) { root.clearTimeout(AUTO.timer); AUTO.timer = null; }
+    }
+    AUTO.idle = 0;
+    renderAutoButton();
+    if (App.screen === 'battle' && BV) { renderControls(); if (on && !BV.busy) awaitInput(); }
+    U.toast(on ? 'Reise-Automat an — lehn dich zurück.' : 'Reise-Automat aus.');
+    if (on) scheduleAuto(240);
+  }
+
+  function scheduleAuto(ms) {
+    if (!AUTO.on) return;
+    if (AUTO.timer) root.clearTimeout(AUTO.timer);
+    if (ms === undefined) {
+      ms = Math.max(260, delayMs()) + AUTO.pause;
+      AUTO.pause = 0;                    // gilt nur für den nächsten Schritt
+    }
+    AUTO.timer = root.setTimeout(autoStep, ms);
+  }
+
+  /** Ein offener Dialog wird zuerst weggeräumt: Hauptknopf, sonst der letzte. */
+  function autoCloseModal() {
+    var backs = doc.querySelectorAll('#overlay .modal-back');
+    if (!backs.length) return false;
+    var box = backs[backs.length - 1];
+    var btn = box.querySelector('.modal-actions .btn.primary') ||
+      box.querySelector('.modal-actions .btn');
+    if (btn) btn.click();
+    else if (box.close) box.close();
+    return true;
+  }
+
+  function autoStep() {
+    AUTO.timer = null;
+    if (!AUTO.on) return;
+    if (!App.run || App.run.state === 'gameover' || App.run.state === 'victory') {
+      if (App.screen === 'end' || !App.run) { setAuto(false); return; }
+    }
+    if (App.transitioning || (BV && BV.busy)) { scheduleAuto(300); return; }
+    if (autoCloseModal()) { scheduleAuto(); return; }
+
+    if (App.screen === 'battle') { scheduleAuto(400); return; }   // der Kampf läuft
+    if (App.screen === 'map') { autoMapStep(); return; }
+    if (AUTO.act) {
+      var act = AUTO.act;
+      AUTO.act = null;
+      // Bleibt der Automat irgendwo hängen, gibt er das Steuer zurück,
+      // statt still stehenzubleiben.
+      try { act(); } catch (err) {
+        U.toast('Der Reise-Automat kommt hier nicht weiter — übernimm bitte.', 'bad');
+        setAuto(false);
+        return;
+      }
+      scheduleAuto();
+      return;
+    }
+
+    // Nichts zu tun — zurück zur Karte, wenn ein Run läuft.
+    if (++AUTO.idle > 12) { AUTO.idle = 0; if (App.run) show('map'); return; }
+    scheduleAuto(400);
+  }
+
+  function autoMapStep() {
+    var run = App.run;
+    if (!run) { setAuto(false); return; }
+    var next = autoPilot().bestNode(run);
+    if (!next) {
+      // Reihe zu Ende: die Karte selbst schiebt weiter, sobald der Knoten fertig ist.
+      scheduleAuto(500);
+      return;
+    }
+    AUTO.idle = 0;
+    enterNode(next.row, next.col);
+  }
+
+  /** Der kleine Knopf in der Ecke — immer sichtbar, immer umschaltbar. */
+  function renderAutoButton() {
+    var btn = $('#autopilot');
+    if (!btn) {
+      btn = el('button', {
+        id: 'autopilot', className: 'autopilot-btn', type: 'button',
+        onclick: function () { setAuto(!AUTO.on); }
+      });
+      doc.body.appendChild(btn);
+    }
+    var hidden = !App.run || App.screen === 'title' || App.screen === 'newrun' || App.screen === 'end';
+    btn.hidden = hidden;
+    btn.className = 'autopilot-btn' + (AUTO.on ? ' on' : '');
+    btn.title = AUTO.on
+      ? 'Reise-Automat läuft — hier ausschalten und wieder selbst spielen'
+      : 'Reise-Automat: sucht den Weg, kämpft, kauft und entscheidet von allein';
+    clear(btn);
+    btn.appendChild(el('span', { className: 'autopilot-icon', text: AUTO.on ? '⏸' : '🤖' }));
+    btn.appendChild(el('span', { className: 'autopilot-label', text: AUTO.on ? 'Automat läuft' : 'Automat' }));
+  }
+
   var SCREENS = {};
 
   function show(name, arg) {
     App.screen = name;
+    App.screenArg = arg || null;
+    AUTO.act = null;                    // eine neue Ansicht, eine neue Aufgabe
     var host = $('#screen');
     clear(host);
     doc.body.setAttribute('data-screen', name);
@@ -56,7 +176,9 @@
     if (!view) { host.appendChild(el('p', { text: 'Unbekannter Bildschirm: ' + name })); return; }
     host.appendChild(view(arg));
     renderHeader();
+    renderAutoButton();
     host.scrollTop = 0;
+    scheduleAuto();
   }
   App.show = show;
 
@@ -872,6 +994,19 @@
 
   /* --- Eingabe -------------------------------------------------------------------- */
 
+  /**
+   * Was der Auto-Kampf über die Welt außerhalb des Kampfes wissen muss:
+   * den Beutel, das Team — und ob dieses Pokémon im Pokédex noch fehlt.
+   */
+  function autoOpts(bt) {
+    var foe = bt.sides[1].active;
+    var dexNew = false;
+    if (foe && bt.wild) {
+      try { dexNew = !meta.load().caught[foe.species.i]; } catch (e) { dexNew = false; }
+    }
+    return { run: App.run || null, dexNew: dexNew };
+  }
+
   function awaitInput() {
     var bt = App.battle;
     if (!bt) return;
@@ -882,8 +1017,9 @@
     if (App.autoPlay) {
       root.setTimeout(function () {
         if (App.autoPlay && !BV.busy && App.battle === bt && !bt.ended) {
-          var a = PL.ai.chooseAction(bt, 0, 4, { bag: App.run ? App.run.bag : null });
-          if (a.type === 'item' && App.run) App.run.removeItem(a.item, 1);
+          var a = PL.ai.chooseAction(bt, 0, 4, autoOpts(bt));
+          // Gegenstände und Bälle gehen aus dem Beutel ab wie von Hand geworfen.
+          if ((a.type === 'item' || a.type === 'ball') && App.run) App.run.removeItem(a.item, 1);
           BV.pendingMega = null;
           submitAction(a);
         }
@@ -991,6 +1127,8 @@
       title: 'Der Computer übernimmt die Kämpfe und spielt auf Sieg',
       onclick: function () {
         App.autoPlay = !App.autoPlay;
+        // Wer im Kampf das Steuer zurücknimmt, will auch den Rest selbst machen.
+        if (!App.autoPlay && AUTO.on) setAuto(false);
         renderActions();
         if (App.autoPlay && !BV.busy) awaitInput();
       }
@@ -1235,18 +1373,23 @@
     var reward = (bt.outcome === 'win') ? run.battleRewards(bt) : null;
     var body = [el('div', { className: 'aftermath' }, lines), partyStrip()];
 
+    function proceed() {
+      processMoveLearning(pending, function () {
+        if (res.tutor) {
+          openTutor(function () { if (reward) openScene(reward); else backToMap(); });
+          return;
+        }
+        if (reward) openScene(reward);
+        else backToMap();
+      });
+    }
+    AUTO.act = proceed;
+    // Entwicklungen und Levelaufstiege dürfen zu Ende laufen, bevor der
+    // Automat weiterdrückt.
+    if (res.evolutions.length || res.levelUps.length) AUTO.pause = 1400;
+
     var actions = [el('button', {
-      className: 'btn big primary', type: 'button',
-      onclick: function () {
-        processMoveLearning(pending, function () {
-          if (res.tutor) {
-            openTutor(function () { if (reward) openScene(reward); else backToMap(); });
-            return;
-          }
-          if (reward) openScene(reward);
-          else backToMap();
-        });
-      }
+      className: 'btn big primary', type: 'button', onclick: proceed
     }, reward ? 'Belohnung ansehen' : 'Weiter')];
 
     return sceneFrame(bt.outcome === 'caught' ? 'Gefangen!' : 'Kampf gewonnen', null, body, actions);
@@ -1307,6 +1450,18 @@
       processMoveLearning(queue, done);
       return;
     }
+    // Der Automat entscheidet selbst, ob die neue Attacke besser ist als die
+    // schwächste im Repertoire — und tauscht dann still.
+    if (AUTO.on) {
+      var slot = autoPilot().learnSlot(mon, item.move);
+      if (slot >= 0) {
+        mon.moves[slot] = { m: item.move, pp: move.pp, ppUp: 0, used: 0 };
+        U.toast(mons.name(mon) + ' lernt ' + T.move(move) + '!');
+      }
+      processMoveLearning(queue, done);
+      return;
+    }
+
     var box = U.modal({
       title: mons.name(mon) + ' will ' + T.move(move) + ' lernen',
       wide: true,
@@ -1335,20 +1490,26 @@
   /** Der Segen nach einer vollen Runde im Endlosmodus. */
   function sceneBlessing(scene) {
     var run = App.run;
+    function take(b) {
+      var out = run.takeBlessing(b.id, run.rng);
+      run.pendingBlessing = null;
+      if (out && out.relicChoice) {
+        var s2 = run.makeRelicChoice(run.rng, out.relicChoice, out.text);
+        run.setScene(s2);
+        openScene(s2);
+        return;
+      }
+      U.toast(typeof out === 'string' ? out : b.name + ' erhalten.');
+      autosave();
+      show('map');
+    }
+    AUTO.act = function () {
+      var i = autoPilot().pickBlessing(run, scene);
+      take(scene.offers[i >= 0 ? i : 0]);
+    };
     var grid = el('div', { className: 'relic-grid' }, scene.offers.map(function (b) {
-      return el('button', { className: 'relic-card r-episch', type: 'button', onclick: function () {
-        var out = run.takeBlessing(b.id, run.rng);
-        run.pendingBlessing = null;
-        if (out && out.relicChoice) {
-          var s2 = run.makeRelicChoice(run.rng, out.relicChoice, out.text);
-          run.setScene(s2);
-          openScene(s2);
-          return;
-        }
-        U.toast(typeof out === 'string' ? out : b.name + ' erhalten.');
-        autosave();
-        show('map');
-      } }, [
+      return el('button', { className: 'relic-card r-episch', type: 'button',
+        onclick: function () { take(b); } }, [
         el('span', { className: 'relic-icon', text: b.icon }),
         el('strong', { text: b.name }),
         el('span', { className: 'relic-rarity', text: 'Segen' }),
@@ -1392,6 +1553,12 @@
       backToMap();
     }
 
+    AUTO.act = function () {
+      var i = autoPilot().pickCatch(run, scene);
+      if (i >= 0) takeMon(scene.offers[i]);
+      else backToMap();
+    };
+
     return sceneFrame('Begegnung', scene.text, [grid, partyStrip()], [
       rerollButton(),
       el('button', { className: 'btn', type: 'button', onclick: backToMap },
@@ -1401,17 +1568,20 @@
 
   function sceneItem(scene) {
     var run = App.run;
+    function take(item) {
+      run.addItem(item.id, 1);
+      var extra = run.luckyDouble();
+      if (extra) run.addItem(item.id, 1);
+      U.toast(item.name + (extra ? ' — der Glückswürfel legt einen zweiten dazu!' : ' eingesteckt.'));
+      backToMap();
+    }
     var list = el('div', { className: 'list' }, scene.offers.map(function (item) {
-      return U.itemRow(item, {
-        onClick: function () {
-          run.addItem(item.id, 1);
-          var extra = run.luckyDouble();
-          if (extra) run.addItem(item.id, 1);
-          U.toast(item.name + (extra ? ' — der Glückswürfel legt einen zweiten dazu!' : ' eingesteckt.'));
-          backToMap();
-        }
-      });
+      return U.itemRow(item, { onClick: function () { take(item); } });
     }));
+    AUTO.act = function () {
+      var i = autoPilot().pickItem(run, scene);
+      if (i >= 0) take(scene.offers[i]); else backToMap();
+    };
     return sceneFrame('Fundstück', scene.text, [list], [
       rerollButton(),
       el('button', { className: 'btn', type: 'button', onclick: backToMap }, 'Nichts nehmen')
@@ -1420,13 +1590,19 @@
 
   function sceneRelic(scene) {
     var run = App.run;
+    function take(r) {
+      run.takeRelic(r.id);
+      U.toast('Relikt erhalten: ' + r.name);
+      if (Object.keys(run.relics).length >= 10) meta.award('relic10');
+      backToMap();
+    }
+    AUTO.act = function () {
+      var i = autoPilot().pickRelic(run, scene);
+      if (i >= 0) take(scene.offers[i]); else backToMap();
+    };
     var grid = el('div', { className: 'relic-grid' }, scene.offers.map(function (r) {
-      return el('button', { className: 'relic-card r-' + r.rarity, type: 'button', onclick: function () {
-        run.takeRelic(r.id);
-        U.toast('Relikt erhalten: ' + r.name);
-        if (Object.keys(run.relics).length >= 10) meta.award('relic10');
-        backToMap();
-      } }, [
+      return el('button', { className: 'relic-card r-' + r.rarity, type: 'button',
+        onclick: function () { take(r); } }, [
         el('span', { className: 'relic-icon', text: r.icon || '🏛️' }),
         el('strong', { text: r.name }),
         el('span', { className: 'relic-rarity', text: r.rarity }),
@@ -1462,6 +1638,13 @@
       });
     }
     draw();
+
+    AUTO.act = function () {
+      var plan = autoPilot().shopPlan(run, scene);
+      plan.forEach(function (i) { if (run.buy(scene.stock[i])) sfx('coin'); });
+      if (plan.length) { draw(); renderHeader(); U.toast(plan.length + ' Sachen gekauft.'); }
+      backToMap();
+    };
 
     var sellBtn = el('button', { className: 'btn', type: 'button', onclick: function () { openSellDialog(draw); } }, '💱 Verkaufen');
 
@@ -1526,6 +1709,11 @@
       });
     }
 
+    AUTO.act = function () {
+      var i = autoPilot().pickEvent(run, scene);
+      if (i >= 0) resolveEvent(i); else backToMap();
+    };
+
     return sceneFrame(scene.title, null, body, []);
   }
 
@@ -1553,6 +1741,26 @@
       }
     }
 
+    AUTO.act = function () {
+      var what = autoPilot().pickRest(run);
+      if (what === 'evolve') {
+        var ready = autoPilot().readyEvolutions(run);
+        if (!ready.length) { U.toast(run.doRest('heal')); backToMap(); return; }
+        ready.forEach(function (r) {
+          if (r.evo.item && run.bag[PL.util.toID(r.evo.item)]) run.removeItem(PL.util.toID(r.evo.item), 1);
+          var from = mons.name(r.mon);
+          mons.evolve(r.mon, r.evo.to, run.rng);
+          run.stats.evolutions++;
+          meta.noteCaught(r.mon);
+          U.toast(from + ' entwickelt sich zu ' + mons.name(r.mon) + '!');
+        });
+        meta.save();
+        backToMap();
+        return;
+      }
+      doRest(what);
+    };
+
     return sceneFrame('Rastplatz', 'Ein Feuer, ein bisschen Ruhe. Was tust du?', body, []);
   }
 
@@ -1560,6 +1768,26 @@
 
   function openTutor(done) {
     var run = App.run;
+
+    /** Die Auswahl, die der Lehrer einem Pokémon vorlegt. */
+    function offersFor(mon) {
+      var sp = dex.sp(mon.sp);
+      var pool = dex.movepool(sp).filter(function (mi) {
+        var m = dex.move(mi);
+        return m && !m.np && !mon.moves.some(function (s) { return s.m === mi; }) &&
+          mon.lvl >= mons.tmMinLevel(m) * 0.8;
+      });
+      run.rng.shuffle(pool);
+      return pool.slice(0, 5);
+    }
+
+    if (AUTO.on) {
+      var choice = autoPilot().tutorPick(run, offersFor);
+      if (!choice) { done(); return; }
+      processMoveLearning([{ mon: choice.mon, move: choice.move }], done);
+      return;
+    }
+
     var box = U.modal({
       title: 'Wer soll etwas lernen?',
       wide: true,
@@ -1598,29 +1826,44 @@
 
   function openTrade(done) {
     var run = App.run;
+
+    function swap(mon, i, quiet) {
+      var level = Math.min(run.levelCap, mon.lvl + 3);
+      var pool = PL.world.encounterPool({ level: level, anyGen: true });
+      var sp = PL.world.pickEncounter(run.rng, pool, level, { rare: true });
+      var fresh = PL.world.buildMon(run.rng, sp, level, { quality: 0.9, ivFloor: 14 });
+      run.party[i] = fresh;
+      meta.noteCaught(fresh);
+      meta.save();
+      if (quiet) { U.toast(mons.name(mon) + ' geht — ' + mons.name(fresh) + ' kommt.'); return; }
+      U.modal({
+        title: 'Getauscht!',
+        content: el('div', { className: 'trade-result' }, [
+          el('p', { text: mons.name(mon) + ' geht — ' + mons.name(fresh) + ' kommt.' }),
+          U.monCard(fresh, {})
+        ]),
+        actions: [{ label: 'Weiter', primary: true, onClick: done }]
+      });
+    }
+
+    // Der Automat gibt her, wer am wenigsten verspricht.
+    if (AUTO.on) {
+      var worst = 0, worstScore = Infinity;
+      run.party.forEach(function (m, i) {
+        var sc = PL.ai.potential(dex.sp(m.sp)) + m.lvl * 2;
+        if (sc < worstScore) { worstScore = sc; worst = i; }
+      });
+      swap(run.party[worst], worst, true);
+      done();
+      return;
+    }
+
     var box = U.modal({
       title: 'Wen gibst du her?',
       wide: true,
       content: el('div', { className: 'switch-grid' }, run.party.map(function (mon, i) {
         return U.monCard(mon, {
-          onClick: function () {
-            box.close();
-            var level = Math.min(run.levelCap, mon.lvl + 3);
-            var pool = PL.world.encounterPool({ level: level, anyGen: true });
-            var sp = PL.world.pickEncounter(run.rng, pool, level, { rare: true });
-            var fresh = PL.world.buildMon(run.rng, sp, level, { quality: 0.9, ivFloor: 14 });
-            run.party[i] = fresh;
-            meta.noteCaught(fresh);
-            meta.save();
-            U.modal({
-              title: 'Getauscht!',
-              content: el('div', { className: 'trade-result' }, [
-                el('p', { text: mons.name(mon) + ' geht — ' + mons.name(fresh) + ' kommt.' }),
-                U.monCard(fresh, {})
-              ]),
-              actions: [{ label: 'Weiter', primary: true, onClick: done }]
-            });
-          }
+          onClick: function () { box.close(); swap(mon, i); }
         });
       })),
       actions: [{ label: 'Doch nicht', onClick: done }]
@@ -1630,19 +1873,32 @@
   /** Fleißpunkte gezielt auf ein Pokémon verteilen. */
   function openEVFocus(amount, done) {
     var run = App.run;
+
+    function give(mon) {
+      var st = mons.stats(mon), best = 1, k;
+      for (k = 1; k < 6; k++) if (st[k] > st[best]) best = k;
+      var got = mons.addEVs(mon, PL.STATS[best], amount);
+      U.toast(mons.name(mon) + ': ' + T.stat(PL.STATS[best]) + ' +' + got + ' FP.');
+    }
+
+    // Der Automat füttert den, der am meisten daraus macht.
+    if (AUTO.on && run.party.length) {
+      var best = run.party[0], bestScore = -Infinity;
+      run.party.forEach(function (m) {
+        var sc = PL.ai.potential(dex.sp(m.sp)) + m.lvl * 3;
+        if (sc > bestScore) { bestScore = sc; best = m; }
+      });
+      give(best);
+      done();
+      return;
+    }
+
     var box = U.modal({
       title: 'Wer bekommt die volle Ladung?',
       wide: true,
       content: el('div', { className: 'switch-grid' }, run.party.map(function (mon) {
         return U.monCard(mon, {
-          onClick: function () {
-            var st = mons.stats(mon), best = 1, k;
-            for (k = 1; k < 6; k++) if (st[k] > st[best]) best = k;
-            var got = mons.addEVs(mon, PL.STATS[best], amount);
-            box.close();
-            U.toast(mons.name(mon) + ': ' + T.stat(PL.STATS[best]) + ' +' + got + ' FP.');
-            done();
-          }
+          onClick: function () { box.close(); give(mon); done(); }
         });
       })),
       actions: [{ label: 'Abbrechen', onClick: done }]
@@ -1651,6 +1907,24 @@
 
   function openEvolveDialog(done) {
     var run = App.run;
+
+    // Der Automat entwickelt alles, was bereit ist — Entwicklungen sind
+    // schlicht besser, es gibt nichts abzuwägen.
+    if (AUTO.on) {
+      var ready = autoPilot().readyEvolutions(run);
+      ready.forEach(function (r) {
+        if (r.evo.item && run.bag[PL.util.toID(r.evo.item)]) run.removeItem(PL.util.toID(r.evo.item), 1);
+        var from = mons.name(r.mon);
+        mons.evolve(r.mon, r.evo.to, run.rng);
+        run.stats.evolutions++;
+        meta.noteCaught(r.mon);
+        U.toast(from + ' entwickelt sich zu ' + mons.name(r.mon) + '!');
+      });
+      meta.save();
+      if (done) done();
+      return;
+    }
+
     var rows = [];
     run.party.forEach(function (mon) {
       var list = mons.evolutions(mon, { items: run.bag });
@@ -2045,7 +2319,7 @@
     U.modal({
       title: 'Menü',
       content: el('div', { className: 'menu-hint' }, [
-        el('p', { className: 'muted', text: 'Tasten: 1–4 Attacken · W Wechseln · B Beutel · M Verwandeln · A Auto · Esc Menü' })
+        el('p', { className: 'muted', text: 'Tasten: 1–4 Attacken · W Wechseln · B Beutel · M Verwandeln · A Auto-Kampf · ⇧A Reise-Automat · Esc Menü' })
       ]),
       actions: actions
     });
@@ -2366,6 +2640,7 @@
 
   function finishRun() {
     var run = App.run;
+    setAuto(false);                    // der Run ist vorbei, der Automat auch
     var outcome = run.state === 'victory' ? 'sieg' : 'niederlage';
     var fresh = meta.recordRun(run, outcome);
     meta.clearRun();
@@ -2468,6 +2743,12 @@
       } else openMenu();
       return;
     }
+    // Der Reise-Automat lässt sich von jedem Bildschirm aus umschalten.
+    if (e.key.toLowerCase() === 'a' && e.shiftKey && App.run &&
+        App.screen !== 'title' && App.screen !== 'newrun') {
+      setAuto(!AUTO.on);
+      return;
+    }
     if (overlayOpen || App.screen !== 'battle' || !BV || BV.busy) return;
     var moves = App.battle ? App.battle.legalMoves(0) : [];
     if (/^[1-4]$/.test(e.key)) {
@@ -2479,6 +2760,7 @@
       openBattleBag();
     } else if (e.key.toLowerCase() === 'a') {
       App.autoPlay = !App.autoPlay;
+      if (!App.autoPlay && AUTO.on) setAuto(false);
       U.toast('Auto-Kampf ' + (App.autoPlay ? 'an' : 'aus'));
       renderActions();
       if (App.autoPlay && !BV.busy) awaitInput();
@@ -2501,6 +2783,7 @@
     doc.addEventListener('keydown', onKey);
     root.addEventListener('beforeunload', function () { autosave(); });
     show('title');
+    renderAutoButton();
   }
 
   App.sfx = sfx;

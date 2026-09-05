@@ -9,8 +9,9 @@
  * ========================================================================== */
 import '../js/run.js';
 import '../js/ai.js';
+import '../js/autopilot.js';
 
-const PL = globalThis.PL, mons = PL.mon;
+const PL = globalThis.PL;
 const N = Number(process.argv[2] || 30);
 
 const tally = {};
@@ -24,7 +25,7 @@ function fight(run, bt) {
   bt.start();
   let g = 0;
   while (!bt.ended && g++ < 300) {
-    let mine = PL.ai.chooseAction(bt, 0, 4, { bag: run.bag });
+    let mine = PL.ai.chooseAction(bt, 0, 4, { run });
     if (mine.type === 'item' || mine.type === 'ball') run.removeItem(mine.item, 1);
     bt.runTurn([mine, PL.ai.chooseAction(bt, 1, bt.aiLevel === undefined ? 1 : bt.aiLevel)]);
     if (bt.pending !== null && bt.pending !== undefined && !bt.ended) {
@@ -38,10 +39,12 @@ function fight(run, bt) {
   return bt;
 }
 
+/* Der Automat entscheidet — gemessen wird also genau das, was der Spieler
+   bekommt, wenn er den Reise-Automaten anschaltet. */
 function resolve(run, scene) {
-  switch (scene.kind) {
-    case 'battle': {
-      const bt = fight(run, scene.battle);
+  PL.autopilot.resolveScene(run, scene, {
+    battle(battle) {
+      const bt = fight(run, battle);
       const kind = (bt.reward && bt.reward.kind) || 'wild';
       if (/boss|e4|champ|elite/.test(kind)) note(kind, bt.outcome === 'win');
       if (kind === 'boss' && bt.trainer && bt.trainer.leader) {
@@ -51,26 +54,11 @@ function resolve(run, scene) {
       run.finishBattle(bt);
       if (bt.outcome === 'win') {
         const reward = run.battleRewards(bt);
-        if (reward && reward.offers && reward.offers.length) {
-          if (reward.kind === 'relic') run.takeRelic(reward.offers[0].id);
-          else run.addItem(reward.offers[0].id, 1);
-        }
+        if (reward) resolve(run, reward);
       }
       run.healTeam(0.45, true);
-      break;
     }
-    case 'catch': if (scene.offers.length) run.takeOffer(scene.offers[0]); break;
-    case 'item': if (scene.offers.length) run.addItem(scene.offers[0].id, 1); break;
-    case 'relic': if (scene.offers.length) run.takeRelic(scene.offers[0].id); break;
-    case 'shop': scene.stock.filter((e) => e.price <= run.money).slice(0, 2).forEach((e) => run.buy(e)); break;
-    case 'rest': run.doRest('heal'); break;
-    case 'event': {
-      const opt = scene.options.filter((o) => o.enabled)[0];
-      if (opt) { const out = run.chooseEvent(opt.index); if (out && out.scene) resolve(run, out.scene); }
-      break;
-    }
-    default: break;
-  }
+  });
 }
 
 function autoRun(seed) {
@@ -78,20 +66,10 @@ function autoRun(seed) {
     tempo: process.argv.find((a) => a.startsWith('--tempo='))?.slice(8) || 'gemuetlich' });
   let guard = 0;
   while (run.state !== 'gameover' && run.state !== 'victory' && guard++ < 4000) {
-    const options = run.available();
-    if (!options.length) { run.advanceRegion(); continue; }
-    const rank = (o) => {
-      const t = run.nodeAt(o.row, o.col).type;
-      const hurt = run.party.some((m) => m.hp < mons.maxHP(m) * 0.45);
-      if (t === 'rest') return hurt ? 9 : 2;
-      if (t === 'catch') return run.party.length < 4 ? 8 : 3;
-      if (t === 'relic') return 7;
-      if (t === 'wild' || t === 'trainer') return 6;
-      if (t === 'elite') return run.party.length >= 3 ? 5 : 1;
-      return 4;
-    };
-    options.sort((a, b) => rank(b) - rank(a));
-    const scene = run.enterNode(options[0].row, options[0].col);
+    if (!run.available().length) { run.advanceRegion(); continue; }
+    const next = PL.autopilot.bestNode(run);
+    if (!next) break;
+    const scene = run.enterNode(next.row, next.col);
     if (!scene) break;
     resolve(run, scene);
     if (run.state === 'gameover') break;

@@ -964,12 +964,68 @@
     }
   ];
 
+  /* ---------- Was der Reise-Automat von den Antworten hält ---------------------
+   * autopilot.js liest je Option ein Gewicht: je höher, desto lieber. Manche
+   * Antworten sind nur in einer bestimmten Lage richtig — dann steht statt der
+   * Zahl eine kleine Funktion, die den Run anschaut. Die Tabelle steht hier
+   * beisammen, damit die Ereignisse selbst lesbar bleiben.
+   * -------------------------------------------------------------------------- */
+
+  function autoHurt(run) {
+    if (!run.party.length) return 0;
+    var s = 0;
+    run.party.forEach(function (m) { s += Math.max(0, m.hp) / mons.maxHP(m); });
+    return 1 - s / run.party.length;
+  }
+  function autoGap(run) { return Math.max(0, run.levelCap - run.teamLevel()); }
+  function autoRoom(run) { return run.party.length < 6; }
+
+  var EVENT_AUTO = {
+    rucksack:        [7, 5],
+    quelle:          [function (r) { return 2 + autoHurt(r) * 16; }, 6],
+    schrein:         [9, 3],
+    gluecksspiel:    [function (r) { return r.money > 1500 ? 7 : 2; }, 5],
+    ei:              [function (r) { return autoRoom(r) ? 9 : 5; }, 4],
+    rocket:          [function (r) { return autoHurt(r) < 0.25 ? 8 : 2; }, 5],
+    fossil:          [function (r) { return autoRoom(r) ? 9 : 5; }, 5],
+    lehrer:          [7, 3],
+    beeren:          [6, function (r) { return 2 + autoHurt(r) * 14; }],
+    truhe:           [7, 4],
+    tausch:          [7, 4],
+    lager:           [function (r) { return autoHurt(r) > 0.1 ? 8 : 4; }, 6],
+    schmied:         [function (r) { return r.money >= 2000 ? 7 : 2; }, 4],
+    schwarm:         [function (r) { return autoRoom(r) ? 8 : 5; }, 6],
+    steinhoehle:     [7, 5],
+    kraftstein:      [8, 6],
+    haendler:        [function (r) { return r.money >= 2500 ? 7 : 3; }, 8],
+    legendenschrein: [function (r) { return autoHurt(r) < 0.2 && autoRoom(r) ? 8 : 4; }, 7],
+    labor:           [6, 7],
+    streuner:        [function (r) { return autoRoom(r) ? 7 : 3; }, 6],
+    pilze:           [7, 5],
+    detektiv:        [function (r) { return r.money > 1500 ? 6 : 3; }, 5],
+    angelstelle:     [function (r) { return autoRoom(r) ? 7 : 5; }, 5],
+    trainingsdummy:  [function (r) { return autoGap(r) > 1 ? 8 : 3; }, 6],
+    wanderhaendler:  [function (r) { return r.money >= 4000 ? 8 : 2; }, 5],
+    quelle2:         [6, 5],
+    zirkus:          [7, function (r) { return 3 + autoHurt(r) * 10; }],
+    hoehlenmalerei:  [8, 5],
+    kuriosum:        [5, 5, 5],
+    arena:           [function (r) { return autoHurt(r) < 0.2 && autoGap(r) < 6 ? 8 : 3; }, 6]
+  };
+
+  EVENTS.forEach(function (e) {
+    var w = EVENT_AUTO[e.id];
+    if (!w) return;
+    e.options.forEach(function (o, i) { if (o.auto === undefined) o.auto = w[i]; });
+  });
+
   PL.world = {
     REGIONS: REGIONS,
     TRAINERS: TRAINERS,
     ELITE: ELITE,
     CHAMPIONS: CHAMPIONS,
     EVENTS: EVENTS,
+    EVENT_AUTO: EVENT_AUTO,
     encounterPool: encounterPool,
     counterStarter: counterStarter,
     rivalTeam: rivalTeam,

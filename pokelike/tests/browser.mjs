@@ -333,6 +333,50 @@ check('Helles Thema greift',
 if (SHOT_DIR) await page.screenshot({ path: join(SHOT_DIR, '08-hell.png') });
 await page.locator('button.filter', { hasText: /^Dunkel$/ }).first().click();
 
+console.log('\nReise-Automat');
+{
+  // Frischer Run: der Automat soll von der Karte aus alles allein machen.
+  await page.evaluate(() => {
+    const PL = globalThis.PL, App = globalThis.PokelikeApp;
+    PL.meta.setSetting('speed', 'sofort');
+    App.run = new PL.Run({ seed: 31337, starter: 'squirtle' });
+    for (const id of ['pikachu', 'geodude', 'poliwag']) {
+      App.run.party.push(PL.mon.create(id, 9, App.run.rng, { quality: 0.85 }));
+    }
+    App.show('map');
+  });
+  await page.waitForSelector('.map-screen');
+
+  const btn = page.locator('#autopilot');
+  check('Der Automat sitzt als Knopf in der Ecke', await btn.isVisible());
+  check('… und ist zuerst aus',
+    !(await btn.evaluate((n) => n.classList.contains('on'))));
+
+  const vorher = await page.evaluate(() => globalThis.PokelikeApp.run.stats.nodes);
+  await btn.click();
+  check('Ein Klick startet ihn', await btn.evaluate((n) => n.classList.contains('on')));
+  check('… und schaltet den Auto-Kampf mit ein',
+    await page.evaluate(() => globalThis.PokelikeApp.autoPlay));
+
+  // Zwölf Sekunden zuschauen: er sollte mehrere Knoten hinter sich bringen.
+  let nachher = vorher;
+  for (let i = 0; i < 24 && nachher < vorher + 4; i++) {
+    await page.waitForTimeout(500);
+    nachher = await page.evaluate(() => globalThis.PokelikeApp.run.stats.nodes);
+  }
+  check('Der Automat geht von allein weiter', nachher >= vorher + 4,
+    vorher + ' → ' + nachher + ' Knoten');
+
+  await btn.click();
+  check('Ein zweiter Klick hält ihn an',
+    !(await btn.evaluate((n) => n.classList.contains('on'))));
+  const stand = await page.evaluate(() => globalThis.PokelikeApp.run.stats.nodes);
+  await page.waitForTimeout(1500);
+  check('… und dann bleibt er auch stehen',
+    (await page.evaluate(() => globalThis.PokelikeApp.run.stats.nodes)) === stand);
+  if (SHOT_DIR) await page.screenshot({ path: join(SHOT_DIR, '09-automat.png') });
+}
+
 console.log('\nSpeichern');
 const saved = await page.evaluate(() => {
   const app = globalThis.PokelikeApp;

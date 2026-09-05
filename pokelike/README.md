@@ -171,11 +171,54 @@ Pokémon auf denselben Bruchteil seiner gewohnten Lebenspunkte zurück. Beides
 zusammen einmal pro Kampf und Seite — mit dem Relikt Mega-Armband zweimal.
 Normales Dynamax gibt es nicht, nur Gigadynamax.
 
-**Manuell oder automatisch** — du wählst jede Attacke selbst, oder du schaltest
-den Auto-Kampf ein und die KI übernimmt: Attackenwahl, Wechsel, Gegenstände,
-Verwandlung, auch den Nachrücker nach einem K. o. Der Auto-Kampf spielt
-auf Sieg und würfelt nicht: Er rechnet jede Attacke gegen das aktuelle Ziel
-durch und nimmt die beste; bei Gleichstand entscheidet die zuverlässigere.
+**Der Auto-Kampf** — du wählst jede Attacke selbst, oder du schaltest ihn ein
+und die KI übernimmt den ganzen Kampf. Sie würfelt nicht: Sie rechnet jede
+Attacke gegen das aktuelle Ziel durch und nimmt die beste; bei Gleichstand
+entscheidet die zuverlässigere. Dabei tut sie alles, was auch von Hand ginge:
+
+- **Wechseln**, wenn die Paarung schlecht steht — aber nie, wenn dieser Zug
+  den Kampf entscheidet. Wer ohnehin im nächsten Zug fällt, wechselt leichter:
+  verlieren kann er dabei nichts mehr.
+- **Heilen**, bevor der nächste Treffer sitzt, und zwar mit dem kleinsten
+  Trank, der die Lücke füllt — ein Top-Trank für 20 fehlende KP wäre Verschwendung.
+- **Status kurieren**, wenn er wirklich schadet: Schlaf und Frost immer, Gift
+  bei langem Kampf, Paralyse beim Schnellen, Verbrennung beim Körperlichen.
+- **Beleben**, wenn nur noch ein Pokémon steht und gerade nichts droht — der
+  Beleber ist dann die Reserve, die den Kampf rettet.
+- **Fangen**, wenn es sich lohnt: Der Automat rechnet aus, was ein wildes
+  Pokémon dem Team brächte (Platz im Team, fehlende Typen, Aussicht auf
+  Stärke, schillernd, neu für den Pokédex). Lohnt es sich, schwächt er es
+  gezielt auf etwa ein Fünftel der KP statt es zu besiegen, legt es wenn
+  möglich schlafen und wirft dann — mit dem billigsten Ball, der reicht. Der
+  Meisterball bleibt liegen, solange es nicht um etwas Besonderes geht.
+- **Fliehen**, wenn ein wilder Kampf sonst den Run kostet: letztes Pokémon,
+  wenig KP, nichts mehr im Beutel.
+
+**Der Reise-Automat** — unten rechts sitzt ein kleiner Knopf (Umschalt+A), der
+alles Übrige übernimmt und jederzeit wieder ausgeht. Er sucht sich den Weg,
+betritt die Knoten, kämpft, kauft ein und entscheidet in jeder Szene:
+
+- **Den Weg** sucht er nicht Schritt für Schritt, sondern rückwärts über die
+  ganze Karte: Der Wert eines Knotens ist sein eigener plus der beste Weg, der
+  von ihm weggeht. Gewählt wird also nicht der nächste hübsche Knoten, sondern
+  der Anfang des besten Wegs. Was dabei zählt, hängt vom Zustand ab — ein
+  Rastplatz ist mit vollem Team fast wertlos und mit halbem das Wichtigste auf
+  der Karte.
+- **In den Szenen** nimmt er das stärkste Angebot (mit Bonus für Typen, die dem
+  Team fehlen), das Relikt mit der größten Wirkung, das Fundstück, das gerade
+  fehlt, und im Laden das, was pro Geld am meisten bringt.
+- **Bei Ereignissen** trägt jede Antwort in `js/world.js` ein Gewicht für den
+  Automaten — manche als feste Zahl, manche als kleine Funktion, die den Run
+  anschaut: baden lohnt sich nur, wenn das Team angeschlagen ist, die
+  Straßenwette nur mit Geld in der Tasche.
+- **Am Rastplatz** heilt er, entwickelt, wer bereit ist, oder trainiert.
+- **Neue Attacken** lernt er nur, wenn sie besser sind als die schwächste im
+  Repertoire.
+
+Gemessen bringt das viel: mit Automat liegt die Gewinnquote der harten Kämpfe
+bei 92 % statt 87 %, und drei von dreißig Runs gehen bis zum Champ durch statt
+keiner. `node tools/balance.mjs` spielt genau diesen Automaten — gemessen wird
+also, was der Spieler bekommt, wenn er den Knopf drückt.
 
 **Wie schwer es zugeht** — der Grundlauf ist freundlich eingestellt: Gegner
 bleiben sechs Level hinter dem eigenen Team, bieten zwei Pokémon weniger auf
@@ -404,10 +447,11 @@ pokelike/
   js/items.js         Gegenstände und Relikte
   js/world.js         Regionen, Trainer, Begegnungen, Ereignisse
   js/run.js           Karte, Knoten, Belohnungen, Fortschritt
+  js/autopilot.js     Entscheidungen des Reise-Automaten außerhalb des Kampfes
   js/meta.js          Speicherstand, Sammlung, Erfolge
   js/ui.js            Bausteine der Oberfläche
   js/app.js           Bildschirme und Spielsteuerung
-  data/sprites.js     eingebettete Sprites (3,9 MB) für die Einzeldatei
+  data/sprites.js     eingebettete Sprites (4,9 MB) für die Einzeldatei
   tools/build-data.mjs    erzeugt data/dex.js
   tools/build-sprites.mjs erzeugt data/sprites.js
   tools/build-single.mjs  bündelt alles zu dist/pokelike.html

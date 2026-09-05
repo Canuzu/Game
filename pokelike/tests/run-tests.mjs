@@ -8,6 +8,7 @@
  * ========================================================================== */
 import '../js/run.js';
 import '../js/ai.js';
+import '../js/autopilot.js';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -1313,6 +1314,205 @@ section('Inhalte');
   check('Alle Champ-Teams verweisen auf echte Spezies',
     PL.world.CHAMPIONS.every((c) => c.team.every((id) => !!dex.sp(id))),
     PL.world.CHAMPIONS.map((c) => c.team.filter((id) => !dex.sp(id))).flat().join(','));
+}
+
+section('Auto-Kampf');
+{
+  const rng = PL.rng('auto');
+  const duel = (a, b, setup) => {
+    const x = mons.create(a, 50, rng, {}), y = mons.create(b, 50, rng, {});
+    const bt = new PL.Battle({ teams: [[x], [y]], rng });
+    bt.start();
+    if (setup) setup(bt);
+    return bt;
+  };
+
+  // Heilen, statt sich umbringen zu lassen
+  let bt = duel('blissey', 'machamp');
+  bt.sides[0].active.mon.hp = Math.max(1, Math.floor(bt.sides[0].active.stats[0] * 0.2));
+  let act = PL.ai.chooseAction(bt, 0, 4, { bag: { hyperpotion: 2 } });
+  eq('Der Auto-Kampf greift bei wenig KP zum Trank', act.type, 'item');
+
+  // Ohne Not bleibt der Trank im Beutel
+  bt = duel('blissey', 'machamp');
+  act = PL.ai.chooseAction(bt, 0, 4, { bag: { hyperpotion: 2 } });
+  check('Bei vollen KP wird nicht geheilt', act.type !== 'item', act.type);
+
+  // Schlaf ist teuer — der Aufwecker lohnt sich
+  bt = duel('snorlax', 'machamp');
+  bt.sides[0].active.mon.status = 'slp';
+  bt.sides[0].active.mon.slp = 3;
+  act = PL.ai.chooseAction(bt, 0, 4, { bag: { awakening: 1 } });
+  eq('Schlafende werden geweckt', act.item, 'awakening');
+
+  // Wilde Begegnung: was sich lohnt, wird gefangen
+  const run = new PL.Run({ seed: 4711, starter: 'charmander' });
+  const wild = run.makeWild(run.rng);
+  const wbt = wild.battle || wild;
+  wbt.start();
+  const foe = wbt.sides[1].active;
+  check('Fangwert steht für ein neues Pokémon über null',
+    PL.ai.catchWorth(wbt, run, foe, { dexNew: true }) > 0,
+    String(Math.round(PL.ai.catchWorth(wbt, run, foe, { dexNew: true }))));
+  const balls = PL.ai.ballOptions(wbt, run, foe);
+  check('Die Bälle im Beutel werden mit Fangchance bewertet',
+    balls.length > 0 && balls.every((b) => b.chance >= 0 && b.chance <= 1),
+    JSON.stringify(balls.map((b) => b.id + ':' + b.chance.toFixed(2))));
+
+  // Mit Fangabsicht wird nicht besiegt
+  const catchBt = duel('machamp', 'caterpie');
+  const cFoe = catchBt.sides[1].active;
+  cFoe.mon.hp = Math.max(1, Math.floor(cFoe.stats[0] * 0.9));
+  const entries = catchBt.legalMoves(0);
+  const lethal = entries.filter((e) => e.move.c !== 'T' &&
+    PL.ai.estimate(catchBt, catchBt.sides[0].active, cFoe, e.move) >= cFoe.mon.hp);
+  if (lethal.length) {
+    const sc = PL.ai.scoreMove(catchBt, catchBt.sides[0].active, cFoe, lethal[0], 4, { wantsCatch: true });
+    check('Wer fangen will, wertet den K.-o.-Schlag ab', sc < 0, String(sc));
+  } else {
+    check('Wer fangen will, wertet den K.-o.-Schlag ab', true, 'kein tödlicher Zug im Repertoire');
+  }
+
+  // Der Meisterball bleibt liegen, solange es etwas anderes gibt
+  run.bag.masterball = 1;
+  run.bag.pokeball = 5;
+  const pick = PL.ai.pickBall(wbt, run, foe, 60, true);
+  check('Der Meisterball wird nicht verschwendet', pick && pick.id !== 'masterball',
+    pick ? pick.id : 'keiner');
+}
+
+section('Reise-Automat');
+{
+  const A = PL.autopilot;
+  const run = new PL.Run({ seed: 2024, starter: 'squirtle' });
+
+  // Wegwahl
+  const next = A.bestNode(run);
+  check('Der Automat findet einen offenen Knoten', !!next && run.available()
+    .some((o) => o.row === next.row && o.col === next.col), JSON.stringify(next));
+  const vals = A.pathValues(run);
+  check('Jeder Knoten der Karte bekommt einen Wert',
+    vals.length === run.map.length && vals.every((r, i) => r.length === run.map[i].length));
+
+  // Ein angeschlagenes Team will an den Rastplatz
+  const fit = A.nodeValue(run, { type: 'rest' });
+  run.party.forEach((m) => { m.hp = Math.max(1, Math.floor(mons.maxHP(m) * 0.2)); });
+  const hurtValue = A.nodeValue(run, { type: 'rest' });
+  check('Angeschlagen wird der Rastplatz viel wertvoller', hurtValue > fit + 60,
+    Math.round(fit) + ' → ' + Math.round(hurtValue));
+  check('Der Zustand des Teams wird richtig gemessen', A.hurt(run) > 0.7,
+    A.hurt(run).toFixed(2));
+  run.healTeam(1, true);
+
+  // Begegnung: das stärkste Angebot
+  const offer = run.makeCatchOffer(run.rng);
+  const ci = A.pickCatch(run, offer);
+  check('Bei der Begegnung wird ein Angebot gewählt', ci >= 0 && ci < offer.offers.length,
+    String(ci));
+  const types = {};
+  run.party.forEach((m) => dex.sp(m.sp).t.forEach((t) => { types[t] = 1; }));
+  const scores = offer.offers.map((m) => A.monScore(run, m, types));
+  eq('… und zwar das am höchsten bewertete', ci, scores.indexOf(Math.max(...scores)));
+
+  // Gegenstände: was fehlt, zählt mehr
+  const leer = new PL.Run({ seed: 5, starter: 'squirtle' });
+  leer.bag = {};
+  const trank = PL.items.get('potion'), nugget = PL.items.get('lifeorb');
+  check('Ohne Heilmittel wiegt ein Trank schwerer als ein Tragegegenstand',
+    A.itemWant(leer, trank) > A.itemWant(leer, nugget),
+    A.itemWant(leer, trank) + ' zu ' + A.itemWant(leer, nugget));
+  leer.bag = { potion: 9, superpotion: 9 };
+  check('Mit vollem Beutel dreht sich das um',
+    A.itemWant(leer, trank) < A.itemWant(leer, nugget),
+    A.itemWant(leer, trank) + ' zu ' + A.itemWant(leer, nugget));
+
+  // Laden: nie über das Geld hinaus
+  const shopRun = new PL.Run({ seed: 8, starter: 'bulbasaur' });
+  shopRun.money = 1500;
+  const shop = shopRun.makeShop(shopRun.rng);
+  const plan = A.shopPlan(shopRun, shop);
+  const kosten = plan.reduce((a, i) => a + shop.stock[i].price, 0);
+  check('Der Einkauf bleibt im Budget', kosten <= shopRun.money,
+    kosten + ' von ' + shopRun.money);
+  check('Kein Posten wird doppelt eingeplant', new Set(plan).size === plan.length);
+
+  // Relikte: Seltenheit und Wirkung zählen
+  const relics = PL.relics.all();
+  const episch = relics.find((r) => r.rarity === 'episch');
+  const haeufig = relics.find((r) => r.rarity === 'haeufig');
+  check('Episches wiegt schwerer als Häufiges',
+    A.relicScore(run, episch) > A.relicScore(run, haeufig),
+    Math.round(A.relicScore(run, episch)) + ' zu ' + Math.round(A.relicScore(run, haeufig)));
+
+  // Ereignisse: jede Antwort hat ein Gewicht
+  check('Jede Ereignisantwort trägt ein Gewicht für den Automaten',
+    PL.world.EVENTS.every((e) => e.options.every((o) => o.auto !== undefined)),
+    PL.world.EVENTS.filter((e) => e.options.some((o) => o.auto === undefined))
+      .map((e) => e.id).join(','));
+
+  // Attacken lernen
+  const lernMon = mons.create('charmander', 30, PL.rng(3), {});
+  lernMon.moves = [
+    { m: dex.move('scratch').i, pp: 35, ppUp: 0, used: 0 },
+    { m: dex.move('growl').i, pp: 40, ppUp: 0, used: 0 },
+    { m: dex.move('ember').i, pp: 25, ppUp: 0, used: 0 },
+    { m: dex.move('smokescreen').i, pp: 20, ppUp: 0, used: 0 }
+  ];
+  const slot = A.learnSlot(lernMon, dex.move('flamethrower').i);
+  check('Eine starke Attacke verdrängt die schwächste', slot >= 0,
+    'Platz ' + slot);
+  eq('Eine schwache Attacke wird nicht gelernt',
+    A.learnSlot(lernMon, dex.move('splash').i), -1);
+}
+
+section('Ein Run im Automatikbetrieb');
+{
+  const A = PL.autopilot;
+  let fehler = null, knoten = 0;
+  const run = new PL.Run({ seed: 777, starter: 'bulbasaur' });
+  try {
+    let guard = 0;
+    while (run.state !== 'gameover' && run.state !== 'victory' && guard++ < 60) {
+      if (!run.available().length) { run.advanceRegion(); continue; }
+      const next = A.bestNode(run);
+      if (!next) break;
+      const scene = run.enterNode(next.row, next.col);
+      if (!scene) break;
+      knoten++;
+      A.resolveScene(run, scene, {
+        battle(bt) {
+          bt.start();
+          let g = 0;
+          while (!bt.ended && g++ < 200) {
+            const mine = PL.ai.chooseAction(bt, 0, 4, { run });
+            if (mine.type === 'item' || mine.type === 'ball') run.removeItem(mine.item, 1);
+            bt.runTurn([mine, PL.ai.chooseAction(bt, 1, bt.aiLevel === undefined ? 1 : bt.aiLevel)]);
+            if (bt.pending !== null && bt.pending !== undefined && !bt.ended) {
+              const side = bt.sides[bt.pending];
+              const idx = PL.ai.chooseSwitch(bt, side, true);
+              const fb = side.team.findIndex((m) => m.hp > 0);
+              if (idx < 0 && fb < 0) break;
+              bt.replace(bt.pending, idx >= 0 ? idx : fb);
+            }
+          }
+          run.finishBattle(bt);
+          if (bt.outcome === 'win') {
+            const reward = run.battleRewards(bt);
+            if (reward) A.resolveScene(run, reward, {});
+          }
+        }
+      });
+      if (run.state === 'gameover') break;
+      run.closeScene();
+    }
+  } catch (e) { fehler = e; }
+  check('Der Automat spielt ohne Absturz', !fehler, fehler ? String(fehler.stack).slice(0, 200) : '');
+  check('… und kommt dabei wirklich voran', knoten >= 12, knoten + ' Knoten');
+  check('… ohne das Team zu verlieren', run.party.length > 0, run.party.length + ' Pokémon');
+  check('… und ohne Geld ins Minus zu bringen', run.money >= 0, String(run.money));
+  check('… mit gültigen Lebenspunkten',
+    run.party.every((m) => m.hp >= 0 && m.hp <= mons.maxHP(m)),
+    run.party.map((m) => m.hp + '/' + mons.maxHP(m)).join(' '));
 }
 
 /* ------------------------------------------------------------- Ergebnis -- */

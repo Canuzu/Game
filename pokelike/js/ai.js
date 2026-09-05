@@ -10,6 +10,11 @@
  *   3  Boss        — zusätzlich Mega-Entwicklung und vorausschauende Wechsel
  *   4  Auto-Kampf  — wie 3, aber ohne jedes Zufallsrauschen: es wird immer
  *                    der beste bekannte Zug gespielt
+ *
+ * Der Auto-Kampf bekommt zusätzlich den laufenden Run mitgeliefert (opts.run)
+ * und darf deshalb mehr als angreifen: heilen, Status kurieren, beleben,
+ * wechseln, ein lohnendes wildes Pokémon erst schwächen und dann fangen — und
+ * aus einem wilden Kampf fliehen, der sonst den Run kostet.
  * ========================================================================== */
 (function (root) {
   'use strict';
@@ -67,6 +72,20 @@
     return best / Math.max(1, me.mon.hp);
   }
 
+  /* ---------- Wert eines Pokémon ------------------------------------------- */
+
+  /** Die Basiswertsumme, die dieses Pokémon am Ende seiner Entwicklung hat. */
+  function potential(sp) {
+    var best = sp.bst, seen = {};
+    (function walk(s) {
+      if (!s || seen[s.id]) return;
+      seen[s.id] = 1;
+      if (s.bst > best) best = s.bst;
+      (s.ev || []).forEach(function (i) { walk(dex.species[i]); });
+    })(sp);
+    return best;
+  }
+
   /* ---------- Bewertung einzelner Attacken --------------------------------- */
 
   var SETUP = /swordsdance|nastyplot|dragondance|quiverdance|calmmind|bulkup|shellsmash|workup|howl|growth|coil|honeclaws|rockpolish|agility|irondefense|acidarmor|amnesia|barrier|cosmicpower|tidyup|victorydance|takeheart|filletaway|clangoroussoul|bellydrum/;
@@ -78,12 +97,29 @@
   // zählt die volle Wirkung; sonst wird die verlorene Runde eingepreist.
   var TWO_TURN = /^(solarbeam|solarblade|razorwind|skullbash|skyattack|freezeshock|iceburn|meteorbeam|electroshot|geomancy|fly|bounce|dig|dive|phantomforce|shadowforce)$/;
 
-  function scoreMove(bt, me, foe, entry, level) {
+  function scoreMove(bt, me, foe, entry, level, opts) {
     var move = entry.move, s = 0;
     if (entry.disabled) return -1e9;
     var foeHP = foe ? foe.mon.hp : 1;
     var myHP = bt.hpFraction(me);
     var danger = threat(bt, foe, me);
+
+    // Wer fangen will, darf nicht besiegen. Dann zählt eine ganz andere
+    // Rechnung: schwächen bis knapp über null, am liebsten schlafen legen.
+    if (opts && opts.wantsCatch && foe) {
+      if (move.c !== 'T') {
+        if (/^(falseswipe|holdback)$/.test(move.id)) return 190;
+        var d = estimate(bt, me, foe, move);
+        if (d <= 0) return -60;
+        if (d >= foeHP) return -80;                       // das wäre der K. o.
+        var left = (foeHP - d) / Math.max(1, mons.maxHP(foe.mon));
+        return 130 - Math.abs(left - 0.22) * 200;
+      }
+      if (move.st === 'slp') return 210;
+      if (move.st === 'frz' || move.st === 'par') return 160;
+      if (move.st) return 60;
+      return 0;
+    }
 
     if (move.c !== 'T') {
       var dmg = estimate(bt, me, foe, move);
@@ -208,6 +244,147 @@
     return pick;
   }
 
+  /* ---------- Beutel, Bälle, Flucht ------------------------------------------
+   * Nur der Auto-Kampf greift hierauf zu: er bekommt den Run mitgeliefert und
+   * darf deshalb den Beutel benutzen. Gegner bleiben bei Attacken und Wechsel.
+   * -------------------------------------------------------------------------- */
+
+  var HEALERS = [
+    { id: 'potion', heals: 20 },
+    { id: 'superpotion', heals: 60 },
+    { id: 'hyperpotion', heals: 120 },
+    { id: 'maxpotion', heals: 1e9 },
+    { id: 'fullrestore', heals: 1e9 }
+  ];
+  var CURES = {
+    psn: ['antidote', 'fullheal'], tox: ['antidote', 'fullheal'],
+    brn: ['burnheal', 'fullheal'], par: ['paralyzeheal', 'fullheal'],
+    slp: ['awakening', 'fullheal'], frz: ['iceheal', 'fullheal']
+  };
+
+  /** Der kleinste Trank, der die Lücke im Wesentlichen füllt. */
+  function pickHealer(bag, missing) {
+    var fallback = null, i;
+    for (i = 0; i < HEALERS.length; i++) {
+      var h = HEALERS[i];
+      if (!(bag[h.id] > 0)) continue;
+      if (!fallback) fallback = h.id;
+      if (h.heals >= missing * 0.75) return h.id;
+    }
+    return fallback;
+  }
+
+  /** Lohnt es sich, diesen Zustand mit einem Gegenstand loszuwerden? */
+  function statusHurts(bt, me, foe, status) {
+    if (status === 'slp' || status === 'frz') return true;             // steht still
+    if (status === 'tox') return true;                                 // wird nur schlimmer
+    if (status === 'par') return !foe || bt.statOf(me, 'spe') * 2 >= bt.statOf(foe, 'spe');
+    if (status === 'brn') return me.stats[1] >= me.stats[3];           // trifft körperlich
+    if (status === 'psn') return bt.hpFraction(me) < 0.6;
+    return false;
+  }
+
+  /** Ein Gegenstand aus dem Beutel — oder nichts. */
+  function bagAction(bt, side, me, foe, bag) {
+    if (!bag) return null;
+    var max = me.stats[0], missing = max - me.mon.hp;
+    var frac = me.mon.hp / max;
+    var danger = threat(bt, foe, me);
+    var alive = 0, faintedIndex = -1, i;
+    for (i = 0; i < side.team.length; i++) {
+      if (side.team[i].hp > 0) alive++;
+      else if (faintedIndex < 0) faintedIndex = i;
+    }
+
+    // Heilen, bevor der nächste Treffer sitzt. Ein Trank kostet eine Runde —
+    // er lohnt nur, wenn er mehr rettet, als er kostet.
+    if (missing > 0 && frac < 0.52 && (danger > 0.7 || frac < 0.3)) {
+      var healer = pickHealer(bag, missing);
+      if (healer) return { type: 'item', item: healer, target: side.activeIndex };
+    }
+
+    // Status kurieren, wenn er wirklich schadet
+    var st = me.mon.status;
+    if (st && CURES[st] && statusHurts(bt, me, foe, st)) {
+      for (i = 0; i < CURES[st].length; i++) {
+        if (bag[CURES[st][i]] > 0) {
+          return { type: 'item', item: CURES[st][i], target: side.activeIndex };
+        }
+      }
+    }
+
+    // Beim letzten Pokémon ist ein Beleber die Reserve, die den Kampf rettet —
+    // aber nur, solange gerade nichts droht.
+    if (alive === 1 && faintedIndex >= 0 && danger < 0.55 && frac > 0.5) {
+      if (bag.maxrevive > 0) return { type: 'item', item: 'maxrevive', target: faintedIndex };
+      if (bag.revive > 0) return { type: 'item', item: 'revive', target: faintedIndex };
+    }
+    return null;
+  }
+
+  /**
+   * Wie sehr lohnt sich dieses wilde Pokémon? Ab etwa 45 wird geworfen.
+   * Es zählt, was man davon hat: Platz im Team, Seltenheit, Aussicht auf
+   * Stärke — und ob es überhaupt neu ist.
+   */
+  function catchWorth(bt, run, foe, opts) {
+    if (!bt.wild || !run || bt.nuzlockeLocked || !foe) return 0;
+    var mon = foe.mon, sp = foe.species, w = 0, i;
+    var mine = run.party.concat(run.box || []);
+    for (i = 0; i < mine.length; i++) if (mine[i].sp === mon.sp) { w -= 70; break; }
+    if (mon.shiny) w += 130;
+    if (dex.isLegendary(sp)) w += 90;
+    if (run.party.length < 6) w += 75;
+    if (opts && opts.dexNew) w += 30;
+    // Gegen das schwächste eigene Mitglied gerechnet: Was bringt der Tausch?
+    var weakest = 1e9;
+    for (i = 0; i < run.party.length; i++) {
+      var p = potential(dex.sp(run.party[i].sp));
+      if (p < weakest) weakest = p;
+    }
+    if (weakest < 1e9) w += Math.max(-50, Math.min(70, (potential(sp) - weakest) / 5));
+    return w;
+  }
+
+  /** Alle Bälle im Beutel mit ihrer Fangchance gegen dieses Ziel. */
+  function ballOptions(bt, run, foe) {
+    var out = [];
+    Object.keys(run.bag).forEach(function (id) {
+      if (!(run.bag[id] > 0)) return;
+      var it = PL.items.get(id);
+      if (!it || it.kind !== 'ball') return;
+      var mult = it.ball ? it.ball(bt, foe) : 1;
+      if (bt.relicMod && bt.relicMod('timerBalls')) mult *= 1 + Math.min(2, bt.turn * 0.15);
+      var res = mons.tryCatch(foe.mon, mult, FIXED, { rateMult: bt.catchMult });
+      out.push({ id: id, price: it.price || 0, chance: res.chance, count: run.bag[id] });
+    });
+    // Der billigste Ball, der reicht — der teure bleibt für das nächste Mal.
+    out.sort(function (a, b) { return a.price - b.price; });
+    return out;
+  }
+
+  /**
+   * Der Ball, der jetzt geworfen werden soll — oder nichts. Der Meisterball
+   * bleibt liegen, solange es nicht um etwas Besonderes geht.
+   */
+  function pickBall(bt, run, foe, worth, mustThrow) {
+    var opts = ballOptions(bt, run, foe);
+    if (!opts.length) return null;
+    var special = foe.mon.shiny || dex.isLegendary(foe.species);
+    var need = mustThrow ? 0 : (worth >= 110 ? 0.3 : 0.5);
+    var i, cheapEnough = null;
+    for (i = 0; i < opts.length; i++) {
+      if (opts[i].id === 'masterball' && !special && opts.length > 1) continue;
+      if (opts[i].chance >= need) return opts[i];
+      cheapEnough = cheapEnough || opts[i];
+    }
+    // Nichts reicht: bei Zwang der beste vorhandene Ball, sonst erst schwächen.
+    if (!mustThrow) return null;
+    var best = null;
+    for (i = 0; i < opts.length; i++) if (!best || opts[i].chance > best.chance) best = opts[i];
+    return best || cheapEnough;
+  }
+
   /* ---------- Gesamtentscheidung -------------------------------------------- */
 
   /**
@@ -219,28 +396,47 @@
     level = level === undefined ? 2 : level;
     var side = bt.sides[sideId], me = side.active, foe = side.other.active;
     if (!me) return { type: 'move', index: 0 };
+    var run = opts.run || null;
+    var bag = opts.bag || (run ? run.bag : null);
     var moves = bt.legalMoves(sideId), i, best = null, bestScore = -1e9;
 
-    // Beutel: in Not zuerst heilen. Nur, wenn ein Gegenstand vorhanden ist und
-    // der Gegner sonst im nächsten Zug den K.o. schafft.
-    if (opts.bag) {
-      var hpFrac = me.mon.hp / me.stats[0];
-      var incoming = threat(bt, foe, me);
-      if (hpFrac < 0.42 && (incoming > 0.8 || hpFrac < 0.22)) {
-        var healers = ['fullrestore', 'maxpotion', 'hyperpotion', 'superpotion', 'potion'];
-        for (i = 0; i < healers.length; i++) {
-          if (opts.bag[healers[i]] > 0) {
-            var it = PL.items.get(healers[i]);
-            var heals = it && it.name;
-            if (heals) return { type: 'item', item: healers[i], target: side.activeIndex };
-          }
+    /* --- 1) Aussichtslos? Aus einem wilden Kampf kommt man heraus. --------- */
+    if (run && bt.wild && !bt.ended) {
+      var left = 0, k;
+      for (k = 0; k < side.team.length; k++) if (side.team[k].hp > 0) left++;
+      var hopeless = left === 1 && me.mon.hp / me.stats[0] < 0.3 &&
+        threat(bt, foe, me) > 0.9 && !bagAction(bt, side, me, foe, bag);
+      if (hopeless) return { type: 'run' };
+    }
+
+    /* --- 2) Fangen: erst prüfen, ob es sich lohnt, dann schwächen ---------- */
+    var wantsCatch = false;
+    if (run && bt.wild && !bt.nuzlockeLocked) {
+      var worth = catchWorth(bt, run, foe, opts);
+      if (worth >= 45) {
+        wantsCatch = true;
+        // Wenn ohnehin jede Attacke den K. o. bedeutet, wird jetzt geworfen.
+        var everythingKills = true;
+        for (i = 0; i < moves.length; i++) {
+          var mv = moves[i].move;
+          if (moves[i].disabled || mv.c === 'T') continue;
+          if (estimate(bt, me, foe, mv) < foe.mon.hp) { everythingKills = false; break; }
         }
+        var ball = pickBall(bt, run, foe, worth, everythingKills);
+        if (ball) return { type: 'ball', item: ball.id };
       }
+    }
+    opts = wantsCatch ? { wantsCatch: true, run: run, bag: bag, dexNew: opts.dexNew } : opts;
+
+    /* --- 3) Beutel: heilen, kurieren, beleben ------------------------------ */
+    if (bag) {
+      var bagPick = bagAction(bt, side, me, foe, bag);
+      if (bagPick) return bagPick;
     }
 
     for (i = 0; i < moves.length; i++) {
       if (moves[i].disabled) continue;
-      var sc = scoreMove(bt, me, foe, moves[i], level);
+      var sc = scoreMove(bt, me, foe, moves[i], level, opts);
       if (level === 0) sc = sc * 0.3 + bt.rng.next() * 60;
       else if (level === 1) sc += bt.rng.next() * 25;
       else if (level < 4) sc += bt.rng.next() * 6;
@@ -250,19 +446,28 @@
       if (sc > bestScore) { bestScore = sc; best = moves[i]; }
     }
 
+    /* --- 4) Angreifen ------------------------------------------------------ */
     var action = { type: 'move', index: best ? best.index : 0 };
 
-    // Wechsel prüfen
-    if (level >= 2 && bt.canSwitch(sideId)) {
+    /* --- 5) Wechseln ------------------------------------------------------
+     * Nicht wechseln, wenn dieser Zug den Kampf entscheidet. Sonst zählt der
+     * Abstand zwischen der jetzigen Paarung und der besten auf der Bank; wie
+     * groß er sein muss, hängt davon ab, wie dringend es ist. */
+    if (level >= 2 && bt.canSwitch(sideId) && !wantsCatch) {
       var danger = threat(bt, foe, me);
       var myBest = best && best.move.c !== 'T' ? estimate(bt, me, foe, best.move) : 0;
+      var killsNow = myBest >= foe.mon.hp;
+      var hpFrac = me.mon.hp / me.stats[0];
+      var doomed = danger >= 1 && !killsNow;                 // stirbt im nächsten Zug
       var badMatchup = danger > 0.55 && myBest < foe.mon.hp * 0.35;
-      if (badMatchup || (me.mon.hp / me.stats[0] < 0.2 && danger > 0.9)) {
+      if (!killsNow && (badMatchup || doomed || (hpFrac < 0.2 && danger > 0.9))) {
         var alt = chooseSwitch(bt, side);
         if (alt >= 0) {
           var altScore = matchup(bt, side.team[alt], side, foe);
           var meScore = matchup(bt, me.mon, side, foe);
-          if (altScore > meScore + (level >= 4 ? 60 : 45)) return { type: 'switch', to: alt };
+          // Wer ohnehin fällt, verliert durch den Wechsel nichts mehr.
+          var hurdle = doomed ? 15 : (level >= 4 ? 45 : 45);
+          if (altScore > meScore + hurdle) return { type: 'switch', to: alt };
         }
       }
     }
@@ -284,7 +489,12 @@
     estimate: estimate,
     threat: threat,
     matchup: matchup,
-    scoreMove: scoreMove
+    scoreMove: scoreMove,
+    potential: potential,
+    bagAction: bagAction,
+    catchWorth: catchWorth,
+    ballOptions: ballOptions,
+    pickBall: pickBall
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = PL.ai;
