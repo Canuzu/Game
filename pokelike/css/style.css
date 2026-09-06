@@ -1292,6 +1292,36 @@ button.move-row:hover { border-color: var(--accent); }
 
 .save-zone { margin-top: 2rem; padding: 1rem; border: 2px solid var(--frame-edge); }
 .setting-actions { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .6rem; }
+
+/* Der Lautstärkeregler. Die Bahn ist überall gleich, der Knopf muss auf dem
+   Telefon mit dem Daumen zu treffen sein — deshalb 26 Pixel und nicht 14. */
+.slider-row { display: flex; align-items: center; gap: .7rem; min-width: 210px; }
+.slider-value {
+  min-width: 3.4em; text-align: right; font-variant-numeric: tabular-nums;
+  color: var(--muted); font-size: .85rem;
+}
+.slider {
+  -webkit-appearance: none; appearance: none; flex: 1;
+  height: 26px; background: transparent; cursor: pointer; margin: 0;
+}
+.slider:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.slider::-webkit-slider-runnable-track {
+  height: 8px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 999px;
+}
+.slider::-moz-range-track {
+  height: 8px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 999px;
+}
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 22px; height: 22px; margin-top: -8px; border-radius: 50%;
+  background: var(--accent); border: 2px solid var(--bg); box-shadow: 0 1px 3px rgba(0,0,0,.35);
+}
+.slider::-moz-range-thumb {
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--accent); border: 2px solid var(--bg); box-shadow: 0 1px 3px rgba(0,0,0,.35);
+}
+.slider:active::-webkit-slider-thumb { transform: scale(1.12); }
+.slider:active::-moz-range-thumb { transform: scale(1.12); }
 .save-area {
   width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .72rem;
   padding: .5rem; border: 2px solid var(--frame-edge); background: var(--panel-2); color: var(--text);

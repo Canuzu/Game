@@ -2967,12 +2967,7 @@
           meta.setSetting('music', v);
           if (PL.audio) { PL.audio.setEnabled(v); if (v) updateMusic(App.screen); }
         })),
-      row('Lautstärke', 'Gilt für Musik und Klänge.', picker(
-        [{ value: 0.25, label: 'Leise' }, { value: 0.5, label: 'Mittel' }, { value: 0.8, label: 'Laut' }],
-        s.volume, function (v) {
-          meta.setSetting('volume', v);
-          if (PL.audio) PL.audio.setVolume(v);
-        })),
+      row('Lautstärke', 'Gilt für Musik und Klänge.', volumeSlider(s)),
       el('div', { className: 'save-zone' }, [
         el('h3', { text: 'Spielstand' }),
         el('p', { className: 'muted', text: 'Alles liegt nur in diesem Browser. Sichere den Stand als Text, ' +
@@ -2997,6 +2992,35 @@
       el('p', { className: 'muted small', text: 'Gespeichert wird ausschließlich im Browser dieses Geräts. Es werden keine Daten übertragen; die Pokémon-Bilder kommen von Pokémon Showdown und PokeAPI.' })
     ]);
   };
+
+  /**
+   * Der Lautstärkeregler. Gestellt wird sofort, gespeichert erst, wenn der
+   * Finger loslässt — sonst schriebe jedes Pixel einen Spielstand. Beim
+   * Loslassen kommt ein kurzer Ton, damit man hört, was man eingestellt hat.
+   */
+  function volumeSlider(s) {
+    var wert = s.volume === undefined ? 0.5 : s.volume;
+    var zahl = el('span', { className: 'slider-value', text: Math.round(wert * 100) + ' %' });
+    var regler = el('input', {
+      type: 'range', min: '0', max: '100', step: '5',
+      className: 'slider', value: String(Math.round(wert * 100)),
+      'aria-label': 'Lautstärke'
+    });
+    function stellen() {
+      var v = Number(regler.value) / 100;
+      zahl.textContent = Math.round(v * 100) + ' %';
+      if (PL.audio) PL.audio.setVolume(v);
+      return v;
+    }
+    function merken() {
+      var v = stellen();
+      meta.setSetting('volume', v);
+      if (v > 0) sfx('select');
+    }
+    regler.addEventListener('input', stellen);
+    regler.addEventListener('change', merken);
+    return el('div', { className: 'slider-row' }, [regler, zahl]);
+  }
 
   /**
    * Welche Fassung läuft hier — und liegt eine neuere bereit? Wichtig für die
@@ -3227,13 +3251,17 @@
         select: { f: 440, t: 'sine', d: 0.05, v: 0.03 }
       }[kind];
       if (!spec) return;
+      // Der Regler in den Einstellungen gilt für Musik und Klänge — also auch
+      // hier, und nicht nur für die Musik.
+      var laut = settings().volume === undefined ? 0.5 : settings().volume;
+      if (laut <= 0) return;
       var osc = audio.createOscillator(), gain = audio.createGain();
       osc.type = spec.t;
       osc.frequency.setValueAtTime(spec.f, now);
       if (kind === 'faint') osc.frequency.exponentialRampToValueAtTime(spec.f / 3, now + spec.d);
       if (kind === 'mega') osc.frequency.exponentialRampToValueAtTime(spec.f * 2, now + spec.d);
       if (kind === 'encounter') osc.frequency.exponentialRampToValueAtTime(spec.f * 3, now + spec.d);
-      gain.gain.setValueAtTime(spec.v, now);
+      gain.gain.setValueAtTime(spec.v * (laut / 0.5), now);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + spec.d);
       osc.connect(gain).connect(audio.destination);
       osc.start(now);

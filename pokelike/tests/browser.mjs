@@ -310,6 +310,29 @@ await page.evaluate(() => globalThis.PokelikeApp.show('settings'));
 await page.waitForSelector('.settings-screen');
 check('Einstellungen erscheinen', (await page.locator('.setting').count()) >= 4);
 
+// Der Lautstärkeregler: schieben, ablesen, merken
+{
+  const regler = page.locator('.slider');
+  check('Die Lautstärke hat einen Regler', (await regler.count()) === 1);
+  const kasten = await regler.boundingBox();
+  check('Der Regler ist mit dem Daumen zu treffen', kasten.height >= 24, kasten.height + ' px hoch');
+  await regler.fill('80');
+  await regler.dispatchEvent('change');
+  await page.waitForTimeout(150);
+  check('Der Wert steht daneben', (await page.locator('.slider-value').innerText()).trim() === '80 %',
+    await page.locator('.slider-value').innerText());
+  const gemerkt = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('pokelike.plus.v1') || '{}').settings.volume);
+  check('… und ist gespeichert', Math.abs(gemerkt - 0.8) < 0.001, String(gemerkt));
+  await regler.fill('0');
+  await regler.dispatchEvent('change');
+  await page.waitForTimeout(100);
+  check('Ganz leise geht auch', (await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('pokelike.plus.v1') || '{}').settings.volume)) === 0);
+  await regler.fill('50');
+  await regler.dispatchEvent('change');
+}
+
 // Spielstand sichern und wieder einspielen
 await page.getByRole('button', { name: /Spielstand sichern/ }).click();
 await page.waitForSelector('.save-area');
