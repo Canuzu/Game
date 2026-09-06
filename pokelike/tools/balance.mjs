@@ -79,9 +79,16 @@ function autoRun(seed) {
 }
 
 let victories = 0, regionSum = 0;
+/* Legendäre Pokémon: höchstens eins je Run, und im Schnitt soll nur jeder
+   zehnte Run überhaupt eines zu sehen bekommen. Gezählt wird beides —
+   was auf einer erreichten Karte stand und was wirklich ausgekämpft wurde. */
+const legenden = { getragen: 0, gesehen: 0, gekaempft: 0, mehrfach: 0 };
 const endet = {};
 for (let i = 0; i < N; i++) {
   const run = autoRun(5000 + i);
+  if (run.legendRegion >= 0) legenden.getragen++;
+  if (run.legendRegion >= 0 && run.region >= run.legendRegion) legenden.gesehen++;
+  if (run.legendUsed) legenden.gekaempft++;
   if (run.state === 'victory') victories++;
   regionSum += run.region;
   const k = 'Region ' + run.region + ' / Reihe ' + run.rowIndex;
@@ -95,6 +102,15 @@ for (let i = 0; i < N; i++) {
     Object.keys(run.bag).filter((k2) => /potion|trank|revive/i.test(k2))
       .reduce((a, k2) => a + run.bag[k2], 0);
 }
+if (process.argv.includes('--legenden')) {
+  const pct = (n) => (n / N * 100).toFixed(1) + ' %';
+  console.log('Legendäre Pokémon über ' + N + ' Runs:');
+  console.log('  Run trägt eines            ' + legenden.getragen + '  (' + pct(legenden.getragen) + ')');
+  console.log('  Region wurde erreicht      ' + legenden.gesehen + '  (' + pct(legenden.gesehen) + ')');
+  console.log('  wirklich gegenübergestanden ' + legenden.gekaempft + '  (' + pct(legenden.gekaempft) + ')');
+  console.log();
+}
+
 if (process.argv.includes('--ende')) {
   console.log('Beim Aus im Schnitt: Team ' + (endet._teamgroesse / N).toFixed(1) +
     ' Pokémon, Level ' + (endet._level / N).toFixed(1) +

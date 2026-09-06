@@ -642,11 +642,19 @@ section('Neue Systeme');
   const boss = legend.sides[1].team[0];
   check('Der Schrein ruft ein legendäres Pokémon', dex.isLegendary(dex.sp(boss.sp)), PL.mon.name(boss));
   check('Es ist wild und damit fangbar', legend.wild === true);
+  const schrein = PL.world.EVENTS.filter((e) => e.id === 'legendenschrein')[0];
+  run.legendRegion = 4; run.legendUsed = false;
   check('Der Schrein erscheint erst spät', (function () {
     const early = new PL.Run({ seed: 3, starter: 'squirtle' });
-    const ev = PL.world.EVENTS.filter((e) => e.id === 'legendenschrein')[0];
-    return ev && ev.available && !ev.available(early) && ev.available(run);
+    early.legendRegion = 4; early.legendUsed = false;
+    return schrein && schrein.available && !schrein.available(early) && schrein.available(run);
   })());
+  run.legendUsed = true;
+  check('… und gar nicht mehr, wenn der Run sein Legendäres schon hatte',
+    !schrein.available(run));
+  run.legendRegion = -1; run.legendUsed = false;
+  check('… und auch nicht in einem Run ganz ohne Legendäres',
+    !schrein.available(run));
 
   // Segen im Endlosmodus
   const endless = new PL.Run({ seed: 9, mode: 'endlos', starter: 'chikorita' });
@@ -659,6 +667,24 @@ section('Neue Systeme');
   eq('Der Levelschub hebt die Grenze', endless.levelCap, capBefore + 5);
   check('Jeder Segen hat Namen und Beschreibung',
     PL.Run.BLESSINGS.every((b) => b.id && b.name && b.desc && b.icon));
+  {
+    // Auch der »Ruf der Legende« hält sich an die Obergrenze.
+    const e2 = new PL.Run({ seed: 12, mode: 'endlos', starter: 'chikorita' });
+    e2.legendRegion = 2; e2.legendUsed = true;
+    let angeboten = 0;
+    for (let i = 0; i < 200; i++) {
+      if (e2.makeBlessing(PL.rng('b' + i)).offers.some((b) => b.id === 'legende')) angeboten++;
+    }
+    eq('Ein aufgebrauchter Run bekommt keinen Ruf der Legende mehr', angeboten, 0);
+    e2.legendUsed = false;
+    let mit = 0;
+    for (let i = 0; i < 200; i++) {
+      if (e2.makeBlessing(PL.rng('b' + i)).offers.some((b) => b.id === 'legende')) mit++;
+    }
+    check('Solange er offen ist, steht der Ruf zur Wahl', mit > 0, String(mit));
+    e2.takeBlessing('legende', PL.rng('l'));
+    check('… und ist danach verbraucht', e2.legendUsed === true);
+  }
 
   // Ereignisse
   check('Deutlich mehr Ereignisse als vorher', PL.world.EVENTS.length >= 30, String(PL.world.EVENTS.length));
@@ -1447,15 +1473,85 @@ section('Jeder Run seine eigene Auswahl');
 
 section('Legendäre Begegnungen');
 {
-  const run = new PL.Run({ seed: 5150, starter: 'bulbasaur' });
+  // Höchstens eine je Run, in einer zufälligen Region, und selten.
+  {
+    let mit = 0, daneben = 0;
+    const regionen = {};
+    const N = 3000;
+    for (let i = 0; i < N; i++) {
+      const r = PL.Run.rollLegend(70000 + i, 'standard');
+      if (r >= 0) { mit++; regionen[r] = (regionen[r] || 0) + 1; }
+      if (r < -1 || r >= 9) daneben++;
+    }
+    eq('Keine Spur liegt außerhalb des Runs', daneben, 0);
+    const quote = mit / N;
+    check('Nur wenige Runs tragen überhaupt ein legendäres Pokémon',
+      quote > 0.10 && quote < 0.16, (quote * 100).toFixed(1) + ' % von ' + N + ' Runs');
+    check('Es kann jede Region treffen', Object.keys(regionen).length === 9,
+      Object.keys(regionen).sort((a, b) => a - b).join(', '));
+    const kurz = [];
+    for (let i = 0; i < 600; i++) {
+      const r = PL.Run.rollLegend(80000 + i, 'kurz');
+      if (r >= 0) kurz.push(r);
+    }
+    check('Im Kurzrun liegt sie in einer Region, die es auch gibt',
+      kurz.length > 0 && kurz.every((r) => r < 4), kurz.join(','));
+  }
 
-  // In der ersten Region gibt es keine — ab der zweiten in jeder
-  const ersteRegion = run.map.some((row) => row.some((n) => n.type === 'legend'));
-  eq('In der ersten Region hält sich noch nichts Legendäres auf', ersteRegion, false);
+  // Ein Run, der eine trägt: sie steht in genau einer Region und sonst nirgends.
+  let seed = 5150;
+  while (PL.Run.rollLegend(seed, 'standard') < 0) seed++;
+  const run = new PL.Run({ seed, starter: 'bulbasaur' });
+  const ziel = run.legendRegion;
+  check('Dieser Run trägt eine legendäre Spur', ziel >= 0, String(ziel));
+  let gesamt = 0;
+  for (let r = 0; r < 9; r++) {
+    run.region = r;
+    run.buildMap();
+    const hier = run.map.reduce((a, row) => a + row.filter((n) => n.type === 'legend').length, 0);
+    gesamt += hier;
+    eq('Region ' + r + (r === ziel ? ' trägt die Spur' : ' trägt keine'), hier, r === ziel ? 1 : 0);
+  }
+  eq('Über den ganzen Run steht genau eine legendäre Spur', gesamt, 1);
+
+  // Ein Run ohne Spur hat auf keiner Karte eine.
+  {
+    let leer = 5150;
+    while (PL.Run.rollLegend(leer, 'standard') >= 0) leer++;
+    const ohne = new PL.Run({ seed: leer, starter: 'bulbasaur' });
+    let n = 0;
+    for (let r = 0; r < 9; r++) { ohne.region = r; ohne.buildMap(); n += ohne.map.reduce((a, row) => a + row.filter((x) => x.type === 'legend').length, 0); }
+    eq('Ein Run ohne Kontingent bleibt ohne legendäre Spur', n, 0);
+  }
+
+  // Einmal betreten, ist das Kontingent weg — auch wenn die Karte neu entsteht.
+  {
+    const r2 = new PL.Run({ seed, starter: 'bulbasaur' });
+    r2.region = ziel;
+    r2.buildMap();
+    const stelle = [];
+    r2.map.forEach((row, ri) => row.forEach((n, ci) => { if (n.type === 'legend') stelle.push([ri, ci]); }));
+    eq('Die Spur liegt auf der Karte', stelle.length, 1);
+    r2.enterNode(stelle[0][0], stelle[0][1], true);
+    check('Nach dem Betreten ist das Kontingent verbraucht', r2.legendUsed === true);
+    r2.buildMap();
+    eq('… und die Karte trägt keine zweite',
+      r2.map.reduce((a, row) => a + row.filter((n) => n.type === 'legend').length, 0), 0);
+  }
+
+  // Der Spielstand merkt sich beides.
+  {
+    const gespeichert = JSON.parse(JSON.stringify(run.toJSON()));
+    const zurueck = PL.Run.fromJSON(gespeichert);
+    eq('Der Spielstand merkt sich die Region der Spur', zurueck.legendRegion, run.legendRegion);
+    delete gespeichert.legendRegion;
+    const alt = PL.Run.fromJSON(gespeichert);
+    eq('Ein älterer Spielstand bekommt sie aus dem Startwert zurück',
+      alt.legendRegion, PL.Run.rollLegend(run.seed, run.mode));
+  }
+
   run.region = 3;
-  run.buildMap();
-  const spaeter = run.map.reduce((a, row) => a + row.filter((n) => n.type === 'legend').length, 0);
-  eq('Später steht genau eine legendäre Spur auf der Karte', spaeter, 1);
+  run.legendUsed = false;
 
   // Die Begegnung selbst
   const bt = run.makeLegend(PL.rng('leg'));

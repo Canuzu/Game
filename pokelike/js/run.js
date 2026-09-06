@@ -32,6 +32,13 @@
     taeglich: { name: 'Tages-Run', regions: 6, rows: 8, desc: 'Fester Startwert für alle: heute für jeden gleich.' }
   };
 
+  /* Legendäre Pokémon sollen selten bleiben — eins je Run ist die Obergrenze,
+     und die meisten Runs haben gar keins. Der Wert ist die Wahrscheinlichkeit,
+     dass ein Run überhaupt eine legendäre Spur trägt; er ist etwas höher als
+     jeder zehnte Run angesetzt, weil kaum ein Run bis in die letzte Region
+     kommt. Gemessen begegnet man damit etwa in jedem zehnten Run einem. */
+  var LEGEND_CHANCE = 0.13;
+
   var NODE_WEIGHTS = {
     wild: 34, trainer: 30, item: 8, event: 9, shop: 6, catch: 8, relic: 4, elite: 5
   };
@@ -100,6 +107,10 @@
       name: this.rng.pick(['Blau', 'Silber', 'Barry', 'Bell', 'Trace', 'Hugo', 'Nemila', 'Kieran']),
       stage: 0, wins: 0, losses: 0, starter: null
     };
+    // Die eine legendäre Spur dieses Runs — oder keine. Beides steht mit dem
+    // Startwert fest, damit ein geladener Spielstand dieselbe Antwort gibt.
+    this.legendRegion = Run.rollLegend(this.seed, this.mode);
+    this.legendUsed = false;
     this.scene = null;
     this.state = 'map';
     this.result = null;
@@ -121,6 +132,29 @@
   var R = Run.prototype;
 
   R.modeInfo = function () { return MODES[this.mode]; };
+
+  /**
+   * Trägt dieser Run noch sein legendäres Pokémon vor sich her? Sobald es
+   * einmal gegenübersteht — auf der Spur, am Schrein oder als Segen —, ist
+   * das Kontingent des Runs aufgebraucht.
+   */
+  R.legendAvailable = function () {
+    return this.legendRegion >= 0 && !this.legendUsed;
+  };
+
+  /**
+   * Der Wurf, der alles entscheidet: Trägt dieser Run eine legendäre Spur,
+   * und in welcher seiner Regionen liegt sie? Gerechnet wird allein aus dem
+   * Startwert — derselbe Run kommt so immer zur selben Antwort, auch nach
+   * dem Laden eines Spielstands aus einer Fassung, die das noch nicht kannte.
+   * -1 heißt: in diesem Run kommt keines vor.
+   */
+  Run.rollLegend = function (seed, mode) {
+    var rng = PL.rng('legend-' + seed);
+    if (!rng.chance(LEGEND_CHANCE)) return -1;
+    var regions = Math.min(9, (MODES[mode] || MODES.standard).regions);
+    return rng.int(regions);
+  };
 
   Object.defineProperty(R, 'levelCap', {
     get: function () {
@@ -220,10 +254,11 @@
     if (this.leagueStage < 0 && this.region % 2 === 1 && this.rival && this.rival.stage < 4) {
       mustHave.push('rival');
     }
-    // Ab der zweiten Region hält sich in jeder eine legendäre Spur. Fangen ist
-    // schwer genug, dass daraus kein Selbstläufer wird — aber begegnen soll man
-    // ihnen wirklich, und nicht nur davon hören.
-    if (this.leagueStage < 0 && this.region >= 1) mustHave.push('legend');
+    // Die legendäre Spur, wenn dieser Run eine trägt und sie hier liegt.
+    // Höchstens eine je Run — welche Region es trifft, entschied der Start.
+    if (this.leagueStage < 0 && this.region === this.legendRegion && this.legendAvailable()) {
+      mustHave.push('legend');
+    }
     var middleSlots = [];
     for (r = 1; r < rows - 1; r++) for (i = 0; i < map[r].length; i++) middleSlots.push(map[r][i]);
     rng.shuffle(middleSlots);
@@ -332,7 +367,9 @@
 
     switch (node.type) {
       case 'wild': return this.setScene({ kind: 'battle', battle: this.makeWild(rng), node: node });
-      case 'legend': return this.setScene({ kind: 'battle', battle: this.makeLegend(rng), node: node });
+      case 'legend':
+        this.legendUsed = true;
+        return this.setScene({ kind: 'battle', battle: this.makeLegend(rng), node: node });
       case 'trainer': return this.setScene({ kind: 'battle', battle: this.makeTrainer(rng), node: node });
       case 'elite': return this.setScene({ kind: 'battle', battle: this.makeTrainer(rng, { elite: true }), node: node });
       case 'rival': return this.setScene({ kind: 'battle', battle: this.makeRival(rng), node: node });
@@ -388,7 +425,11 @@
 
   R.makeBlessing = function (rng) {
     var pool = BLESSINGS.slice();
-    if (this.party.length >= 6) pool = pool.filter(function (b) { return b.id !== 'legende'; });
+    // Auch hier gilt die Obergrenze: Wer sein legendäres Pokémon schon hatte
+    // — oder in diesem Run keines bekommt —, dem wird auch keines angeboten.
+    if (this.party.length >= 6 || !this.legendAvailable()) {
+      pool = pool.filter(function (b) { return b.id !== 'legende'; });
+    }
     return { kind: 'blessing', offers: rng.sample(pool, 3), loop: this.loop() };
   };
 
@@ -411,6 +452,7 @@
         });
         return 'Jedes Teammitglied hat kräftig zugelegt.';
       case 'legende': {
+        this.legendUsed = true;
         var pool = dex.species.filter(function (sp) {
           return !sp.bo && !sp.f && dex.isLegendary(sp) && !dex.isRestricted(sp);
         });
@@ -695,6 +737,7 @@
 
   /** Ein legendäres Pokémon als seltene, freiwillige Herausforderung. */
   R.makeLegendary = function (rng) {
+    this.legendUsed = true;
     var level = Math.min(100, this.levelCap + 2);
     var pool = dex.species.filter(function (sp) {
       return !sp.bo && !sp.f && dex.isLegendary(sp) && !dex.isRestricted(sp) && sp.bst >= 570;
@@ -1432,6 +1475,7 @@
       regionCatches: this.regionCatches || 0,
       graveyard: this.graveyard || [], rival: this.rival,
       levelBonus: this.levelBonus || 0, pendingBlessing: this.pendingBlessing || null,
+      legendRegion: this.legendRegion, legendUsed: !!this.legendUsed,
       bossHint: this.bossHint || null,
       pendingNode: this.pendingNode || null,
       seenEvents: this.seenEvents || {}, masterballUsed: this.masterballUsed, result: this.result,
@@ -1448,6 +1492,10 @@
     run.state = 'map';
     run.pendingLevelUps = [];
     run.history = run.history || [];
+    // Spielstände von vorher kannten die legendäre Spur noch nicht; der Wurf
+    // hängt nur am Startwert und lässt sich deshalb nachholen.
+    if (run.legendRegion === undefined) run.legendRegion = Run.rollLegend(run.seed, run.mode);
+    run.legendUsed = !!run.legendUsed;
     // Aus älteren Spielständen können Megasteine kommen, die es nicht mehr gibt.
     Object.keys(run.bag || {}).forEach(function (id) {
       if (!PL.items.get(id)) delete run.bag[id];

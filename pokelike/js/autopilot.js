@@ -58,7 +58,7 @@
 
   var NODE_BASE = {
     rest: 30, catch: 40, relic: 78, shop: 44, item: 44, event: 40,
-    wild: 34, trainer: 44, elite: 50, rival: 60, legend: 88,
+    wild: 34, trainer: 44, elite: 50, rival: 60, legend: 130,
     boss: 100, e4: 100, champ: 100
   };
 
@@ -90,8 +90,9 @@
         if (supplies(run, 'heal') < 3) v += 20;
         break;
       case 'legend':
-        // Ein legendäres Pokémon ist ein Fang, wie er im ganzen Run kein
-        // zweites Mal kommt — aber nur, wenn das Team ihn übersteht.
+        // Es ist der einzige legendäre Fang, den dieser Run zu bieten hat —
+        // und die meisten Runs haben gar keinen. Daran geht der Automat nicht
+        // vorbei, solange das Team den Kampf übersteht.
         if (supplies(run, 'ball') < 2) v -= 55;
         v -= wounded * 130;
         if (supplies(run, 'heal') < 3) v -= 45;

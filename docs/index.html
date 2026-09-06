@@ -8268,7 +8268,12 @@ button.move-row:hover { border-color: var(--accent); }
     },
     {
       id: 'legendenschrein', title: 'Schrein der Legenden',
-      available: function (run) { return run.region >= 5 || run.leagueStage >= 0; },
+      // Nur, solange der Run sein einziges legendäres Pokémon noch vor sich
+      // hat: Sonst steht hier nichts hinter dem Siegel.
+      available: function (run) {
+        if (run.legendAvailable && !run.legendAvailable()) return false;
+        return run.region >= 5 || run.leagueStage >= 0;
+      },
       text: 'Ein Schrein, älter als jede Aufzeichnung. Hinter dem Siegel bewegt sich etwas Großes — und es hat dich bemerkt.',
       options: [
         { label: 'Das Siegel brechen', desc: 'Kampf gegen ein legendäres Pokémon. Fangen erlaubt.',
@@ -9120,6 +9125,13 @@ button.move-row:hover { border-color: var(--accent); }
     taeglich: { name: 'Tages-Run', regions: 6, rows: 8, desc: 'Fester Startwert für alle: heute für jeden gleich.' }
   };
 
+  /* Legendäre Pokémon sollen selten bleiben — eins je Run ist die Obergrenze,
+     und die meisten Runs haben gar keins. Der Wert ist die Wahrscheinlichkeit,
+     dass ein Run überhaupt eine legendäre Spur trägt; er ist etwas höher als
+     jeder zehnte Run angesetzt, weil kaum ein Run bis in die letzte Region
+     kommt. Gemessen begegnet man damit etwa in jedem zehnten Run einem. */
+  var LEGEND_CHANCE = 0.13;
+
   var NODE_WEIGHTS = {
     wild: 34, trainer: 30, item: 8, event: 9, shop: 6, catch: 8, relic: 4, elite: 5
   };
@@ -9188,6 +9200,10 @@ button.move-row:hover { border-color: var(--accent); }
       name: this.rng.pick(['Blau', 'Silber', 'Barry', 'Bell', 'Trace', 'Hugo', 'Nemila', 'Kieran']),
       stage: 0, wins: 0, losses: 0, starter: null
     };
+    // Die eine legendäre Spur dieses Runs — oder keine. Beides steht mit dem
+    // Startwert fest, damit ein geladener Spielstand dieselbe Antwort gibt.
+    this.legendRegion = Run.rollLegend(this.seed, this.mode);
+    this.legendUsed = false;
     this.scene = null;
     this.state = 'map';
     this.result = null;
@@ -9209,6 +9225,29 @@ button.move-row:hover { border-color: var(--accent); }
   var R = Run.prototype;
 
   R.modeInfo = function () { return MODES[this.mode]; };
+
+  /**
+   * Trägt dieser Run noch sein legendäres Pokémon vor sich her? Sobald es
+   * einmal gegenübersteht — auf der Spur, am Schrein oder als Segen —, ist
+   * das Kontingent des Runs aufgebraucht.
+   */
+  R.legendAvailable = function () {
+    return this.legendRegion >= 0 && !this.legendUsed;
+  };
+
+  /**
+   * Der Wurf, der alles entscheidet: Trägt dieser Run eine legendäre Spur,
+   * und in welcher seiner Regionen liegt sie? Gerechnet wird allein aus dem
+   * Startwert — derselbe Run kommt so immer zur selben Antwort, auch nach
+   * dem Laden eines Spielstands aus einer Fassung, die das noch nicht kannte.
+   * -1 heißt: in diesem Run kommt keines vor.
+   */
+  Run.rollLegend = function (seed, mode) {
+    var rng = PL.rng('legend-' + seed);
+    if (!rng.chance(LEGEND_CHANCE)) return -1;
+    var regions = Math.min(9, (MODES[mode] || MODES.standard).regions);
+    return rng.int(regions);
+  };
 
   Object.defineProperty(R, 'levelCap', {
     get: function () {
@@ -9308,10 +9347,11 @@ button.move-row:hover { border-color: var(--accent); }
     if (this.leagueStage < 0 && this.region % 2 === 1 && this.rival && this.rival.stage < 4) {
       mustHave.push('rival');
     }
-    // Ab der zweiten Region hält sich in jeder eine legendäre Spur. Fangen ist
-    // schwer genug, dass daraus kein Selbstläufer wird — aber begegnen soll man
-    // ihnen wirklich, und nicht nur davon hören.
-    if (this.leagueStage < 0 && this.region >= 1) mustHave.push('legend');
+    // Die legendäre Spur, wenn dieser Run eine trägt und sie hier liegt.
+    // Höchstens eine je Run — welche Region es trifft, entschied der Start.
+    if (this.leagueStage < 0 && this.region === this.legendRegion && this.legendAvailable()) {
+      mustHave.push('legend');
+    }
     var middleSlots = [];
     for (r = 1; r < rows - 1; r++) for (i = 0; i < map[r].length; i++) middleSlots.push(map[r][i]);
     rng.shuffle(middleSlots);
@@ -9420,7 +9460,9 @@ button.move-row:hover { border-color: var(--accent); }
 
     switch (node.type) {
       case 'wild': return this.setScene({ kind: 'battle', battle: this.makeWild(rng), node: node });
-      case 'legend': return this.setScene({ kind: 'battle', battle: this.makeLegend(rng), node: node });
+      case 'legend':
+        this.legendUsed = true;
+        return this.setScene({ kind: 'battle', battle: this.makeLegend(rng), node: node });
       case 'trainer': return this.setScene({ kind: 'battle', battle: this.makeTrainer(rng), node: node });
       case 'elite': return this.setScene({ kind: 'battle', battle: this.makeTrainer(rng, { elite: true }), node: node });
       case 'rival': return this.setScene({ kind: 'battle', battle: this.makeRival(rng), node: node });
@@ -9476,7 +9518,11 @@ button.move-row:hover { border-color: var(--accent); }
 
   R.makeBlessing = function (rng) {
     var pool = BLESSINGS.slice();
-    if (this.party.length >= 6) pool = pool.filter(function (b) { return b.id !== 'legende'; });
+    // Auch hier gilt die Obergrenze: Wer sein legendäres Pokémon schon hatte
+    // — oder in diesem Run keines bekommt —, dem wird auch keines angeboten.
+    if (this.party.length >= 6 || !this.legendAvailable()) {
+      pool = pool.filter(function (b) { return b.id !== 'legende'; });
+    }
     return { kind: 'blessing', offers: rng.sample(pool, 3), loop: this.loop() };
   };
 
@@ -9499,6 +9545,7 @@ button.move-row:hover { border-color: var(--accent); }
         });
         return 'Jedes Teammitglied hat kräftig zugelegt.';
       case 'legende': {
+        this.legendUsed = true;
         var pool = dex.species.filter(function (sp) {
           return !sp.bo && !sp.f && dex.isLegendary(sp) && !dex.isRestricted(sp);
         });
@@ -9783,6 +9830,7 @@ button.move-row:hover { border-color: var(--accent); }
 
   /** Ein legendäres Pokémon als seltene, freiwillige Herausforderung. */
   R.makeLegendary = function (rng) {
+    this.legendUsed = true;
     var level = Math.min(100, this.levelCap + 2);
     var pool = dex.species.filter(function (sp) {
       return !sp.bo && !sp.f && dex.isLegendary(sp) && !dex.isRestricted(sp) && sp.bst >= 570;
@@ -10520,6 +10568,7 @@ button.move-row:hover { border-color: var(--accent); }
       regionCatches: this.regionCatches || 0,
       graveyard: this.graveyard || [], rival: this.rival,
       levelBonus: this.levelBonus || 0, pendingBlessing: this.pendingBlessing || null,
+      legendRegion: this.legendRegion, legendUsed: !!this.legendUsed,
       bossHint: this.bossHint || null,
       pendingNode: this.pendingNode || null,
       seenEvents: this.seenEvents || {}, masterballUsed: this.masterballUsed, result: this.result,
@@ -10536,6 +10585,10 @@ button.move-row:hover { border-color: var(--accent); }
     run.state = 'map';
     run.pendingLevelUps = [];
     run.history = run.history || [];
+    // Spielstände von vorher kannten die legendäre Spur noch nicht; der Wurf
+    // hängt nur am Startwert und lässt sich deshalb nachholen.
+    if (run.legendRegion === undefined) run.legendRegion = Run.rollLegend(run.seed, run.mode);
+    run.legendUsed = !!run.legendUsed;
     // Aus älteren Spielständen können Megasteine kommen, die es nicht mehr gibt.
     Object.keys(run.bag || {}).forEach(function (id) {
       if (!PL.items.get(id)) delete run.bag[id];
@@ -10617,7 +10670,7 @@ button.move-row:hover { border-color: var(--accent); }
 
   var NODE_BASE = {
     rest: 30, catch: 40, relic: 78, shop: 44, item: 44, event: 40,
-    wild: 34, trainer: 44, elite: 50, rival: 60, legend: 88,
+    wild: 34, trainer: 44, elite: 50, rival: 60, legend: 130,
     boss: 100, e4: 100, champ: 100
   };
 
@@ -10649,8 +10702,9 @@ button.move-row:hover { border-color: var(--accent); }
         if (supplies(run, 'heal') < 3) v += 20;
         break;
       case 'legend':
-        // Ein legendäres Pokémon ist ein Fang, wie er im ganzen Run kein
-        // zweites Mal kommt — aber nur, wenn das Team ihn übersteht.
+        // Es ist der einzige legendäre Fang, den dieser Run zu bieten hat —
+        // und die meisten Runs haben gar keinen. Daran geht der Automat nicht
+        // vorbei, solange das Team den Kampf übersteht.
         if (supplies(run, 'ball') < 2) v -= 55;
         v -= wounded * 130;
         if (supplies(run, 'heal') < 3) v -= 45;

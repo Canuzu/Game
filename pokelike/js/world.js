@@ -819,7 +819,12 @@
     },
     {
       id: 'legendenschrein', title: 'Schrein der Legenden',
-      available: function (run) { return run.region >= 5 || run.leagueStage >= 0; },
+      // Nur, solange der Run sein einziges legendäres Pokémon noch vor sich
+      // hat: Sonst steht hier nichts hinter dem Siegel.
+      available: function (run) {
+        if (run.legendAvailable && !run.legendAvailable()) return false;
+        return run.region >= 5 || run.leagueStage >= 0;
+      },
       text: 'Ein Schrein, älter als jede Aufzeichnung. Hinter dem Siegel bewegt sich etwas Großes — und es hat dich bemerkt.',
       options: [
         { label: 'Das Siegel brechen', desc: 'Kampf gegen ein legendäres Pokémon. Fangen erlaubt.',
