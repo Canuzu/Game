@@ -296,6 +296,20 @@ await page.evaluate(() => globalThis.PokelikeApp.show('dex'));
 await page.waitForSelector('.dex-grid');
 check('Pokédex zeigt Einträge', (await page.locator('.dex-cell').count()) > 100);
 check('Gefangenes ist eingetragen', (await page.locator('.dex-cell.caught').count()) >= 1);
+
+// Der Eintrag zeigt die Entwicklungskette — samt Bedingung
+await page.locator('.dex-cell.caught').first().click();
+await page.waitForSelector('.dex-entry');
+{
+  const kette = page.locator('.dex-evo');
+  check('Der Pokédex-Eintrag zeigt die Entwicklung', (await kette.count()) === 1);
+  const glieder = await page.locator('.dex-evo .evo-mon').count();
+  check('… mit mehr als einer Stufe', glieder >= 2, String(glieder));
+  const pfeile = (await page.locator('.dex-evo .evo-arrow').allInnerTexts()).join(' | ');
+  check('… und nennt Level oder Stein', /Lv \d+|stein|Stein/.test(pfeile), pfeile);
+}
+await page.getByRole('button', { name: 'Schließen' }).click();
+await page.waitForSelector('.dex-entry', { state: 'detached' });
 if (SHOT_DIR) await page.screenshot({ path: join(SHOT_DIR, '07-dex.png') });
 
 await page.evaluate(() => globalThis.PokelikeApp.show('stats'));

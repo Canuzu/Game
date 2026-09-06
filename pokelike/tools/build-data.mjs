@@ -382,7 +382,6 @@ for (const s of speciesList) {
     ab: [s.abilities[0], s.abilities[1]].filter(Boolean),
     g: s.gen,
     wt: s.weightkg,
-    ht: s.heightm,
     eg: s.eggGroups,
     lv: lv.flat(),                                   // [moveIdx, lvl, moveIdx, lvl, ...]
     tm: [...pool].filter((i) => !levelUp.has(i)).sort((a, b) => a - b),

@@ -7,7 +7,7 @@
  * Die zweite Fassung lässt Doctype, <html>, <head> und <body> weg — für
  * Umgebungen, die den Seitenrahmen selbst mitbringen.
  */
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, copyFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execSync } from 'node:child_process';
@@ -19,9 +19,11 @@ let html = readFileSync(join(ROOT, 'index.html'), 'utf8');
 
 // Eingebettete Sprites, falls tools/build-sprites.mjs sie erzeugt hat. Die
 // Mehrdatei-Fassung lädt stattdessen die animierten Bilder aus dem Netz.
-if (existsSync(join(ROOT, 'data', 'sprites.js'))) {
-  html = html.replace('<script src="data/dex.js"></script>',
-    '<script src="data/dex.js"></script>\n<script src="data/sprites.js"></script>');
+// Ganz ans Ende, hinter den Startbefehl: Der Titelbildschirm steht dann
+// schon, während die fünf Megabyte Bilder noch über die Leitung kommen.
+const spritesAmEnde = existsSync(join(ROOT, 'data', 'sprites.js'));
+if (spritesAmEnde) {
+  html = html.replace('</body>', '<script src="data/sprites.js"></script>\n</body>');
 }
 
 // Stylesheet einbetten
@@ -57,5 +59,10 @@ mkdirSync(dirname(out), { recursive: true });
 writeFileSync(out, html);
 if (!fragment) {
   writeFileSync(join(ROOT, 'dist', 'version.json'), JSON.stringify({ build }) + '\n');
+  // Das Manifest gehört neben die Seite: Ohne es ist die Kachel auf dem
+  // Startbildschirm namenlos. In der Einzeldatei-Fassung zeigt der Verweis
+  // ins Leere — das stört dort niemanden, iOS nimmt ohnehin das
+  // apple-touch-icon aus dem Kopf der Seite.
+  copyFileSync(join(ROOT, 'manifest.webmanifest'), join(ROOT, 'dist', 'manifest.webmanifest'));
 }
 console.log(out, '(' + (html.length / 1048576).toFixed(2) + ' MB)', '· Fassung ' + build);

@@ -1295,6 +1295,14 @@ button.move-row:hover { border-color: var(--accent); }
 
 /* Der Lautstärkeregler. Die Bahn ist überall gleich, der Knopf muss auf dem
    Telefon mit dem Daumen zu treffen sein — deshalb 26 Pixel und nicht 14. */
+.dex-evo { margin-top: .9rem; border-top: 1px solid var(--line); padding-top: .7rem; }
+.dex-evo h4 { margin: 0 0 .5rem; font-size: .9rem; }
+.evo-chain { display: flex; align-items: center; flex-wrap: wrap; gap: .3rem; }
+.evo-step { display: flex; align-items: center; gap: .3rem; }
+.evo-arrow { color: var(--muted); font-size: .78rem; white-space: nowrap; }
+.evo-mon { display: flex; flex-direction: column; align-items: center; width: 74px; text-align: center; }
+.evo-mon span { font-size: .72rem; line-height: 1.15; }
+
 .slider-row { display: flex; align-items: center; gap: .7rem; min-width: 210px; }
 .slider-value {
   min-width: 3.4em; text-align: right; font-variant-numeric: tabular-nums;

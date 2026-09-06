@@ -9,6 +9,10 @@ version.json        die Kennung der ausgelieferten Fassung. Die Seite holt sie
                     beim Start und lädt sich neu, wenn sie älter ist — sonst
                     spielt man auf dem Startbildschirm des Telefons ewig die
                     Fassung, die der Browser einmal weggelegt hat.
+manifest.webmanifest  Name, Farben und Symbol für die Kachel auf dem
+                    Startbildschirm. iOS nimmt stattdessen das
+                    apple-touch-icon aus dem Kopf der Seite; beides erzeugt
+                    tools/build-icons.mjs.
 schach/             Schach, unter eigener Adresse und ohne Verbindung dorthin
                     → https://canuzu.github.io/Game/schach/
 pokelike/           nur eine Weiterleitung auf die Startadresse, damit ein
@@ -39,9 +43,14 @@ Pokélike+:
     node tools/build-single.mjs
     cp dist/pokelike.html ../docs/index.html
     cp dist/version.json ../docs/version.json
+    cp dist/manifest.webmanifest ../docs/manifest.webmanifest
 
-Beide Dateien gehören zusammen und müssen im selben Aufwasch hoch: Die
+Die drei Dateien gehören zusammen und müssen im selben Aufwasch hoch: Die
 Kennung in version.json muss die der ausgelieferten index.html sein.
+
+Das Symbol und das Manifest werden nur neu gebaut, wenn sich das Symbol
+ändert: `node tools/build-icons.mjs` (schreibt manifest.webmanifest und
+den Symbolblock im Kopf von pokelike/index.html).
 
 Schach: Der Zweig `gh-pages` wird vom Workflow des Schach-Zweigs weiter
 gefüllt, ausgeliefert wird er aber nicht mehr — GitHub Pages kann nur

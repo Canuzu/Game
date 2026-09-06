@@ -196,9 +196,12 @@
       PL.audio.play(PL.audio.trackFor(bt.aiLevel >= 3 ? 'boss' : 'battle', bt.biome));
       return;
     }
+    // Jede Region hat ihr eigenes Stück; in der Liga spielt keines von ihnen.
+    var region = (run && run.leagueStage < 0) ? run.currentRegion() : null;
+    PL.audio.setRegion(region ? region.gen : 0);
     var biome = 'wiese';
     if (run && PL.scenery && run.leagueStage < 0) {
-      var list = PL.scenery.regionBiomes[run.currentRegion().id];
+      var list = PL.scenery.regionBiomes[region.id];
       biome = (list && list[0]) || 'wiese';
     } else if (run && run.leagueStage >= 0) biome = 'liga';
     if (screen === 'scene' && run && run.scene && run.scene.kind === 'shop') biome = 'stadt';
@@ -2327,7 +2330,13 @@
     });
   }
 
-  function openEvolveDialog(done) {
+  /**
+   * Entwicklungen zur Auswahl. Ohne `nur` gilt es fürs ganze Team (so ruft es
+   * der Rastplatz), mit `nur` für ein einzelnes Pokémon (so ruft es der
+   * Team-Bildschirm). Ein Stein wird hier direkt aus dem Beutel genommen —
+   * dafür muss niemand mehr einen Rastplatz suchen.
+   */
+  function openEvolveDialog(done, nur) {
     var run = App.run;
 
     // Der Automat entwickelt alles, was bereit ist — Entwicklungen sind
@@ -2348,34 +2357,51 @@
     }
 
     var rows = [];
-    run.party.forEach(function (mon) {
+    (nur ? [nur] : run.party).forEach(function (mon) {
       var list = mons.evolutions(mon, { items: run.bag });
       list.forEach(function (evo) {
+        var stein = evo.how === 'useItem';
+        var vorrat = stein ? (run.bag[PL.util.toID(evo.item)] || 0) : 0;
         rows.push(el('button', {
           className: 'option' + (evo.ready ? '' : ' disabled'), type: 'button', disabled: !evo.ready,
           onclick: function () {
-            if (evo.item && run.bag[PL.util.toID(evo.item)]) run.removeItem(PL.util.toID(evo.item), 1);
+            if (stein) run.removeItem(PL.util.toID(evo.item), 1);
             var from = mons.name(mon);
             mons.evolve(mon, evo.to, run.rng);
             run.stats.evolutions++;
             meta.noteOwned(mon);
             meta.save();
+            autosave();
             U.toast(from + ' entwickelt sich zu ' + mons.name(mon) + '!');
             if (done) done();
           }
         }, [
-          el('strong', { text: mons.name(mon) + ' → ' + T.species(evo.to) }),
-          el('span', { className: 'muted', text: evo.ready ? 'Bereit' : 'Bedingung: ' + evo.text })
+          el('strong', { text: (nur ? '' : mons.name(mon) + ' → ') + T.species(evo.to) }),
+          el('span', { className: 'muted', text: stein
+            ? (evo.ready ? evo.text + ' benutzen (' + vorrat + ' im Beutel)' : evo.text + ' fehlt')
+            : (evo.ready ? 'Bereit — ' + evo.text : 'Ab ' + evo.text) })
         ]));
       });
     });
-    if (!rows.length) rows.push(el('p', { text: 'Im Moment kann sich niemand entwickeln.' }));
+    if (!rows.length) {
+      rows.push(el('p', { text: nur
+        ? mons.name(nur) + ' ist am Ende seiner Entwicklung angekommen.'
+        : 'Im Moment kann sich niemand entwickeln.' }));
+    }
     U.modal({
-      title: 'Entwicklungen',
+      title: nur ? 'Entwicklung: ' + mons.name(nur) : 'Entwicklungen',
       wide: true,
       content: el('div', { className: 'option-list' }, rows),
       actions: [{ label: 'Schließen', onClick: done }]
     });
+  }
+
+  /** Steht bei diesem Pokémon gerade eine Entwicklung an? */
+  function evolveHint(mon) {
+    var list = mons.evolutions(mon, { items: App.run.bag });
+    if (!list.length) return { label: '💠 Entwickeln', bereit: false, moeglich: false };
+    var bereit = list.some(function (e) { return e.ready; });
+    return { label: bereit ? '✨ Entwickeln!' : '💠 Entwickeln', bereit: bereit, moeglich: true };
   }
 
   /* ---------- 6) Team ---------------------------------------------------------------- */
@@ -2436,7 +2462,15 @@
           mon.item ? '🎒 ' + PL.items.label(mon.item) + ' abnehmen/tauschen' : '🎒 Gegenstand geben'),
         el('button', { className: 'btn', type: 'button', onclick: function () { openUseItem(mon, drawDetail); } }, '🧪 Gegenstand benutzen'),
         el('button', { className: 'btn', type: 'button', onclick: function () { openTeachTM(mon, drawDetail); } }, '💿 TM beibringen'),
-        el('button', { className: 'btn', type: 'button', onclick: function () { openEvolveDialog(function () { drawList(); drawDetail(); }); } }, '💠 Entwickeln'),
+        (function () {
+          var hint = evolveHint(mon);
+          return el('button', {
+            className: 'btn' + (hint.bereit ? ' primary' : ''), type: 'button',
+            disabled: !hint.moeglich,
+            title: hint.moeglich ? '' : 'Diese Art entwickelt sich nicht weiter',
+            onclick: function () { openEvolveDialog(function () { drawList(); drawDetail(); }, mon); }
+          }, hint.label);
+        })(),
         sel.index > 0 ? el('button', {
           className: 'btn', type: 'button', title: 'Alternative zum Ziehen',
           onclick: function () {
@@ -2836,6 +2870,50 @@
     ]);
   };
 
+  /**
+   * Die Entwicklungskette einer Art — woher sie kommt und wohin sie führt.
+   * Gerade weil die Bedingungen hier andere sind als in den Spielen (kein
+   * Tausch, keine Uhrzeit), ist das die Stelle, an der man nachschaut.
+   */
+  function dexEvoChain(sp) {
+    function glied(art, bedingung) {
+      return el('div', { className: 'evo-step' }, [
+        bedingung ? el('span', { className: 'evo-arrow', text: bedingung }) : null,
+        el('div', { className: 'evo-mon' }, [
+          U.sprite(art, { className: 'tiny' }),
+          el('span', { text: T.species(art) })
+        ])
+      ]);
+    }
+    // Zuerst hinauf zur Grundform, dann die ganze Linie wieder hinunter.
+    var wurzel = sp, schutz = 0;
+    while (wurzel.pv !== undefined && dex.sp(wurzel.pv) && schutz++ < 6) wurzel = dex.sp(wurzel.pv);
+
+    var reihen = [glied(wurzel, null)], hier = wurzel;
+    schutz = 0;
+    while (hier && hier.ev && hier.ev.length && schutz++ < 6) {
+      var naechste = hier.ev.map(function (i) { return dex.sp(i); }).filter(Boolean);
+      var vorher = hier;
+      naechste.forEach(function (zu) { reihen.push(glied(zu, bedingungText(vorher, zu))); });
+      // Nur eine Fortsetzung lässt sich weiterverfolgen; bei einer Gabelung —
+      // Evoli — stehen die Wege nebeneinander, und hier ist Schluss.
+      hier = naechste.length === 1 ? naechste[0] : null;
+    }
+    if (reihen.length < 2) return null;
+    return el('div', { className: 'dex-evo' }, [
+      el('h4', { text: 'Entwicklung' }),
+      el('div', { className: 'evo-chain' }, reihen)
+    ]);
+  }
+
+  /** Was verlangt der Schritt von einer Art zur nächsten? */
+  function bedingungText(von, zu) {
+    var liste = mons.evolutions({ sp: von.i, lvl: 1, moves: [], item: null }, {});
+    var treffer = liste.filter(function (e) { return e.to.i === zu.i; })[0];
+    if (!treffer) return '→';
+    return treffer.how === 'useItem' ? '→ ' + treffer.text : '→ Lv ' + treffer.level;
+  }
+
   function openDexEntry(sp, known) {
     if (!known) return;
     var m = meta.load();
@@ -2847,7 +2925,9 @@
       el('div', {}, [
         el('h3', { text: T.species(sp) + ' · Nr. ' + sp.num }),
         el('div', { className: 'mon-detail-types' }, sp.t.map(function (t) { return U.typeChip(t); })),
-        el('p', { className: 'muted', text: 'Generation ' + sp.g + ' · ' + sp.wt + ' kg · ' + sp.ht + ' m' }),
+        // Eine Körpergröße führen die Daten nicht — sie stand hier als
+        // »undefined m«, seit es diesen Bildschirm gibt.
+        el('p', { className: 'muted', text: 'Generation ' + sp.g + ' · ' + sp.wt + ' kg' }),
         el('p', { className: 'muted', text: 'Fähigkeiten: ' +
           mons.abilityOptions(sp).map(function (a) { return T.ability(a); }).join(', ') }),
         el('div', { className: 'stat-block' }, PL.STATS.map(function (key, i) {
@@ -2857,7 +2937,8 @@
             el('div', { className: 'stat-bar' }, el('i', { style: { width: Math.min(100, sp.bs[i] / 2.55) + '%' } }))
           ]);
         })),
-        el('p', { text: 'Basiswertsumme ' + sp.bst + (m.caught[sp.i] ? ' · ' + m.caught[sp.i] + '× gefangen' : '') })
+        el('p', { text: 'Basiswertsumme ' + sp.bst + (m.caught[sp.i] ? ' · ' + m.caught[sp.i] + '× gefangen' : '') }),
+        dexEvoChain(sp)
       ])
     ]);
     U.modal({ title: T.species(sp), wide: true, content: content, actions: [{ label: 'Schließen', primary: true }] });
@@ -3350,6 +3431,10 @@
   App.sfx = sfx;
   root.PokelikeApp = App;
 
-  if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', boot);
-  else boot();
+  // Gestartet wird sofort. Die Skripte stehen hinter der Oberfläche im
+  // Dokument, die Elemente sind also da — und die eingebetteten Sprites stehen
+  // dahinter: fünf Megabyte, auf die niemand warten muss, bis das Titelbild
+  // steht. Sie melden sich später von selbst an; wer vorher gezeichnet wird,
+  // holt sein Bild so lange aus dem Netz.
+  boot();
 })(typeof globalThis !== 'undefined' ? globalThis : this);

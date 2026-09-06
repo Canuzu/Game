@@ -1471,6 +1471,66 @@ section('Jeder Run seine eigene Auswahl');
   check('Wilde Begegnungen halten sich an die Auswahl', fremd === 0, fremd + ' Ausreißer');
 }
 
+section('Musik: jede Region ihr eigenes Stück');
+{
+  await import('../js/audio.js');
+  const A = PL.audio;
+  const noten = /^[A-G](#|b)?(-?\d)$/;
+  let kaputt = [];
+  for (let g = 1; g <= 9; g++) {
+    const t = A.regionTracks[g];
+    if (!t) { kaputt.push('Generation ' + g + ' fehlt'); continue; }
+    ['melody', 'chords', 'low', 'beat'].forEach((k) => {
+      if (!t[k] || t[k].length !== 64) kaputt.push('Gen ' + g + ' ' + k + ': ' + (t[k] || []).length + ' Schritte');
+    });
+    ['melody', 'chords', 'low'].forEach((k) => {
+      (t[k] || []).forEach((n, i) => {
+        if (n !== '.' && n !== '-' && !noten.test(n)) kaputt.push('Gen ' + g + ' ' + k + '[' + i + '] = ' + n);
+      });
+    });
+    (t.beat || []).forEach((b, i) => {
+      if (!/^[khs.]$/.test(b)) kaputt.push('Gen ' + g + ' beat[' + i + '] = ' + b);
+    });
+    if (!(t.bpm >= 80 && t.bpm <= 200)) kaputt.push('Gen ' + g + ' Tempo ' + t.bpm);
+  }
+  eq('Alle neun Regionen haben ein spielbares Stück', kaputt.length, 0, kaputt.join('; '));
+
+  // Sie müssen sich auch unterscheiden — sonst wäre die Mühe umsonst.
+  const melodien = new Set(), tempi = new Set();
+  for (let g = 1; g <= 9; g++) {
+    melodien.add(A.regionTracks[g].melody.join(' '));
+    tempi.add(A.regionTracks[g].bpm);
+  }
+  eq('Neun verschiedene Melodien', melodien.size, 9);
+  check('Und mindestens sieben verschiedene Tempi', tempi.size >= 7, [...tempi].join(', '));
+
+  // Stadt und Höhle werden in die Tonart der Region gerückt.
+  {
+    const stadt = A.tracks.town;
+    const johto = A.regionVariant('town', 2);        // +7 Halbtöne
+    check('Das Stadtstück steht in der Tonart der Region', johto !== stadt);
+    eq('… mit gleich vielen Schritten', johto.melody.length, stadt.melody.length);
+    const alsZahl = (n) => {
+      const stufe = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+      const m = /^([A-G])(#|b)?(-?\d)$/.exec(n);
+      return ((+m[3] + 1) * 12) + stufe[m[1]] + (m[2] === '#' ? 1 : m[2] === 'b' ? -1 : 0);
+    };
+    let daneben = 0;
+    stadt.melody.forEach((n, i) => {
+      if (n === '.' || n === '-') { if (johto.melody[i] !== n) daneben++; return; }
+      if (alsZahl(johto.melody[i]) - alsZahl(n) !== 7) daneben++;
+    });
+    eq('Jeder Ton genau sieben Halbtöne höher', daneben, 0);
+    check('Kanto braucht keine Verschiebung', A.regionVariant('town', 1) === stadt);
+  }
+
+  // Ohne Tonausgabe darf nichts davon abstürzen.
+  A.setRegion(4);
+  A.play('route');
+  A.setRegion(0);
+  check('Ohne Lautsprecher läuft es trotzdem durch', true);
+}
+
 section('Entwicklungen: Level und Stein');
 {
   const run = new PL.Run({ seed: 606, starter: 'charmander' });
