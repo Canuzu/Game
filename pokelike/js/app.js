@@ -452,12 +452,19 @@
     }
 
     if (!st.available) {
-      host.appendChild(el('p', {}, [
+      host.appendChild(embedded() ? el('p', {}, [
         el('strong', { text: '☁ Kein Wolkenspeicher hier. ' }),
-        'Dein Stand liegt nur im Speicher dieses Browsers. Manche Browser werfen ' +
-        'den Speicher eingebetteter Seiten weg, sobald der Tab zugeht — wenn dir ' +
-        'dein Fortschritt verloren geht, liegt es daran. Sichere ihn dann unten ' +
-        'als Text oder Datei.'
+        'Das Spiel läuft in einem Rahmen auf fremder Adresse, und manche Browser ' +
+        'werfen den Speicher solcher Seiten weg, sobald der Tab zugeht — wenn dir ' +
+        'dein Fortschritt verloren geht, liegt es daran. Öffne das Spiel unter ' +
+        'seiner eigenen Adresse, dann hält der Speicher wie bei jeder normalen ' +
+        'Seite; oder sichere den Stand hier unten als Text.'
+      ]) : el('p', {}, [
+        el('strong', { text: '💾 Alles im Browser dieses Geräts. ' }),
+        'Das Spiel läuft unter seiner eigenen Adresse — der Speicher hält hier ' +
+        'wie bei jeder normalen Seite: geschlossene Tabs, Neustarts und ' +
+        'Browser-Updates überstehen ihn. Nur ein geleerter Browserspeicher oder ' +
+        'ein Gerätewechsel nicht; dafür gibt es unten die Sicherung.'
       ]));
       return host;
     }
@@ -720,6 +727,14 @@
     return host;
   };
 
+  /**
+   * Läuft das Spiel in einem Rahmen auf fremder Adresse? Nur dann ist der
+   * Browserspeicher gefährdet — als eigene Seite hält er wie überall sonst.
+   */
+  function embedded() {
+    try { return root.top !== root.self; } catch (e) { return true; }
+  }
+
   /** Ein Satz darüber, wie sicher der Fortschritt gerade liegt. */
   function saveNote() {
     if (!meta.available()) {
@@ -727,8 +742,9 @@
         'Speichern — der Fortschritt geht beim Schließen verloren.' });
     }
     var cloud = PL.cloud ? PL.cloud.state() : null;
-    if (cloud && cloud.available) return null;              // alles gut, nichts zu sagen
+    if (cloud && cloud.available) return null;              // Wolke trägt, nichts zu sagen
     if (cloud && cloud.unknown) return null;                // wird noch geprüft
+    if (!embedded()) return null;                           // eigene Seite, alles normal
     return el('p', { className: 'muted small' }, [
       'Dein Fortschritt liegt im Speicher dieses Browsers. Sollte er beim nächsten ' +
       'Öffnen fehlen, wirft dein Browser den Speicher eingebetteter Seiten weg — ',
