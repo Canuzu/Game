@@ -449,12 +449,13 @@ fremden Seite behandeln manche Browser den Speicher als Wegwerfware: Schreiben
 geht, aber beim nächsten Öffnen ist alles fort. Das Spiel merkt selbst, ob es
 eingebettet läuft, und sagt es dann auch. Unter einer **eigenen Adresse**
 passiert das nicht — dort ist es gewöhnlicher Erstanbieter-Speicher und hält
-wie bei jedem normalen Spiel. Genau dafür liegt die fertige Einzeldatei unter
-`docs/index.html`: Ein Schalter unter *Settings → Pages* (Branch, Ordner
-`/docs`) macht daraus eine öffentliche Adresse, die jeder öffnen darf und auf
-der jeder seinen eigenen, haltbaren Stand hat. `js/cloud.js` legt den Stand
-zusätzlich außerhalb des Browsers ab, wo die veröffentlichte Seite die
-Fähigkeit `db` hat — als Zugabe, nicht als Voraussetzung.
+wie bei jedem normalen Spiel. Genau dafür liegt die fertige Einzeldatei als
+`docs/pokelike/index.html` im Zweig und wird von GitHub Pages unter
+<https://canuzu.github.io/Game/> ausgeliefert — eine öffentliche Adresse, die
+jeder öffnen darf und auf der jeder seinen eigenen, haltbaren Stand hat.
+`js/cloud.js` legt den Stand zusätzlich außerhalb des Browsers ab, wo die
+veröffentlichte Seite die Fähigkeit `db` hat — als Zugabe, nicht als
+Voraussetzung.
 
 **Mitnehmen.** Unter *Spielstände → Auf ein anderes Gerät mitnehmen* liegt der
 komplette Stand als Datei (in der veröffentlichten Fassung als echter
