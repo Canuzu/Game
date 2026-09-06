@@ -337,7 +337,7 @@
     var box = el('div', { className: 'modal' + (opts.wide ? ' wide' : '') }, [
       opts.title ? el('h2', { className: 'modal-title', text: opts.title }) : null,
       el('div', { className: 'modal-body' }, opts.content),
-      opts.actions ? el('div', { className: 'modal-actions' }, opts.actions.map(function (a) {
+      opts.actions ? el('div', { className: 'modal-actions' }, opts.actions.filter(Boolean).map(function (a) {
         return el('button', {
           className: 'btn' + (a.primary ? ' primary' : '') + (a.danger ? ' danger' : ''),
           type: 'button',

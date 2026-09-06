@@ -543,7 +543,7 @@
         meta.slots().map(function (slot) { return slotCard(slot, draw); })));
       host.appendChild(el('p', { className: 'section-label', text: 'Auf ein anderes Gerät mitnehmen' }));
       host.appendChild(el('div', { className: 'scene-actions' }, [
-        el('button', { className: 'btn', type: 'button', onclick: openSaveExport }, '⬇ Als Datei sichern'),
+        el('button', { className: 'btn', type: 'button', onclick: openSaveExport }, '⬇ Sichern'),
         el('button', { className: 'btn', type: 'button', onclick: openSaveImport }, '⬆ Einspielen')
       ]));
       if (!meta.available()) {
@@ -2792,20 +2792,26 @@
   /* --- Spielstand sichern und einspielen ------------------------------------- */
 
   /**
-   * Auf der veröffentlichten Seite darf die Seite dem Betrachter eine Datei
-   * anbieten; als heruntergeladene Einzeldatei oder lokal geht das nicht.
-   * Deshalb erscheint der Knopf nur, wenn die Fähigkeit wirklich da ist.
+   * Eine echte Datei anbieten kann nur die veröffentlichte Seite, und auch die
+   * nur, wenn ihr das erlaubt wurde. Überall sonst — als heruntergeladene
+   * Einzeldatei, lokal, in einer öffentlich geteilten Fassung — gibt es diesen
+   * Weg nicht; dann bleibt der Text zum Kopieren, und der Knopf erscheint
+   * gar nicht erst.
    */
+  var downloads = null;                 // null = noch unbekannt, false = geht nicht
+
+  function probeDownloads() {
+    if (!root.claude || typeof root.claude.use !== 'function') { downloads = false; return; }
+    try {
+      root.claude.use('downloads').then(function (dl) { downloads = dl || false; },
+        function () { downloads = false; });
+    } catch (e) { downloads = false; }
+  }
+
   function saveToFile(text, filename) {
-    if (!root.claude || typeof root.claude.use !== 'function') return Promise.resolve(false);
-    return root.claude.use('downloads').then(function (dl) {
-      if (!dl) return false;
-      return dl.save({ filename: filename, data: text }).then(function () { return true; },
-        function (err) {
-          if (err && err.code === 'declined') return false;
-          throw err;
-        });
-    }).catch(function () { return false; });
+    if (!downloads) return Promise.resolve(false);
+    return downloads.save({ filename: filename, data: text })
+      .then(function () { return true; }, function () { return false; });
   }
 
   function openSaveExport() {
@@ -2822,14 +2828,14 @@
         el('p', { className: 'muted small', text: 'Größe: ' + (text.length / 1024).toFixed(1) + ' KB' })
       ]),
       actions: [
-        { label: '💾 Als Datei', close: false, onClick: function () {
+        downloads ? { label: '💾 Als Datei', close: false, onClick: function () {
           var name = 'pokelike-' + (meta.activeProfile() || {}).name + '-' +
             new Date().toISOString().slice(0, 10) + '.json';
           saveToFile(text, name.replace(/[^A-Za-z0-9._-]+/g, '-')).then(function (ok) {
-            U.toast(ok ? 'Als Datei gesichert.' : 'Datei-Sicherung geht hier nicht — nimm den Text.',
-              ok ? 'good' : 'bad');
+            if (!ok) U.toast('Nicht gesichert.', 'bad');
+            else U.toast('Als Datei gesichert.', 'good');
           });
-        } },
+        } } : null,
         { label: '📋 Kopieren', primary: true, close: false, onClick: function () {
           area.focus();
           area.select();
@@ -3035,6 +3041,7 @@
       PL.audio.setVolume(settings().volume === undefined ? 0.5 : settings().volume);
       PL.audio.setEnabled(!!settings().music);
     }
+    probeDownloads();
     doc.addEventListener('keydown', onKey);
     root.addEventListener('beforeunload', function () { autosave(); });
     show('title');
