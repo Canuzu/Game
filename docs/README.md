@@ -1,14 +1,20 @@
 # Die Webseite
 
-Was in diesem Ordner liegt, liefert GitHub Pages unter
-<https://canuzu.github.io/Game/> aus:
+Was in diesem Ordner liegt, liefert GitHub Pages aus:
 
 ```
-index.html          Startseite mit den zwei Spielen
-pokelike/index.html Pokélike+ als eine einzige Datei (~7 MB, alles eingebettet)
-schach/             Schach — Kopie des letzten Standes aus dem Zweig gh-pages
+index.html          Pokélike+ — eine einzige Datei (~7 MB, alles eingebettet)
+                    → https://canuzu.github.io/Game/
+schach/             Schach, unter eigener Adresse und ohne Verbindung dorthin
+                    → https://canuzu.github.io/Game/schach/
+pokelike/           nur eine Weiterleitung auf die Startadresse, damit ein
+                    kurzzeitig verteilter Link nicht ins Leere geht
 .nojekyll           damit GitHub die Dateien nicht durch Jekyll schickt
 ```
+
+Die beiden Spiele sind bewusst getrennt: Wer die Startadresse öffnet,
+landet sofort im Pokémon-Spiel, ohne vorher etwas auswählen zu müssen.
+Es gibt keine Startseite und keine Links zwischen den beiden.
 
 **Warum dieser Ordner überhaupt existiert:** Als eingebettete Seite in
 einem fremden Rahmen wirft mancher Browser den Speicher weg, sobald der
@@ -27,7 +33,7 @@ Pokélike+:
 
     cd pokelike
     node tools/build-single.mjs
-    cp dist/pokelike.html ../docs/pokelike/index.html
+    cp dist/pokelike.html ../docs/index.html
 
 Schach: Der Zweig `gh-pages` wird vom Workflow des Schach-Zweigs weiter
 gefüllt, ausgeliefert wird er aber nicht mehr — GitHub Pages kann nur
