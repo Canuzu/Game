@@ -444,6 +444,18 @@ geschlossenes Fenster nichts kostet. Jeder Platz zeigt, was auf ihm liegt:
 Region und Weg, das Team mit Bildern, Durchschnittslevel, Geld, Modus und
 Zeitpunkt. Speichern, Laden und Löschen sitzen direkt daneben.
 
+**Wo der Stand liegt — und warum das wichtig ist.** Eingebettet in einer
+fremden Seite behandeln manche Browser den Speicher als Wegwerfware: Schreiben
+geht, aber beim nächsten Öffnen ist alles fort. Das Spiel merkt selbst, ob es
+eingebettet läuft, und sagt es dann auch. Unter einer **eigenen Adresse**
+passiert das nicht — dort ist es gewöhnlicher Erstanbieter-Speicher und hält
+wie bei jedem normalen Spiel. Genau dafür liegt die fertige Einzeldatei unter
+`docs/index.html`: Ein Schalter unter *Settings → Pages* (Branch, Ordner
+`/docs`) macht daraus eine öffentliche Adresse, die jeder öffnen darf und auf
+der jeder seinen eigenen, haltbaren Stand hat. `js/cloud.js` legt den Stand
+zusätzlich außerhalb des Browsers ab, wo die veröffentlichte Seite die
+Fähigkeit `db` hat — als Zugabe, nicht als Voraussetzung.
+
 **Mitnehmen.** Unter *Spielstände → Auf ein anderes Gerät mitnehmen* liegt der
 komplette Stand als Datei (in der veröffentlichten Fassung als echter
 Download, sonst als Text zum Kopieren) und lässt sich dort wieder einlesen —
@@ -480,7 +492,8 @@ pokelike/
   js/world.js         Regionen, Trainer, Begegnungen, Ereignisse
   js/run.js           Karte, Knoten, Belohnungen, Fortschritt
   js/autopilot.js     Entscheidungen des Reise-Automaten außerhalb des Kampfes
-  js/meta.js          Speicherstand, Sammlung, Erfolge
+  js/meta.js          Speicherstand, Profile, Plätze, Sammlung, Erfolge
+  js/cloud.js         Spielstand außerhalb des Browsers, wo es ihn gibt
   js/ui.js            Bausteine der Oberfläche
   js/app.js           Bildschirme und Spielsteuerung
   data/sprites.js     eingebettete Pokémon-Sprites (4,9 MB) für die Einzeldatei
