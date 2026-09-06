@@ -275,6 +275,7 @@
       ivFloor: opts.ivFloor || 0,
       hiddenChance: opts.hiddenChance || 0.1,
       shinyOdds: opts.shinyOdds === undefined ? 1 / 400 : opts.shinyOdds,
+      shiny: opts.shiny,
       evs: opts.evs || null,
       item: opts.item || null
     });

@@ -7724,6 +7724,7 @@ button.move-row:hover { border-color: var(--accent); }
       ivFloor: opts.ivFloor || 0,
       hiddenChance: opts.hiddenChance || 0.1,
       shinyOdds: opts.shinyOdds === undefined ? 1 / 400 : opts.shinyOdds,
+      shiny: opts.shiny,
       evs: opts.evs || null,
       item: opts.item || null
     });
@@ -11620,11 +11621,50 @@ button.move-row:hover { border-color: var(--accent); }
     m.seen[sp.i] = 1;
     m.caught[sp.i] = (m.caught[sp.i] || 0) + 1;
     if (mon.shiny) m.shinies[sp.i] = (m.shinies[sp.i] || 0) + 1;
+    afterCatch(m, sp);
+    save();
+    return fresh;
+  }
+
+  /**
+   * Eintragen, ohne mitzuzählen: für alles, was man besitzt, ohne es gefangen
+   * zu haben — Entwicklungen, Geschenke, Eier, Funde. Der Zähler »3× gefangen«
+   * soll davon unberührt bleiben, der Eintrag im Pokédex aber entstehen.
+   * Und wer schillernd ist, bleibt es auch nach der Entwicklung: die neue Art
+   * bekommt ihren eigenen schillernden Eintrag.
+   */
+  function noteOwned(mon) {
+    var m = load(), sp = dex.sp(mon.sp), changed = false;
+    if (!m.seen[sp.i]) { m.seen[sp.i] = 1; changed = true; }
+    if (!m.caught[sp.i]) { m.caught[sp.i] = 1; changed = true; }
+    if (mon.shiny && !m.shinies[sp.i]) { m.shinies[sp.i] = 1; changed = true; }
+    if (changed) afterCatch(m, sp);
+    return changed;
+  }
+
+  /**
+   * Trägt alles ein, was gerade im Team oder in der Box liegt. Das ist das
+   * Sicherheitsnetz: Egal auf welchem Weg ein Pokémon dazugekommen ist —
+   * Entwicklung im Kampf, Ei, Ausgrabung, Segen, Tausch —, spätestens beim
+   * nächsten Speichern steht es im Pokédex. Geschrieben wird nur, wenn sich
+   * wirklich etwas geändert hat.
+   */
+  function noteParty(run) {
+    if (!run) return false;
+    var changed = false;
+    (run.party || []).concat(run.box || []).forEach(function (mon) {
+      if (mon && mon.sp !== undefined && noteOwned(mon)) changed = true;
+    });
+    if (changed) save();
+    return changed;
+  }
+
+  /** Die Auszeichnungen, die an einem neuen Eintrag hängen. */
+  function afterCatch(m, sp) {
     if (dex.isLegendary(sp)) award('legendary');
     var gens = {};
     Object.keys(m.caught).forEach(function (i) { gens[dex.species[i].g] = 1; });
     if (Object.keys(gens).length >= 9) award('dex_all_gens');
-    return fresh;
   }
 
   function dexStats() {
@@ -11885,7 +11925,8 @@ button.move-row:hover { border-color: var(--accent); }
     SLOTS: SLOTS,
     starters: starters, unlockState: unlockState, unlockText: UNLOCK_TEXT,
     achievements: achievements, refreshAchievements: refreshAchievements, award: award,
-    noteSeen: noteSeen, noteCaught: noteCaught, dexStats: dexStats,
+    noteSeen: noteSeen, noteCaught: noteCaught, noteOwned: noteOwned,
+    noteParty: noteParty, dexStats: dexStats,
     ASCENSIONS: ASCENSIONS, maxAscension: maxAscension,
     recordRun: recordRun,
     saveRun: saveRun, loadRun: loadRun, clearRun: clearRun, hasRun: hasRun,
@@ -13578,6 +13619,9 @@ button.move-row:hover { border-color: var(--accent); }
   }
 
   function autosave() {
+    // Erst der Pokédex, dann der Run: Wer im Team oder in der Box liegt, steht
+    // eingetragen — gleich, ob gefangen, entwickelt, geschenkt oder geschlüpft.
+    if (App.run) meta.noteParty(App.run);
     if (App.run && App.run.state !== 'gameover' && App.run.state !== 'victory') meta.saveRun(App.run);
     // Der Browser vergisst eingebettete Seiten gern; die Wolke tut das nicht.
     if (PL.cloud) PL.cloud.touch();
@@ -14411,6 +14455,7 @@ button.move-row:hover { border-color: var(--accent); }
       return;
     }
     App.run = run;
+    meta.noteParty(run);
     // Ein unterbrochener Knoten wird neu betreten — nichts wird übersprungen.
     if (run.pendingNode) {
       var scene = run.enterNode(run.pendingNode.row, run.pendingNode.col, true);
@@ -15235,6 +15280,10 @@ button.move-row:hover { border-color: var(--accent); }
     var bt = App.battle, run = App.run;
     var result = run.finishBattle(bt);
     if (bt.outcome === 'caught' && bt.caught) meta.noteCaught(bt.caught);
+    // Wer im Kampf über sein Level hinausgewachsen ist, hat eine neue Art —
+    // und die gehört in den Pokédex, schillernd wie das Pokémon selbst.
+    result.evolutions.forEach(function (evo) { meta.noteOwned(evo.mon); });
+    meta.noteParty(run);
     run.party.forEach(function (m) { if (m.hp === 1) meta.award('notafraid'); });
     bt.sides[0].team.forEach(function (m) { void m; });
     if (bt.sides[0].megaUsed) meta.award('mega');
@@ -15701,7 +15750,7 @@ button.move-row:hover { border-color: var(--accent); }
           var from = mons.name(r.mon);
           mons.evolve(r.mon, r.evo.to, run.rng);
           run.stats.evolutions++;
-          meta.noteCaught(r.mon);
+          meta.noteOwned(r.mon);
           U.toast(from + ' entwickelt sich zu ' + mons.name(r.mon) + '!');
         });
         meta.save();
@@ -15867,7 +15916,7 @@ button.move-row:hover { border-color: var(--accent); }
         var from = mons.name(r.mon);
         mons.evolve(r.mon, r.evo.to, run.rng);
         run.stats.evolutions++;
-        meta.noteCaught(r.mon);
+        meta.noteOwned(r.mon);
         U.toast(from + ' entwickelt sich zu ' + mons.name(r.mon) + '!');
       });
       meta.save();
@@ -15886,7 +15935,7 @@ button.move-row:hover { border-color: var(--accent); }
             var from = mons.name(mon);
             mons.evolve(mon, evo.to, run.rng);
             run.stats.evolutions++;
-            meta.noteCaught(mon);
+            meta.noteOwned(mon);
             meta.save();
             U.toast(from + ' entwickelt sich zu ' + mons.name(mon) + '!');
             if (done) done();
@@ -16639,6 +16688,7 @@ button.move-row:hover { border-color: var(--accent); }
     var run = App.run;
     setAuto(false);                    // der Run ist vorbei, der Automat auch
     var outcome = run.state === 'victory' ? 'sieg' : 'niederlage';
+    meta.noteParty(run);
     var fresh = meta.recordRun(run, outcome);
     meta.clearRun();
     fresh.forEach(function (a) { U.toast('Erfolg freigeschaltet: ' + a.name, 'good'); });

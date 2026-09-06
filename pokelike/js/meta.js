@@ -349,11 +349,50 @@
     m.seen[sp.i] = 1;
     m.caught[sp.i] = (m.caught[sp.i] || 0) + 1;
     if (mon.shiny) m.shinies[sp.i] = (m.shinies[sp.i] || 0) + 1;
+    afterCatch(m, sp);
+    save();
+    return fresh;
+  }
+
+  /**
+   * Eintragen, ohne mitzuzählen: für alles, was man besitzt, ohne es gefangen
+   * zu haben — Entwicklungen, Geschenke, Eier, Funde. Der Zähler »3× gefangen«
+   * soll davon unberührt bleiben, der Eintrag im Pokédex aber entstehen.
+   * Und wer schillernd ist, bleibt es auch nach der Entwicklung: die neue Art
+   * bekommt ihren eigenen schillernden Eintrag.
+   */
+  function noteOwned(mon) {
+    var m = load(), sp = dex.sp(mon.sp), changed = false;
+    if (!m.seen[sp.i]) { m.seen[sp.i] = 1; changed = true; }
+    if (!m.caught[sp.i]) { m.caught[sp.i] = 1; changed = true; }
+    if (mon.shiny && !m.shinies[sp.i]) { m.shinies[sp.i] = 1; changed = true; }
+    if (changed) afterCatch(m, sp);
+    return changed;
+  }
+
+  /**
+   * Trägt alles ein, was gerade im Team oder in der Box liegt. Das ist das
+   * Sicherheitsnetz: Egal auf welchem Weg ein Pokémon dazugekommen ist —
+   * Entwicklung im Kampf, Ei, Ausgrabung, Segen, Tausch —, spätestens beim
+   * nächsten Speichern steht es im Pokédex. Geschrieben wird nur, wenn sich
+   * wirklich etwas geändert hat.
+   */
+  function noteParty(run) {
+    if (!run) return false;
+    var changed = false;
+    (run.party || []).concat(run.box || []).forEach(function (mon) {
+      if (mon && mon.sp !== undefined && noteOwned(mon)) changed = true;
+    });
+    if (changed) save();
+    return changed;
+  }
+
+  /** Die Auszeichnungen, die an einem neuen Eintrag hängen. */
+  function afterCatch(m, sp) {
     if (dex.isLegendary(sp)) award('legendary');
     var gens = {};
     Object.keys(m.caught).forEach(function (i) { gens[dex.species[i].g] = 1; });
     if (Object.keys(gens).length >= 9) award('dex_all_gens');
-    return fresh;
   }
 
   function dexStats() {
@@ -614,7 +653,8 @@
     SLOTS: SLOTS,
     starters: starters, unlockState: unlockState, unlockText: UNLOCK_TEXT,
     achievements: achievements, refreshAchievements: refreshAchievements, award: award,
-    noteSeen: noteSeen, noteCaught: noteCaught, dexStats: dexStats,
+    noteSeen: noteSeen, noteCaught: noteCaught, noteOwned: noteOwned,
+    noteParty: noteParty, dexStats: dexStats,
     ASCENSIONS: ASCENSIONS, maxAscension: maxAscension,
     recordRun: recordRun,
     saveRun: saveRun, loadRun: loadRun, clearRun: clearRun, hasRun: hasRun,

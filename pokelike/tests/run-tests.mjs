@@ -764,6 +764,79 @@ section('Spielstand sichern');
   delete globalThis.localStorage;
 }
 
+section('Pokédex: eintragen, was man besitzt');
+{
+  const store = {};
+  globalThis.localStorage = {
+    getItem: (k) => (k in store ? store[k] : null),
+    setItem: (k, v) => { store[k] = String(v); },
+    removeItem: (k) => { delete store[k]; }
+  };
+  const meta = PL.meta, dex = PL.dex, mons = PL.mon;
+  meta.reset();
+
+  // Der gemeldete Fall: ein schillerndes Taubsie entwickelt sich zu Taubogen.
+  const taubsie = PL.world.buildMon(new PL.RNG(5), dex.sp('pidgey'), 12, { shiny: true });
+  meta.noteCaught(taubsie);
+  const vorher = dex.sp(taubsie.sp).i;
+  check('Das gefangene Shiny steht schillernd im Pokédex', !!meta.load().shinies[vorher]);
+  check('… und der Eintrag liegt sofort im Speicher',
+    !!JSON.parse(store['pokelike.plus.v1'] || '{}').shinies?.[vorher]);
+
+  const evo = mons.evolutions(taubsie, { force: true })[0];
+  mons.evolve(taubsie, evo.to, new PL.RNG(6));
+  meta.noteOwned(taubsie);
+  const nachher = dex.sp(taubsie.sp).i;
+  check('Nach der Entwicklung ist es eine andere Art', nachher !== vorher);
+  check('Die Entwicklung steht im Pokédex', !!meta.load().caught[nachher]);
+  check('… und zwar schillernd', !!meta.load().shinies[nachher],
+    JSON.stringify(Object.keys(meta.load().shinies)));
+  eq('Eine Entwicklung zählt nicht als zweiter Fang', meta.load().caught[nachher], 1);
+  meta.noteOwned(taubsie);
+  eq('… auch nicht beim zweiten Eintragen', meta.load().caught[nachher], 1);
+
+  // Nicht schillernd bleibt nicht schillernd.
+  const grau = PL.world.buildMon(new PL.RNG(7), dex.sp('rattata'), 10, { shiny: false });
+  meta.noteOwned(grau);
+  check('Wer nicht schillert, bekommt auch keinen Stern', !meta.load().shinies[dex.sp(grau.sp).i]);
+
+  // Das Sicherheitsnetz: alles, was im Team oder in der Box liegt.
+  meta.reset();
+  const run = new PL.Run({ seed: 4242, starter: 'bulbasaur' });
+  run.gainPokemon(new PL.RNG(9), dex.sp('eevee'), 12, 'Geschenk');
+  while (run.party.length < 6) run.party.push(PL.world.buildMon(new PL.RNG(run.party.length + 20), dex.sp('zubat'), 9, {}));
+  run.box.push(PL.world.buildMon(new PL.RNG(31), dex.sp('magikarp'), 9, { shiny: true }));
+  check('Vor dem Speichern ist noch nichts eingetragen', Object.keys(meta.load().caught).length === 0);
+  meta.noteParty(run);
+  const eintraege = meta.load().caught;
+  check('Das Geschenk steht im Pokédex', !!eintraege[dex.sp('eevee').i]);
+  check('Das Startpokémon auch', !!eintraege[dex.sp('bulbasaur').i]);
+  check('Die Box zählt mit', !!eintraege[dex.sp('magikarp').i]);
+  check('… und ein Shiny aus der Box schillert', !!meta.load().shinies[dex.sp('magikarp').i]);
+  eq('Ein zweiter Durchlauf ändert nichts mehr', meta.noteParty(run), false);
+
+  // Und der eigentliche Weg: die Entwicklung nach einem Kampf.
+  {
+    meta.reset();
+    const r2 = new PL.Run({ seed: 99, starter: 'charmander' });
+    const held = r2.party[0];
+    held.shiny = true;
+    held.lvl = Math.max(held.lvl, (mons.evolutions(held, { force: true })[0].to.el || 16));
+    held.exp = 0;
+    const alt = held.sp;
+    const auto = mons.autoEvolution(held);
+    check('Auf diesem Level steht eine Entwicklung an', !!auto);
+    mons.evolve(held, auto.to, r2.rng);
+    meta.noteParty(r2);
+    check('Die im Kampf gewachsene Art steht im Pokédex', !!meta.load().caught[dex.sp(held.sp).i]);
+    check('… schillernd wie das Pokémon selbst', !!meta.load().shinies[dex.sp(held.sp).i]);
+    check('Die Vorstufe bleibt daneben stehen', dex.sp(alt).i !== dex.sp(held.sp).i);
+  }
+
+  meta.reset();
+  delete globalThis.localStorage;
+}
+
 section('Vielfalt der Begegnungen');
 {
   const W = PL.world;

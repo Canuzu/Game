@@ -42,6 +42,9 @@
   }
 
   function autosave() {
+    // Erst der Pokédex, dann der Run: Wer im Team oder in der Box liegt, steht
+    // eingetragen — gleich, ob gefangen, entwickelt, geschenkt oder geschlüpft.
+    if (App.run) meta.noteParty(App.run);
     if (App.run && App.run.state !== 'gameover' && App.run.state !== 'victory') meta.saveRun(App.run);
     // Der Browser vergisst eingebettete Seiten gern; die Wolke tut das nicht.
     if (PL.cloud) PL.cloud.touch();
@@ -875,6 +878,7 @@
       return;
     }
     App.run = run;
+    meta.noteParty(run);
     // Ein unterbrochener Knoten wird neu betreten — nichts wird übersprungen.
     if (run.pendingNode) {
       var scene = run.enterNode(run.pendingNode.row, run.pendingNode.col, true);
@@ -1699,6 +1703,10 @@
     var bt = App.battle, run = App.run;
     var result = run.finishBattle(bt);
     if (bt.outcome === 'caught' && bt.caught) meta.noteCaught(bt.caught);
+    // Wer im Kampf über sein Level hinausgewachsen ist, hat eine neue Art —
+    // und die gehört in den Pokédex, schillernd wie das Pokémon selbst.
+    result.evolutions.forEach(function (evo) { meta.noteOwned(evo.mon); });
+    meta.noteParty(run);
     run.party.forEach(function (m) { if (m.hp === 1) meta.award('notafraid'); });
     bt.sides[0].team.forEach(function (m) { void m; });
     if (bt.sides[0].megaUsed) meta.award('mega');
@@ -2165,7 +2173,7 @@
           var from = mons.name(r.mon);
           mons.evolve(r.mon, r.evo.to, run.rng);
           run.stats.evolutions++;
-          meta.noteCaught(r.mon);
+          meta.noteOwned(r.mon);
           U.toast(from + ' entwickelt sich zu ' + mons.name(r.mon) + '!');
         });
         meta.save();
@@ -2331,7 +2339,7 @@
         var from = mons.name(r.mon);
         mons.evolve(r.mon, r.evo.to, run.rng);
         run.stats.evolutions++;
-        meta.noteCaught(r.mon);
+        meta.noteOwned(r.mon);
         U.toast(from + ' entwickelt sich zu ' + mons.name(r.mon) + '!');
       });
       meta.save();
@@ -2350,7 +2358,7 @@
             var from = mons.name(mon);
             mons.evolve(mon, evo.to, run.rng);
             run.stats.evolutions++;
-            meta.noteCaught(mon);
+            meta.noteOwned(mon);
             meta.save();
             U.toast(from + ' entwickelt sich zu ' + mons.name(mon) + '!');
             if (done) done();
@@ -3103,6 +3111,7 @@
     var run = App.run;
     setAuto(false);                    // der Run ist vorbei, der Automat auch
     var outcome = run.state === 'victory' ? 'sieg' : 'niederlage';
+    meta.noteParty(run);
     var fresh = meta.recordRun(run, outcome);
     meta.clearRun();
     fresh.forEach(function (a) { U.toast('Erfolg freigeschaltet: ' + a.name, 'good'); });
