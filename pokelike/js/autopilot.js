@@ -72,6 +72,9 @@
       case 'rest':
         v += wounded * 150;
         if (supplies(run, 'heal') < 3) v += 25;
+        // Ausgeruht ist der Rastplatz ein Trainingsplatz — und Training ist
+        // der einzige Weg, ohne Kampf Level aufzuholen.
+        if (wounded < 0.3) v += Math.min(70, gap * 4);
         break;
       case 'catch':
         if (run.party.length < 6) v += 60;
@@ -86,10 +89,17 @@
         if (supplies(run, 'heal') < 3) v += 20;
         break;
       case 'wild': case 'trainer': case 'elite': case 'rival':
-        // Erfahrung zählt genau so lange, wie noch Luft bis zur Grenze ist.
-        v += Math.min(60, gap * 9);
-        v -= wounded * 60;
-        if (node.type === 'elite') v -= gap > 4 ? 35 : 0;    // zu früh ist zu hart
+        // Erfahrung ist das Wichtigste überhaupt: Wer hinter der Levelgrenze
+        // zurückbleibt, verliert später gegen Gegner, die es nicht sind.
+        v += Math.min(120, gap * 5);
+        v -= wounded * 70;
+        // Ass-Trainer sind die gefährlichsten Kämpfe auf der Karte — an ihnen
+        // ist schon mancher Run gestorben. Sie lohnen nur ausgeruht.
+        if (node.type === 'elite') {
+          v -= 45;
+          if (wounded > 0.15) v -= 90;
+          if (supplies(run, 'heal') < 4) v -= 40;
+        }
         break;
       case 'relic':
         v -= wounded * 20;
@@ -161,14 +171,46 @@
 
   /* ---------- 4) Gegenstände ------------------------------------------------ */
 
+  /**
+   * Was bringt diese Attacke dem Team? Gerechnet wird der beste Zugewinn über
+   * alle Mitglieder, die sie überhaupt lernen können — eine TM für ein
+   * Pokémon, das man nicht hat, ist bloß ein teurer Datenträger.
+   */
+  function tmGain(run, moveIndex) {
+    var move = dex.move(moveIndex);
+    if (!move) return 0;
+    var best = 0;
+    run.party.forEach(function (mon) {
+      var sp = dex.sp(mon.sp);
+      if (dex.movepool(sp).indexOf(moveIndex) < 0) return;
+      if (mon.moves.some(function (slot) { return slot.m === moveIndex; })) return;
+      var fresh = mons.moveValue(move, sp, mon.lvl);
+      var worst = Infinity;
+      mon.moves.forEach(function (slot) {
+        worst = Math.min(worst, mons.moveValue(dex.move(slot.m), sp, mon.lvl));
+      });
+      if (mon.moves.length < 4) worst = 0;
+      var gain = fresh - worst;
+      if (gain > best) best = gain;
+    });
+    return best;
+  }
+
   /** Wie dringend braucht das Team diesen Gegenstand? */
   function itemWant(run, item) {
     if (!item) return 0;
     var w = 20 + Math.min(40, (item.price || 0) / 90);
+    if (item.kind === 'tm') {
+      // Eine Attacke, die wirklich besser ist, wirkt jeden Kampf lang.
+      return Math.max(1, Math.min(130, tmGain(run, item.move) * 1.6));
+    }
     if (item.kind === 'heal') {
       var have = supplies(run, 'heal');
       w = 120 - have * 14;
       if (/revive/.test(item.id)) w = 100 - have * 8;
+      // Geld, das am Ende übrig ist, hat niemandem geholfen: Wer reich ist,
+      // legt sich ruhig ein größeres Lager an.
+      if (run.money > 8000) w = Math.max(w, 70 - have * 2);
     } else if (item.kind === 'ball') {
       var balls = supplies(run, 'ball');
       w = 70 - balls * 7;
@@ -188,7 +230,16 @@
       var free = run.party.filter(function (m) { return !m.item; }).length;
       w = free ? 55 + Math.min(35, (item.price || 0) / 90) : 20;
     } else if (item.kind === 'boost') {
-      w = 30;
+      // Vitamine sind dauerhafte Werte — das Beste, was man für Geld kriegt.
+      w = /^(hpup|protein|iron|calcium|zinc|carbos)$/.test(item.id) ? 110 : 25;
+    } else if (item.kind === 'special') {
+      // Ein Sonderbonbon ist ein Level. Nichts im Laden wiegt schwerer,
+      // solange das Team hinter der Grenze zurückliegt.
+      if (item.id === 'rarecandy') w = 60 + Math.min(120, levelGap(run) * 8);
+      else if (item.id === 'bottlecap') w = 95;
+      else if (item.id === 'abilitypatch') w = 70;
+      else if (item.id === 'maxelixir') w = 45;
+      else w = 25;
     }
     return Math.max(1, w);
   }
@@ -264,7 +315,7 @@
     });
     entries.forEach(function (row) {
       if (row.entry.sold) return;
-      if (row.want < 30) return;                       // brauchen wir nicht
+      if (row.want < 25) return;                       // brauchen wir nicht
       if (row.entry.price > money) return;
       money -= row.entry.price;
       plan.push(row.i);
@@ -286,9 +337,12 @@
   }
 
   function pickRest(run) {
-    if (hurt(run) > 0.12) return 'heal';
     if (readyEvolutions(run).length) return 'evolve';
-    if (levelGap(run) > 1) return 'train';
+    var wounded = hurt(run), gap = levelGap(run);
+    // Heilen kann auch der Beutel; Erfahrung gibt es hier und sonst nur im
+    // Kampf. Deshalb wird trainiert, solange es nicht wirklich brennt.
+    if (wounded > 0.45) return 'heal';
+    if (gap > 2 && (wounded < 0.3 || supplies(run, 'heal') >= 4)) return 'train';
     return 'heal';
   }
 
@@ -349,7 +403,199 @@
     return best;
   }
 
-  /* ---------- 10) Ein Knoten von Anfang bis Ende ---------------------------- */
+  /* ---------- 10) Das Team pflegen ---------------------------------------------
+   * Der Beutel nützt nichts, solange er voll bleibt. Nach jedem Knoten wird
+   * deshalb ausgepackt: Sonderbonbons machen Level, Vitamine machen Werte,
+   * Kronkorken machen Determinationswerte, und was getragen werden kann, wird
+   * getragen. Genau das unterscheidet ein gepflegtes Team von einem, das mit
+   * vollem Rucksack verhungert.
+   * -------------------------------------------------------------------------- */
+
+  /** Wie gut ist dieses Pokémon für das Team? Level zählt schwer. */
+  function memberScore(mon) {
+    return PL.ai.potential(dex.sp(mon.sp)) * 0.45 + mon.lvl * 7 +
+      (dex.evosLeft(dex.sp(mon.sp)) === 0 ? 40 : 0);
+  }
+
+  /** Der Gegenstand, der einem Pokémon am meisten bringt. */
+  var HOLD_VALUE = {
+    leftovers: 100, lifeorb: 96, focussash: 92, choiceband: 88, choicespecs: 88,
+    choicescarf: 86, assaultvest: 82, expertbelt: 76, rockyhelmet: 62,
+    sitrusberry: 70, lumberry: 68, blacksludge: 20, ejectbutton: 15
+  };
+  function holdValue(it) {
+    if (!it) return 0;
+    if (HOLD_VALUE[it.id] !== undefined) return HOLD_VALUE[it.id];
+    return 25 + Math.min(45, (it.price || 0) / 90);
+  }
+
+  function useOn(run, id, mon, extra) {
+    var it = PL.items.get(id);
+    if (!it || !it.use || !(run.bag[id] > 0)) return false;
+    var res = it.use(null, { team: run.party, activeIndex: run.party.indexOf(mon) }, mon, run, extra);
+    if (res === false) return false;
+    run.removeItem(id, 1);
+    return true;
+  }
+
+  var VITAMINS = [
+    { id: 'hpup', stat: 'hp' }, { id: 'protein', stat: 'atk' }, { id: 'iron', stat: 'def' },
+    { id: 'calcium', stat: 'spa' }, { id: 'zinc', stat: 'spd' }, { id: 'carbos', stat: 'spe' }
+  ];
+
+  /**
+   * Packt den Beutel aus. Liefert kurze Sätze über das, was passiert ist —
+   * die Oberfläche zeigt sie als Hinweise, die Messung ignoriert sie.
+   */
+  function careForTeam(run) {
+    var did = [], guard = 0, i;
+    if (!run.party.length) return did;
+
+    // 1) Sonderbonbons: immer auf das schwächste Mitglied, damit das Team
+    //    zusammenbleibt statt auseinanderzulaufen.
+    var candies = 0;
+    while (run.bag.rarecandy > 0 && guard++ < 200) {
+      var behind = null;
+      for (i = 0; i < run.party.length; i++) {
+        if (run.party[i].lvl >= run.levelCap) continue;
+        if (!behind || run.party[i].lvl < behind.lvl) behind = run.party[i];
+      }
+      if (!behind || !useOn(run, 'rarecandy', behind)) break;
+      candies++;
+    }
+    if (candies) did.push(candies + ' Sonderbonbon' + (candies > 1 ? 's' : '') + ' verteilt.');
+
+    // 2) Vitamine auf das Mitglied, das am meisten daraus macht: der Wert, der
+    //    ohnehin der stärkere ist, wird noch stärker.
+    var vits = 0;
+    guard = 0;
+    for (i = 0; i < VITAMINS.length; i++) {
+      var v = VITAMINS[i];
+      while (run.bag[v.id] > 0 && guard++ < 300) {
+        var best = null, bestScore = -Infinity;
+        run.party.forEach(function (m) {
+          var st = mons.stats(m);
+          var idx = PL.STATS.indexOf(v.stat);
+          var sc = st[idx] + memberScore(m) * 0.1;
+          if (sc > bestScore) { bestScore = sc; best = m; }
+        });
+        if (!best || !useOn(run, v.id, best)) break;
+        vits++;
+      }
+    }
+    if (vits) did.push(vits + ' Vitamin' + (vits > 1 ? 'e' : '') + ' verfüttert.');
+
+    // 3) Kronkorken und Fähigkeits-Pflaster gehören dem besten Mitglied.
+    var star = run.party[0];
+    run.party.forEach(function (m) { if (memberScore(m) > memberScore(star)) star = m; });
+    if (run.bag.bottlecap > 0 && useOn(run, 'bottlecap', star)) {
+      did.push('Silberkronkorken für ' + mons.name(star) + '.');
+    }
+    guard = 0;
+    while (run.bag.abilitypatch > 0 && guard++ < 20 && useOn(run, 'abilitypatch', star)) {
+      did.push('Versteckte Fähigkeit für ' + mons.name(star) + '.');
+    }
+
+    // 4) TMs beibringen, solange sie jemandem wirklich helfen.
+    var taught = teachTMs(run);
+    taught.forEach(function (line) { did.push(line); });
+
+    // 5) Was getragen werden kann, wird getragen.
+    var held = equipItems(run);
+    if (held) did.push(held + ' Gegenstand' + (held > 1 ? 'e' : '') + ' ausgerüstet.');
+
+    // 6) Leere Attacken auffrischen, wenn es eng wird.
+    var empty = 0;
+    run.party.forEach(function (m) {
+      m.moves.forEach(function (slot) { if (slot.pp <= 0) empty++; });
+    });
+    if (empty >= 2 && run.bag.maxelixir > 0) {
+      run.party.forEach(function (m) { useOn(run, 'maxelixir', m); });
+      did.push('Attacken wieder aufgefrischt.');
+    }
+    return did;
+  }
+
+  /**
+   * Bringt die TMs im Beutel dem Pokémon bei, das am meisten davon hat — und
+   * nur, wenn die neue Attacke besser ist als die schwächste, die es kann.
+   */
+  function teachTMs(run) {
+    var out = [];
+    if (!run.tms) return out;
+    Object.keys(run.tms).forEach(function (key) {
+      while (run.tms[key] > 0) {
+        var mi = +key, move = dex.move(mi);
+        if (!move) { delete run.tms[key]; return; }
+        var best = null;
+        run.party.forEach(function (mon) {
+          var sp = dex.sp(mon.sp);
+          if (dex.movepool(sp).indexOf(mi) < 0) return;
+          if (mon.moves.some(function (slot) { return slot.m === mi; })) return;
+          var slot = mon.moves.length < 4 ? -2 : learnSlot(mon, mi);
+          if (slot === -1) return;                       // nichts wäre besser
+          var gain = mons.moveValue(move, sp, mon.lvl);
+          if (!best || gain > best.gain) best = { mon: mon, slot: slot, gain: gain };
+        });
+        if (!best) return;
+        if (best.slot === -2) best.mon.moves.push({ m: mi, pp: move.pp, ppUp: 0, used: 0 });
+        else best.mon.moves[best.slot] = { m: mi, pp: move.pp, ppUp: 0, used: 0 };
+        run.tms[key]--;
+        if (run.tms[key] <= 0) delete run.tms[key];
+        out.push(mons.name(best.mon) + ' lernt ' + PL.t.move(move) + '.');
+      }
+    });
+    return out;
+  }
+
+  /** Verteilt Tragegegenstände aus dem Beutel an alle, die freie Hände haben. */
+  function equipItems(run) {
+    var pool = [];
+    Object.keys(run.bag).forEach(function (id) {
+      var it = PL.items.get(id);
+      if (!it || !it.hold || !(run.bag[id] > 0)) return;
+      for (var k = 0; k < run.bag[id]; k++) pool.push(it);
+    });
+    if (!pool.length) return 0;
+    pool.sort(function (a, b) { return holdValue(b) - holdValue(a); });
+
+    // Die Besten zuerst bedienen — das stärkste Pokémon bekommt das beste Stück.
+    var order = run.party.slice().sort(function (a, b) { return memberScore(b) - memberScore(a); });
+    var n = 0;
+    order.forEach(function (mon) {
+      if (mon.item || !pool.length) return;
+      var it = pool.shift();
+      run.removeItem(it.id, 1);
+      mon.item = it.id;
+      n++;
+    });
+    return n;
+  }
+
+  /**
+   * Holt ein deutlich besseres Pokémon aus der Box ins Team. Ein Tausch lohnt
+   * erst, wenn der Abstand groß ist — sonst wandert ständig jemand hin und her.
+   */
+  function manageParty(run) {
+    if (!run.box || !run.box.length || run.party.length < 6) return null;
+    var worstIndex = 0;
+    run.party.forEach(function (m, i) {
+      if (memberScore(m) < memberScore(run.party[worstIndex])) worstIndex = i;
+    });
+    var bestIndex = 0;
+    run.box.forEach(function (m, i) {
+      if (memberScore(m) > memberScore(run.box[bestIndex])) bestIndex = i;
+    });
+    var gain = memberScore(run.box[bestIndex]) - memberScore(run.party[worstIndex]);
+    if (gain < 60) return null;
+    var out = run.party[worstIndex], into = run.box[bestIndex];
+    run.party[worstIndex] = into;
+    run.box[bestIndex] = out;
+    return mons.name(into) + ' kommt für ' + mons.name(out) + ' ins Team.';
+  }
+
+  /* ---------- 11) Ein Knoten von Anfang bis Ende ---------------------------- */
+
 
   /**
    * Löst eine Szene ohne Oberfläche auf — für tools/balance.mjs und die Tests.
@@ -357,7 +603,8 @@
    */
   function resolveScene(run, scene, hooks) {
     hooks = hooks || {};
-    switch (scene.kind) {
+    var kind = scene.kind;
+    switch (kind) {
       case 'battle':
         if (hooks.battle) hooks.battle(scene.battle);
         break;
@@ -416,6 +663,9 @@
       }
       default: break;
     }
+    // Nach jedem Knoten wird ausgepackt und aufgeräumt.
+    careForTeam(run);
+    manageParty(run);
   }
 
   PL.autopilot = {
@@ -438,6 +688,13 @@
     pickEvent: pickEvent,
     learnSlot: learnSlot,
     tutorPick: tutorPick,
+    memberScore: memberScore,
+    tmGain: tmGain,
+    teachTMs: teachTMs,
+    holdValue: holdValue,
+    equipItems: equipItems,
+    careForTeam: careForTeam,
+    manageParty: manageParty,
     resolveScene: resolveScene
   };
 

@@ -713,6 +713,49 @@ button.move-row:hover { border-color: var(--accent); }
 .toast.out { opacity: 0; transition: opacity .5s ease; }
 @keyframes rise { from { transform: translateY(12px); opacity: 0; } }
 
+/* ---------- 10a) Profile und Speicherplätze ----------------------------------
+ * Speichern wie in einem richtigen Spiel: Wer spielt, steht über allem; die
+ * Plätze zeigen als Karte, was auf ihnen liegt — Region, Weg, Team, Zeitpunkt.
+ * ------------------------------------------------------------------------- */
+
+.profile-bar {
+  display: flex; align-items: center; justify-content: center; gap: .6rem;
+  margin: .2rem 0 1rem;
+}
+.profile-who { display: inline-flex; align-items: center; gap: .3rem; }
+.btn.small { padding: .3rem .6rem; font-size: .82rem; }
+
+.profile-list { display: flex; flex-direction: column; gap: .5rem; }
+.profile-row {
+  display: flex; align-items: stretch; gap: .4rem;
+  border: 1px solid var(--line); background: var(--panel); border-radius: var(--radius);
+  padding: .4rem;
+}
+.profile-row.active { border-color: var(--accent); }
+.profile-pick {
+  flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: .1rem;
+  background: none; border: 0; cursor: pointer; text-align: left; padding: .3rem .5rem;
+}
+.profile-pick:hover { color: var(--accent); }
+
+.slot-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: .7rem; }
+.slot-card {
+  display: flex; flex-direction: column; gap: .5rem;
+  padding: .8rem .9rem; border-radius: var(--radius);
+  background: var(--panel); border: 1px solid var(--line);
+}
+.slot-card.empty { border-style: dashed; }
+.slot-head { display: flex; align-items: baseline; gap: .5rem; }
+.slot-name { color: var(--muted); font-size: .85rem; }
+.slot-body { display: flex; flex-direction: column; gap: .35rem; }
+.slot-line { display: flex; gap: .8rem; flex-wrap: wrap; align-items: center; font-size: .88rem; }
+.slot-team { display: flex; gap: .1rem; flex-wrap: wrap; }
+.slot-mon { width: 40px; height: 40px; object-fit: contain; }
+.slot-mon.out { opacity: .35; filter: grayscale(1); }
+.slot-actions { display: flex; gap: .4rem; flex-wrap: wrap; margin-top: auto; }
+
+.file-pick { display: block; margin: .4rem 0 .6rem; max-width: 100%; }
+
 /* ---------- 10b) Reise-Automat ----------------------------------------------
  * Ein kleiner Schalter unten rechts, der über allem schwebt: Er bleibt auf
  * jedem Bildschirm erreichbar, auch mitten im Kampf, damit man das Steuer
@@ -909,6 +952,8 @@ button.move-row:hover { border-color: var(--accent); }
   .toast-host { bottom: calc(1rem + env(safe-area-inset-bottom)); }
 
   /* Unten rechts ist auf dem Handy wenig Platz: nur noch das Symbol. */
+  .slot-grid { grid-template-columns: minmax(0, 1fr); }
+  .slot-mon { width: 34px; height: 34px; }
   .autopilot-btn { padding: .5rem .55rem; right: calc(.6rem + env(safe-area-inset-right)); }
   .autopilot-label { display: none; }
 
@@ -1161,12 +1206,14 @@ button.move-row:hover { border-color: var(--accent); }
 
 .trainer-art { position: relative; width: 186px; height: 186px; display: grid; place-items: end center; z-index: 1; }
 .slot-enemy .trainer-art { width: 156px; height: 156px; }
+/* Die Trainerbilder kommen aus den Spielen und haben jedes ein eigenes
+   Seitenverhältnis — deshalb steht nur die Höhe fest, die Breite folgt. */
 .trainer-sprite {
-  width: 112px; height: 168px; object-fit: contain;
+  height: 158px; width: auto; max-width: 100%; object-fit: contain;
   image-rendering: pixelated; image-rendering: crisp-edges;
   filter: drop-shadow(0 6px 6px rgba(0,0,0,.4));
 }
-.slot-enemy .trainer-sprite { width: 92px; height: 138px; }
+.slot-enemy .trainer-sprite { height: 132px; }
 
 /* Bildschirmwischer beim Kampfstart */
 .fx-wipe { position: fixed; inset: 0; z-index: 90; pointer-events: none; }
@@ -1183,8 +1230,8 @@ button.move-row:hover { border-color: var(--accent); }
 @media (max-width: 860px) {
   .trainer-art { width: 128px; height: 128px; }
   .slot-enemy .trainer-art { width: 110px; height: 110px; }
-  .trainer-sprite { width: 68px; height: 102px; }
-  .slot-enemy .trainer-sprite { width: 56px; height: 84px; }
+  .trainer-sprite { height: 100px; width: auto; }
+  .slot-enemy .trainer-sprite { height: 86px; width: auto; }
 }
 
 /* ---------- 15) Schnellheilung, Ziehen, Friedhof ---------------------------- */

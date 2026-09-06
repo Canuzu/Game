@@ -745,7 +745,24 @@
    * leaders.js). Was darin fehlt, kommt weiter aus der Klasse und dem
    * Startwert — so bleibt jeder namenlose Trainer ein anderer.
    */
-  function trainer(cls, seed, back, look) {
+  /**
+   * Das echte Spielbild einer Figur, wenn data/trainers.js dabei ist.
+   * Vorne stehen die Trainer unter ihrem Namen (Rocko) oder, wenn es den nicht
+   * gibt, unter ihrer Klasse (Käfersammler); hinten steht die eigene Figur.
+   */
+  function realTrainer(key, back) {
+    var T = root.PL_TRAINERS;
+    if (!T || !key) return null;
+    var table = back ? T.b : T.f;
+    return table && table[key] ? 'data:image/png;base64,' + table[key] : null;
+  }
+
+  function trainer(cls, seed, back, look, who) {
+    var real = back
+      ? (realTrainer(who, true) || realTrainer('rot', true))
+      : (realTrainer(who, false) || realTrainer(cls, false));
+    if (real) return real;
+
     var key = cls + '|' + seed + '|' + (back ? 'b' : 'f') +
       (look ? '|' + [look.skin, look.hair, look.hairdo, look.shirt, look.pants,
         look.cape, look.hat, look.skirt].join(',') : '');
@@ -926,6 +943,7 @@
   PL.scenery = {
     biomes: B, regionBiomes: REGION_BIOMES, nodeBiomes: NODE_BIOMES,
     pick: pick, render: render, platform: platform, tile: tile, trainer: trainer,
+    realTrainer: realTrainer,
     trainerStyles: TRAINER_STYLE, size: { w: W, h: H },
     get: function (id) { return B[id] || B.wiese; },
     list: function () { return Object.keys(B); }

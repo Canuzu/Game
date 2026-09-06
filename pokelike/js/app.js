@@ -321,6 +321,7 @@
         ]),
         el('p', { className: 'tagline', text: 'Ein Roguelike durch neun Generationen. Ein Team, ein Weg, kein Zurück.' })
       ]),
+      profileBar(),
       el('div', { className: 'title-actions' }, [
         meta.hasRun() ? el('button', {
           className: 'btn big primary', type: 'button',
@@ -334,6 +335,7 @@
             } else show('newrun');
           }
         }, '✦ Neuer Run'),
+        el('button', { className: 'btn big', type: 'button', onclick: function () { show('saves'); } }, '💾 Spielstände'),
         el('button', { className: 'btn big', type: 'button', onclick: function () { show('dex'); } }, '📖 Pokédex'),
         el('button', { className: 'btn big', type: 'button', onclick: function () { show('stats'); } }, '📊 Statistik'),
         el('button', { className: 'btn big', type: 'button', onclick: function () { show('settings'); } }, '⚙ Einstellungen')
@@ -347,6 +349,211 @@
       !meta.available() ? el('p', { className: 'warn-note', text: 'Hinweis: Dieser Browser erlaubt kein Speichern — der Fortschritt geht beim Schließen verloren.' }) : null
     ]);
     return wrap;
+  };
+
+  /* ---------- Profile und Speicherplätze ---------------------------------------
+   * Speichern wie in einem richtigen Spiel: Jeder am Gerät hat sein eigenes
+   * Profil mit eigenem Pokédex, eigenen Erfolgen und eigenen Plätzen, und in
+   * jedem Profil liegen drei Plätze plus der Platz, auf den das Spiel von
+   * selbst schreibt.
+   * -------------------------------------------------------------------------- */
+
+  /** Die Zeile unter dem Titel: Wer spielt gerade? */
+  function profileBar() {
+    var p = meta.activeProfile();
+    return el('div', { className: 'profile-bar' }, [
+      el('span', { className: 'profile-who' }, ['👤 ', el('strong', { text: p ? p.name : 'Spieler 1' })]),
+      el('button', {
+        className: 'btn small', type: 'button',
+        title: 'Profil wechseln, anlegen oder umbenennen',
+        onclick: openProfiles
+      }, 'Profil wechseln')
+    ]);
+  }
+
+  function openProfiles() {
+    var box = U.modal({
+      title: 'Wer spielt?',
+      wide: true,
+      content: profileList(function () { box.close(); openProfiles(); }),
+      actions: [{ label: 'Schließen' }]
+    });
+  }
+
+  function profileList(redraw) {
+    var activeId = meta.activeProfileId();
+    var rows = meta.profiles().map(function (p) {
+      var mine = p.id === activeId;
+      return el('div', { className: 'profile-row' + (mine ? ' active' : '') }, [
+        el('button', {
+          className: 'profile-pick', type: 'button',
+          onclick: function () {
+            if (!mine) {
+              meta.switchProfile(p.id);
+              App.run = null;
+              App.battle = null;
+              applyTheme();
+              U.toast('Profil: ' + p.name);
+            }
+            show('title');
+          }
+        }, [
+          el('strong', { text: p.name }),
+          el('span', { className: 'muted small', text: mine ? 'gerade aktiv' : 'wechseln' })
+        ]),
+        el('button', {
+          className: 'btn small', type: 'button', title: 'Umbenennen',
+          onclick: function () {
+            U.prompt('Neuer Name für dieses Profil:', p.name, function (name) {
+              if (name) { meta.renameProfile(p.id, name); redraw(); }
+            });
+          }
+        }, '✎'),
+        meta.profiles().length > 1 ? el('button', {
+          className: 'btn small danger', type: 'button', title: 'Profil löschen',
+          onclick: function () {
+            U.confirm('»' + p.name + '« mit allem Fortschritt und allen Plätzen löschen?', function () {
+              meta.deleteProfile(p.id);
+              if (p.id === activeId) { App.run = null; App.battle = null; }
+              redraw();
+            }, { danger: true });
+          }
+        }, '🗑') : null
+      ]);
+    });
+    rows.push(el('button', {
+      className: 'btn', type: 'button',
+      onclick: function () {
+        U.prompt('Name für das neue Profil:', '', function (name) {
+          meta.createProfile(name);
+          App.run = null;
+          App.battle = null;
+          applyTheme();
+          show('title');
+        });
+      }
+    }, '＋ Neues Profil'));
+    return el('div', { className: 'profile-list' }, rows);
+  }
+
+  /** Ein Platz als Karte: Was steht da, und was kann man damit machen? */
+  function slotCard(slot, redraw) {
+    var info = slot.info;
+    var head = el('div', { className: 'slot-head' }, [
+      el('strong', { text: slot.auto ? '⟳ Letzter Stand' : 'Platz ' + slot.n }),
+      info && info.name ? el('span', { className: 'slot-name', text: info.name }) : null
+    ]);
+
+    var body;
+    if (slot.empty) {
+      body = el('p', { className: 'muted', text: 'Leer.' });
+    } else if (slot.outdated) {
+      body = el('p', { className: 'bad', text: 'Aus einer älteren Fassung — lässt sich nicht mehr laden.' });
+    } else {
+      body = el('div', { className: 'slot-body' }, [
+        el('div', { className: 'slot-line' }, [
+          el('span', { text: info.regionName + ' · Weg ' + info.row }),
+          el('span', { className: 'muted', text: 'Ø Level ' + info.level }),
+          el('span', { className: 'muted', text: U.money(info.money) })
+        ]),
+        el('div', { className: 'slot-team' }, info.team.map(function (m) {
+          var sp = dex.sp(m.sp);
+          return el('img', {
+            className: 'slot-mon' + (m.hp <= 0 ? ' out' : ''), alt: T.species(sp),
+            title: T.species(sp) + ' Lv ' + m.lvl,
+            src: PL.sprite.chain(sp, { shiny: m.shiny })[0]
+          });
+        })),
+        el('div', { className: 'slot-line muted small' }, [
+          el('span', { text: info.mode + (info.nuzlocke ? ' · Nuzlocke' : '') +
+            (info.ascension ? ' · Aufstieg ' + info.ascension : '') }),
+          el('span', { text: info.saved ? new Date(info.saved).toLocaleString('de-DE') : 'läuft gerade' })
+        ])
+      ]);
+    }
+
+    var buttons = [];
+    if (!slot.auto) {
+      buttons.push(el('button', {
+        className: 'btn small', type: 'button', disabled: !App.run,
+        title: App.run ? 'Den laufenden Run hier ablegen' : 'Es läuft gerade kein Run',
+        onclick: function () {
+          var write = function () {
+            meta.saveSlot(slot.n, App.run, App.run.currentRegion ? App.run.currentRegion().name : '');
+            U.toast('Auf Platz ' + slot.n + ' gespeichert.', 'good');
+            redraw();
+          };
+          if (slot.empty) write();
+          else U.confirm('Platz ' + slot.n + ' überschreiben?', write);
+        }
+      }, '💾 Speichern'));
+    }
+    buttons.push(el('button', {
+      className: 'btn small primary', type: 'button', disabled: slot.empty || slot.outdated,
+      onclick: function () {
+        var load = function () {
+          var run = slot.auto ? meta.loadRun() : meta.loadSlot(slot.n);
+          if (!run) { U.toast('Dieser Platz lässt sich nicht laden.', 'bad'); return; }
+          App.run = run;
+          App.battle = null;
+          meta.saveRun(run);
+          U.toast('Weiter geht’s!', 'good');
+          show('map');
+        };
+        if (App.run) U.confirm('Der laufende Run wird dabei ersetzt. Trotzdem laden?', load, { danger: true });
+        else load();
+      }
+    }, '▶ Laden'));
+    if (!slot.auto) {
+      buttons.push(el('button', {
+        className: 'btn small danger', type: 'button', disabled: slot.empty,
+        onclick: function () {
+          U.confirm('Platz ' + slot.n + ' löschen?', function () {
+            meta.deleteSlot(slot.n);
+            redraw();
+          }, { danger: true });
+        }
+      }, '🗑'));
+    }
+
+    return el('div', { className: 'slot-card' + (slot.empty ? ' empty' : '') }, [
+      head, body, el('div', { className: 'slot-actions' }, buttons)
+    ]);
+  }
+
+  SCREENS.saves = function () {
+    var host = el('div', { className: 'saves-screen' });
+
+    function draw() {
+      clear(host);
+      var p = meta.activeProfile();
+      host.appendChild(el('div', { className: 'team-head' }, [
+        el('h2', { text: 'Spielstände' }),
+        el('button', {
+          className: 'btn', type: 'button',
+          onclick: function () { show(App.run ? 'map' : 'title'); }
+        }, 'Zurück')
+      ]));
+      host.appendChild(el('p', { className: 'muted' }, [
+        'Profil ', el('strong', { text: p ? p.name : 'Spieler 1' }),
+        ' — jedes Profil hat seinen eigenen Pokédex, seine eigenen Erfolge und seine eigenen Plätze. ',
+        el('button', { className: 'btn small', type: 'button', onclick: openProfiles }, 'Profil wechseln')
+      ]));
+      host.appendChild(el('div', { className: 'slot-grid' },
+        meta.slots().map(function (slot) { return slotCard(slot, draw); })));
+      host.appendChild(el('p', { className: 'section-label', text: 'Auf ein anderes Gerät mitnehmen' }));
+      host.appendChild(el('div', { className: 'scene-actions' }, [
+        el('button', { className: 'btn', type: 'button', onclick: openSaveExport }, '⬇ Als Datei sichern'),
+        el('button', { className: 'btn', type: 'button', onclick: openSaveImport }, '⬆ Einspielen')
+      ]));
+      if (!meta.available()) {
+        host.appendChild(el('p', { className: 'warn-note',
+          text: 'Dieser Browser erlaubt kein Speichern — hier lässt sich nichts ablegen.' }));
+      }
+    }
+
+    draw();
+    return host;
   };
 
   function stat(label, value) {
@@ -623,6 +830,13 @@
   function backToMap() {
     var run = App.run;
     var before = run.region;
+    // Vor dem Weitergehen räumt der Automat auf: Sonderbonbons, Vitamine,
+    // Tragegegenstände, und wer aus der Box besser ist, kommt ins Team.
+    if (AUTO.on) {
+      autoPilot().careForTeam(run).forEach(function (line) { U.toast(line); });
+      var swap = autoPilot().manageParty(run);
+      if (swap) U.toast(swap);
+    }
     run.closeScene();
     if (run.state === 'victory' || run.state === 'gameover') { finishRun(); return; }
     // Nach einer vollen Runde im Endlosmodus wartet ein Segen.
@@ -713,8 +927,8 @@
     // das Protokoll das erste Pokémon aussendet.
     BV.intro = bt.turn === 0 && PL.scenery;
     if (BV.intro) {
-      placeTrainer(0, 'Spieler', true);
-      if (bt.trainer) placeTrainer(1, bt.trainer.cls, false, bt.trainer.look);
+      placeTrainer(0, 'Spieler', true, null, settings().figur || 'rot');
+      if (bt.trainer) placeTrainer(1, bt.trainer.cls, false, bt.trainer.look, bt.trainer.leader);
       else renderSide(1);
     } else {
       renderSide(0);
@@ -726,19 +940,19 @@
   };
 
   /** Stellt eine Trainerfigur auf einen Standplatz. */
-  function placeTrainer(sideId, cls, back, look) {
+  function placeTrainer(sideId, cls, back, look, who) {
     var slot = BV.slots[sideId];
     if (!slot) return;
     var old = slot.querySelector('.mon-art, .trainer-art');
     if (old) slot.removeChild(old);
     // Namentlich bekannte Gegner sollen immer gleich aussehen — deshalb geht
     // ihr Name in den Startwert und nicht die Kulisse.
-    var who = (App.battle.trainer && App.battle.trainer.leader) || '';
-    var seed = PL.util.hashSeed(who || ((cls || '') + sideId + (App.battle.biome || '')));
+    var name = who || (App.battle.trainer && App.battle.trainer.leader) || '';
+    var seed = PL.util.hashSeed(name || ((cls || '') + sideId + (App.battle.biome || '')));
     slot.appendChild(el('div', { className: 'trainer-art' },
       el('img', {
         className: 'trainer-sprite', alt: '',
-        src: PL.scenery.trainer(cls, seed, back, look || null)
+        src: PL.scenery.trainer(cls, seed, back, look || null, name)
       })));
   }
 
@@ -2309,7 +2523,8 @@
     var actions = [];
     if (run && App.screen !== 'title') {
       actions.push({ label: 'Weiterspielen', primary: true });
-      actions.push({ label: 'Speichern & zum Titel', onClick: function () { autosave(); App.battle = null; show('title'); } });
+      actions.push({ label: 'Speichern', onClick: function () { autosave(); show('saves'); } });
+      actions.push({ label: 'Zum Titel', onClick: function () { autosave(); App.battle = null; show('title'); } });
     }
     actions.push({ label: 'Pokédex', onClick: function () { show('dex'); } });
     actions.push({ label: 'Erfolge', onClick: function () { show('achievements'); } });
@@ -2527,6 +2742,10 @@
       row('Sprache der Pokémon-Namen', 'Gilt auch für Attacken und Fähigkeiten.', picker(
         [{ value: 'de', label: 'Deutsch' }, { value: 'en', label: 'Englisch' }], s.lang,
         function (v) { meta.setSetting('lang', v); applyTheme(); })),
+      row('Deine Figur', 'So siehst du im Kampf von hinten aus.', picker(
+        [{ value: 'rot', label: 'Rot' }, { value: 'blatt', label: 'Blatt' },
+         { value: 'brix', label: 'Brix' }, { value: 'maike', label: 'Maike' }], s.figur || 'rot',
+        function (v) { meta.setSetting('figur', v); })),
       row('Kampftempo', 'Wie schnell das Protokoll durchläuft.', picker(
         [{ value: 'langsam', label: 'Langsam' }, { value: 'normal', label: 'Normal' },
          { value: 'schnell', label: 'Schnell' }, { value: 'sofort', label: 'Sofort' }], s.speed,
@@ -2572,6 +2791,23 @@
 
   /* --- Spielstand sichern und einspielen ------------------------------------- */
 
+  /**
+   * Auf der veröffentlichten Seite darf die Seite dem Betrachter eine Datei
+   * anbieten; als heruntergeladene Einzeldatei oder lokal geht das nicht.
+   * Deshalb erscheint der Knopf nur, wenn die Fähigkeit wirklich da ist.
+   */
+  function saveToFile(text, filename) {
+    if (!root.claude || typeof root.claude.use !== 'function') return Promise.resolve(false);
+    return root.claude.use('downloads').then(function (dl) {
+      if (!dl) return false;
+      return dl.save({ filename: filename, data: text }).then(function () { return true; },
+        function (err) {
+          if (err && err.code === 'declined') return false;
+          throw err;
+        });
+    }).catch(function () { return false; });
+  }
+
   function openSaveExport() {
     var text = meta.exportSave();
     var area = el('textarea', { className: 'save-area', readonly: true, rows: 8, spellcheck: 'false' });
@@ -2586,6 +2822,14 @@
         el('p', { className: 'muted small', text: 'Größe: ' + (text.length / 1024).toFixed(1) + ' KB' })
       ]),
       actions: [
+        { label: '💾 Als Datei', close: false, onClick: function () {
+          var name = 'pokelike-' + (meta.activeProfile() || {}).name + '-' +
+            new Date().toISOString().slice(0, 10) + '.json';
+          saveToFile(text, name.replace(/[^A-Za-z0-9._-]+/g, '-')).then(function (ok) {
+            U.toast(ok ? 'Als Datei gesichert.' : 'Datei-Sicherung geht hier nicht — nimm den Text.',
+              ok ? 'good' : 'bad');
+          });
+        } },
         { label: '📋 Kopieren', primary: true, close: false, onClick: function () {
           area.focus();
           area.select();
@@ -2608,12 +2852,23 @@
   function openSaveImport() {
     var area = el('textarea', { className: 'save-area', rows: 8, spellcheck: 'false',
       placeholder: 'Gesicherten Spielstand hier einfügen …' });
+    // Eine gesicherte Datei lässt sich auch direkt auswählen.
+    var file = el('input', { type: 'file', accept: '.json,application/json', className: 'file-pick' });
+    file.addEventListener('change', function () {
+      var f = file.files && file.files[0];
+      if (!f) return;
+      var reader = new root.FileReader();
+      reader.onload = function () { area.value = String(reader.result || ''); };
+      reader.readAsText(f);
+    });
     U.modal({
       title: 'Spielstand einspielen',
       wide: true,
       content: el('div', {}, [
         el('p', { className: 'warn-note', text: 'Achtung: Der eingespielte Stand ersetzt deinen aktuellen ' +
           'Fortschritt vollständig. Sichere ihn vorher, falls du ihn behalten willst.' }),
+        el('p', { className: 'muted small', text: 'Datei auswählen oder den Text unten einfügen:' }),
+        file,
         area
       ]),
       actions: [

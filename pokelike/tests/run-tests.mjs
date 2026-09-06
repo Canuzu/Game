@@ -1327,15 +1327,21 @@ section('Auto-Kampf');
     return bt;
   };
 
-  // Heilen, statt sich umbringen zu lassen
+  // Heilen ist eine Rechnung: Der Trank muss den nächsten Treffer abfangen.
   let bt = duel('blissey', 'machamp');
   bt.sides[0].active.mon.hp = Math.max(1, Math.floor(bt.sides[0].active.stats[0] * 0.2));
-  let act = PL.ai.chooseAction(bt, 0, 4, { bag: { hyperpotion: 2 } });
+  let act = PL.ai.chooseAction(bt, 0, 4, { bag: { maxpotion: 2 } });
   eq('Der Auto-Kampf greift bei wenig KP zum Trank', act.type, 'item');
+
+  // Ein Trank, der die Lücke kaum füllt, bleibt liegen
+  bt = duel('blissey', 'machamp');
+  bt.sides[0].active.mon.hp = Math.max(1, Math.floor(bt.sides[0].active.stats[0] * 0.5));
+  act = PL.ai.chooseAction(bt, 0, 4, { bag: { potion: 2 } });
+  check('Ein Tropfen auf den heißen Stein bleibt im Beutel', act.type !== 'item', act.type);
 
   // Ohne Not bleibt der Trank im Beutel
   bt = duel('blissey', 'machamp');
-  act = PL.ai.chooseAction(bt, 0, 4, { bag: { hyperpotion: 2 } });
+  act = PL.ai.chooseAction(bt, 0, 4, { bag: { maxpotion: 2 } });
   check('Bei vollen KP wird nicht geheilt', act.type !== 'item', act.type);
 
   // Schlaf ist teuer — der Aufwecker lohnt sich
@@ -1463,6 +1469,73 @@ section('Reise-Automat');
     'Platz ' + slot);
   eq('Eine schwache Attacke wird nicht gelernt',
     A.learnSlot(lernMon, dex.move('splash').i), -1);
+}
+
+section('Der Automat pflegt das Team');
+{
+  const A = PL.autopilot;
+  const run = new PL.Run({ seed: 4242, starter: 'charmander' });
+  while (run.party.length < 3) {
+    run.party.push(PL.mon.create('pidgey', 12, run.rng, {}));
+  }
+
+  // Sonderbonbons: das schwächste Mitglied zuerst
+  run.bag.rarecandy = 3;
+  const vorher = run.party.map((m) => m.lvl).slice().sort((a, b) => a - b)[0];
+  A.careForTeam(run);
+  const nachher = run.party.map((m) => m.lvl).slice().sort((a, b) => a - b)[0];
+  check('Sonderbonbons werden verteilt', nachher > vorher, vorher + ' → ' + nachher);
+  eq('… und sind danach aufgebraucht', run.bag.rarecandy || 0, 0);
+
+  // Vitamine landen bei dem, der am meisten daraus macht
+  run.bag.protein = 2;
+  const evVor = run.party.reduce((a, m) => a + m.evs[1], 0);
+  A.careForTeam(run);
+  check('Vitamine werden verfüttert',
+    run.party.reduce((a, m) => a + m.evs[1], 0) > evVor);
+
+  // Tragegegenstände wandern in die Hände
+  run.party.forEach((m) => { m.item = null; });
+  run.bag.leftovers = 1;
+  run.bag.lifeorb = 1;
+  const equipped = A.equipItems(run);
+  check('Getragen wird, was da ist', equipped === 2, String(equipped));
+  check('… und der Beutel ist dann leer davon', !run.bag.leftovers && !run.bag.lifeorb);
+  check('Das stärkste Pokémon bekommt das beste Stück', (() => {
+    const star = run.party.slice().sort((a, b) => A.memberScore(b) - A.memberScore(a))[0];
+    return star.item === 'leftovers';
+  })(), run.party.map((m) => m.item).join(','));
+
+  // TMs: nur, wenn sie wirklich besser sind
+  const zard = PL.mon.create('charmander', 30, PL.rng(9), {});
+  zard.moves = [
+    { m: dex.move('scratch').i, pp: 35, ppUp: 0, used: 0 },
+    { m: dex.move('growl').i, pp: 40, ppUp: 0, used: 0 },
+    { m: dex.move('ember').i, pp: 25, ppUp: 0, used: 0 },
+    { m: dex.move('smokescreen').i, pp: 20, ppUp: 0, used: 0 }
+  ];
+  const tmRun = new PL.Run({ seed: 7, starter: 'charmander' });
+  tmRun.party = [zard];
+  const gutIdx = dex.move('flamethrower').i;
+  check('Eine starke TM verspricht Gewinn', A.tmGain(tmRun, gutIdx) > 0,
+    String(Math.round(A.tmGain(tmRun, gutIdx))));
+  tmRun.addTM(gutIdx);
+  const lines = A.teachTMs(tmRun);
+  check('… und wird beigebracht', lines.length === 1 &&
+    zard.moves.some((m) => m.m === gutIdx), lines.join(' / '));
+  eq('… und ist danach verbraucht', Object.keys(tmRun.tms).length, 0);
+  check('Eine TM, die niemand lernen kann, ist nichts wert',
+    A.tmGain(tmRun, dex.move('hydropump').i) === 0);
+
+  // Aus der Box kommt, wer deutlich besser ist
+  const boxRun = new PL.Run({ seed: 11, starter: 'squirtle' });
+  while (boxRun.party.length < 6) boxRun.party.push(PL.mon.create('magikarp', 5, boxRun.rng, {}));
+  boxRun.box = [PL.mon.create('dragonite', 55, boxRun.rng, {})];
+  const swap = A.manageParty(boxRun);
+  check('Der Automat holt Besseres aus der Box', !!swap, String(swap));
+  check('… und legt das Schwächere hinein',
+    boxRun.party.some((m) => dex.sp(m.sp).id === 'dragonite') &&
+    boxRun.box.some((m) => dex.sp(m.sp).id === 'magikarp'));
 }
 
 section('Ein Run im Automatikbetrieb');

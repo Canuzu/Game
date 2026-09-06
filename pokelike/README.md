@@ -119,14 +119,19 @@ die Region in der Liga nicht fehlt. Die neun **Champions** hatten ihre echten
 Sechserteams schon immer.
 
 Die **Trainerfiguren** aller 112 — Arenaleiter, Top Vier und Champions — sind
-nach ihren Vorlagen gezeichnet: Rockos
-braune Stachelfrisur und die orange Weste, Mistys seitlicher Zopf und das
-gelbe Top, Giovannis orangefarbener Anzug mit dunklem Umhang. Die
-Originalbilder liegen ausschließlich bei Pokémon Showdown und sind ohne Netz
-nicht zu haben — deshalb steht in `js/leaders.js` für jeden, was ihn erkennbar
-macht, und der Pixel-Zeichner setzt es im Stil des übrigen Spiels um. Lances
-rote Stachelfrisur und der orange Umhang, Cynthias blondes langes Haar über
-dem schwarzen Mantel, Leons violettes Haar unter der Kappe.
+die echten Bilder aus den Spielen. `tools/build-trainers.py` holt sie aus zwei
+offenen Disassemblies (`smogon/sprites`, aus dem auch Pokémon Showdown seine
+Trainerbilder baut, und `pret/pokeemerald` für die Rückenansichten), nimmt von
+jeder Figur ihren jüngsten Auftritt — Rot aus HeartGold sieht besser aus als
+Rot aus Rot —, schneidet den durchsichtigen Rand ab und bettet alles als
+Base64 ein. 84 Figuren gibt es so im Original; für Galar, Paldea und ein paar
+ältere, die in keiner erreichbaren Quelle stecken, steht die Trainerklasse
+ein, die ihnen am nächsten kommt: Nessa bekommt die Schwimmerin, Bea die
+Kämpferin, Larry den Büroangestellten, Grusha den Snowboarder. Auch die 21
+gewöhnlichen Klassen und vier Figuren für den eigenen Charakter (Rot, Blatt,
+Brix, Maike — wählbar unter *Einstellungen*) kommen von dort. Die Bilder
+gehören Nintendo/Game Freak und stecken hier wie die Pokémon-Sprites nur für
+den privaten Gebrauch drin.
 
 **Lebensräume statt Zufallsliste** — jeder Knoten weiß, in welcher Kulisse er
 liegt, und die Begegnungen richten sich danach: im Wald Käfer und Pflanzen, in
@@ -211,14 +216,34 @@ betritt die Knoten, kämpft, kauft ein und entscheidet in jeder Szene:
   Automaten — manche als feste Zahl, manche als kleine Funktion, die den Run
   anschaut: baden lohnt sich nur, wenn das Team angeschlagen ist, die
   Straßenwette nur mit Geld in der Tasche.
-- **Am Rastplatz** heilt er, entwickelt, wer bereit ist, oder trainiert.
-- **Neue Attacken** lernt er nur, wenn sie besser sind als die schwächste im
-  Repertoire.
+- **Am Rastplatz** heilt er, entwickelt, wer bereit ist, oder trainiert. Wenn
+  es nicht wirklich brennt, wird trainiert: Heilen kann auch der Beutel,
+  Erfahrung gibt es nur hier und im Kampf.
+- **Nach jedem Knoten packt er den Beutel aus.** Das war lange der größte
+  Fehler des Automaten — er sammelte und benutzte nie. Jetzt verteilt er
+  Sonderbonbons auf das schwächste Mitglied, füttert Vitamine dem, der am
+  meisten daraus macht, gibt den Silberkronkorken dem Besten, bringt TMs
+  bei, wenn die neue Attacke wirklich besser ist als die schwächste, rüstet
+  Tragegegenstände aus (das beste Stück an das stärkste Pokémon) und holt
+  aus der Box, wer deutlich besser ist als das schwächste Teammitglied.
 
-Gemessen bringt das viel: mit Automat liegt die Gewinnquote der harten Kämpfe
-bei 92 % statt 87 %, und drei von dreißig Runs gehen bis zum Champ durch statt
-keiner. `node tools/balance.mjs` spielt genau diesen Automaten — gemessen wird
-also, was der Spieler bekommt, wenn er den Knopf drückt.
+Was das ausmacht, ist gemessen und nicht geschätzt — `node tools/balance.mjs`
+spielt genau diesen Automaten, gemessen wird also, was der Spieler bekommt,
+wenn er den Knopf drückt:
+
+| | vorher | jetzt |
+|---|---|---|
+| Gewinnquote der harten Kämpfe | 87,4 % | **94,2 %** |
+| Ø erreichte Region | 4,4 | **7,1** |
+| durchgespielte Runs (von 30) | 0 | **8** |
+| Kampf gegen den Champ | — | **89 %** |
+
+Den Ausschlag gaben drei Dinge: der ausgepackte Beutel (TMs und
+Tragegegenstände sind dauerhafte Stärke, die vorher im Rucksack verrottete),
+das Heilen nach Rechnung statt nach Gefühl (ein Trank lohnt, wenn er den
+nächsten Treffer überlebbar macht — und nie, wenn der eigene Zug den Kampf
+ohnehin entscheidet), und der Bogen um die Ass-Trainer, an denen vorher jeder
+zweite Run starb.
 
 **Wie schwer es zugeht** — der Grundlauf ist freundlich eingestellt: Gegner
 bleiben sechs Level hinter dem eigenen Team, bieten zwei Pokémon weniger auf
@@ -271,11 +296,9 @@ Arenaleiter, Siegesfanfare) werden zur Laufzeit auf vier Kanälen erzeugt:
 Melodie, Begleitung, Bass und ein Schlagzeug aus gefiltertem Rauschen. Keine
 Audiodatei, kein Download. Welches Stück läuft, entscheidet der Ort.
 
-Die Trainerfiguren werden mit 32 × 48 Pixeln gezeichnet — Silhouette mit
-verjüngtem Rumpf statt gestapelter Rechtecke, Schattenseite und Glanzlicht,
-vier Frisuren, Röcke, Kappen und Umhänge, und über allem eine dunkle Kontur.
-Erst die Kontur macht aus einem Klötzchenhaufen ein Sprite. Der Spieler steht
-von hinten mit erhobenem Wurfarm da. Auch die Bälle sind gezeichnet: für jede
+Die Trainerfiguren sind die echten Bilder aus den Spielen (siehe oben); der
+gezeichnete Pixel-Zeichner in `js/scenery.js` bleibt als Rückfall für den
+Fall, dass `data/trainers.js` fehlt. Auch die Bälle sind gezeichnet: für jede
 Bildzeile wird die Kreisbreite ausgerechnet, die Silhouette ist also wirklich
 rund und trotzdem hart gerastert.
 
@@ -292,8 +315,8 @@ schlagen ein, Statusattacken ziehen einen Ring. Volltreffer lassen die Bühne
 wackeln. Die Pokémon heben und senken sich im Leerlauf.
 
 **Kampfauftakt** — der Bildschirm schließt sich in Streifen, dahinter stehen
-beide Trainer als gezeichnete Pixelfiguren auf ihren Plätzen (19 Klassen mit
-eigener Palette, vom Käfersammler bis zum Champ), dann weichen sie zur Seite
+beide Trainer auf ihren Plätzen — der Gegner mit seinem echten Bild aus den
+Spielen, du mit der Rückenansicht deiner Figur —, dann weichen sie zur Seite
 und schicken ihr Pokémon ins Feld.
 
 **Bedienung** — unter der Bühne steht das Kampfprotokoll in einem Textfenster,
@@ -403,21 +426,30 @@ Lautstärke in drei Stufen und die Sprache der Pokémon-Namen (deutsch oder
 englisch). Attacken- und Fähigkeitsnamen bleiben
 englisch — so heißen sie in Wettbewerb und Datenbanken überall.
 
-### Spielstand sichern
+### Speichern
 
-Alles liegt im Browser dieses Geräts — wird der Speicher geleert, ist der
-Fortschritt weg. Unter *Einstellungen → Spielstand* liegen deshalb zwei
-Knöpfe:
+Gespeichert wird wie in einem richtigen Spiel — über *Spielstände* auf dem
+Titelbildschirm oder *Menü → Speichern*.
 
-* **Spielstand sichern** legt den kompletten Stand (Pokédex, Erfolge,
-  Statistik, Einstellungen und den laufenden Run) als Text vor, den du
-  kopieren und irgendwo ablegen kannst.
-* **Spielstand einspielen** nimmt so einen Text wieder entgegen und ersetzt
-  damit den aktuellen Fortschritt.
+**Profile.** Wer sich ein Gerät teilt, teilt nicht seinen Fortschritt: Jedes
+Profil hat seinen eigenen Pokédex, seine eigenen Erfolge, seine eigenen
+Einstellungen und seine eigenen Plätze. Profile lassen sich anlegen,
+umbenennen und löschen; gewechselt wird auf dem Titelbildschirm. Wer den Link
+weitergibt, gibt nichts von seinem Stand mit — der liegt im Browser des
+jeweiligen Geräts, nicht in der Seite.
 
-Der Text trägt eine Formatkennung und eine Versionsnummer. Stammt ein
-laufender Run aus einer älteren Fassung des Spiels, wird nur er ausgelassen —
-Pokédex und Erfolge kommen trotzdem mit.
+**Drei Plätze und ein Mitschrieb.** Auf die drei Plätze speicherst du selbst;
+daneben schreibt das Spiel nach jedem Knoten auf einen vierten, damit ein
+geschlossenes Fenster nichts kostet. Jeder Platz zeigt, was auf ihm liegt:
+Region und Weg, das Team mit Bildern, Durchschnittslevel, Geld, Modus und
+Zeitpunkt. Speichern, Laden und Löschen sitzen direkt daneben.
+
+**Mitnehmen.** Unter *Spielstände → Auf ein anderes Gerät mitnehmen* liegt der
+komplette Stand als Datei (in der veröffentlichten Fassung als echter
+Download, sonst als Text zum Kopieren) und lässt sich dort wieder einlesen —
+per Dateiauswahl oder Einfügen. Der Stand trägt eine Formatkennung und eine
+Versionsnummer. Stammt ein laufender Run aus einer älteren Fassung des Spiels,
+wird nur er ausgelassen — Pokédex und Erfolge kommen trotzdem mit.
 
 ### Momente
 
@@ -451,9 +483,11 @@ pokelike/
   js/meta.js          Speicherstand, Sammlung, Erfolge
   js/ui.js            Bausteine der Oberfläche
   js/app.js           Bildschirme und Spielsteuerung
-  data/sprites.js     eingebettete Sprites (4,9 MB) für die Einzeldatei
+  data/sprites.js     eingebettete Pokémon-Sprites (4,9 MB) für die Einzeldatei
+  data/trainers.js    eingebettete Trainerbilder aus den Spielen (0,35 MB)
   tools/build-data.mjs    erzeugt data/dex.js
   tools/build-sprites.mjs erzeugt data/sprites.js
+  tools/build-trainers.py erzeugt data/trainers.js
   tools/build-single.mjs  bündelt alles zu dist/pokelike.html
   tests/              Prüfungen
 ```

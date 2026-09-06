@@ -213,8 +213,12 @@
 
   /* ---------- Wechsel ------------------------------------------------------- */
 
-  /** Wie gut steht dieses Teammitglied gegen den aktuellen Gegner? */
-  function matchup(bt, mon, side, foe) {
+  /**
+   * Wie gut steht dieses Teammitglied gegen den aktuellen Gegner?
+   * `opts.switching` heißt: Es käme frisch herein und fängt sich dabei einen
+   * Treffer. Wer den nicht übersteht, ist keine Rettung, sondern ein Opfer.
+   */
+  function matchup(bt, mon, side, foe, opts) {
     if (!foe || mon.hp <= 0) return -1e9;
     var fake = {
       mon: mon, side: side, species: dex.sp(mon.sp), types: dex.sp(mon.sp).t.slice(),
@@ -231,14 +235,23 @@
     var offense = Math.min(1.5, best / Math.max(1, foe.mon.hp));
     var incoming = threat(bt, foe, fake);
     var hpFrac = mon.hp / mons.maxHP(mon);
-    return offense * 100 - incoming * 90 + hpFrac * 25;
+    var score = offense * 100 - incoming * 90 + hpFrac * 25;
+    // Beim Hereinwechseln gibt es einen Treffer geschenkt. Wer daran stirbt,
+    // hat den Wechsel nicht wert gemacht.
+    if (opts && opts.switching && incoming >= 1) score -= 220;
+    return score;
   }
 
+  /**
+   * Wer soll aufs Feld? `forced` heißt: Der Vorgänger liegt schon, ein Treffer
+   * beim Hereinkommen droht also nicht.
+   */
   function chooseSwitch(bt, side, forced) {
     var foe = side.other.active, best = -1e9, pick = -1, i;
+    var opts = { switching: !forced };
     for (i = 0; i < side.team.length; i++) {
       if (side.team[i].hp <= 0 || i === side.activeIndex) continue;
-      var sc = matchup(bt, side.team[i], side, foe);
+      var sc = matchup(bt, side.team[i], side, foe, opts);
       if (sc > best) { best = sc; pick = i; }
     }
     return pick;
@@ -284,23 +297,46 @@
     return false;
   }
 
-  /** Ein Gegenstand aus dem Beutel — oder nichts. */
-  function bagAction(bt, side, me, foe, bag) {
+  /** Wie viel KP dieser Trank hier tatsächlich zurückgibt. */
+  function healAmount(id, missing) {
+    var i, h;
+    for (i = 0; i < HEALERS.length; i++) if (HEALERS[i].id === id) h = HEALERS[i].heals;
+    return Math.min(missing, h === undefined ? 0 : h);
+  }
+
+  /**
+   * Ein Gegenstand aus dem Beutel — oder nichts.
+   * `killsNow` sagt, ob dieser Zug den Gegner ohnehin umlegt; dann wäre jede
+   * Runde für einen Trank verschenkt.
+   */
+  function bagAction(bt, side, me, foe, bag, killsNow) {
     if (!bag) return null;
     var max = me.stats[0], missing = max - me.mon.hp;
     var frac = me.mon.hp / max;
     var danger = threat(bt, foe, me);
-    var alive = 0, faintedIndex = -1, i;
+    var incoming = danger * me.mon.hp;              // Schaden in KP, nicht in Anteilen
+    var alive = 0, fainted = 0, faintedIndex = -1, i;
     for (i = 0; i < side.team.length; i++) {
       if (side.team[i].hp > 0) alive++;
-      else if (faintedIndex < 0) faintedIndex = i;
+      else { fainted++; if (faintedIndex < 0) faintedIndex = i; }
     }
 
-    // Heilen, bevor der nächste Treffer sitzt. Ein Trank kostet eine Runde —
-    // er lohnt nur, wenn er mehr rettet, als er kostet.
-    if (missing > 0 && frac < 0.52 && (danger > 0.7 || frac < 0.3)) {
+    /* Heilen ist kein Gefühl, sondern eine Rechnung: Der Trank lohnt, wenn er
+       den nächsten Treffer überlebbar macht. Wer ohnehin gerade gewinnt,
+       heilt nicht — die Runde gehört dem Angriff. */
+    if (missing > 0 && !killsNow) {
       var healer = pickHealer(bag, missing);
-      if (healer) return { type: 'item', item: healer, target: side.activeIndex };
+      if (healer) {
+        var gain = healAmount(healer, missing);
+        var deadly = incoming >= me.mon.hp;                       // fällt ohne Trank
+        var survives = me.mon.hp + gain > incoming * 1.1;         // hält mit Trank
+        if (deadly && survives) return { type: 'item', item: healer, target: side.activeIndex };
+        // Auch ohne akute Gefahr: knapp über der Hälfte fehlt, und es kommt
+        // noch etwas — dann ist jetzt der ruhige Moment dafür.
+        if (frac < 0.5 && gain >= missing * 0.6 && danger > 0.4) {
+          return { type: 'item', item: healer, target: side.activeIndex };
+        }
+      }
     }
 
     // Status kurieren, wenn er wirklich schadet
@@ -313,11 +349,21 @@
       }
     }
 
-    // Beim letzten Pokémon ist ein Beleber die Reserve, die den Kampf rettet —
-    // aber nur, solange gerade nichts droht.
-    if (alive === 1 && faintedIndex >= 0 && danger < 0.55 && frac > 0.5) {
+    // Beleben, solange man es sich leisten kann: beim letzten Pokémon immer,
+    // sonst, wenn schon zwei liegen und der Kampf noch lange dauert.
+    var manyDown = fainted >= 2 && side.other.team.filter(function (m) { return m.hp > 0; }).length >= 2;
+    if (faintedIndex >= 0 && danger < 0.5 && frac > 0.55 && !killsNow && (alive === 1 || manyDown)) {
       if (bag.maxrevive > 0) return { type: 'item', item: 'maxrevive', target: faintedIndex };
       if (bag.revive > 0) return { type: 'item', item: 'revive', target: faintedIndex };
+    }
+
+    /* X-Gegenstände in den harten Kämpfen: Wer sicher steht und den Gegner
+       nicht in einem Zug umlegt, holt sich lieber erst zwei Stufen. */
+    if (bt.aiLevel >= 2 && !killsNow && frac > 0.7 && danger < 0.35 &&
+        !me.boosts.atk && !me.boosts.spa && me.turnsActive < 3) {
+      var physical = me.stats[1] >= me.stats[3];
+      var xid = physical ? 'xattack' : 'xspecial';
+      if (bag[xid] > 0) return { type: 'item', item: xid, target: side.activeIndex };
     }
     return null;
   }
@@ -428,11 +474,6 @@
     }
     opts = wantsCatch ? { wantsCatch: true, run: run, bag: bag, dexNew: opts.dexNew } : opts;
 
-    /* --- 3) Beutel: heilen, kurieren, beleben ------------------------------ */
-    if (bag) {
-      var bagPick = bagAction(bt, side, me, foe, bag);
-      if (bagPick) return bagPick;
-    }
 
     for (i = 0; i < moves.length; i++) {
       if (moves[i].disabled) continue;
@@ -448,6 +489,16 @@
 
     /* --- 4) Angreifen ------------------------------------------------------ */
     var action = { type: 'move', index: best ? best.index : 0 };
+    var myBest = best && best.move.c !== 'T' ? estimate(bt, me, foe, best.move) : 0;
+    var killsNow = foe ? myBest >= foe.mon.hp : false;
+
+    /* --- 4b) Beutel: heilen, kurieren, beleben, verstärken ----------------
+     * Erst jetzt, weil die Entscheidung davon abhängt, ob der Angriff diese
+     * Runde ohnehin entscheidet. */
+    if (bag) {
+      var bagPick = bagAction(bt, side, me, foe, bag, killsNow);
+      if (bagPick) return bagPick;
+    }
 
     /* --- 5) Wechseln ------------------------------------------------------
      * Nicht wechseln, wenn dieser Zug den Kampf entscheidet. Sonst zählt der
@@ -455,18 +506,18 @@
      * groß er sein muss, hängt davon ab, wie dringend es ist. */
     if (level >= 2 && bt.canSwitch(sideId) && !wantsCatch) {
       var danger = threat(bt, foe, me);
-      var myBest = best && best.move.c !== 'T' ? estimate(bt, me, foe, best.move) : 0;
-      var killsNow = myBest >= foe.mon.hp;
       var hpFrac = me.mon.hp / me.stats[0];
       var doomed = danger >= 1 && !killsNow;                 // stirbt im nächsten Zug
       var badMatchup = danger > 0.55 && myBest < foe.mon.hp * 0.35;
       if (!killsNow && (badMatchup || doomed || (hpFrac < 0.2 && danger > 0.9))) {
         var alt = chooseSwitch(bt, side);
         if (alt >= 0) {
-          var altScore = matchup(bt, side.team[alt], side, foe);
+          var altScore = matchup(bt, side.team[alt], side, foe, { switching: true });
           var meScore = matchup(bt, me.mon, side, foe);
-          // Wer ohnehin fällt, verliert durch den Wechsel nichts mehr.
-          var hurdle = doomed ? 15 : (level >= 4 ? 45 : 45);
+          // Wer ohnehin fällt, verliert durch den Wechsel nichts mehr. Und in
+          // der ersten Runde kostet ein Wechsel fast nichts: Es ist noch kein
+          // Schaden gefallen, den man mitnimmt.
+          var hurdle = doomed ? 15 : (me.turnsActive === 0 ? 25 : 45);
           if (altScore > meScore + hurdle) return { type: 'switch', to: alt };
         }
       }

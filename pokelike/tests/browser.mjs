@@ -333,6 +333,83 @@ check('Helles Thema greift',
 if (SHOT_DIR) await page.screenshot({ path: join(SHOT_DIR, '08-hell.png') });
 await page.locator('button.filter', { hasText: /^Dunkel$/ }).first().click();
 
+console.log('\nSpeicherstände und Profile');
+{
+  await page.evaluate(() => {
+    const PL = window.PL, App = window.PokelikeApp;
+    App.run = new PL.Run({ seed: 4711, starter: 'bulbasaur' });
+    for (const id of ['pikachu', 'geodude']) {
+      App.run.party.push(PL.mon.create(id, 12, App.run.rng, {}));
+    }
+    App.show('saves');
+  });
+  await page.waitForSelector('.slot-grid');
+  check('Es gibt vier Plätze', (await page.locator('.slot-card').count()) === 4);
+
+  const slot1 = page.locator('.slot-card').nth(1);
+  await slot1.getByRole('button', { name: /Speichern/ }).click();
+  await page.waitForTimeout(200);
+  check('Speichern füllt den Platz',
+    !(await slot1.evaluate((n) => n.classList.contains('empty'))));
+  check('… und der Platz zeigt das Team',
+    (await slot1.locator('.slot-mon').count()) === 3,
+    String(await slot1.locator('.slot-mon').count()));
+
+  // Laden bringt genau diesen Stand zurück
+  await page.evaluate(() => { window.PokelikeApp.run.money = 1; });
+  await slot1.getByRole('button', { name: /Laden/ }).click();
+  await page.waitForTimeout(150);
+  const dlg = await page.locator('#overlay .modal-actions .btn.primary').count();
+  if (dlg) await page.locator('#overlay .modal-actions .btn.primary').first().click();
+  await page.waitForSelector('.map-screen');
+  check('Laden stellt den gespeicherten Stand wieder her',
+    (await page.evaluate(() => window.PokelikeApp.run.money)) > 1);
+
+  // Ein zweites Profil hat seine eigenen Plätze
+  await page.evaluate(() => {
+    window.PL.meta.createProfile('Freund');
+    window.PokelikeApp.run = null;
+    window.PokelikeApp.show('saves');
+  });
+  await page.waitForSelector('.slot-grid');
+  check('Ein neues Profil startet mit leeren Plätzen',
+    (await page.locator('.slot-card.empty').count()) === 4,
+    String(await page.locator('.slot-card.empty').count()));
+  await page.evaluate(() => {
+    const meta = window.PL.meta;
+    meta.profiles().filter((p) => p.name === 'Freund').forEach((p) => meta.deleteProfile(p.id));
+    window.PokelikeApp.show('title');
+  });
+  await page.waitForSelector('.title-screen');
+  check('Nach dem Löschen ist das erste Profil wieder aktiv',
+    (await page.evaluate(() => window.PL.meta.activeProfileId())) === 'p1');
+}
+
+console.log('\nTrainerbilder');
+{
+  const info = await page.evaluate(() => {
+    const PL = window.PL, App = window.PokelikeApp;
+    if (!window.PL_TRAINERS) return { keine: true };
+    PL.meta.setSetting('speed', 'langsam');
+    App.run = new PL.Run({ seed: 5, starter: 'charmander' });
+    const bt = App.run.makeBoss(App.run.rng);
+    App.battle = bt.battle || bt;
+    App.battle.start();
+    App.show('battle');
+    return { leader: App.battle.trainer.leader, anzahl: Object.keys(window.PL_TRAINERS.f).length };
+  });
+  check('Die Trainerbilder sind eingebettet', !info.keine && info.anzahl > 120,
+    JSON.stringify(info));
+  await page.waitForTimeout(150);
+  const srcs = await page.evaluate(() =>
+    Array.prototype.map.call(document.querySelectorAll('.trainer-sprite'), (i) => ({
+      data: i.src.slice(0, 14), w: i.naturalWidth, h: i.naturalHeight })));
+  check('Beide Trainer stehen als echtes Bild auf der Bühne',
+    srcs.length === 2 && srcs.every((x) => x.data === 'data:image/png' && x.w > 0),
+    JSON.stringify(srcs));
+  if (SHOT_DIR) await page.screenshot({ path: join(SHOT_DIR, '10-trainer.png') });
+}
+
 console.log('\nReise-Automat');
 {
   // Frischer Run: der Automat soll von der Karte aus alles allein machen.

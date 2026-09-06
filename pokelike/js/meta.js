@@ -6,8 +6,8 @@
  * (privates Fenster, Datei ohne Rechte), läuft das Spiel trotzdem — dann eben
  * ohne Gedächtnis.
  *
- * Gliederung:  1) Speicher   2) Startpokémon   3) Erfolge   4) Sammlung
- *              5) Aufstiege   6) Statistik
+ * Gliederung:  1) Profile   2) Speicher   3) Startpokémon   4) Erfolge
+ *              5) Sammlung   6) Aufstiege   7) Statistik   8) Speicherplätze
  * ========================================================================== */
 (function (root) {
   'use strict';
@@ -19,12 +19,12 @@
   }
   var dex = PL.dex, mons = PL.mon;
 
-  var KEY = 'pokelike.plus.v1';
-  var RUN_KEY = 'pokelike.plus.run.v1';
+  var BASE = 'pokelike.plus.v1';
+  var RUN_BASE = 'pokelike.plus.run.v1';
+  var PROFILE_KEY = 'pokelike.plus.profiles.v1';
   var SAVE_FORMAT = 'pokelike-save';
   var SAVE_VERSION = 2;
-
-  /* ---------- 1) Speicher ---------------------------------------------------- */
+  var SLOTS = 3;
 
   function storage() {
     try {
@@ -37,6 +37,96 @@
     }
   }
 
+  /* ---------- 1) Profile ------------------------------------------------------
+   * Mehrere Leute an einem Browser sollen sich nicht ins Gehege kommen: Jedes
+   * Profil hat seinen eigenen Pokédex, seine eigenen Erfolge, seine eigenen
+   * Einstellungen und seine eigenen Speicherplätze.
+   *
+   * Das erste Profil benutzt weiter die alten Schlüssel — so findet jeder, der
+   * vorher schon gespielt hat, seinen Stand unverändert wieder.
+   * -------------------------------------------------------------------------- */
+
+  var profileCache = null;
+
+  function loadProfiles() {
+    if (profileCache) return profileCache;
+    var s = storage(), raw = s && s.getItem(PROFILE_KEY);
+    if (raw) {
+      try {
+        var data = JSON.parse(raw);
+        if (data && data.list && data.list.length) { profileCache = data; return profileCache; }
+      } catch (e) { /* kaputt: unten neu anlegen */ }
+    }
+    profileCache = { v: 1, active: 'p1', list: [{ id: 'p1', name: 'Spieler 1', created: Date.now() }] };
+    return profileCache;
+  }
+
+  function saveProfiles() {
+    var s = storage();
+    if (!s || !profileCache) return false;
+    try { s.setItem(PROFILE_KEY, JSON.stringify(profileCache)); return true; } catch (e) { return false; }
+  }
+
+  function profiles() { return loadProfiles().list.slice(); }
+  function activeProfileId() {
+    var p = loadProfiles();
+    if (!p.list.some(function (x) { return x.id === p.active; })) p.active = p.list[0].id;
+    return p.active;
+  }
+  function activeProfile() {
+    var id = activeProfileId();
+    return loadProfiles().list.filter(function (x) { return x.id === id; })[0];
+  }
+
+  /** Das erste Profil erbt die alten Schlüssel, jedes weitere hängt seine ID an. */
+  function suffix(id) { return (id || activeProfileId()) === 'p1' ? '' : '.' + (id || activeProfileId()); }
+  function metaKey(id) { return BASE + suffix(id); }
+  function runKey(id) { return RUN_BASE + suffix(id); }
+  function slotKey(n, id) { return BASE + suffix(id) + '.slot' + n; }
+
+  function createProfile(name) {
+    var p = loadProfiles(), i = 2, id;
+    do { id = 'p' + i++; } while (p.list.some(function (x) { return x.id === id; }));
+    p.list.push({ id: id, name: String(name || '').trim() || ('Spieler ' + (p.list.length + 1)), created: Date.now() });
+    p.active = id;
+    saveProfiles();
+    cache = null;                       // der neue Fortschritt ist noch leer
+    return id;
+  }
+
+  function switchProfile(id) {
+    var p = loadProfiles();
+    if (!p.list.some(function (x) { return x.id === id; })) return false;
+    p.active = id;
+    saveProfiles();
+    cache = null;
+    return true;
+  }
+
+  function renameProfile(id, name) {
+    var p = loadProfiles();
+    p.list.forEach(function (x) { if (x.id === id) x.name = String(name || '').trim() || x.name; });
+    return saveProfiles();
+  }
+
+  /** Löscht ein Profil samt Fortschritt und allen Plätzen. Das letzte bleibt. */
+  function deleteProfile(id) {
+    var p = loadProfiles(), s = storage();
+    if (p.list.length <= 1) return false;
+    if (s) {
+      try {
+        s.removeItem(metaKey(id));
+        s.removeItem(runKey(id));
+        for (var n = 1; n <= SLOTS; n++) s.removeItem(slotKey(n, id));
+      } catch (e) { /* egal */ }
+    }
+    p.list = p.list.filter(function (x) { return x.id !== id; });
+    if (p.active === id) { p.active = p.list[0].id; cache = null; }
+    return saveProfiles();
+  }
+
+  /* ---------- 2) Speicher ---------------------------------------------------- */
+
   function emptyMeta() {
     return {
       version: 1,
@@ -44,7 +134,7 @@
       unlocked: {}, achievements: {}, seen: {}, caught: {}, shinies: {},
       totals: { battles: 0, kos: 0, catches: 0, faints: 0, money: 0, turns: 0, evolutions: 0, playtime: 0 },
       history: [],
-      settings: { theme: 'auto', lang: 'de', speed: 'normal', sound: true, music: true, volume: 0.5, confirmRisky: true }
+      settings: { theme: 'auto', lang: 'de', speed: 'normal', sound: true, music: true, volume: 0.5, confirmRisky: true, figur: 'rot' }
     };
   }
 
@@ -52,7 +142,7 @@
 
   function load() {
     if (cache) return cache;
-    var s = storage(), raw = s && s.getItem(KEY);
+    var s = storage(), raw = s && s.getItem(metaKey());
     cache = emptyMeta();
     if (raw) {
       try {
@@ -70,13 +160,13 @@
   function save() {
     var s = storage();
     if (!s || !cache) return false;
-    try { s.setItem(KEY, JSON.stringify(cache)); return true; } catch (e) { return false; }
+    try { s.setItem(metaKey(), JSON.stringify(cache)); return true; } catch (e) { return false; }
   }
 
   function reset() {
     cache = emptyMeta();
     var s = storage();
-    if (s) { try { s.removeItem(KEY); s.removeItem(RUN_KEY); } catch (e) {} }
+    if (s) { try { s.removeItem(metaKey()); s.removeItem(runKey()); } catch (e) {} }
     return cache;
   }
 
@@ -305,12 +395,12 @@
   function saveRun(run) {
     var s = storage();
     if (!s || !run) return false;
-    try { s.setItem(RUN_KEY, JSON.stringify(run.toJSON())); return true; } catch (e) { return false; }
+    try { s.setItem(runKey(), JSON.stringify(run.toJSON())); return true; } catch (e) { return false; }
   }
 
   /** Liest den gespeicherten Run — aber nur, wenn das Format noch passt. */
   function loadRun() {
-    var s = storage(), raw = s && s.getItem(RUN_KEY);
+    var s = storage(), raw = s && s.getItem(runKey());
     if (!raw) return null;
     try {
       var data = JSON.parse(raw);
@@ -324,13 +414,100 @@
 
   function clearRun() {
     var s = storage();
-    if (s) { try { s.removeItem(RUN_KEY); } catch (e) {} }
+    if (s) { try { s.removeItem(runKey()); } catch (e) {} }
   }
 
   function hasRun() {
-    var s = storage(), raw = s && s.getItem(RUN_KEY);
+    var s = storage(), raw = s && s.getItem(runKey());
     if (!raw) return false;
     try { return JSON.parse(raw).version === PL.Run.VERSION; } catch (e) { return false; }
+  }
+
+  /* ---------- 8) Speicherplätze ------------------------------------------------
+   * Drei Plätze zum Speichern von Hand, dazu der laufende Run, der sich von
+   * selbst mitschreibt. Ein Platz hält alles, was man zum Weiterspielen
+   * braucht: den Run und den Fortschritt des Profils.
+   * -------------------------------------------------------------------------- */
+
+  /** Die Kurzbeschreibung eines Platzes für die Übersicht. */
+  function describeSlot(data) {
+    if (!data || !data.run) return null;
+    var run = data.run;
+    var region = PL.world && PL.world.REGIONS && PL.world.REGIONS[run.region];
+    var team = (run.party || []).map(function (m) {
+      return { sp: m.sp, lvl: m.lvl, shiny: !!m.shiny, hp: m.hp };
+    });
+    var level = team.length
+      ? Math.round(team.reduce(function (a, m) { return a + m.lvl; }, 0) / team.length) : 0;
+    return {
+      name: data.name || '',
+      saved: data.saved || 0,
+      region: run.region || 0,
+      regionName: run.leagueStage >= 0 ? 'Pokémon-Liga' : (region ? region.name : 'Unterwegs'),
+      row: (run.rowIndex || 0) + 1,
+      team: team,
+      level: level,
+      money: run.money || 0,
+      ascension: run.ascension === undefined ? 0 : run.ascension,
+      mode: run.mode || 'klassisch',
+      nuzlocke: !!run.nuzlocke,
+      battles: (run.stats && run.stats.battles) || 0
+    };
+  }
+
+  function readSlot(n) {
+    var s = storage(), raw = s && s.getItem(n === 0 ? runKey() : slotKey(n));
+    if (!raw) return null;
+    try {
+      var data = JSON.parse(raw);
+      // Platz 0 ist der laufende Run: dort steht der Run pur, ohne Hülle.
+      if (n === 0) return { run: data, saved: 0, name: 'Zuletzt gespielt' };
+      return data;
+    } catch (e) { return null; }
+  }
+
+  /** Alle Plätze mit ihrer Beschreibung — Platz 0 ist der laufende Run. */
+  function slots() {
+    var out = [], n;
+    for (n = 0; n <= SLOTS; n++) {
+      var data = readSlot(n);
+      var info = describeSlot(data);
+      var alt = data && data.run && PL.Run && data.run.version !== PL.Run.VERSION;
+      out.push({
+        n: n,
+        auto: n === 0,
+        empty: !info,
+        outdated: !!alt,
+        info: info
+      });
+    }
+    return out;
+  }
+
+  /** Speichert den laufenden Run auf einem Platz. */
+  function saveSlot(n, run, name) {
+    var s = storage();
+    if (!s || !run || n < 1 || n > SLOTS) return false;
+    try {
+      s.setItem(slotKey(n), JSON.stringify({
+        v: 1, saved: Date.now(), name: name || '', run: run.toJSON()
+      }));
+      return true;
+    } catch (e) { return false; }
+  }
+
+  /** Holt den Run von einem Platz zurück. */
+  function loadSlot(n) {
+    var data = readSlot(n);
+    if (!data || !data.run || !PL.Run) return null;
+    if (data.run.version !== PL.Run.VERSION) return null;
+    try { return PL.Run.fromJSON(data.run); } catch (e) { return null; }
+  }
+
+  function deleteSlot(n) {
+    var s = storage();
+    if (!s || n < 1 || n > SLOTS) return false;
+    try { s.removeItem(slotKey(n)); return true; } catch (e) { return false; }
   }
 
   /* ---------- Sichern und Einspielen ------------------------------------------
@@ -340,7 +517,7 @@
 
   function exportSave() {
     var s = storage();
-    var runRaw = s && s.getItem(RUN_KEY);
+    var runRaw = s && s.getItem(runKey());
     return JSON.stringify({
       format: SAVE_FORMAT,
       version: SAVE_VERSION,
@@ -378,7 +555,7 @@
 
     var runNote = '';
     if (data.run && PL.Run && data.run.version === PL.Run.VERSION) {
-      try { s.setItem(RUN_KEY, JSON.stringify(data.run)); runNote = ' Der laufende Run wurde mitgeladen.'; }
+      try { s.setItem(runKey(), JSON.stringify(data.run)); runNote = ' Der laufende Run wurde mitgeladen.'; }
       catch (e) { runNote = ' Der laufende Run passte nicht mehr ins Format.'; }
     } else {
       clearRun();
@@ -392,6 +569,11 @@
 
   PL.meta = {
     load: load, save: save, reset: reset,
+    profiles: profiles, activeProfile: activeProfile, activeProfileId: activeProfileId,
+    createProfile: createProfile, switchProfile: switchProfile,
+    renameProfile: renameProfile, deleteProfile: deleteProfile,
+    slots: slots, saveSlot: saveSlot, loadSlot: loadSlot, deleteSlot: deleteSlot,
+    SLOTS: SLOTS,
     starters: starters, unlockState: unlockState, unlockText: UNLOCK_TEXT,
     achievements: achievements, refreshAchievements: refreshAchievements, award: award,
     noteSeen: noteSeen, noteCaught: noteCaught, dexStats: dexStats,

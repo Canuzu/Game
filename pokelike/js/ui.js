@@ -367,6 +367,29 @@
     return back;
   }
 
+  /** Ein Dialog, der nach einem kurzen Text fragt. */
+  function prompt(text, value, onOk, opts) {
+    opts = opts || {};
+    var input = el('input', {
+      className: 'search', type: 'text', value: value || '',
+      maxlength: opts.maxlength || 24, spellcheck: 'false'
+    });
+    function done() { var v = input.value.trim(); box.close(); onOk(v); }
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); done(); }
+    });
+    var box = modal({
+      title: opts.title || 'Name',
+      content: el('div', {}, [el('p', { text: text }), input]),
+      actions: [
+        { label: opts.ok || 'Übernehmen', primary: true, onClick: done, close: false },
+        { label: 'Abbrechen' }
+      ]
+    });
+    setTimeout(function () { input.focus(); input.select(); }, 30);
+    return box;
+  }
+
   function confirm(text, onYes, opts) {
     opts = opts || {};
     return modal({
@@ -422,6 +445,7 @@
   }
 
   PL.ui = {
+    prompt: prompt,
     el: el, append: append, clear: clear, $: $,
     sprite: sprite, placeholder: placeholder,
     typeChip: typeChip, hpBar: hpBar, expBar: expBar, statusChip: statusChip, genderMark: genderMark,

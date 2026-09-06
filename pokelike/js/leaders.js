@@ -10,11 +10,11 @@
  * da, wie sie im Spiel vorkommen. Die Level richten sich weiter nach dem
  * eigenen Team; hier stehen nur die Arten.
  *
- * Zum Aussehen: die Originalbilder liegen ausschließlich bei Pokémon Showdown
- * und sind von hier nicht erreichbar. Statt beliebiger Zufallsfiguren steht
- * deshalb für jeden Leiter, was ihn erkennbar macht — Haarfarbe und -schnitt,
- * die Farben seiner Kleidung, Mütze oder Umhang. Daraus zeichnet der
- * Pixel-Zeichner eine Figur im Stil des übrigen Spiels.
+ * Zum Aussehen: im Kampf steht inzwischen das echte Bild aus den Spielen
+ * (data/trainers.js, erzeugt von tools/build-trainers.py). Die Beschreibung
+ * hier bleibt trotzdem stehen — sie trägt den gezeichneten Rückfall für den
+ * Fall, dass die Bilddatei fehlt: Haarfarbe und -schnitt, die Farben der
+ * Kleidung, Mütze oder Umhang.
  *
  *   hairdo: kurz | lang | zopf | strubbel
  * ========================================================================== */
