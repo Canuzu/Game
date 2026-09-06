@@ -43,6 +43,8 @@
 
   function autosave() {
     if (App.run && App.run.state !== 'gameover' && App.run.state !== 'victory') meta.saveRun(App.run);
+    // Der Browser vergisst eingebettete Seiten gern; die Wolke tut das nicht.
+    if (PL.cloud) PL.cloud.touch();
   }
 
   /* ---------- Der Reise-Automat -------------------------------------------------
@@ -227,6 +229,8 @@
     }
 
     var right = el('div', { className: 'topbar-right' });
+    var mark = saveMark();
+    if (mark) right.appendChild(mark);
     if (run && App.screen !== 'title' && App.screen !== 'newrun') {
       right.appendChild(iconBtn('👥', 'Team', function () { show('team'); }));
       right.appendChild(iconBtn('🎒', 'Beutel', function () { openBag(); }));
@@ -346,10 +350,167 @@
         stat('Schillernde', d.shinies),
         stat('Beste Region', m.bestRegion + 1)
       ]),
-      !meta.available() ? el('p', { className: 'warn-note', text: 'Hinweis: Dieser Browser erlaubt kein Speichern — der Fortschritt geht beim Schließen verloren.' }) : null
+      saveNote()
     ]);
     return wrap;
   };
+
+  /**
+   * Ein kleines Zeichen in der Kopfzeile, das sagt, wo der Stand liegt:
+   * Wolke, Browser, oder gar nirgends. Anklicken führt zu den Spielständen.
+   */
+  function saveMark() {
+    var cloud = PL.cloud ? PL.cloud.state() : null;
+    var text, cls, title;
+    if (cloud && cloud.available) {
+      text = '☁';
+      cls = 'chip cloud';
+      title = 'Der Spielstand liegt in der Wolke — Code ' + (cloud.code || 'wird angelegt');
+    } else if (!meta.available()) {
+      text = '⚠';
+      cls = 'chip cloud off';
+      title = 'Dieser Browser lässt kein Speichern zu — der Fortschritt geht beim Schließen verloren';
+    } else {
+      return null;
+    }
+    return el('button', {
+      className: cls, type: 'button', title: title,
+      style: { cursor: 'pointer' },
+      onclick: function () { show('saves'); }
+    }, text);
+  }
+
+  /* ---------- Wolkenspeicher ----------------------------------------------------
+   * Der Browser wirft den Speicher eingebetteter Seiten manchmal weg. Wo die
+   * veröffentlichte Seite einen eigenen Speicher hat, liegt der Stand deshalb
+   * zusätzlich dort — unter einem Spielstand-Code, der ihn auf jedem Gerät
+   * zurückholt.
+   * -------------------------------------------------------------------------- */
+
+  /**
+   * Fragt beim Start, ob es einen Wolkenspeicher gibt. Liegt dort ein neuerer
+   * Stand als im Browser, wird er angeboten — ungefragt überschrieben wird
+   * nichts, außer der Browser hat ohnehin nichts zu bieten.
+   */
+  function startCloud() {
+    if (!PL.cloud) return;
+    PL.cloud.connect().then(function (ok) {
+      if (!ok) { renderHeader(); return; }
+      if (!PL.cloud.code()) {
+        // Neuer Spieler an diesem Gerät: Der erste Stand legt den Code an.
+        if (meta.hasRun() || meta.load().runs > 0) PL.cloud.touch();
+        renderHeader();
+        return;
+      }
+      PL.cloud.pull().then(function (res) {
+        if (!res.ok) { renderHeader(); return; }
+        var leer = !meta.hasRun() && meta.load().runs === 0 &&
+          Object.keys(meta.load().caught).length === 0;
+        if (leer) {
+          applyCloudSave(res.blob, true);
+          return;
+        }
+        // Beides da: Der Spieler entscheidet, welcher Stand gilt.
+        var wann = res.saved ? new Date(res.saved).toLocaleString('de-DE') : 'unbekannt';
+        U.modal({
+          title: 'Spielstand aus der Wolke',
+          content: el('div', {}, [
+            el('p', { text: 'In der Wolke liegt ein Stand von ' + wann + '. ' +
+              'Im Browser liegt ebenfalls einer.' }),
+            el('p', { className: 'muted small', text: 'Code: ' + res.code })
+          ]),
+          actions: [
+            { label: 'Wolke laden', primary: true, onClick: function () { applyCloudSave(res.blob, true); } },
+            { label: 'Browser behalten', onClick: function () { PL.cloud.push(); } }
+          ]
+        });
+      });
+    });
+  }
+
+  function applyCloudSave(blob, announce) {
+    var res = meta.importSave(blob);
+    if (!res.ok) { U.toast(res.text, 'bad'); return false; }
+    App.run = null;
+    App.battle = null;
+    applyTheme();
+    if (announce) U.toast('Spielstand aus der Wolke geholt.', 'good');
+    show('title');
+    return true;
+  }
+
+  /** Der Abschnitt im Spielstände-Bildschirm. */
+  function cloudSection(redraw) {
+    if (!PL.cloud) return null;
+    var st = PL.cloud.state();
+    var host = el('div', { className: 'cloud-box' });
+
+    if (st.unknown) {
+      host.appendChild(el('p', { className: 'muted', text: 'Wolkenspeicher wird geprüft …' }));
+      PL.cloud.connect().then(function () { redraw(); });
+      return host;
+    }
+
+    if (!st.available) {
+      host.appendChild(el('p', {}, [
+        el('strong', { text: '☁ Kein Wolkenspeicher hier. ' }),
+        'Dein Stand liegt nur im Speicher dieses Browsers. Manche Browser werfen ' +
+        'den Speicher eingebetteter Seiten weg, sobald der Tab zugeht — wenn dir ' +
+        'dein Fortschritt verloren geht, liegt es daran. Sichere ihn dann unten ' +
+        'als Text oder Datei.'
+      ]));
+      return host;
+    }
+
+    var codeLine = el('div', { className: 'cloud-code' }, [
+      el('span', { className: 'muted', text: 'Dein Spielstand-Code:' }),
+      el('code', { text: st.code || '—' }),
+      st.code ? el('button', {
+        className: 'btn small', type: 'button',
+        onclick: function () {
+          try { root.navigator.clipboard.writeText(st.code); U.toast('Code kopiert.'); }
+          catch (e) { U.toast('Code: ' + st.code); }
+        }
+      }, '📋') : null
+    ]);
+
+    host.appendChild(el('p', {}, [
+      el('strong', { text: '☁ Wolkenspeicher aktiv. ' }),
+      'Dein Fortschritt liegt außerhalb des Browsers und übersteht geschlossene ' +
+      'Tabs, geleerte Speicher und Gerätewechsel. Notier dir den Code — mit ihm ' +
+      'holst du deinen Stand überall zurück.'
+    ]));
+    host.appendChild(codeLine);
+    host.appendChild(el('div', { className: 'scene-actions' }, [
+      el('button', {
+        className: 'btn small', type: 'button',
+        onclick: function () {
+          PL.cloud.push().then(function (ok) {
+            U.toast(ok ? 'In die Wolke gesichert.' : 'Das ging schief.', ok ? 'good' : 'bad');
+            redraw();
+          });
+        }
+      }, '☁ Jetzt sichern'),
+      el('button', {
+        className: 'btn small', type: 'button',
+        onclick: function () {
+          U.prompt('Spielstand-Code eingeben:', '', function (text) {
+            if (!text) return;
+            var norm = PL.cloud.normalize(text);
+            if (!norm) { U.toast('Das sieht nicht nach einem Code aus.', 'bad'); return; }
+            PL.cloud.pull(norm).then(function (res) {
+              if (!res.ok) { U.toast(res.text, 'bad'); return; }
+              U.confirm('Dieser Stand ersetzt alles, was hier gerade liegt. Weiter?', function () {
+                PL.cloud.setCode(norm);
+                applyCloudSave(res.blob, true);
+              }, { danger: true });
+            });
+          }, { title: 'Stand von woanders holen', maxlength: 20 });
+        }
+      }, '⤵ Code eingeben')
+    ]));
+    return host;
+  }
 
   /* ---------- Profile und Speicherplätze ---------------------------------------
    * Speichern wie in einem richtigen Spiel: Jeder am Gerät hat sein eigenes
@@ -541,6 +702,9 @@
       ]));
       host.appendChild(el('div', { className: 'slot-grid' },
         meta.slots().map(function (slot) { return slotCard(slot, draw); })));
+      host.appendChild(el('p', { className: 'section-label', text: 'Wo dein Stand liegt' }));
+      var cloud = cloudSection(draw);
+      if (cloud) host.appendChild(cloud);
       host.appendChild(el('p', { className: 'section-label', text: 'Auf ein anderes Gerät mitnehmen' }));
       host.appendChild(el('div', { className: 'scene-actions' }, [
         el('button', { className: 'btn', type: 'button', onclick: openSaveExport }, '⬇ Sichern'),
@@ -555,6 +719,26 @@
     draw();
     return host;
   };
+
+  /** Ein Satz darüber, wie sicher der Fortschritt gerade liegt. */
+  function saveNote() {
+    if (!meta.available()) {
+      return el('p', { className: 'warn-note', text: 'Hinweis: Dieser Browser erlaubt kein ' +
+        'Speichern — der Fortschritt geht beim Schließen verloren.' });
+    }
+    var cloud = PL.cloud ? PL.cloud.state() : null;
+    if (cloud && cloud.available) return null;              // alles gut, nichts zu sagen
+    if (cloud && cloud.unknown) return null;                // wird noch geprüft
+    return el('p', { className: 'muted small' }, [
+      'Dein Fortschritt liegt im Speicher dieses Browsers. Sollte er beim nächsten ' +
+      'Öffnen fehlen, wirft dein Browser den Speicher eingebetteter Seiten weg — ',
+      el('button', {
+        className: 'btn small', type: 'button',
+        onclick: function () { show('saves'); }
+      }, 'dann hier sichern'),
+      '.'
+    ]);
+  }
 
   function stat(label, value) {
     return el('div', { className: 'stat-tile' }, [
@@ -3043,9 +3227,19 @@
     }
     probeDownloads();
     doc.addEventListener('keydown', onKey);
-    root.addEventListener('beforeunload', function () { autosave(); });
+    root.addEventListener('beforeunload', function () {
+      autosave();
+      if (PL.cloud) PL.cloud.flush();
+    });
+    // Der Browser darf erst nach einem Klick um dauerhaften Speicher gebeten
+    // werden — also beim ersten Klick, egal wo.
+    doc.addEventListener('click', function once() {
+      doc.removeEventListener('click', once);
+      if (meta.durable) meta.durable();
+    }, true);
     show('title');
     renderAutoButton();
+    startCloud();
   }
 
   App.sfx = sfx;

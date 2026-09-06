@@ -2,9 +2,15 @@
  * meta.js — Dauerhafter Fortschritt: Speicherstand, Sammlung, Erfolge
  * -----------------------------------------------------------------------------
  * Alles hier überlebt einen einzelnen Run. Gespeichert wird im localStorage
- * des Browsers; es verlässt niemals das Gerät. Ist der Speicher gesperrt
- * (privates Fenster, Datei ohne Rechte), läuft das Spiel trotzdem — dann eben
- * ohne Gedächtnis.
+ * des Browsers. Ist der Speicher gesperrt (privates Fenster, Datei ohne
+ * Rechte), läuft das Spiel trotzdem — dann eben ohne Gedächtnis.
+ *
+ * Vorsicht bei eingebetteten Seiten: Das Spiel läuft in einem Rahmen auf einer
+ * fremden Adresse, und manche Browser behandeln den Speicher solcher Seiten
+ * als Wegwerfware — schreiben geht, aber beim nächsten Öffnen ist alles fort.
+ * durable() fragt deshalb beim Browser nach dauerhaftem Speicher, sobald der
+ * Spieler das erste Mal klickt; wo das nicht reicht, hilft nur der
+ * Wolkenspeicher aus cloud.js.
  *
  * Gliederung:  1) Profile   2) Speicher   3) Startpokémon   4) Erfolge
  *              5) Sammlung   6) Aufstiege   7) Statistik   8) Speicherplätze
@@ -35,6 +41,38 @@
     } catch (e) {
       return null;
     }
+  }
+
+  /**
+   * Bittet den Browser, den Speicher dieser Seite ernst zu nehmen. Zwei Wege,
+   * beide erlaubt nur nach einem Klick:
+   *   1. requestStorageAccess — hebt die Sperre für eingebettete Seiten auf.
+   *   2. storage.persist — bittet darum, nichts wegzuräumen.
+   * Beide dürfen scheitern; dann bleibt es beim Wegwerfspeicher, und die
+   * Oberfläche sagt das auch.
+   */
+  var durableAsked = false;
+  function durable() {
+    if (durableAsked) return Promise.resolve(false);
+    durableAsked = true;
+    var steps = [];
+    try {
+      if (root.document && root.document.requestStorageAccess && root.document.hasStorageAccess) {
+        steps.push(root.document.hasStorageAccess().then(function (has) {
+          if (has) return true;
+          return root.document.requestStorageAccess().then(function () { return true; },
+            function () { return false; });
+        }, function () { return false; }));
+      }
+      if (root.navigator && root.navigator.storage && root.navigator.storage.persist) {
+        steps.push(root.navigator.storage.persist().then(function (ok) { return !!ok; },
+          function () { return false; }));
+      }
+    } catch (e) { /* alte Browser kennen nichts davon */ }
+    if (!steps.length) return Promise.resolve(false);
+    return Promise.all(steps).then(function (res) {
+      return res.some(Boolean);
+    }, function () { return false; });
   }
 
   /* ---------- 1) Profile ------------------------------------------------------
@@ -583,7 +621,8 @@
     exportSave: exportSave, importSave: importSave,
     SAVE_FORMAT: SAVE_FORMAT, SAVE_VERSION: SAVE_VERSION,
     settings: settings, setSetting: setSetting,
-    available: function () { return !!storage(); }
+    available: function () { return !!storage(); },
+    durable: durable
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = PL.meta;

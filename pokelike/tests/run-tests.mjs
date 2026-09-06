@@ -733,6 +733,23 @@ section('Spielstand sichern');
     check('… echte Gegenstände bleiben', wieder.bag.potion > 0);
   }
 
+  // Der Wolkenspeicher: ohne Betrachter meldet sich niemand, und das darf
+  // nichts kaputt machen.
+  await import('../js/cloud.js');
+  const cloud = PL.cloud;
+  eq('Ohne Betrachter gibt es keine Wolke', await cloud.connect(), false);
+  eq('… und der Zustand sagt das auch', cloud.state().available, false);
+  check('Ein Code wird tippfehlerfreundlich gelesen',
+    cloud.normalize('abcd efgh jkl') === 'ABCD-EFGH-JKL' &&
+    cloud.normalize('ABCD-EFGH-JKL') === 'ABCD-EFGH-JKL',
+    String(cloud.normalize('abcd efgh jkl')));
+  eq('Was kein Code ist, wird abgelehnt', cloud.normalize('hallo'), null);
+  const neu = cloud.newCode();
+  check('Ein neuer Code hat die richtige Form', /^[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{4}-[2-9A-HJ-NP-Z]{3}$/.test(neu), neu);
+  eq('… und wird gemerkt', cloud.code(), neu);
+  check('Ohne Wolke schreibt push() nichts', (await cloud.push()) === false);
+  cloud.setCode(null);
+
   check('Unsinn wird abgelehnt', !meta.importSave('{}').ok);
   check('Kaputter Text wird abgelehnt', !meta.importSave('kein json').ok);
   check('Fremde Dateien werden abgelehnt', !meta.importSave('{"format":"anderes-spiel"}').ok);
