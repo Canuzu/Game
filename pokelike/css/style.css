@@ -286,6 +286,8 @@ button { font: inherit; color: inherit; }
 .map-node.t-rest .node-badge { border-color: var(--good); }
 .map-node.t-shop .node-badge { border-color: #5b9bd5; }
 .map-node.t-relic .node-badge { border-color: #b07ae0; }
+/* Die legendäre Spur soll man auf der Karte sofort sehen. */
+.map-node.t-legend .node-badge { border-color: #e8c860; box-shadow: 0 0 0 3px rgba(232,200,96,.18), 3px 3px 0 rgba(0,0,0,.35); }
 .map-node:focus-visible .node-badge { outline: 2px solid var(--accent); outline-offset: 3px; }
 
 .party-strip { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: .5rem; }

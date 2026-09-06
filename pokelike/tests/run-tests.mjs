@@ -1308,15 +1308,22 @@ section('Inhalte');
     PL.world.REGIONS.every((r) => r.leaders.length === 8));
   check('Jedes Ereignis hat mindestens zwei Optionen',
     PL.world.EVENTS.every((e) => e.options.length >= 2 && e.title && e.text));
-  check('Mega-Formen sind auf die echten beschränkt',
-    Object.keys(dex.megas).length === 48,
+  check('Mega-Formen sind auf die echten beschränkt — samt Legends Z-A',
+    Object.keys(dex.megas).length === 87,
     Object.keys(dex.megas).length + ' Spezies');
+  check('Die Megas aus Legends Z-A sind dabei',
+    ['feraligatr', 'meganium', 'dragonite', 'emboar', 'greninja', 'baxcalibur']
+      .every((id) => dex.megas[id] && dex.megas[id].length));
+  check('Kein erfundenes Fan-Pokémon hat es hineingeschafft', !dex.megas.crucibelle);
   check('Jede Mega-Form bringt Werte, Typen und Bild mit',
     Object.keys(dex.megas).every((k) => dex.megas[k].every((f) =>
       f.bs && f.bs.length === 6 && f.t && f.t.length && f.a && f.pid)));
-  check('Jede Mega-Spezies ist ausgewachsen',
-    Object.keys(dex.megas).every((k) => dex.evosLeft(dex.sp(k)) === 0),
-    Object.keys(dex.megas).filter((k) => dex.evosLeft(dex.sp(k)) > 0).join(','));
+  // Mega setzt eine abgeschlossene Entwicklung voraus. In den Daten hält sich
+  // genau einer nicht daran: Floette entwickelt sich noch zu Florges, hat aber
+  // selbst eine Mega-Form. Für ihn bleibt sie damit unerreichbar — bewusst, und
+  // hier festgehalten, damit es niemandem stillschweigend durchrutscht.
+  eq('Nur Floette hat eine Mega-Form, ohne ausgewachsen zu sein',
+    Object.keys(dex.megas).filter((k) => dex.evosLeft(dex.sp(k)) > 0).join(','), 'floette');
   check('Keine Megasteine mehr im Spiel',
     !PL.items.get('charizarditex') && !PL.items.get('venusaurite') &&
     PL.items.all().every((i) => !i.mega));
@@ -1331,6 +1338,73 @@ section('Inhalte');
   check('Alle Champ-Teams verweisen auf echte Spezies',
     PL.world.CHAMPIONS.every((c) => c.team.every((id) => !!dex.sp(id))),
     PL.world.CHAMPIONS.map((c) => c.team.filter((id) => !dex.sp(id))).flat().join(','));
+}
+
+section('Jeder Run seine eigene Auswahl');
+{
+  const eins = new PL.Run({ seed: 4001, starter: 'charmander' });
+  const zwei = new PL.Run({ seed: 4002, starter: 'charmander' });
+  const alle = PL.world.encounterPool({ gen: 1, level: 100 });
+  const A = Object.keys(eins.rosterFor(1)), B = Object.keys(zwei.rosterFor(1));
+
+  check('Die Auswahl ist deutlich kleiner als die Generation',
+    A.length > 30 && A.length < alle.length, A.length + ' von ' + alle.length);
+  const gemeinsam = A.filter((id) => B.indexOf(id) >= 0).length;
+  check('Zwei Runs treffen andere Pokémon', gemeinsam < A.length * 0.75,
+    gemeinsam + ' von ' + A.length + ' gemeinsam');
+  check('Innerhalb eines Runs bleibt die Auswahl gleich',
+    Object.keys(eins.rosterFor(1)).join() === A.join());
+  check('Die Auswahl bleibt in der Region',
+    A.every((id) => dex.sp(id).g === 1),
+    A.filter((id) => dex.sp(id).g !== 1).join(','));
+
+  // Was auftaucht, kommt auch wirklich aus der Auswahl
+  const run = new PL.Run({ seed: 4003, starter: 'squirtle' });
+  const drin = run.rosterFor(1);
+  let fremd = 0;
+  for (let i = 0; i < 10; i++) {
+    run.rowIndex = i % 9;
+    run.pos = { col: i % 2 };
+    const wild = run.makeWild(PL.rng('w' + i));
+    const id = dex.sp(wild.sides[1].team[0].sp).id;
+    if (!drin[id]) fremd++;
+  }
+  check('Wilde Begegnungen halten sich an die Auswahl', fremd === 0, fremd + ' Ausreißer');
+}
+
+section('Legendäre Begegnungen');
+{
+  const run = new PL.Run({ seed: 5150, starter: 'bulbasaur' });
+
+  // In der ersten Region gibt es keine — ab der zweiten in jeder
+  const ersteRegion = run.map.some((row) => row.some((n) => n.type === 'legend'));
+  eq('In der ersten Region hält sich noch nichts Legendäres auf', ersteRegion, false);
+  run.region = 3;
+  run.buildMap();
+  const spaeter = run.map.reduce((a, row) => a + row.filter((n) => n.type === 'legend').length, 0);
+  eq('Später steht genau eine legendäre Spur auf der Karte', spaeter, 1);
+
+  // Die Begegnung selbst
+  const bt = run.makeLegend(PL.rng('leg'));
+  const foe = bt.sides[1].team[0];
+  const sp = dex.sp(foe.sp);
+  check('Was dort auftaucht, ist wirklich legendär', dex.isLegendary(sp), sp.n);
+  eq('… und gehört zur Region', sp.g, PL.world.REGIONS[3].gen);
+  check('… und lässt sich fangen', bt.canCatch === true);
+  check('… mit einer Aussicht, die den Namen verdient', bt.catchMult > 1,
+    String(bt.catchMult));
+
+  // Ein Fang bei wenig KP und Schlaf muss machbar sein
+  foe.hp = Math.max(1, Math.round(PL.mon.maxHP(foe) * 0.1));
+  foe.status = 'slp';
+  const chance = PL.mon.tryCatch(foe, 2, PL.rng('c'), { rateMult: bt.catchMult }).chance;
+  check('Geschwächt und schlafend ist der Fang keine Lotterie', chance > 0.1,
+    (chance * 100).toFixed(1) + ' % je Hyperball');
+
+  // Die Belohnung darf den Geldbeutel nicht zerstören
+  check('Der Kampf hat eine Belohnung mit Betrag',
+    bt.reward && typeof bt.reward.money === 'number' && isFinite(bt.reward.money),
+    JSON.stringify(bt.reward));
 }
 
 section('Auto-Kampf');

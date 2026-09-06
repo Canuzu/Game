@@ -45,6 +45,7 @@
     shop: { name: 'Händler', icon: '🛒', desc: 'Kaufen und verkaufen.' },
     rest: { name: 'Rastplatz', icon: '🔥', desc: 'Heilen, entwickeln oder trainieren.' },
     rival: { name: 'Rivale', icon: '🧢', desc: 'Dein Rivale stellt sich dir wieder in den Weg.' },
+    legend: { name: 'Legendäre Spur', icon: '✨', desc: 'Etwas Seltenes hält sich hier auf. Fangen erlaubt.' },
     event: { name: 'Ereignis', icon: '❓', desc: 'Etwas Ungewöhnliches.' },
     relic: { name: 'Schrein', icon: '🏛️', desc: 'Ein Relikt zur Auswahl.' },
     boss: { name: 'Arenaleiter', icon: '🏅', desc: 'Der Weg aus der Region führt nur hier hindurch.' },
@@ -219,6 +220,10 @@
     if (this.leagueStage < 0 && this.region % 2 === 1 && this.rival && this.rival.stage < 4) {
       mustHave.push('rival');
     }
+    // Ab der zweiten Region hält sich in jeder eine legendäre Spur. Fangen ist
+    // schwer genug, dass daraus kein Selbstläufer wird — aber begegnen soll man
+    // ihnen wirklich, und nicht nur davon hören.
+    if (this.leagueStage < 0 && this.region >= 1) mustHave.push('legend');
     var middleSlots = [];
     for (r = 1; r < rows - 1; r++) for (i = 0; i < map[r].length; i++) middleSlots.push(map[r][i]);
     rng.shuffle(middleSlots);
@@ -327,6 +332,7 @@
 
     switch (node.type) {
       case 'wild': return this.setScene({ kind: 'battle', battle: this.makeWild(rng), node: node });
+      case 'legend': return this.setScene({ kind: 'battle', battle: this.makeLegend(rng), node: node });
       case 'trainer': return this.setScene({ kind: 'battle', battle: this.makeTrainer(rng), node: node });
       case 'elite': return this.setScene({ kind: 'battle', battle: this.makeTrainer(rng, { elite: true }), node: node });
       case 'rival': return this.setScene({ kind: 'battle', battle: this.makeRival(rng), node: node });
@@ -533,6 +539,83 @@
     };
   };
 
+  /* ---------- Wer in dieser Region lebt --------------------------------------
+   * Jeder Run zieht pro Generation seine eigene Auswahl (world.js). Gerechnet
+   * wird sie einmal und dann gemerkt; der Startwert hängt nur an Run und
+   * Generation, ein geladener Spielstand findet also dieselben Bewohner vor.
+   * -------------------------------------------------------------------------- */
+
+  R.rosterFor = function (gen) {
+    if (!gen) return null;
+    this._roster = this._roster || {};
+    if (this._roster[gen]) return this._roster[gen];
+    var all = W.encounterPool({ gen: gen, level: 100 });
+    var picked = W.regionRoster('auswahl-' + this.seed + '-' + gen, all);
+    var set = {};
+    picked.forEach(function (sp) { set[sp.id] = 1; });
+    this._roster[gen] = set;
+    return set;
+  };
+
+  /**
+   * Schneidet einen Vorrat auf die Auswahl dieses Runs zu. Bleibt zu wenig
+   * übrig — etwa weil zusätzlich nach Typ gefiltert wurde —, gilt wieder der
+   * volle Vorrat: lieber eine bekannte Art als gar keine.
+   */
+  R.limitToRoster = function (pool, gen) {
+    var set = this.rosterFor(gen);
+    if (!set) return pool;
+    var out = pool.filter(function (sp) { return set[sp.id]; });
+    return out.length >= 8 ? out : pool;
+  };
+
+  /**
+   * Eine legendäre Begegnung. Sie steht außerhalb der üblichen Rechnung: kein
+   * Levelfilter, keine Auswahl des Runs — was hier auftaucht, gehört zur
+   * Region und sonst zu niemandem.
+   */
+  R.makeLegend = function (rng) {
+    var region = this.currentRegion();
+    // Auf Augenhöhe, nicht darüber: Ein legendäres Pokémon ist von Haus aus
+    // stärker als alles im Team — es braucht keinen Levelvorsprung dazu, sonst
+    // endet an ihm jeder zweite Run.
+    var level = this.enemyLevel(0);
+    var pool = W.encounterPool({
+      gen: this.leagueStage >= 0 ? null : region.gen,
+      anyGen: this.leagueStage >= 0,
+      level: level,
+      onlyLegendary: true,
+      allowRestricted: this.region >= 4,
+      ignoreLevel: true
+    });
+    // Kleine Generationen haben wenig Legendäres — dann darf es auch von
+    // woanders kommen, bevor gar nichts erscheint.
+    if (pool.length < 2) {
+      pool = W.encounterPool({ anyGen: true, level: level, onlyLegendary: true,
+        allowRestricted: this.region >= 4, ignoreLevel: true });
+    }
+    var sp = W.pickEncounter(rng, pool, level, { met: this.met });
+    this.noteMet(sp);
+    var mon = W.buildMon(rng, sp, level, {
+      quality: 0.72, ivFloor: 10, hiddenChance: 0.3,
+      shinyOdds: (1 / 200) * this.mod('shinyMult', 1)
+    });
+    if (mon.shiny) this.stats.shinies++;
+    var biome = this.biomeFor('legend');
+    var bt = new PL.Battle(this.battleOpts({ team: [mon], wild: true }));
+    bt.aiLevel = 1;
+    bt.canCatch = true;
+    bt.biome = biome;
+    bt.legend = true;
+    // Legendäre haben in den Spielen den kleinsten Fangwert überhaupt. Wer hier
+    // vier Bälle wirft und trotzdem nichts mitnimmt, hat nichts falsch gemacht,
+    // sondern schlecht gewürfelt — deshalb wiegt die Gelegenheit schwerer als
+    // die Vorlage: geschwächt und eingeschläfert ist der Fang machbar.
+    bt.catchMult = (bt.catchMult || 1) * 5;
+    bt.reward = { kind: 'legend', money: 600 + this.region * 260 };
+    return bt;
+  };
+
   R.makeWild = function (rng, opts) {
     opts = opts || {};
     var region = this.currentRegion();
@@ -543,6 +626,7 @@
       level: level,
       allowLegendary: opts.rare && this.region >= 5
     });
+    pool = this.limitToRoster(pool, this.leagueStage >= 0 ? null : region.gen);
     var biome = this.biomeFor(opts.rare ? 'wild' : 'wild');
     var sp = W.pickEncounter(rng, pool, level, { rare: opts.rare, biome: biome, met: this.met });
     this.noteMet(sp);
@@ -749,7 +833,10 @@
         this.bossesBeaten = (this.bossesBeaten || 0) + 1;
       }
       if (bt.reward) {
-        res.money = Math.round(bt.reward.money * this.mod('moneyMult', 1));
+        // Nicht jede Belohnungsart bringt Geld — ohne diese Null würde aus
+        // einem fehlenden Betrag ein NaN, und der Geldbeutel wäre für den
+        // Rest des Runs kaputt.
+        res.money = Math.round((bt.reward.money || 0) * this.mod('moneyMult', 1));
         this.giveMoney(res.money);
       } else if (bt.wild) {
         res.money = Math.round((25 + this.levelCap * 7) * this.mod('moneyMult', 1));
@@ -858,7 +945,9 @@
   /** Vermerkt eine Art als in diesem Run gesehen. */
   R.noteMet = function (sp) {
     if (!this.met) this.met = {};
-    if (sp && sp.id) this.met[sp.id] = 1;
+    // Gezählt, nicht nur vermerkt: Die zweite Begegnung wiegt schwerer als die
+    // erste, wenn es darum geht, wer als Nächstes auftaucht.
+    if (sp && sp.id) this.met[sp.id] = (this.met[sp.id] || 0) + 1;
   };
 
   R.makeCatchOffer = function (rng) {
@@ -867,6 +956,7 @@
     var level = this.enemyLevel(0);
     var biome = this.biomeFor('catch');
     var pool = W.encounterPool({ gen: this.leagueStage >= 0 ? null : region.gen, anyGen: this.leagueStage >= 0, level: level });
+    pool = this.limitToRoster(pool, this.leagueStage >= 0 ? null : region.gen);
     var picks = [], seen = {}, i;
     var count = this.catchAllowed() ? 3 + (this.mod('extraReward') || 0) : 1;
     for (i = 0; i < count; i++) {
@@ -989,7 +1079,7 @@
     if (kind === 'boss' || kind === 'e4' || kind === 'champ') {
       return this.makeRelicChoice(rng, 3, 'Sieg! Such dir deine Belohnung aus.');
     }
-    if (kind === 'elite') return this.makeItemFind(rng);
+    if (kind === 'elite' || kind === 'legend') return this.makeItemFind(rng);
     return null;
   };
 

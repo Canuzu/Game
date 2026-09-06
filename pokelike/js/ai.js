@@ -417,7 +417,9 @@
     var opts = ballOptions(bt, run, foe);
     if (!opts.length) return null;
     var special = foe.mon.shiny || dex.isLegendary(foe.species);
-    var need = mustThrow ? 0 : (worth >= 110 ? 0.3 : 0.5);
+    // Bei etwas Besonderem wird geworfen, sobald es überhaupt eine Aussicht
+    // gibt: Auf die perfekte Gelegenheit zu warten heißt hier, sie zu verpassen.
+    var need = mustThrow ? 0 : (special ? 0.08 : (worth >= 110 ? 0.3 : 0.5));
     var i, cheapEnough = null;
     for (i = 0; i < opts.length; i++) {
       if (opts[i].id === 'masterball' && !special && opts.length > 1) continue;

@@ -24,6 +24,7 @@ Top Vier und Champ.
 | Knoten | Was passiert |
 |---|---|
 | 🌿 **Wildes Pokémon** | Kampf mit Fangmöglichkeit |
+| ✨ **Legendäre Spur** | Ein legendäres Pokémon der Region — fangen erlaubt |
 | 🎽 **Trainerkampf** | Bringt Geld und Erfahrung |
 | ⚔️ **Starker Trainer** | Volles Team, doppelte Belohnung |
 | 🫱 **Begegnung** | Drei Pokémon zur Auswahl, eines darf mit |
@@ -133,6 +134,27 @@ Brix, Maike — wählbar unter *Einstellungen*) kommen von dort. Die Bilder
 gehören Nintendo/Game Freak und stecken hier wie die Pokémon-Sprites nur für
 den privaten Gebrauch drin.
 
+**Jeder Run seine eigene Auswahl** — eine Region hat weit mehr Bewohner, als
+ein Run zeigen kann. Statt immer aus demselben Vorrat zu ziehen, würfelt jeder
+Run pro Generation seine eigene Auswahl: rund 60 % dessen, was die Region
+hergibt. Kanto bleibt Kanto — aber zwei Runs teilen sich nur etwa ein Drittel
+ihrer Bewohner, und was im letzten Durchgang an jeder Ecke stand, fehlt im
+nächsten ganz. Der Startwert hängt allein an Run und Generation, ein geladener
+Spielstand findet dieselben Bewohner also unverändert vor.
+
+Dazu zählt das Spiel mit, wem man schon begegnet ist: Die zweite Begegnung
+derselben Art ist unwahrscheinlich, die dritte praktisch ausgeschlossen. Über
+zwölf Begegnungsknoten hinweg kommen so 32 verschiedene Arten in 36 Angeboten
+zusammen — vorher waren es 26.
+
+**Legendäre Spuren** — ab der zweiten Region liegt auf jeder Karte genau ein
+Knoten, an dem sich etwas Legendäres aufhält, passend zur Generation der
+Region. Es ist ein echter Kampf, kein Geschenk: ein einzelnes Pokémon auf
+Augenhöhe mit dem Team, das sich fangen lässt, wenn man es vorher schwächt und
+möglichst einschläfert. Der Fangwert ist gegenüber der Vorlage fünffach
+angehoben — mit dem Original läge die Aussicht bei unter einem Prozent je Ball,
+und die Spur wäre bloß eine Schikane.
+
 **Lebensräume statt Zufallsliste** — jeder Knoten weiß, in welcher Kulisse er
 liegt, und die Begegnungen richten sich danach: im Wald Käfer und Pflanzen, in
 der Höhle Gestein und Boden, am Wasser Wasser-Pokémon. Es ist eine Gewichtung,
@@ -161,9 +183,15 @@ zeigte jede Form das Bild ihrer Grundform.
 
 **Verwandlung: Mega oder Gigadynamax** — es gibt keine Megasteine und keinen
 Megaring. Wer seine letzte Entwicklung erreicht hat und eine Mega-Form besitzt,
-kann sich mega-entwickeln — 48 Pokémon, dazu die Protoformen von Kyogre und
-Groudon. Wer eine Gigadynamax-Form hat, kann gigadynamaximieren — 33 Pokémon,
-dafür ohne Bedingung: auch Pikachu, Mauzi und Evoli können es.
+kann sich mega-entwickeln — 87 Pokémon mit zusammen 93 Formen, die neuen aus
+Legends Z-A eingeschlossen (Impergator, Meganie, Dragoran, Flambirex, Quajutsu,
+Raichu-Mega-X und -Y und dreißig weitere), dazu die Protoformen von Kyogre und
+Groudon. Draußen bleibt nur, was Showdown als erfundenes Fan-Pokémon führt.
+Eine Ausnahme macht die Regel sichtbar: Floette hat eine Mega-Form, ist aber
+noch nicht ausgewachsen — für ihn bleibt sie damit unerreichbar.
+
+Wer eine Gigadynamax-Form hat, kann gigadynamaximieren — 33 Pokémon, dafür
+ohne Bedingung: auch Pikachu, Mauzi und Evoli können es.
 
 Wer beides kann, muss sich entscheiden, und die Entscheidung gilt für den
 ganzen Run: einmal mega-entwickelt heißt nie gigadynamaximiert und umgekehrt.

@@ -122,18 +122,42 @@
       sp = dex.species[i];
       if (sp.bo) continue;                                    // reine Kampfformen
       if (GIMMICK[sp.id]) continue;                           // ohne eigenes Repertoire
-      if (!opts.allowLegendary && dex.isLegendary(sp)) continue;
+      if (opts.onlyLegendary && !dex.isLegendary(sp)) continue;
+      if (!opts.allowLegendary && !opts.onlyLegendary && dex.isLegendary(sp)) continue;
       if (dex.isRestricted(sp) && !opts.allowRestricted) continue;
       if (opts.gen && sp.g !== opts.gen && !opts.anyGen) continue;
       if (opts.types && !opts.types.some(function (t) { return sp.t.indexOf(t) >= 0; })) continue;
-      // Zu starke Pokémon erscheinen erst, wenn das Level dazu passt
-      var minLevel = Math.max(1, Math.round((sp.bst - 250) / 6));
-      if (sp.bst > 480 && level < minLevel) continue;
-      if (sp.pv !== undefined && level < 12 && dex.evosLeft(sp) === 0 && sp.bst > 400) continue;
+      // Zu starke Pokémon erscheinen erst, wenn das Level dazu passt. Bei einer
+      // legendären Begegnung zählt das nicht — die ist ja gerade der Ausreißer.
+      if (!opts.ignoreLevel) {
+        var minLevel = Math.max(1, Math.round((sp.bst - 250) / 6));
+        if (sp.bst > 480 && level < minLevel) continue;
+        if (sp.pv !== undefined && level < 12 && dex.evosLeft(sp) === 0 && sp.bst > 400) continue;
+      }
       out.push(sp);
     }
     if (!out.length) return dex.species.filter(function (s) { return s.g === 1 && !s.bo && s.bst < 400; });
     return out;
+  }
+
+  /* ---------- Die Auswahl eines Runs ------------------------------------------
+   * Eine Region hat weit mehr Bewohner, als ein Run zeigen kann. Statt immer
+   * dieselben zu ziehen, würfelt jeder Run pro Region seine eigene Auswahl aus
+   * allem, was die Generation hergibt — Kanto bleibt Kanto, fühlt sich aber im
+   * nächsten Run anders an.
+   *
+   * Der Startwert hängt nur an Run und Region, nicht am Spielverlauf: Dieselbe
+   * Region liefert vom ersten bis zum letzten Knoten dieselben Bewohner, und
+   * ein geladener Spielstand findet sie unverändert wieder.
+   * -------------------------------------------------------------------------- */
+
+  function regionRoster(seedText, pool, opts) {
+    opts = opts || {};
+    var min = opts.min || 40, share = opts.share || 0.6;
+    if (pool.length <= min) return pool.slice();
+    var list = pool.slice();
+    PL.rng(seedText).shuffle(list);
+    return list.slice(0, Math.max(min, Math.round(pool.length * share)));
   }
 
   /**
@@ -233,7 +257,10 @@
       if (opts.rare) w *= 1 + Math.max(0, (sp.bst - 450) / 120);
       if (opts.biome) w *= habitatFit(sp, opts.biome);
       // Wer in diesem Run schon aufgetaucht ist, tritt seltener wieder an.
-      if (opts.met && opts.met[sp.id]) w *= 0.12;
+      // Wem man in diesem Run schon begegnet ist, tritt kaum noch auf — und wer
+      // zweimal da war, praktisch gar nicht mehr. Die Strafe wächst mit jeder
+      // Begegnung, weil genau das der Vorwurf war: immer dieselben.
+      if (opts.met && opts.met[sp.id]) w *= Math.pow(0.06, opts.met[sp.id]);
       if (opts.exclude && opts.exclude[sp.id]) w *= 0.02;
       return w;
     });
@@ -1027,6 +1054,7 @@
     EVENTS: EVENTS,
     EVENT_AUTO: EVENT_AUTO,
     encounterPool: encounterPool,
+    regionRoster: regionRoster,
     counterStarter: counterStarter,
     rivalTeam: rivalTeam,
     rivalBanter: rivalBanter,

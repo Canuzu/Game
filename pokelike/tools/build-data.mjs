@@ -72,12 +72,13 @@ const idxOf = new Map(speciesList.map((s, i) => [s.id, i]));
 
 // Megas und Protoformen: baseId -> [{ name, types, baseStats, ability }]
 // Steine und Ringe gibt es hier nicht: wer ausgewachsen ist, entwickelt sich
-// mega. Showdown führt auch spekulative Megas eines Fan-Formats ("Future") —
-// die bleiben draußen, hier zählen nur die aus den Spielen.
+// mega. Showdown markiert die Megas aus Legends Z-A als "Future", weil sie in
+// keinem seiner Wettkampfformate erlaubt sind — aus den Spielen sind sie
+// trotzdem. Draußen bleibt nur "CAP": das sind erfundene Fan-Pokémon.
 const megas = {};
 for (const s of gen.species.all()) {
   if (!s.forme || !/^(Mega|Primal)/.test(s.forme) || s.num > 1025) continue;
-  if (s.isNonstandard && s.isNonstandard !== 'Past') continue;
+  if (s.isNonstandard === 'CAP') continue;
   const base = gen.species.get(s.baseSpecies);
   if (!base || !idxOf.has(base.id)) continue;
   (megas[base.id] ??= []).push({
