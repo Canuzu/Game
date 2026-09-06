@@ -81,8 +81,10 @@ const manifest = {
   description: 'Ein Pokémon-Roguelike für den Browser — alle neun Generationen.',
   start_url: './',
   scope: './',
-  display: 'standalone',
-  orientation: 'portrait',
+  // `browser` statt `standalone`: Die Kachel öffnet die Seite so, wie der
+  // Browser sie sonst auch zeigt — mit seinen Leisten und ohne, dass etwas
+  // unter der Uhr verschwindet.
+  display: 'browser',
   background_color: '#0b0d13',
   theme_color: '#12151d',
   lang: 'de',
@@ -103,11 +105,10 @@ const block = [
   '<link rel="icon" href="' + uri(icon192) + '">',
   '<link rel="apple-touch-icon" href="' + uri(icon180) + '">',
   '<link rel="manifest" href="manifest.webmanifest">',
-  '<meta name="theme-color" content="#12151d">',
-  '<meta name="mobile-web-app-capable" content="yes">',
-  '<meta name="apple-mobile-web-app-capable" content="yes">',
+  // Nur der Name der Kachel. Kein Vollbildmodus: Der schiebt die Seite auf
+  // dem iPhone unter die Uhr, und das Spiel rechnet nirgends mit einem
+  // Abstand nach oben. Es soll aussehen wie in Safari — nur eben mit Symbol.
   '<meta name="apple-mobile-web-app-title" content="Pokélike+">',
-  '<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">',
   ENDE
 ].join('\n');
 
