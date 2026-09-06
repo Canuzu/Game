@@ -5,6 +5,10 @@ Was in diesem Ordner liegt, liefert GitHub Pages aus:
 ```
 index.html          Pokélike+ — eine einzige Datei (~7 MB, alles eingebettet)
                     → https://canuzu.github.io/Game/
+version.json        die Kennung der ausgelieferten Fassung. Die Seite holt sie
+                    beim Start und lädt sich neu, wenn sie älter ist — sonst
+                    spielt man auf dem Startbildschirm des Telefons ewig die
+                    Fassung, die der Browser einmal weggelegt hat.
 schach/             Schach, unter eigener Adresse und ohne Verbindung dorthin
                     → https://canuzu.github.io/Game/schach/
 pokelike/           nur eine Weiterleitung auf die Startadresse, damit ein
@@ -34,6 +38,10 @@ Pokélike+:
     cd pokelike
     node tools/build-single.mjs
     cp dist/pokelike.html ../docs/index.html
+    cp dist/version.json ../docs/version.json
+
+Beide Dateien gehören zusammen und müssen im selben Aufwasch hoch: Die
+Kennung in version.json muss die der ausgelieferten index.html sein.
 
 Schach: Der Zweig `gh-pages` wird vom Workflow des Schach-Zweigs weiter
 gefüllt, ausgeliefert wird er aber nicht mehr — GitHub Pages kann nur

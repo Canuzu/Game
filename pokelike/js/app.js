@@ -2993,9 +2993,50 @@
           }
         }, 'Fortschritt zurücksetzen')
       ]),
+      versionZone(),
       el('p', { className: 'muted small', text: 'Gespeichert wird ausschließlich im Browser dieses Geräts. Es werden keine Daten übertragen; die Pokémon-Bilder kommen von Pokémon Showdown und PokeAPI.' })
     ]);
   };
+
+  /**
+   * Welche Fassung läuft hier — und liegt eine neuere bereit? Wichtig für die
+   * Seite auf dem Startbildschirm: Die lädt der Browser gern aus seinem
+   * Zwischenspeicher, und dann spielt man wochenlang eine alte Fassung, ohne
+   * es zu merken.
+   */
+  function versionZone() {
+    if (!PL.update) return null;
+    var stand = el('p', { className: 'muted small', text: PL.update.isDev()
+      ? 'Entwicklungsfassung — hier wird nichts geprüft.'
+      : 'Fassung ' + PL.update.build });
+    var knopf = el('button', { className: 'btn', type: 'button', onclick: function () {
+      knopf.disabled = true;
+      knopf.textContent = 'Wird geprüft …';
+      PL.update.check({ reload: false }).then(function (res) {
+        knopf.disabled = false;
+        knopf.textContent = '🔄 Nach Aktualisierung sehen';
+        if (res.state === 'aktuell') { U.toast('Das ist die neueste Fassung.', 'good'); return; }
+        if (res.state === 'unbekannt' || res.state === 'entwicklung') {
+          U.toast('Von hier aus lässt sich das nicht prüfen.', 'bad');
+          return;
+        }
+        stand.textContent = 'Fassung ' + PL.update.build + ' — bereit liegt ' + res.latest;
+        U.confirm('Eine neuere Fassung liegt bereit. Jetzt neu laden? Dein Spielstand bleibt erhalten.',
+          function () {
+            root.location.replace(root.location.pathname + '?v=' + encodeURIComponent(res.latest));
+          }, { yes: 'Neu laden' });
+      });
+    } }, '🔄 Nach Aktualisierung sehen');
+    return el('div', { className: 'save-zone' }, [
+      el('h3', { text: 'Fassung' }),
+      stand,
+      PL.update.isDev() ? null : el('div', { className: 'setting-actions' }, [knopf]),
+      PL.update.isDev() ? null : el('p', { className: 'muted small', text:
+        'Bleibt hier trotz Neuladen eine alte Fassung stehen, hilft auf dem iPhone: das Symbol vom ' +
+        'Startbildschirm löschen, die Seite in Safari öffnen und von dort neu ablegen. Der Spielstand ' +
+        'liegt im Browser und übersteht das.' })
+    ]);
+  }
 
   /* --- Spielstand sichern und einspielen ------------------------------------- */
 
@@ -3265,6 +3306,17 @@
     show('title');
     renderAutoButton();
     startCloud();
+    // Auf dem Startbildschirm eines Telefons hält der Browser die Seite gern
+    // fest. Beim Start sieht das Spiel deshalb selbst nach, ob es veraltet ist.
+    if (PL.update) {
+      PL.update.check().then(function (res) {
+        if (res.state === 'neu') U.toast('Neue Fassung — das Spiel lädt sich neu.');
+        if (res.state === 'haengt') {
+          U.toast('Es liegt eine neuere Fassung bereit, dein Browser hält aber an der alten fest. ' +
+            'Unter Einstellungen steht, was hilft.', 'bad');
+        }
+      });
+    }
   }
 
   App.sfx = sfx;

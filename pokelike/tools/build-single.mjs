@@ -10,6 +10,7 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { execSync } from 'node:child_process';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const fragment = process.argv.includes('--fragment');
@@ -38,7 +39,23 @@ if (fragment) {
   html = `<title>${title}</title>\n${style}\n${body.trim()}\n`;
 }
 
+/* Die Kennung dieser Fassung. Sie steckt in der Datei selbst und noch einmal
+   in version.json daneben — nur so kann die Seite auf dem Startbildschirm
+   eines Telefons merken, dass sie veraltet ist. */
+let kurz = '';
+try {
+  kurz = '-' + execSync('git rev-parse --short HEAD', { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'] })
+    .toString().trim();
+} catch { /* kein git — dann reicht die Uhrzeit */ }
+const build = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z' + kurz;
+const marke = "var BUILD = 'entwicklung';";
+if (!html.includes(marke)) throw new Error('Die Baukennung aus js/update.js ist nicht auffindbar.');
+html = html.replace(marke, "var BUILD = '" + build + "';");
+
 const out = join(ROOT, 'dist', fragment ? 'pokelike-fragment.html' : 'pokelike.html');
 mkdirSync(dirname(out), { recursive: true });
 writeFileSync(out, html);
-console.log(out, '(' + (html.length / 1048576).toFixed(2) + ' MB)');
+if (!fragment) {
+  writeFileSync(join(ROOT, 'dist', 'version.json'), JSON.stringify({ build }) + '\n');
+}
+console.log(out, '(' + (html.length / 1048576).toFixed(2) + ' MB)', '· Fassung ' + build);

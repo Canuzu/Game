@@ -1548,6 +1548,17 @@ section('Legendäre Begegnungen');
     const alt = PL.Run.fromJSON(gespeichert);
     eq('Ein älterer Spielstand bekommt sie aus dem Startwert zurück',
       alt.legendRegion, PL.Run.rollLegend(run.seed, run.mode));
+
+    // Ein laufender Run aus der alten Fassung trägt noch alte Spuren auf der
+    // Karte — die verschwinden beim Laden.
+    const veraltet = JSON.parse(JSON.stringify(run.toJSON()));
+    delete veraltet.legendRegion;
+    veraltet.region = (run.legendRegion + 1) % 9;   // irgendeine andere Region
+    veraltet.map[1][0].type = 'legend';
+    veraltet.map[1][0].done = false;
+    const geputzt = PL.Run.fromJSON(veraltet);
+    eq('Eine Spur aus der alten Regel wird beim Laden entfernt',
+      geputzt.map.reduce((a, row) => a + row.filter((n) => n.type === 'legend').length, 0), 0);
   }
 
   run.region = 3;

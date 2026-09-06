@@ -1418,6 +1418,99 @@ button.move-row:hover { border-color: var(--accent); }
 </script>
 <script>
 /* =============================================================================
+ * update.js — merkt, wenn eine neuere Fassung bereitliegt
+ * -----------------------------------------------------------------------------
+ * Wer die Seite auf den Startbildschirm legt, bekommt auf dem Telefon eine
+ * eigenständige Fassung, die der Browser gern aus seinem Zwischenspeicher
+ * bedient — auch dann noch, wenn längst eine neue Fassung veröffentlicht ist.
+ * Von außen lässt sich das nicht abstellen; die Seite muss es selbst merken.
+ *
+ * Deshalb trägt jede gebaute Fassung eine Kennung, und neben ihr liegt die
+ * winzige Datei version.json mit derselben Kennung. Die wird beim Start frisch
+ * geholt: Stimmen die beiden nicht überein, ist die Seite alt, und das Spiel
+ * lädt sich unter einer neuen Adresse (…?v=Kennung) noch einmal — die kennt
+ * der Zwischenspeicher nicht und muss sie holen.
+ *
+ * Damit daraus keine Endlosschleife wird, merkt sich das Spiel für die Dauer
+ * des Tabs, dass es das für diese Kennung schon versucht hat. Klappt es dann
+ * immer noch nicht, sagt es das lieber, als es weiter zu versuchen.
+ *
+ * Ohne Netz, als Einzeldatei oder lokal geöffnet passiert hier gar nichts.
+ * ========================================================================== */
+(function (root) {
+  'use strict';
+
+  var PL = root.PL || (root.PL = {});
+
+  // Diese Zeile ersetzt tools/build-single.mjs beim Bauen.
+  var BUILD = '20260906T162847Z-bd1b088';
+
+  var TRIED_KEY = 'pokelike.plus.update.versucht';
+  var state = { build: BUILD, latest: null, checking: false, stuck: false };
+
+  function isDev() { return BUILD === 'entwicklung'; }
+  function online() { return /^https?:$/.test(root.location && root.location.protocol); }
+
+  function tried(build) {
+    try { return root.sessionStorage.getItem(TRIED_KEY) === build; } catch (e) { return false; }
+  }
+  function noteTried(build) {
+    try { root.sessionStorage.setItem(TRIED_KEY, build); } catch (e) { /* dann eben nicht */ }
+  }
+
+  /**
+   * Holt die Kennung, die gerade veröffentlicht ist. Liefert null, wenn es
+   * hier nichts zu holen gibt — das ist kein Fehler, sondern der Normalfall
+   * für die Einzeldatei und die eingebettete Fassung.
+   */
+  function fetchLatest() {
+    if (!online() || typeof root.fetch !== 'function') return Promise.resolve(null);
+    return root.fetch('version.json?t=' + Date.now(), { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) { return (d && d.build) || null; })
+      .catch(function () { return null; });
+  }
+
+  /**
+   * Prüft und lädt bei Bedarf neu. `opts.silent` hält den Mund, wenn alles
+   * beim Alten ist — beim Start soll nichts aufpoppen, beim Knopfdruck schon.
+   */
+  function check(opts) {
+    opts = opts || {};
+    if (isDev()) return Promise.resolve({ state: 'entwicklung' });
+    state.checking = true;
+    return fetchLatest().then(function (latest) {
+      state.checking = false;
+      state.latest = latest;
+      if (!latest) return { state: 'unbekannt' };
+      if (latest === BUILD) return { state: 'aktuell', build: BUILD };
+      // Schon einmal vergeblich versucht: Dann liegt es nicht am Spiel,
+      // sondern am Zwischenspeicher, und ein weiterer Versuch hilft nicht.
+      if (tried(latest)) {
+        state.stuck = true;
+        return { state: 'haengt', build: BUILD, latest: latest };
+      }
+      noteTried(latest);
+      if (opts.reload !== false) {
+        root.location.replace(root.location.pathname + '?v=' + encodeURIComponent(latest));
+      }
+      return { state: 'neu', build: BUILD, latest: latest };
+    });
+  }
+
+  PL.update = {
+    build: BUILD,
+    isDev: isDev,
+    state: function () { return { build: BUILD, latest: state.latest, stuck: state.stuck }; },
+    check: check
+  };
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = PL.update;
+})(typeof globalThis !== 'undefined' ? globalThis : this);
+
+</script>
+<script>
+/* =============================================================================
  * core.js — Zufall, Pokédex-Zugriff, Übersetzungen, Hilfsfunktionen
  * -----------------------------------------------------------------------------
  * Alles, was jede andere Datei braucht, hängt unter dem globalen Objekt PL.
@@ -10586,8 +10679,18 @@ button.move-row:hover { border-color: var(--accent); }
     run.pendingLevelUps = [];
     run.history = run.history || [];
     // Spielstände von vorher kannten die legendäre Spur noch nicht; der Wurf
-    // hängt nur am Startwert und lässt sich deshalb nachholen.
-    if (run.legendRegion === undefined) run.legendRegion = Run.rollLegend(run.seed, run.mode);
+    // hängt nur am Startwert und lässt sich deshalb nachholen. Die schon
+    // gebaute Karte trägt dann aber noch eine Spur aus der alten Regel — die
+    // wird zu einer gewöhnlichen Begegnung, sonst bliebe der laufende Run bei
+    // der alten Häufigkeit stehen, bis er zu Ende ist.
+    if (run.legendRegion === undefined) {
+      run.legendRegion = Run.rollLegend(run.seed, run.mode);
+      if (run.region !== run.legendRegion) {
+        (run.map || []).forEach(function (row) {
+          row.forEach(function (n) { if (n.type === 'legend' && !n.done) n.type = 'wild'; });
+        });
+      }
+    }
     run.legendUsed = !!run.legendUsed;
     // Aus älteren Spielständen können Megasteine kommen, die es nicht mehr gibt.
     Object.keys(run.bag || {}).forEach(function (id) {
@@ -16624,9 +16727,50 @@ button.move-row:hover { border-color: var(--accent); }
           }
         }, 'Fortschritt zurücksetzen')
       ]),
+      versionZone(),
       el('p', { className: 'muted small', text: 'Gespeichert wird ausschließlich im Browser dieses Geräts. Es werden keine Daten übertragen; die Pokémon-Bilder kommen von Pokémon Showdown und PokeAPI.' })
     ]);
   };
+
+  /**
+   * Welche Fassung läuft hier — und liegt eine neuere bereit? Wichtig für die
+   * Seite auf dem Startbildschirm: Die lädt der Browser gern aus seinem
+   * Zwischenspeicher, und dann spielt man wochenlang eine alte Fassung, ohne
+   * es zu merken.
+   */
+  function versionZone() {
+    if (!PL.update) return null;
+    var stand = el('p', { className: 'muted small', text: PL.update.isDev()
+      ? 'Entwicklungsfassung — hier wird nichts geprüft.'
+      : 'Fassung ' + PL.update.build });
+    var knopf = el('button', { className: 'btn', type: 'button', onclick: function () {
+      knopf.disabled = true;
+      knopf.textContent = 'Wird geprüft …';
+      PL.update.check({ reload: false }).then(function (res) {
+        knopf.disabled = false;
+        knopf.textContent = '🔄 Nach Aktualisierung sehen';
+        if (res.state === 'aktuell') { U.toast('Das ist die neueste Fassung.', 'good'); return; }
+        if (res.state === 'unbekannt' || res.state === 'entwicklung') {
+          U.toast('Von hier aus lässt sich das nicht prüfen.', 'bad');
+          return;
+        }
+        stand.textContent = 'Fassung ' + PL.update.build + ' — bereit liegt ' + res.latest;
+        U.confirm('Eine neuere Fassung liegt bereit. Jetzt neu laden? Dein Spielstand bleibt erhalten.',
+          function () {
+            root.location.replace(root.location.pathname + '?v=' + encodeURIComponent(res.latest));
+          }, { yes: 'Neu laden' });
+      });
+    } }, '🔄 Nach Aktualisierung sehen');
+    return el('div', { className: 'save-zone' }, [
+      el('h3', { text: 'Fassung' }),
+      stand,
+      PL.update.isDev() ? null : el('div', { className: 'setting-actions' }, [knopf]),
+      PL.update.isDev() ? null : el('p', { className: 'muted small', text:
+        'Bleibt hier trotz Neuladen eine alte Fassung stehen, hilft auf dem iPhone: das Symbol vom ' +
+        'Startbildschirm löschen, die Seite in Safari öffnen und von dort neu ablegen. Der Spielstand ' +
+        'liegt im Browser und übersteht das.' })
+    ]);
+  }
 
   /* --- Spielstand sichern und einspielen ------------------------------------- */
 
@@ -16896,6 +17040,17 @@ button.move-row:hover { border-color: var(--accent); }
     show('title');
     renderAutoButton();
     startCloud();
+    // Auf dem Startbildschirm eines Telefons hält der Browser die Seite gern
+    // fest. Beim Start sieht das Spiel deshalb selbst nach, ob es veraltet ist.
+    if (PL.update) {
+      PL.update.check().then(function (res) {
+        if (res.state === 'neu') U.toast('Neue Fassung — das Spiel lädt sich neu.');
+        if (res.state === 'haengt') {
+          U.toast('Es liegt eine neuere Fassung bereit, dein Browser hält aber an der alten fest. ' +
+            'Unter Einstellungen steht, was hilft.', 'bad');
+        }
+      });
+    }
   }
 
   App.sfx = sfx;

@@ -7,8 +7,9 @@
     "build:data": "node tools/build-data.mjs",
     "test": "node tests/run-tests.mjs",
     "test:browser": "node tests/browser.mjs",
-    "test:alle": "npm test && npm run test:browser",
-    "start": "node -e \"console.log('Einfach pokelike/index.html im Browser öffnen — es wird kein Server gebraucht.')\""
+    "test:alle": "npm test && npm run test:browser && npm run test:update",
+    "start": "node -e \"console.log('Einfach pokelike/index.html im Browser öffnen — es wird kein Server gebraucht.')\"",
+    "test:update": "node tests/update.mjs"
   },
   "devDependencies": {
     "@pkmn/dex": "^0.10.11",

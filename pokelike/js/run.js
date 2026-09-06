@@ -1493,8 +1493,18 @@
     run.pendingLevelUps = [];
     run.history = run.history || [];
     // Spielstände von vorher kannten die legendäre Spur noch nicht; der Wurf
-    // hängt nur am Startwert und lässt sich deshalb nachholen.
-    if (run.legendRegion === undefined) run.legendRegion = Run.rollLegend(run.seed, run.mode);
+    // hängt nur am Startwert und lässt sich deshalb nachholen. Die schon
+    // gebaute Karte trägt dann aber noch eine Spur aus der alten Regel — die
+    // wird zu einer gewöhnlichen Begegnung, sonst bliebe der laufende Run bei
+    // der alten Häufigkeit stehen, bis er zu Ende ist.
+    if (run.legendRegion === undefined) {
+      run.legendRegion = Run.rollLegend(run.seed, run.mode);
+      if (run.region !== run.legendRegion) {
+        (run.map || []).forEach(function (row) {
+          row.forEach(function (n) { if (n.type === 'legend' && !n.done) n.type = 'wild'; });
+        });
+      }
+    }
     run.legendUsed = !!run.legendUsed;
     // Aus älteren Spielständen können Megasteine kommen, die es nicht mehr gibt.
     Object.keys(run.bag || {}).forEach(function (id) {
