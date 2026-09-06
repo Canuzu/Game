@@ -847,7 +847,7 @@ section('Pokédex: eintragen, was man besitzt');
     const r2 = new PL.Run({ seed: 99, starter: 'charmander' });
     const held = r2.party[0];
     held.shiny = true;
-    held.lvl = Math.max(held.lvl, (mons.evolutions(held, { force: true })[0].to.el || 16));
+    held.lvl = Math.max(held.lvl, mons.evolutions(held, {})[0].level || 16);
     held.exp = 0;
     const alt = held.sp;
     const auto = mons.autoEvolution(held);
@@ -1469,6 +1469,110 @@ section('Jeder Run seine eigene Auswahl');
     if (!drin[id]) fremd++;
   }
   check('Wilde Begegnungen halten sich an die Auswahl', fremd === 0, fremd + ' Ausreißer');
+}
+
+section('Entwicklungen: Level und Stein');
+{
+  const run = new PL.Run({ seed: 606, starter: 'charmander' });
+  function baue(id, lvl) {
+    return PL.world.buildMon(PL.rng('e-' + id), dex.sp(id), lvl, {});
+  }
+
+  // 1) Steine: Der Beutel führt Kennungen, die Entwicklungsdaten englische
+  //    Namen. Genau daran ist es vorher gescheitert.
+  const vulpix = baue('vulpix', 20);
+  const stein = mons.evolutions(vulpix, { items: {} })[0];
+  eq('Vulpix braucht einen Stein', stein.how, 'useItem');
+  eq('… und der heißt auf Deutsch', stein.text, 'Feuerstein');
+  check('Ohne Stein geht nichts', !stein.ready);
+  const mitStein = mons.evolutions(vulpix, { items: { firestone: 1 } })[0];
+  check('Mit dem Feuerstein im Beutel ist es soweit', mitStein.ready);
+  eq('Der Stein wird unter seiner Kennung abgebucht', PL.util.toID(mitStein.item), 'firestone');
+  check('Und der Laden führt ihn, wenn er im Team gebraucht wird', (function () {
+    run.party = [vulpix];
+    return run.itemPool().some((o) => o.item.id === 'firestone');
+  })());
+
+  // Alle Steine, die in den Daten stehen, gibt es auch als Gegenstand.
+  {
+    let fehlend = [];
+    dex.species.forEach((sp) => {
+      if (sp.et !== 'useItem' || !sp.ei) return;
+      if (!PL.items.get(PL.util.toID(sp.ei))) fehlend.push(sp.ei);
+    });
+    eq('Zu jedem Entwicklungsstein gibt es einen Gegenstand', fehlend.length, 0, fehlend.join(', '));
+  }
+
+  // Ein ganzer Durchgang: Beutel, Entwicklung, Abbuchen.
+  {
+    const r2 = new PL.Run({ seed: 71, starter: 'bulbasaur' });
+    r2.party = [baue('growlithe', 25)];
+    r2.addItem('firestone', 1);
+    const bereit = PL.autopilot.readyEvolutions(r2);
+    eq('Der Automat sieht die Steinentwicklung', bereit.length, 1);
+    r2.removeItem(PL.util.toID(bereit[0].evo.item), 1);
+    mons.evolve(bereit[0].mon, bereit[0].evo.to, r2.rng);
+    eq('Aus Growlithe wird Arcanine', dex.sp(r2.party[0].sp).id, 'arcanine');
+    check('Der Stein ist aufgebraucht', !r2.bag.firestone);
+  }
+
+  // 2) Alles, was in den Spielen Tausch oder Sonderbedingungen verlangt,
+  //    geht hier über das Level.
+  {
+    let sonder = 0;
+    dex.species.forEach((sp) => {
+      if (!sp.ev) return;
+      const mon = { sp: sp.i, lvl: 100, moves: [], item: null, friendship: 0 };
+      mons.evolutions(mon, {}).forEach((e) => {
+        if (e.how !== 'level' && e.how !== 'useItem') sonder++;
+      });
+    });
+    eq('Es gibt nur noch Level und Stein', sonder, 0);
+  }
+  const paare = [
+    ['machoke', 'machamp'], ['haunter', 'gengar'], ['kadabra', 'alakazam'],
+    ['graveler', 'golem'], ['golbat', 'crobat'], ['feebas', 'milotic'],
+    ['scyther', 'scizor'], ['onix', 'steelix'], ['riolu', 'lucario'],
+    ['rhydon', 'rhyperior'], ['piloswine', 'mamoswine'], ['pichu', 'pikachu']
+  ];
+  let schlecht = [];
+  paare.forEach(([von, nach]) => {
+    const liste = mons.evolutions({ sp: dex.sp(von).i, lvl: 100, moves: [], item: null }, {});
+    const treffer = liste.filter((e) => e.to.id === nach)[0];
+    if (!treffer || treffer.how !== 'level' || !(treffer.level >= 16 && treffer.level <= 45)) {
+      schlecht.push(von + '→' + nach + ': ' + (treffer ? treffer.how + ' ' + treffer.level : 'fehlt'));
+    }
+  });
+  eq('Tausch- und Sonderentwicklungen laufen über das Level', schlecht.length, 0, schlecht.join('; '));
+  check('Babys entwickeln sich früh, Kolosse spät',
+    mons.evolutions({ sp: dex.sp('pichu').i, lvl: 5, moves: [] }, {})[0].level <
+    mons.evolutions({ sp: dex.sp('rhydon').i, lvl: 5, moves: [] }, {})[0].level);
+
+  // 3) Wer die Wahl hat, entscheidet selbst — Evoli wird nicht von allein
+  //    zu irgendetwas.
+  {
+    const evoli = baue('eevee', 50);
+    const liste = mons.evolutions(evoli, { items: {} });
+    eq('Evoli hat acht Wege', liste.length, 8);
+    eq('… fünf davon über Steine', liste.filter((e) => e.how === 'useItem').length, 5);
+    eq('… drei über das Level', liste.filter((e) => e.how === 'level').length, 3);
+    eq('Von allein entwickelt es sich zu nichts', mons.autoEvolution(evoli), null);
+    const r3 = new PL.Run({ seed: 8, starter: 'squirtle' });
+    r3.party = [evoli];
+    const bereit = PL.autopilot.readyEvolutions(r3);
+    eq('Der Automat nimmt genau eine Entwicklung je Pokémon', bereit.length, 1);
+  }
+
+  // 4) Wer nur einen Weg hat, entwickelt sich beim Aufstieg von selbst.
+  {
+    const kadabra = baue('kadabra', 60);
+    const auto = mons.autoEvolution(kadabra);
+    check('Kadabra entwickelt sich von allein', !!auto && auto.to.id === 'alakazam');
+    const jung = baue('kadabra', 20);
+    eq('… aber nicht zu früh', mons.autoEvolution(jung), null);
+    check('Ein Relikt darf es vorziehen',
+      !!mons.autoEvolution(baue('kadabra', 34), 6));
+  }
 }
 
 section('Legendäre Begegnungen');

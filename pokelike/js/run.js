@@ -897,13 +897,7 @@
 
       // Entwicklungen prüfen
       this.party.forEach(function (m) {
-        var evo = mons.autoEvolution(m);
-        if (!evo && self.hasMod('evoEarly')) {
-          var list = mons.evolutions(m, {});
-          evo = list.filter(function (e) {
-            return e.how === 'level' && m.lvl >= (e.to.el || 100) - self.mod('evoEarly');
-          })[0] || null;
-        }
+        var evo = mons.autoEvolution(m, self.mod('evoEarly'));
         if (evo) {
           var from = mons.name(m), fromSp = m.sp;
           mons.evolve(m, evo.to, self.rng);

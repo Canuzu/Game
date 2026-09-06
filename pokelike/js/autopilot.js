@@ -338,9 +338,15 @@
   function readyEvolutions(run) {
     var out = [];
     run.party.forEach(function (mon) {
+      // Höchstens eine je Pokémon: Nach der ersten ist es eine andere Art,
+      // und die zweite ginge ins Leere. Bei einer Wahl — Evoli — wird die
+      // stärkste Entwicklung genommen.
+      var best = null;
       mons.evolutions(mon, { items: run.bag }).forEach(function (evo) {
-        if (evo.ready) out.push({ mon: mon, evo: evo });
+        if (!evo.ready) return;
+        if (!best || evo.to.bst > best.to.bst) best = evo;
       });
+      if (best) out.push({ mon: mon, evo: best });
     });
     return out;
   }

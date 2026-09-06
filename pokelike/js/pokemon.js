@@ -332,17 +332,42 @@
   }
 
   /* ---------- 5) Entwicklung ------------------------------------------------
-   * Im Run entwickeln sich Pokémon beim Stufenaufstieg von selbst; alles
-   * andere (Steine, Tausch, Freundschaft) hängt an Gegenständen bzw. an der
-   * Zahl gemeinsamer Kämpfe.
+   * Zwei Wege gibt es hier, und nur zwei: das Level und der Stein. Beim
+   * Stufenaufstieg entwickelt sich ein Pokémon von selbst, ein Stein wird am
+   * Rastplatz eingesetzt. Alles, was die Spiele sonst noch verlangen, kommt
+   * unten in evoLevel() zur Sprache.
    * ------------------------------------------------------------------------ */
 
-  var EVO_ITEM_ALIAS = { 'Linking Cord': 'trade' };
+  /**
+   * Auf welchem Level greift eine Entwicklung, die in den Spielen etwas
+   * anderes verlangt? Gerechnet wird aus der Stärke der Entwicklung: Ein
+   * Pikachu ist bald da, ein Machomei lässt auf sich warten. Damit landet
+   * jedes Pokémon ungefähr dort, wo es auch in den Spielen auftaucht — ohne
+   * dass irgendwo eine Liste von Hand gepflegt werden müsste.
+   */
+  function evoLevel(from, to) {
+    if (to.el) return to.el;
+    var lvl = Math.round((to.bst - 200) / 8);
+    // Nie vor der eigenen Vorstufe, nie so spät, dass es niemand mehr erlebt.
+    return clamp(Math.max(lvl, (from.el || 0) + 2), 16, 45);
+  }
+
+  /** Liegt dieser Entwicklungsstein im Beutel? Der Beutel führt Kennungen. */
+  function hasStone(bag, name) {
+    if (!bag || !name) return false;
+    return (bag[PL.util.toID(name)] || 0) > 0 || (bag[name] || 0) > 0;
+  }
 
   /**
-   * Prüft alle Entwicklungen einer Spezies.
-   * ctx: { items: {ItemName: Anzahl}, friendship, force }
-   * Rückgabe: Liste { to, how, ready, item, text }
+   * Alle Entwicklungen, die diesem Pokémon offenstehen.
+   *
+   * Es gibt hier nur zwei Wege: das Level und den Stein. Alles, was die
+   * Spiele sonst noch verlangen — ein Tausch, ein Kabelmodul, ein bestimmter
+   * Ort, eine Uhrzeit, ein auf den Kopf gedrehtes Gerät —, lässt sich in
+   * einem Run nicht herstellen. Solche Pokémon blieben sonst für immer
+   * Vorstufe; sie entwickeln sich deshalb über das Level.
+   *
+   * ctx: { items: Beutel, force }
    */
   function evolutions(mon, ctx) {
     ctx = ctx || {};
@@ -350,41 +375,16 @@
     if (!sp.ev) return out;
     for (i = 0; i < sp.ev.length; i++) {
       var to = dex.sp(sp.ev[i]);
-      var how = to.et || (to.el ? 'level' : 'other');
-      var entry = { to: to, how: how, item: to.ei || null, ready: false, text: '' };
-      switch (how) {
-        case 'level':
-          entry.ready = mon.lvl >= (to.el || 100);
-          entry.text = 'Level ' + (to.el || '?');
-          break;
-        case 'useItem':
-          entry.ready = !!(ctx.items && ctx.items[to.ei] > 0);
-          entry.text = to.ei || 'Stein';
-          break;
-        case 'levelFriendship':
-          entry.ready = (mon.friendship || 0) >= 160 && mon.lvl > (to.el || 0);
-          entry.text = 'Freundschaft' + (to.ec ? ' (' + to.ec + ')' : '');
-          break;
-        case 'levelHold':
-          entry.ready = mon.item === to.ei && mon.lvl >= (to.el || 1);
-          entry.text = to.ei + ' tragen';
-          break;
-        case 'levelMove':
-          entry.ready = !!(to.em && mon.moves.some(function (mv) { return dex.move(mv.m).n === to.em; }));
-          entry.text = to.em + ' beherrschen';
-          break;
-        case 'trade':
-          entry.ready = !!(ctx.items && ctx.items['Linking Cord'] > 0);
-          entry.item = 'Linking Cord';
-          entry.text = 'Kabelmodul';
-          break;
-        case 'levelExtra':
-        case 'other':
-        default:
-          entry.ready = !!(ctx.items && ctx.items['Rätselstein'] > 0);
-          entry.item = 'Rätselstein';
-          entry.text = to.ec || 'besondere Bedingung';
-          break;
+      var entry = { to: to, how: 'level', item: null, ready: false, text: '' };
+      if (to.et === 'useItem' && to.ei) {
+        entry.how = 'useItem';
+        entry.item = to.ei;
+        entry.ready = hasStone(ctx.items, to.ei);
+        entry.text = PL.items ? PL.items.label(PL.util.toID(to.ei)) : to.ei;
+      } else {
+        entry.level = evoLevel(sp, to);
+        entry.ready = mon.lvl >= entry.level;
+        entry.text = 'Level ' + entry.level;
       }
       if (ctx.force) entry.ready = true;
       out.push(entry);
@@ -392,14 +392,20 @@
     return out;
   }
 
-  /** Die Entwicklung, die beim Stufenaufstieg von allein greift. */
-  function autoEvolution(mon) {
-    var list = evolutions(mon, {}), i;
-    for (i = 0; i < list.length; i++) {
-      if (list[i].ready && (list[i].how === 'level' || list[i].how === 'levelFriendship' ||
-                            list[i].how === 'levelMove')) return list[i];
-    }
-    return null;
+  /**
+   * Die Entwicklung, die beim Stufenaufstieg von allein greift.
+   *
+   * Wer die Wahl hat, bekommt sie auch: Steht einem Pokémon mehr als eine
+   * Entwicklung offen — Evoli ist der bekannte Fall —, entscheidet nicht das
+   * Spiel, sondern der Spieler am Rastplatz.
+   */
+  function autoEvolution(mon, early) {
+    var sp = dex.sp(mon.sp);
+    if (!sp.ev || sp.ev.length !== 1) return null;
+    var evo = evolutions(mon, {})[0];
+    if (!evo || evo.how !== 'level') return null;
+    // Ein Relikt kann Entwicklungen vorziehen — ein paar Level früher.
+    return mon.lvl >= evo.level - (early || 0) ? evo : null;
   }
 
   /** Wandelt das Pokémon um und behält KP-Anteil, Attacken und Bindung. */

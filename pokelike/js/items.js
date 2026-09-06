@@ -352,13 +352,16 @@
     'Malicious Armor': 'Fluchrüstung', 'Metal Alloy': 'Metalllegierung',
     'Leader\'s Crest': 'Anführerzahn', 'Scroll of Darkness': 'Dunkelschriftrolle',
     'Scroll of Waters': 'Wasserschriftrolle', 'Masterpiece Teacup': 'Meister-Teetasse',
-    'Unremarkable Teacup': 'Schlichte Teetasse', 'King\'s Rock': 'König-Stein',
-    'Linking Cord': 'Kabelmodul'
+    'Unremarkable Teacup': 'Schlichte Teetasse', 'King\'s Rock': 'König-Stein'
   };
 
+  /* Nur die Steine, die hier auch wirklich eine Entwicklung auslösen. Alles,
+     was in den Spielen einen Tausch oder ein getragenes Teil verlangt, läuft
+     hier über das Level (siehe pokemon.js) — ein Kabelmodul im Laden wäre ein
+     Gegenstand, den niemand je gebrauchen könnte. Was daneben ohnehin ein
+     Tragegegenstand ist (König-Stein, Scharfklaue …), bleibt einer. */
   var evoItems = {};
-  dex.species.forEach(function (sp) { if (sp.ei) evoItems[sp.ei] = true; });
-  evoItems['Linking Cord'] = true;
+  dex.species.forEach(function (sp) { if (sp.ei && sp.et === 'useItem') evoItems[sp.ei] = true; });
   Object.keys(evoItems).forEach(function (name) {
     var id = toID(name);
     if (ITEMS[id] && ITEMS[id].kind !== 'evo') { ITEMS[id].evo = name; return; }
@@ -367,11 +370,6 @@
       desc: 'Lässt bestimmte Pokémon sich entwickeln.'
     });
   });
-  def('mysterystone', {
-    name: 'Rätselstein', en: 'Rätselstein', kind: 'evo', price: 3000, evo: 'Rätselstein',
-    desc: 'Löst jede Entwicklung aus, die sonst besondere Umstände braucht.'
-  });
-
   /* ---------- Zugriff -------------------------------------------------------- */
 
   function get(id) { return ITEMS[toID(id)] || null; }
