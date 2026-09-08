@@ -1162,17 +1162,43 @@
       })));
   }
 
-  /** Lässt eine Trainerfigur zur Seite gehen, bevor das Pokémon erscheint. */
-  function dismissTrainer(sideId, done) {
-    var slot = BV.slots[sideId];
-    var art = slot && slot.querySelector('.trainer-art');
-    if (!art || !art.animate || (PL.fx && PL.fx.reduced())) { if (art) art.remove(); done(); return; }
-    var dir = sideId === 0 ? -1 : 1;
-    var anim = art.animate([
-      { transform: 'translateX(0)', opacity: 1 },
-      { transform: 'translateX(' + dir * 90 + 'px)', opacity: 0 }
-    ], { duration: 260, easing: 'ease-in' });
-    anim.onfinish = function () { art.remove(); done(); };
+  /** Mittelpunkt eines Elements im Koordinatensystem der Bühne. */
+  function stagePoint(node) {
+    var a = node.getBoundingClientRect(), b = BV.stage.getBoundingClientRect();
+    return { x: a.left - b.left + a.width / 2, y: a.top - b.top + a.height / 2 };
+  }
+
+  /**
+   * Ein Pokémon betritt die Bühne.
+   *
+   * Steht auf dem Platz noch ein Trainer, wirft er erst seinen Ball — das ist
+   * genau zu Kampfbeginn der Fall, denn danach ist die Figur fort. Bei jedem
+   * Wechsel mitten im Kampf zu werfen würde die Kämpfe nur in die Länge
+   * ziehen; dort genügt der Lichtblitz.
+   *
+   * Rückgabe: wie lange das Protokoll warten soll.
+   */
+  function sendeAus(sideId) {
+    var slot = BV.slots && BV.slots[sideId];
+    if (!slot || !PL.fx || PL.fx.reduced() || !BV.stage) { renderSide(sideId); return 0; }
+    var trainerArt = slot.querySelector('.trainer-art');
+
+    function auftritt() {
+      renderSide(sideId);
+      PL.fx.sparkle(BV.stage, stagePoint(slot), 14, 46);
+      PL.fx.enter(BV['art' + sideId]);
+      sfx('encounter');
+    }
+
+    if (!trainerArt) { auftritt(); return 320; }
+
+    var ziel = stagePoint(slot);
+    var von = stagePoint(trainerArt);
+    var flug = PL.fx.throwBall(BV.stage, von, ziel, function () {
+      trainerArt.remove();
+      auftritt();
+    });
+    return flug + 340;
   }
 
   /** Typenkompass: zeigt vor dem Kampf, was der Gegner im Ärmel hat. */
@@ -1373,7 +1399,7 @@
     var bar = BV['bar' + e.side], art = BV['art' + e.side];
     if (e.k === 'damage' && bar && e.max) {
       bar.setFraction(e.hp, e.max);
-      if (art) flash(art, 'hit');
+      if (art) { if (PL.fx) PL.fx.recoil(art); else flash(art, 'hit'); }
       sfx('hit');
       var num = BV.frames[e.side].querySelector('.hp-num');
       if (num) num.textContent = e.side === 0 ? e.hp + ' / ' + e.max : Math.round(e.hp / e.max * 100) + ' %';
@@ -1386,11 +1412,7 @@
       if (art) flash(art, 'faint');
       sfx('faint');
     } else if (e.k === 'switchin') {
-      if (BV.slots && BV.slots[e.side] && BV.slots[e.side].querySelector('.trainer-art')) {
-        dismissTrainer(e.side, function () { renderSide(e.side); });
-        return 300;
-      }
-      renderSide(e.side);
+      return sendeAus(e.side);
     } else if (e.k === 'mega') {
       renderSide(e.side);
       if (BV['art' + e.side]) flash(BV['art' + e.side], 'shine');

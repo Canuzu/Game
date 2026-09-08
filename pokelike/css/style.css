@@ -1295,6 +1295,22 @@ button.move-row:hover { border-color: var(--accent); }
 
 /* Der Lautstärkeregler. Die Bahn ist überall gleich, der Knopf muss auf dem
    Telefon mit dem Daumen zu treffen sein — deshalb 26 Pixel und nicht 14. */
+/* ---------- Bausteine der Kampfeffekte (fx.js) -------------------------------- */
+
+/* Ein Ring statt eines Klotzes: für Druckwellen und Auren. */
+.fx-bit.fx-ring {
+  background: none !important; border: 3px solid currentColor; border-radius: 50%;
+  box-shadow: 0 0 8px currentColor;
+}
+
+/* Der geworfene Ball — gezeichnet, nicht geladen. */
+.fx-ball {
+  position: absolute; width: 16px; height: 16px; border-radius: 50%; display: block;
+  background: linear-gradient(to bottom, #e8402c 0 45%, #14161c 45% 55%, #f4f6fb 55% 100%);
+  border: 1px solid #14161c; box-shadow: 0 0 6px rgba(255,255,255,.4);
+  image-rendering: pixelated; z-index: 6;
+}
+
 .exp-block { margin: .6rem 0; }
 .exp-block h4 { margin: 0 0 .35rem; font-size: .85rem; color: var(--muted); }
 .exp-rows { display: grid; gap: .15rem; }
