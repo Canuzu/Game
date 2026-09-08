@@ -32,7 +32,11 @@
   function settings() { return meta.settings(); }
   function delayMs() { return App.speeds[settings().speed] !== undefined ? App.speeds[settings().speed] : 420; }
 
+  /** Läuft der Kampf gerade im Pixelkleid? */
+  function pixelStil() { return (settings().kampfstil || 'klassisch') === 'pixel'; }
+
   function applyTheme() {
+    doc.body.setAttribute('data-kampfstil', settings().kampfstil || 'klassisch');
     // 'auto' überlässt die Entscheidung der Umgebung: erst der Seite, in der
     // das Spiel steckt, sonst dem Betriebssystem.
     var theme = settings().theme;
@@ -170,6 +174,7 @@
   var SCREENS = {};
 
   function show(name, arg) {
+    doc.body.setAttribute('data-kampfstil', settings().kampfstil || 'klassisch');
     App.screen = name;
     App.screenArg = arg || null;
     AUTO.act = null;                    // eine neue Ansicht, eine neue Aufgabe
@@ -1162,6 +1167,45 @@
       })));
   }
 
+  /** Mittelpunkt eines Elements im Koordinatensystem der Bühne. */
+  function stagePoint(node) {
+    var a = node.getBoundingClientRect(), b = BV.stage.getBoundingClientRect();
+    return { x: a.left - b.left + a.width / 2, y: a.top - b.top + a.height / 2 };
+  }
+
+  /**
+   * Der Auftritt eines Pokémon im Pixelkleid: Der Trainer wirft, der Ball
+   * fliegt im Bogen, beim Aufgehen blitzen Sterne, und die Lebensleiste fährt
+   * von der Seite herein. Ohne das Kleid bleibt alles, wie es war.
+   * Rückgabe: wie lange das Protokoll warten soll.
+   */
+  function auftritt(sideId) {
+    var slot = BV.slots && BV.slots[sideId];
+    if (!slot || !pixelStil() || !PL.fx || PL.fx.reduced() || !BV.stage) {
+      renderSide(sideId);
+      return 0;
+    }
+    var ziel = stagePoint(slot);
+    var trainerArt = slot.querySelector('.trainer-art');
+    var von = trainerArt ? stagePoint(trainerArt)
+      : { x: sideId === 0 ? 12 : BV.stage.clientWidth - 12, y: ziel.y + 30 };
+    var wrap = BV.frames[sideId];
+    if (wrap) wrap.classList.add('leiste-raus');
+    var flug = PL.fx.throwBall(BV.stage, von, ziel, function () {
+      PL.fx.sparkle(BV.stage, ziel, 14, 48);
+      if (trainerArt) trainerArt.remove();
+      renderSide(sideId);
+      var w = BV.frames[sideId];
+      if (w) {
+        w.classList.add('leiste-raus');
+        void w.offsetWidth;
+        w.classList.remove('leiste-raus');
+      }
+      sfx('encounter');
+    });
+    return flug + 300;
+  }
+
   /** Lässt eine Trainerfigur zur Seite gehen, bevor das Pokémon erscheint. */
   function dismissTrainer(sideId, done) {
     var slot = BV.slots[sideId];
@@ -1386,6 +1430,7 @@
       if (art) flash(art, 'faint');
       sfx('faint');
     } else if (e.k === 'switchin') {
+      if (pixelStil()) return auftritt(e.side);
       if (BV.slots && BV.slots[e.side] && BV.slots[e.side].querySelector('.trainer-art')) {
         dismissTrainer(e.side, function () { renderSide(e.side); });
         return 300;
@@ -3055,6 +3100,9 @@
         [{ value: 'rot', label: 'Rot' }, { value: 'blatt', label: 'Blatt' },
          { value: 'brix', label: 'Brix' }, { value: 'maike', label: 'Maike' }], s.figur || 'rot',
         function (v) { meta.setSetting('figur', v); })),
+      row('Kampfbildschirm', 'Pixel bringt Kästen mit spitzer Kante, geworfene Bälle und Sterne beim Auftritt.', picker(
+        [{ value: 'klassisch', label: 'Klassisch' }, { value: 'pixel', label: 'Pixel' }],
+        s.kampfstil || 'klassisch', function (v) { meta.setSetting('kampfstil', v); applyTheme(); })),
       row('Kampftempo', 'Wie schnell das Protokoll durchläuft.', picker(
         [{ value: 'langsam', label: 'Langsam' }, { value: 'normal', label: 'Normal' },
          { value: 'schnell', label: 'Schnell' }, { value: 'sofort', label: 'Sofort' }], s.speed,

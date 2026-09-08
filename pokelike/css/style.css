@@ -1295,6 +1295,59 @@ button.move-row:hover { border-color: var(--accent); }
 
 /* Der Lautstärkeregler. Die Bahn ist überall gleich, der Knopf muss auf dem
    Telefon mit dem Daumen zu treffen sein — deshalb 26 Pixel und nicht 14. */
+/* ---------- Ball und Sterne (fx.js) ------------------------------------------ */
+
+.fx-ball {
+  position: absolute; width: 16px; height: 16px; border-radius: 50%; display: block;
+  background: linear-gradient(to bottom, #e8402c 0 45%, #14161c 45% 55%, #f4f6fb 55% 100%);
+  border: 1px solid #14161c; box-shadow: 0 0 6px rgba(255,255,255,.35);
+  image-rendering: pixelated; z-index: 6;
+}
+.fx-spark { background: #fff8d0 !important; box-shadow: 0 0 6px #fff8d0; }
+
+/* ---------- Kampfbildschirm im Pixelstil --------------------------------------
+ * Ein zweites Kleid für denselben Bildschirm: Der Aufbau bleibt, wie er ist —
+ * Gegnerleiste links oben, eigene rechts unten, beide über der Bühne. Neu sind
+ * die Kästen mit der spitzen Kante, das kräftige Weiß der Ränder und die
+ * schmalen Balken. Umgeschaltet wird in den Einstellungen; wer nichts
+ * einstellt, bekommt weiter das gewohnte Bild.
+ * ---------------------------------------------------------------------------- */
+
+body[data-kampfstil="pixel"] .mon-frame {
+  /* Farben aus dem Farbsatz, nicht fest verdrahtet: Das Spiel hat ein helles
+     und ein dunkles Kleid, die Vorlage kennt nur die Nacht. Was das Pixelkleid
+     ausmacht, ist die Form — die spitze Kante, der harte Rand, der Schlagschatten. */
+  background: var(--panel);
+  border: 2px solid var(--frame-edge, var(--text));
+  box-shadow: 3px 3px 0 rgba(0,0,0,.4);
+  border-radius: 0;
+  padding: .3rem .9rem .3rem .5rem;
+  color: var(--text);
+  clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 50%, 100% 100%, 0 100%);
+}
+body[data-kampfstil="pixel"] .frame-mine .mon-frame {
+  padding: .3rem .5rem .3rem .9rem;
+  clip-path: polygon(10px 0, 100% 0, 100% 100%, 10px 100%, 0 50%);
+}
+body[data-kampfstil="pixel"] .mon-frame .hp-bar {
+  height: 7px; border: 2px solid var(--frame-edge, var(--line)); background: var(--panel-2); border-radius: 0;
+}
+body[data-kampfstil="pixel"] .mon-frame .exp-bar {
+  height: 4px; border: 1px solid var(--line); background: var(--panel-2); border-radius: 0;
+}
+/* Die Typenchips machen den schmalen Kasten unruhig — in diesem Kleid weg. */
+body[data-kampfstil="pixel"] .frame-types { display: none; }
+
+/* Die Leisten fahren von der Seite herein, wenn ein Pokémon erscheint. */
+body[data-kampfstil="pixel"] .frame-wrap { transition: transform .34s cubic-bezier(.2,.8,.3,1), opacity .26s; }
+body[data-kampfstil="pixel"] .frame-enemy.leiste-raus { transform: translateX(-130%); opacity: 0; }
+body[data-kampfstil="pixel"] .frame-mine.leiste-raus  { transform: translateX(130%);  opacity: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  body[data-kampfstil="pixel"] .frame-wrap { transition: none; }
+  body[data-kampfstil="pixel"] .frame-wrap.leiste-raus { transform: none; opacity: 1; }
+}
+
 .exp-block { margin: .6rem 0; }
 .exp-block h4 { margin: 0 0 .35rem; font-size: .85rem; color: var(--muted); }
 .exp-rows { display: grid; gap: .15rem; }

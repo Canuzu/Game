@@ -191,7 +191,69 @@
     }, 320);
   }
 
-  PL.fx = { move: move, shake: shake, wipe: wipe, burst: burst, reduced: reduced };
+  /* ---------- 4) Ball und Sterne ----------------------------------------------
+   * Der Auftritt eines Pokémon: Der Ball fliegt im Bogen, springt auf, und
+   * für einen Moment schießen helle Striche nach außen. Das ist der Moment,
+   * den man aus den Spielen kennt — und der bei uns bisher fehlte.
+   * ------------------------------------------------------------------------ */
+
+  /** Ein Pokéball, aus zwei Hälften und einem Band — gezeichnet, nicht geladen. */
+  function ballNode() {
+    var b = doc.createElement('i');
+    b.className = 'fx-ball';
+    return b;
+  }
+
+  /**
+   * Wirft einen Ball von einem Punkt zum anderen. `done` läuft, wenn er
+   * ankommt. Rückgabe: Dauer in Millisekunden.
+   */
+  function throwBall(stage, from, to, done) {
+    if (!stage || reduced()) { if (done) done(); return 0; }
+    var layer = layerFor(stage);
+    var b = ballNode();
+    b.style.left = (from.x - 8) + 'px';
+    b.style.top = (from.y - 8) + 'px';
+    layer.appendChild(b);
+    var dx = to.x - from.x, dy = to.y - from.y;
+    var ms = 560;
+    if (!b.animate) { root.setTimeout(function () { b.remove(); if (done) done(); }, ms); return ms; }
+    var anim = b.animate([
+      { transform: 'translate(0,0) rotate(0deg)' },
+      { transform: 'translate(' + dx * 0.5 + 'px,' + (dy * 0.5 - 60) + 'px) rotate(360deg)', offset: 0.5 },
+      { transform: 'translate(' + dx + 'px,' + dy + 'px) rotate(720deg)' }
+    ], { duration: ms, easing: 'cubic-bezier(.4,.1,.6,.9)', fill: 'forwards' });
+    anim.onfinish = function () { b.remove(); if (done) done(); };
+    return ms;
+  }
+
+  /** Der helle Blitz beim Aufgehen: kurze Striche sternförmig nach außen. */
+  function sparkle(stage, at, count, spread) {
+    if (!stage || reduced()) return 0;
+    var layer = layerFor(stage), i;
+    var n = count || 14, weite = spread || 46;
+    for (i = 0; i < n; i++) {
+      var ang = (Math.PI * 2 * i) / n + Math.random() * 0.3;
+      var lang = 6 + Math.random() * 8;
+      var s = doc.createElement('i');
+      s.className = 'fx-bit fx-spark';
+      s.style.left = at.x + 'px';
+      s.style.top = at.y + 'px';
+      s.style.width = lang + 'px';
+      s.style.height = '3px';
+      layer.appendChild(s);
+      var grad = ang * 180 / Math.PI;
+      animate(s, [
+        { transform: 'rotate(' + grad + 'deg) translate(0,0)', opacity: 1 },
+        { transform: 'rotate(' + grad + 'deg) translate(' + Math.cos(ang) * weite + 'px,' +
+            Math.sin(ang) * weite * 0.7 + 'px)', opacity: 0 }
+      ], 360, null);
+    }
+    return 360;
+  }
+
+  PL.fx = { move: move, shake: shake, wipe: wipe, burst: burst, reduced: reduced,
+            throwBall: throwBall, sparkle: sparkle };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = PL.fx;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
