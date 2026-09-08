@@ -834,30 +834,45 @@
       var beaten = enemies.filter(function (m) { return m.hp <= 0; });
       this.stats.kos += beaten.length;
 
-      // Erfahrung: Teilnehmer voll, Bank anteilig
+      /* Erfahrung bekommt das ganze Team — jedes Mitglied, in jedem Kampf.
+         Wer auf dem Feld stand, bekommt den vollen Anteil, der Rest den
+         Bankanteil (ein Viertel, mit dem EP-Teiler drei Fünftel). Auch wer
+         am Boden liegt, geht nicht leer aus: Ein Kampf, der schiefgeht,
+         wirft ein Pokémon sonst doppelt zurück.
+
+         Wer im Kampf auf dem Feld stand, weiß die Kampfseite selbst — sie
+         merkt sich jeden Auftritt unter `used`. Vorher hing das an einer
+         Markierung am Pokémon, die nie zurückgesetzt wurde: Nach dem ersten
+         Kampf galt damit jedes Teammitglied für immer als Teilnehmer, und
+         der EP-Teiler tat gar nichts. */
       var benchShare = this.mod('benchExp') || 0.25;
       // 1,45 statt 1,08: gemessen lagen Teams beim Aus zwölf Level hinter der
       // Grenze zurück — sie kamen also nie dazu, sich zu entwickeln.
       var expMult = this.mod('expMult', 1) * 1.45 * (this.asc(7) ? 0.8 : 1);
       var alive = this.party.filter(function (m) { return m.hp > 0; });
+      var imKampf = (bt.sides[0] && bt.sides[0].used) || {};
+      var summe = [];      // je Pokémon ein Eintrag, in Teamreihenfolge
+      this.party.forEach(function (m) {
+        summe.push({ mon: m, amount: 0, capped: m.lvl >= self.levelCap });
+      });
       beaten.forEach(function (loser) {
         var sp = dex.sp(loser.sp);
-        self.party.forEach(function (m) {
-          if (m.hp <= 0) return;
-          var participated = m.seen > 0 || alive.indexOf(m) === 0;
+        self.party.forEach(function (m, idx) {
+          var participated = !!imKampf[idx];
           var amount = mons.expGain(m, sp, loser.lvl, {
             mult: expMult * (participated ? 1 : benchShare) / Math.max(1, alive.length * 0.6),
             targetLevel: self.levelCap
           });
           var was = mons.stats(m);
           var gain = mons.gainExp(m, amount, { levelCap: self.levelCap });
-          if (gain.gained) res.exp.push({ mon: m, amount: gain.gained });
+          summe[idx].amount += gain.gained;
           if (gain.levels.length) {
             res.levelUps.push({ mon: m, levels: gain.levels, learned: gain.learned,
               before: was, after: mons.stats(m) });
           }
         });
       });
+      res.exp = summe.filter(function (e) { return e.amount > 0 || e.capped; });
 
       // Mehrere Gegner können dasselbe Pokémon zweimal aufsteigen lassen —
       // für die Anzeige zählt nur ein Eintrag je Pokémon.
@@ -1243,7 +1258,7 @@
     if (!pool.length) { this.giveMoney(900); return 'Die Datenträger sind unlesbar — immerhin 900 ₽ Schrottwert.'; }
     var mi = rng.pick(pool);
     this.addTM(mi);
-    return 'TM ' + dex.move(mi).n + ' gesichert.';
+    return 'TM ' + PL.t.move(mi) + ' gesichert.';
   };
 
   R.addTM = function (moveIndex) {

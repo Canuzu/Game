@@ -1068,7 +1068,6 @@
   function startBattle(bt) {
     App.battle = bt;
     bt.start();
-    bt.sides[0].team.forEach(function (m) { m.seen = 1; });
     bt.sides[1].team.forEach(function (m) { meta.noteSeen(m.sp); });
     meta.save();
     if (bt.banter) bt.log.splice(1, 0, { k: 'banter', s: '»' + bt.banter.before + '«' });
@@ -1775,6 +1774,7 @@
       lines.push(el('p', { className: 'good', text: mons.name(res.caught.mon) + (res.caught.to === 'team' ? ' ist jetzt im Team!' : ' wartet in der Box.') }));
     }
     if (res.money) lines.push(el('p', { text: 'Du erhältst ' + U.money(res.money) + '.' }));
+    if (res.exp && res.exp.length) lines.push(expBlock(res.exp));
     res.levelUps.forEach(function (up) {
       lines.push(levelUpBlock(up));
     });
@@ -1818,6 +1818,26 @@
     }, reward ? 'Belohnung ansehen' : 'Weiter')];
 
     return sceneFrame(bt.outcome === 'caught' ? 'Gefangen!' : 'Kampf gewonnen', null, body, actions);
+  }
+
+  /**
+   * Was das Team an Erfahrung mitgenommen hat — jedes Mitglied, auch das,
+   * das nicht gekämpft hat. Vorher stand hier nichts: Man sah nur, wer
+   * aufgestiegen ist, und musste sich den Rest zusammenreimen.
+   */
+  function expBlock(liste) {
+    return el('div', { className: 'exp-block' }, [
+      el('h4', { text: 'Erfahrung' }),
+      el('div', { className: 'exp-rows' }, liste.map(function (e) {
+        return el('div', { className: 'exp-row' + (e.capped ? ' capped' : '') }, [
+          U.sprite(e.mon, { className: 'tiny' }),
+          el('span', { className: 'exp-name', text: mons.name(e.mon) }),
+          el('span', { className: 'exp-amount', text: e.capped
+            ? 'an der Levelgrenze'
+            : '+' + e.amount + ' EP' })
+        ]);
+      }))
+    ]);
   }
 
   /**

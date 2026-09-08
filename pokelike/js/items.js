@@ -174,7 +174,7 @@
       var slot = mon.moves.filter(function (m) { return m.pp < dex.move(m.m).pp; })[0];
       if (!slot) return false;
       slot.pp = Math.min(dex.move(slot.m).pp, slot.pp + 10);
-      return { text: dex.move(slot.m).n + ' hat wieder AP.' };
+      return { text: PL.t.move(slot.m) + ' hat wieder AP.' };
     }
   });
   def('maxelixir', {
@@ -193,7 +193,7 @@
       if (!slot || slot.ppUp >= 3) return false;
       slot.ppUp++;
       slot.pp += Math.floor(dex.move(slot.m).pp / 5);
-      return { text: dex.move(slot.m).n + ' hat jetzt mehr AP.' };
+      return { text: PL.t.move(slot.m) + ' hat jetzt mehr AP.' };
     }
   });
 
@@ -381,7 +381,7 @@
   function tm(moveIndex) {
     var m = dex.move(moveIndex);
     return {
-      id: 'tm-' + m.id, name: 'TM ' + m.n, kind: 'tm', move: moveIndex,
+      id: 'tm-' + m.id, name: 'TM ' + PL.t.move(m), kind: 'tm', move: moveIndex,
       price: Math.round(300 + (m.bp || 40) * 12 + (m.c === 'T' ? 400 : 0)),
       desc: PL.t.moveDesc(m), type: m.t, cat: m.c
     };

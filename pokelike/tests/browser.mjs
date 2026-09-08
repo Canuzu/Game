@@ -91,7 +91,7 @@ await page.evaluate(() => {
 });
 
 console.log('\nDurchspielen');
-let battles = 0, scenes = {}, guard = 0, shotBattle = false;
+let battles = 0, scenes = {}, guard = 0, shotBattle = false, expGeprueft = false;
 while (guard++ < 45) {
   const screen = await page.evaluate(() => document.body.getAttribute('data-screen'));
   scenes[screen] = (scenes[screen] || 0) + 1;
@@ -150,6 +150,17 @@ while (guard++ < 45) {
   }
 
   if (screen === 'scene') {
+    // Nach einem Kampf steht die Abrechnung: Jedes Teammitglied muss darin
+    // vorkommen, auch das, das nicht gekämpft hat.
+    if (!expGeprueft && (await page.locator('.exp-block').count())) {
+      expGeprueft = true;
+      const zeilen = await page.locator('.exp-row').count();
+      const teamgroesse = await page.evaluate(() => globalThis.PokelikeApp.run.party.length);
+      check('Die Erfahrung wird für das ganze Team ausgewiesen', zeilen === teamgroesse,
+        zeilen + ' Zeilen bei ' + teamgroesse + ' Pokémon');
+      const texte = (await page.locator('.exp-amount').allInnerTexts()).join(' | ');
+      check('… mit einem Betrag je Pokémon', /\+\d+ EP|Levelgrenze/.test(texte), texte);
+    }
     // Erste sinnvolle Schaltfläche drücken. Ein Dialog kann jederzeit
     // aufgehen (etwa "Attacke lernen") — dann greift der Modal-Zweig oben
     // beim nächsten Durchlauf, deshalb hier nur kurz versuchen.
@@ -170,6 +181,7 @@ while (guard++ < 45) {
   break;
 }
 
+check('Die Erfahrungsabrechnung wurde gesehen', expGeprueft);
 check('Es wurde gekämpft', battles >= 1,
   battles + ' Kämpfe nach ' + guard + ' Schritten, Bildschirme: ' + JSON.stringify(scenes));
 check('Mehrere Knotenarten besucht', Object.keys(scenes).length >= 2, JSON.stringify(scenes));

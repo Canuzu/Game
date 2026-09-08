@@ -1471,6 +1471,107 @@ section('Jeder Run seine eigene Auswahl');
   check('Wilde Begegnungen halten sich an die Auswahl', fremd === 0, fremd + ' Ausreißer');
 }
 
+section('Erfahrung: das ganze Team bekommt etwas ab');
+{
+  function aufstellen(seed, level) {
+    const run = new PL.Run({ seed: seed, starter: 'snivy' });
+    ['larvitar', 'geodude', 'lickitung', 'seel'].forEach((id, i) => {
+      run.party.push(PL.world.buildMon(PL.rng('t' + i), dex.sp(id), level, {}));
+    });
+    run.party.forEach((m) => { m.lvl = level; m.exp = 0; m.hp = mons.maxHP(m); });
+    return run;
+  }
+  function kaempfen(run, aktiv) {
+    const bt = run.makeWild(PL.rng('k' + run.seed));
+    bt.start();
+    if (aktiv !== undefined) bt.replace(0, aktiv);      // ein anderer geht aufs Feld
+    bt.sides[1].team.forEach((m) => { m.hp = 0; });
+    bt.outcome = 'win';
+    return run.finishBattle(bt);
+  }
+
+  // Alle fünf bekommen etwas — keiner geht leer aus.
+  {
+    const run = aufstellen(4711, 10);
+    const res = kaempfen(run);
+    eq('Jedes Teammitglied steht in der Abrechnung', res.exp.length, 5);
+    eq('… und jedes hat auch etwas bekommen',
+      res.exp.filter((e) => e.amount > 0).length, 5,
+      res.exp.map((e) => mons.name(e.mon) + ':' + e.amount).join(', '));
+  }
+
+  // Wer am Boden liegt, geht trotzdem nicht leer aus.
+  {
+    const run = aufstellen(4712, 10);
+    run.party[4].hp = 0;
+    const res = kaempfen(run);
+    const gefallen = res.exp.filter((e) => e.mon === run.party[4])[0];
+    check('Auch ein besiegtes Teammitglied bekommt Erfahrung',
+      !!gefallen && gefallen.amount > 0, JSON.stringify(gefallen && gefallen.amount));
+  }
+
+  // Der volle Anteil hängt am Einsatz, nicht an der Position im Team.
+  {
+    const vorn = kaempfen(aufstellen(4713, 10));
+    const voll = vorn.exp[0].amount, bank = vorn.exp[3].amount;
+    check('Wer kämpft, bekommt mehr als die Bank', voll > bank * 2, voll + ' gegen ' + bank);
+    eq('Die ganze Bank bekommt denselben Anteil',
+      new Set(vorn.exp.slice(1).map((e) => e.amount)).size, 1,
+      vorn.exp.map((e) => e.amount).join(','));
+
+    // Wird auf Platz vier gewechselt, zählen beide als Kämpfer — der, der
+    // angefangen hat, und der, der eingewechselt wurde. Die Plätze davor
+    // gehen trotzdem nicht leer aus; genau das war der gemeldete Fehler.
+    const hinten = kaempfen(aufstellen(4713, 10), 3);
+    eq('Der Eingewechselte bekommt den vollen Anteil', hinten.exp[3].amount, voll);
+    eq('Der, der angefangen hat, auch', hinten.exp[0].amount, voll);
+    eq('Die Plätze dazwischen bekommen den Bankanteil', hinten.exp[1].amount, bank);
+    check('Und kein Platz geht leer aus, egal wer kämpft',
+      hinten.exp.every((e) => e.amount > 0),
+      hinten.exp.map((e) => e.amount).join(','));
+  }
+
+  // Der EP-Teiler hebt den Bankanteil — vorher tat er nichts.
+  {
+    const ohne = kaempfen(aufstellen(4714, 10));
+    const mit = aufstellen(4714, 10);
+    mit.relics.ep_teiler = 1;
+    const res = kaempfen(mit);
+    check('Der EP-Teiler hebt den Anteil der Bank', res.exp[3].amount > ohne.exp[3].amount * 1.5,
+      res.exp[3].amount + ' gegen ' + ohne.exp[3].amount);
+    eq('Am Anteil des Kämpfers ändert er nichts', res.exp[0].amount, ohne.exp[0].amount);
+  }
+
+  // An der Levelgrenze steht das auch da, statt still nichts zu tun.
+  {
+    const run = aufstellen(4715, 10);
+    run.party.forEach((m) => { m.lvl = run.levelCap; });
+    const res = kaempfen(run);
+    eq('An der Levelgrenze wird das gemeldet', res.exp.filter((e) => e.capped).length, 5);
+    eq('… und es fließt keine Erfahrung', res.exp.filter((e) => e.amount > 0).length, 0);
+  }
+}
+
+section('TMs heißen auf Deutsch');
+{
+  PL.t.setLang('de');
+  const flammenwurf = dex.move('flamethrower');
+  eq('Die Attacke selbst ist übersetzt', PL.t.move(flammenwurf), 'Flammenwurf');
+  eq('Und die TM trägt denselben Namen',
+    PL.items.tm(flammenwurf.i !== undefined ? flammenwurf.i : dex.moves.indexOf(flammenwurf)).name,
+    'TM Flammenwurf');
+  // Stichprobe über den ganzen Katalog: keine TM darf englisch heißen,
+  // solange die Attacke einen deutschen Namen führt.
+  let englisch = [];
+  dex.moves.forEach((m, i) => {
+    if (!m || !m.dn || m.dn === m.n) return;
+    const tm = PL.items.tm(i);
+    if (tm.name !== 'TM ' + m.dn) englisch.push(tm.name);
+  });
+  eq('Keine TM trägt mehr ihren englischen Namen', englisch.length, 0,
+    englisch.slice(0, 5).join(', '));
+}
+
 section('Musik: jede Region ihr eigenes Stück');
 {
   await import('../js/audio.js');
