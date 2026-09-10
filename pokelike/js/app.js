@@ -319,6 +319,37 @@
 
   /* ---------- 2) Titel und neuer Run --------------------------------------------- */
 
+  /**
+   * Hat jemand einen Run geschickt? Dann steht die Einladung ganz oben auf
+   * dem Titelbildschirm — mit einem Knopf, der genau dieselbe Welt startet.
+   * Das Startpokémon wählt trotzdem jeder selbst; alles andere hängt am
+   * Startwert und ist deshalb für beide gleich.
+   */
+  function einladungsBanner() {
+    var ein = App.einladung;
+    if (!ein) return null;
+    return el('div', { className: 'einladung' }, [
+      el('div', {}, [
+        el('strong', { text: '🔗 Ein Run wurde dir geschickt' }),
+        el('div', { className: 'muted small', text:
+          ein.modusName + (ein.aufstieg ? ' · Aufstieg ' + ein.aufstieg : '') +
+          (ein.nuzlocke ? ' · Nuzlocke' : '') + ' · Startwert ' + ein.startwert })
+      ]),
+      el('div', { className: 'setting-actions' }, [
+        el('button', { className: 'btn primary', type: 'button', onclick: function () {
+          if (meta.hasRun()) {
+            U.confirm('Der laufende Run wird dabei gelöscht. Trotzdem den geschickten Run spielen?',
+              function () { show('newrun', { einladung: ein }); }, { danger: true });
+          } else show('newrun', { einladung: ein });
+        } }, 'Diesen Run spielen'),
+        el('button', { className: 'btn', type: 'button', onclick: function () {
+          App.einladung = null;
+          show('title');
+        } }, 'Danke, nein')
+      ])
+    ]);
+  }
+
   SCREENS.title = function () {
     var m = meta.load();
     var d = meta.dexStats();
@@ -332,6 +363,7 @@
         el('p', { className: 'tagline', text: 'Ein Roguelike durch neun Generationen. Ein Team, ein Weg, kein Zurück.' })
       ]),
       profileBar(),
+      einladungsBanner(),
       el('div', { className: 'title-actions' }, [
         meta.hasRun() ? el('button', {
           className: 'btn big primary', type: 'button',
@@ -768,9 +800,21 @@
     ]);
   }
 
-  SCREENS.newrun = function () {
+  SCREENS.newrun = function (arg) {
     var chosen = { mode: 'standard', ascension: 0, nuzlocke: false, starter: null };
     var maxAsc = meta.maxAscension();
+
+    // Ein geschickter Run bringt Modus, Aufstieg und Startwert mit. Nur beim
+    // Aufstieg gilt weiter die eigene Freischaltung — sonst könnte ein Link
+    // Stufen öffnen, die man sich nicht erspielt hat.
+    var einladung = arg && arg.einladung;
+    if (einladung) {
+      chosen.mode = einladung.modus;
+      chosen.ascension = Math.min(einladung.aufstieg, maxAsc);
+      chosen.nuzlocke = einladung.nuzlocke;
+      chosen.seed = einladung.startwert;
+      App.einladung = null;
+    }
 
     var modeBox = el('div', { className: 'choice-row' });
     Object.keys(PL.Run.MODES).forEach(function (key) {
@@ -860,7 +904,9 @@
   };
 
   function startRun(chosen) {
-    var seed;
+    // Ein geschickter Run bringt seinen Startwert mit; der Tages-Run holt sich
+    // seinen aus dem Datum und schlägt alles andere.
+    var seed = chosen.seed;
     if (chosen.mode === 'taeglich') seed = PL.util.hashSeed('daily-' + new Date().toISOString().slice(0, 10));
     App.run = new PL.Run({
       mode: chosen.mode, ascension: chosen.ascension, nuzlocke: chosen.nuzlocke,
@@ -3308,12 +3354,131 @@
         el('h3', { className: 'section-label', text: 'In der Box' }),
         el('div', { className: 'party-strip' }, run.box.map(function (mon) { return U.monCard(mon, {}); }))
       ]) : null,
+      PL.share ? teilenBereich(PL.share.ergebnis(run, won ? 'sieg' : 'niederlage')) : null,
       el('div', { className: 'scene-actions' }, [
         el('button', { className: 'btn big primary', type: 'button', onclick: function () { App.run = null; show('newrun'); } }, 'Neuer Run'),
         el('button', { className: 'btn big', type: 'button', onclick: function () { App.run = null; show('title'); } }, 'Zum Titel')
       ])
     ]);
   };
+
+  /* ---------- Teilen ----------------------------------------------------------
+   * Ein Run endete bisher im Nichts: Die Zahlen standen da und verschwanden.
+   * Jetzt bleibt etwas übrig, das man verschicken kann — eine Karte als Bild,
+   * ein paar Zeilen Text, und die Adresse, unter der jemand genau denselben
+   * Run spielen kann.
+   * -------------------------------------------------------------------------- */
+
+  /** Text in die Zwischenablage. Der zweite Weg ist für Browser ohne den ersten. */
+  function kopiere(text, meldung) {
+    function gelungen() { U.toast(meldung || 'Kopiert.', 'good'); }
+    try {
+      if (root.navigator && root.navigator.clipboard && root.navigator.clipboard.writeText) {
+        root.navigator.clipboard.writeText(text).then(gelungen, altenWeg);
+        return;
+      }
+    } catch (e) { /* dann der alte Weg */ }
+    altenWeg();
+
+    function altenWeg() {
+      try {
+        var feld = doc.createElement('textarea');
+        feld.value = text;
+        feld.style.cssText = 'position:fixed;opacity:0;pointer-events:none';
+        doc.body.appendChild(feld);
+        feld.select();
+        var ok = doc.execCommand && doc.execCommand('copy');
+        feld.remove();
+        if (ok) gelungen();
+        else U.toast('Kopieren ging nicht — der Text steht im Fenster zum Markieren.', 'bad');
+      } catch (e2) {
+        U.toast('Kopieren ging nicht.', 'bad');
+      }
+    }
+  }
+
+  /**
+   * Zeigt die Run-Karte. Auf dem Handy geht sie direkt ins Teilen-Menü; wo das
+   * nicht geht, steht sie als Bild da — lange darauf tippen genügt zum Sichern.
+   */
+  function openRunKarte(erg) {
+    var host = el('div', { className: 'karte-host' },
+      el('p', { className: 'muted', text: 'Die Karte wird gezeichnet …' }));
+    var box = U.modal({
+      title: 'Deine Run-Karte',
+      wide: true,
+      content: host,
+      actions: [{ label: 'Schließen', primary: true }]
+    });
+
+    PL.share.alsBild(erg).then(function (leinwand) {
+      clear(host);
+      var bild = el('img', { className: 'run-karte', alt: 'Run-Karte' });
+      try { bild.src = leinwand.toDataURL('image/png'); }
+      catch (e) {
+        clear(host);
+        host.appendChild(el('p', { className: 'muted', text:
+          'Das Bild lässt sich hier nicht erzeugen. Der Text darunter geht aber immer.' }));
+        return;
+      }
+      host.appendChild(bild);
+      host.appendChild(el('p', { className: 'muted small', text:
+        'Lange auf das Bild tippen, um es zu sichern — oder den Knopf unten.' }));
+
+      var reihe = el('div', { className: 'setting-actions' });
+      reihe.appendChild(el('button', {
+        className: 'btn primary', type: 'button', onclick: function () { teileBild(leinwand, erg); }
+      }, '📤 Karte teilen'));
+      host.appendChild(reihe);
+    }, function () {
+      clear(host);
+      host.appendChild(el('p', { className: 'muted', text: 'Die Karte ließ sich nicht zeichnen.' }));
+    });
+    void box;
+  }
+
+  /** Gibt die Karte an das Teilen-Menü des Geräts weiter, wenn es eines gibt. */
+  function teileBild(leinwand, erg) {
+    var name = 'pokelike-' + erg.datum + '.png';
+    function fallback() {
+      try {
+        var w = root.open('', '_blank');
+        if (w) { w.document.write('<img src="' + leinwand.toDataURL('image/png') + '" alt="">'); return; }
+      } catch (e) { /* dann bleibt das Bild im Fenster */ }
+      U.toast('Lange auf das Bild tippen, um es zu sichern.');
+    }
+    if (!leinwand.toBlob || !root.navigator || !root.navigator.share) { fallback(); return; }
+    leinwand.toBlob(function (blob) {
+      if (!blob) { fallback(); return; }
+      try {
+        var datei = new root.File([blob], name, { type: 'image/png' });
+        if (root.navigator.canShare && !root.navigator.canShare({ files: [datei] })) { fallback(); return; }
+        root.navigator.share({ files: [datei], text: PL.share.alsText(erg) })
+          .catch(function () { /* abgebrochen ist kein Fehler */ });
+      } catch (e) { fallback(); }
+    }, 'image/png');
+  }
+
+  /** Der Teilen-Block unter dem Endbildschirm. */
+  function teilenBereich(erg) {
+    var vorschau = el('pre', { className: 'teilen-text', text: PL.share.alsText(erg) });
+    return el('div', { className: 'teilen-zone' }, [
+      el('h3', { text: 'Zeig, wie weit du gekommen bist' }),
+      vorschau,
+      el('div', { className: 'setting-actions' }, [
+        el('button', { className: 'btn primary', type: 'button',
+          onclick: function () { openRunKarte(erg); } }, '🖼 Run-Karte'),
+        el('button', { className: 'btn', type: 'button',
+          onclick: function () { kopiere(PL.share.alsText(erg), 'Ergebnis kopiert.'); } }, '📋 Text kopieren'),
+        el('button', { className: 'btn', type: 'button',
+          onclick: function () { kopiere(PL.share.startwertLink(erg), 'Einladung kopiert.'); } },
+          '🔗 »Spiel meinen Run«')
+      ]),
+      el('p', { className: 'muted small', text:
+        'Der Link öffnet dieselbe Welt: dieselbe Karte, dieselben Gegner, dieselben Angebote. ' +
+        'Das Startpokémon darf sich jeder selbst aussuchen.' })
+    ]);
+  }
 
   /* --- Töne: kurze, synthetische Klänge, keine Dateien -------------------------------- */
 
@@ -3421,6 +3586,8 @@
       PL.audio.setEnabled(!!settings().music);
     }
     probeDownloads();
+    // Kam jemand über eine Einladung? Dann steht sie gleich auf dem Titel.
+    if (PL.share) App.einladung = PL.share.ausAdresse();
     doc.addEventListener('keydown', onKey);
     root.addEventListener('beforeunload', function () {
       autosave();

@@ -332,6 +332,38 @@ await page.evaluate(() => globalThis.PokelikeApp.show('achievements'));
 await page.waitForSelector('.ach-grid');
 check('Erfolge erscheinen', (await page.locator('.ach').count()) >= 20);
 
+// Der Endbildschirm: Was von einem Run übrig bleibt, muss man weitergeben können
+await page.evaluate(() => {
+  const run = new PL.Run({ seed: 12345, mode: 'standard', ascension: 2, starter: 'charmander' });
+  run.region = 5;
+  run.stats.battles = 24; run.stats.catches = 11;
+  ['larvitar', 'geodude'].forEach((id, i) =>
+    run.party.push(PL.world.buildMon(PL.rng('t' + i), PL.dex.sp(id), 28 + i, {})));
+  run.state = 'gameover';
+  globalThis.PokelikeApp.run = run;
+  globalThis.PokelikeApp.show('end');
+});
+await page.waitForSelector('.teilen-zone');
+{
+  const text = await page.locator('.teilen-text').innerText();
+  check('Der Endbildschirm bietet das Ergebnis zum Teilen', text.indexOf('Pokélike+') === 0, text.slice(0, 40));
+  check('… mit der Kästchenreihe', /🟩|🟨|⬜/.test(text));
+  check('… und dem Startwert', text.indexOf('Startwert 12345') > 0);
+
+  await page.getByRole('button', { name: /Run-Karte/ }).click();
+  await page.waitForSelector('.run-karte', { timeout: 10000 });
+  const karte = await page.locator('.run-karte').evaluate((n) => ({ w: n.naturalWidth, h: n.naturalHeight }));
+  check('Die Run-Karte wird als Bild gezeichnet', karte.w === 720 && karte.h > 600, karte.w + '×' + karte.h);
+  await page.getByRole('button', { name: 'Schließen' }).click();
+  await page.waitForSelector('.run-karte', { state: 'detached' });
+
+  const gelesen = await page.evaluate(() => PL.share.ausCode('kurz-1-999-n'));
+  check('Ein geschickter Run lässt sich wieder einlesen',
+    gelesen && gelesen.modus === 'kurz' && gelesen.startwert === 999 && gelesen.nuzlocke === true,
+    JSON.stringify(gelesen));
+}
+
+
 await page.evaluate(() => globalThis.PokelikeApp.show('settings'));
 await page.waitForSelector('.settings-screen');
 check('Einstellungen erscheinen', (await page.locator('.setting').count()) >= 4);

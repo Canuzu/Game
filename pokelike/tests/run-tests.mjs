@@ -1572,6 +1572,75 @@ section('TMs heißen auf Deutsch');
     englisch.slice(0, 5).join(', '));
 }
 
+section('Teilen: was von einem Run übrig bleibt');
+{
+  await import('../js/share.js');
+  const S = PL.share;
+
+  const run = new PL.Run({ seed: 12345, mode: 'standard', ascension: 2, starter: 'charmander' });
+  run.region = 5;
+  run.stats.battles = 24; run.stats.catches = 11; run.stats.evolutions = 3;
+  run.relics.glueckliches_ei = 1; run.relics.honigtopf = 1;
+
+  const verloren = S.ergebnis(run, 'niederlage');
+  eq('Der Startwert steht im Ergebnis', verloren.startwert, 12345);
+  eq('Der Aufstieg auch', verloren.aufstieg, 2);
+  eq('Die erreichte Region zählt ohne Sieg nicht hoch', verloren.region, 5);
+  eq('Neun Regionen im Standardmodus', verloren.regionen, 9);
+  eq('Das Team ist dabei', verloren.team.length, run.party.length);
+  eq('Relikte werden gezählt', verloren.relikte, 2);
+
+  // Die Kästchenreihe erzählt den Weg auf einen Blick.
+  const reihe = S.kaestchen(verloren);
+  eq('Ein Kästchen je Region', [...reihe].length, 9);
+  eq('… vier grüne für die geschafften', [...reihe].filter((z) => z === '🟩').length, 4);
+  eq('… eins gelb für die, in der Schluss war', [...reihe].filter((z) => z === '🟨').length, 1);
+  eq('… und der Rest bleibt leer', [...reihe].filter((z) => z === '⬜').length, 4);
+
+  run.state = 'victory';
+  const gewonnen = S.ergebnis(run, 'sieg');
+  eq('Mit Sieg zählt die letzte Region mit', gewonnen.region, 6);
+  eq('Beim Sieg ist kein Kästchen mehr gelb',
+    [...S.kaestchen(gewonnen)].filter((z) => z === '🟨').length, 0);
+
+  // Der Text muss überall einfügbar sein: kurz, ohne Sonderzeichen-Ballast.
+  const text = S.alsText(verloren);
+  check('Der Text nennt das Spiel', text.indexOf('Pokélike+') === 0, text.slice(0, 30));
+  check('… den Startwert', text.indexOf('Startwert 12345') > 0);
+  check('… die Kästchenreihe', text.indexOf(reihe) > 0);
+  check('… und die Kämpfe', text.indexOf('24 Kämpfe') > 0, text);
+  check('Er bleibt kurz genug für jede Nachricht', text.length < 280, text.length + ' Zeichen');
+  check('Der Sieg steht als Krone drin', S.alsText(gewonnen).indexOf('👑') > 0);
+
+  // Aus dem Ergebnis wird eine Einladung und wieder zurück.
+  const code = S.startwertCode(verloren);
+  eq('Der Code trägt Modus, Aufstieg und Startwert', code, 'standard-2-12345');
+  const zurueck = S.ausCode(code);
+  eq('… und liest sich wieder ein: Modus', zurueck.modus, 'standard');
+  eq('… Aufstieg', zurueck.aufstieg, 2);
+  eq('… Startwert', zurueck.startwert, 12345);
+  eq('Nuzlocke wird mitgenommen', S.ausCode(S.startwertCode({
+    modus: 'kurz', aufstieg: 0, startwert: 7, nuzlocke: true
+  })).nuzlocke, true);
+
+  check('Unsinn wird abgelehnt', S.ausCode('quatsch') === null);
+  check('Ein erfundener Modus auch', S.ausCode('gibtsnicht-0-5') === null);
+  check('Ein zu hoher Aufstieg wird gedeckelt', S.ausCode('standard-99-5').aufstieg === 10);
+
+  const link = S.startwertLink(verloren);
+  check('Der Link enthält den Code', link.indexOf('?run=standard-2-12345') > 0, link);
+
+  // Derselbe Startwert muss dieselbe Welt ergeben — sonst ist die Einladung wertlos.
+  {
+    const a = new PL.Run({ seed: 4242, starter: 'squirtle' });
+    const b = new PL.Run({ seed: 4242, starter: 'squirtle' });
+    eq('Gleicher Startwert, gleiche Karte',
+      JSON.stringify(a.map.map((r) => r.map((n) => n.type))),
+      JSON.stringify(b.map.map((r) => r.map((n) => n.type))));
+    eq('… und dieselbe Regionenfolge', JSON.stringify(a.regionOrder), JSON.stringify(b.regionOrder));
+  }
+}
+
 section('Musik: jede Region ihr eigenes Stück');
 {
   await import('../js/audio.js');

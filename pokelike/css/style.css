@@ -1295,6 +1295,32 @@ button.move-row:hover { border-color: var(--accent); }
 
 /* Der Lautstärkeregler. Die Bahn ist überall gleich, der Knopf muss auf dem
    Telefon mit dem Daumen zu treffen sein — deshalb 26 Pixel und nicht 14. */
+/* ---------- Teilen: Run-Karte, Ergebnistext, Einladung ------------------------ */
+
+.teilen-zone {
+  margin-top: 1.6rem; padding: 1rem; border: 1px solid var(--line);
+  border-radius: var(--radius); background: var(--panel);
+}
+.teilen-zone h3 { margin: 0 0 .6rem; font-size: 1rem; }
+.teilen-text {
+  margin: 0 0 .8rem; padding: .7rem .8rem; white-space: pre-wrap; word-break: break-word;
+  font-family: inherit; font-size: .88rem; line-height: 1.55;
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: var(--radius);
+}
+.karte-host { display: grid; gap: .7rem; justify-items: center; }
+.run-karte {
+  max-width: 100%; width: min(360px, 100%); height: auto; display: block;
+  border: 1px solid var(--line); border-radius: var(--radius);
+}
+
+.einladung {
+  display: flex; flex-wrap: wrap; gap: .7rem; align-items: center; justify-content: space-between;
+  margin: .8rem 0; padding: .8rem 1rem;
+  border: 1px solid var(--accent); border-radius: var(--radius);
+  background: color-mix(in srgb, var(--accent) 12%, var(--panel));
+}
+.einladung .setting-actions { margin-top: 0; }
+
 .exp-block { margin: .6rem 0; }
 .exp-block h4 { margin: 0 0 .35rem; font-size: .85rem; color: var(--muted); }
 .exp-rows { display: grid; gap: .15rem; }
