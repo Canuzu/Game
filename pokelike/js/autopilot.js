@@ -683,7 +683,100 @@
     manageParty(run);
   }
 
+  /* ---------- 8) Ein ganzer Run allein ----------------------------------------
+   * Bisher konnte nur das Werkzeug tools/balance.mjs einen Run vollständig
+   * durchspielen. Für den Tages-Run wird dasselbe im Browser gebraucht: Das
+   * Spiel spielt den heutigen Startwert selbst und setzt damit die Messlatte,
+   * an der man sich misst — ohne Server, ohne Rangliste, für alle gleich, weil
+   * alle denselben Startwert bekommen.
+   *
+   * Zurückgegeben wird kein Ergebnis, sondern ein Treiber: Er erledigt immer
+   * einen Knoten auf einmal. So kann die Oberfläche zwischen den Knoten atmen,
+   * statt für Sekunden einzufrieren.
+   * ------------------------------------------------------------------------ */
+
+  /** Ein Kampf, vollständig von der Kampf-KI ausgetragen. */
+  function kaempfeDurch(run, bt) {
+    bt.start();
+    var wache = 0;
+    while (!bt.ended && wache++ < 300) {
+      var meins = PL.ai.chooseAction(bt, 0, 4, { run: run });
+      if (meins.type === 'item' || meins.type === 'ball') run.removeItem(meins.item, 1);
+      bt.runTurn([meins, PL.ai.chooseAction(bt, 1, bt.aiLevel === undefined ? 1 : bt.aiLevel)]);
+      if (bt.pending !== null && bt.pending !== undefined && !bt.ended) {
+        var seite = bt.sides[bt.pending];
+        var idx = PL.ai.chooseSwitch(bt, seite, true);
+        var ersatz = -1;
+        for (var i = 0; i < seite.team.length; i++) if (seite.team[i].hp > 0) { ersatz = i; break; }
+        if (idx < 0 && ersatz < 0) break;
+        bt.replace(bt.pending, idx >= 0 ? idx : ersatz);
+      }
+    }
+    return bt;
+  }
+
+  /** Eine Szene abarbeiten — Kämpfe eingeschlossen, samt Belohnung danach. */
+  function loeseSzene(run, szene) {
+    resolveScene(run, szene, {
+      battle: function (kampf) {
+        var bt = kaempfeDurch(run, kampf);
+        run.finishBattle(bt);
+        if (bt.outcome === 'win') {
+          var lohn = run.battleRewards(bt);
+          if (lohn) loeseSzene(run, lohn);
+        }
+        run.healTeam(0.45, true);
+      }
+    });
+  }
+
+  /**
+   * Baut den Treiber für einen Alleingang.
+   * opts: { seed, mode, ascension, nuzlocke, starter }
+   */
+  function durchlauf(opts) {
+    opts = opts || {};
+    var run = new PL.Run({
+      seed: opts.seed,
+      mode: opts.mode || 'standard',
+      ascension: opts.ascension || 0,
+      nuzlocke: !!opts.nuzlocke,
+      starter: opts.starter || 'charmander'
+    });
+    var wache = 0, steckt = false;
+
+    function fertig() {
+      return steckt || wache > 4000 || run.state === 'gameover' || run.state === 'victory';
+    }
+
+    /** Ein Knoten. Liefert false, wenn nichts mehr zu tun ist. */
+    function schritt() {
+      if (fertig()) return false;
+      wache++;
+      if (!run.available().length) { run.advanceRegion(); return true; }
+      var ziel = bestNode(run);
+      if (!ziel) { steckt = true; return false; }
+      var szene = run.enterNode(ziel.row, ziel.col);
+      if (!szene) { steckt = true; return false; }
+      loeseSzene(run, szene);
+      if (run.state === 'gameover') return false;
+      run.closeScene();
+      return true;
+    }
+
+    return { run: run, schritt: schritt, fertig: fertig };
+  }
+
+  /** Bequemlichkeit für Werkzeuge und Prüfungen: alles auf einmal. */
+  function spieleDurch(opts) {
+    var t = durchlauf(opts);
+    while (t.schritt()) { /* weiter */ }
+    return t.run;
+  }
+
   PL.autopilot = {
+    durchlauf: durchlauf,
+    spieleDurch: spieleDurch,
     hurt: hurt,
     supplies: supplies,
     levelGap: levelGap,

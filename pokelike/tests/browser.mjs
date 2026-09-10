@@ -364,6 +364,68 @@ await page.waitForSelector('.teilen-zone');
 }
 
 
+// Der Tages-Run: eine Messlatte, ein Versuch, ein Code zum Vergleichen
+await page.evaluate(() => {
+  globalThis.PokelikeApp.run = null;
+  PL.meta.reset();
+  globalThis.PokelikeApp.show('daily');
+});
+await page.waitForSelector('.daily-screen');
+{
+  check('Der Tages-Run hat einen eigenen Bildschirm', (await page.locator('.daily-karte').count()) === 3);
+  // Der Automat rechnet im Hintergrund — das darf einen Moment dauern.
+  await page.waitForFunction(() => {
+    const t = document.querySelector('.daily-karte');
+    return t && /Automat (hat|kam)/.test(t.innerText);
+  }, { timeout: 30000 });
+  const latte = await page.evaluate(() => PL.meta.tagesStand().latte);
+  check('Der Automat setzt die Messlatte', latte && latte.kaempfe > 5, JSON.stringify(latte));
+  check('… und zeigt sie als Kästchen', (await page.locator('.kaestchen').count()) >= 6);
+
+  // Ein Ergebnis eintragen und den Bildschirm neu zeichnen
+  await page.evaluate(() => {
+    const run = new PL.Run({ seed: PL.meta.tagesStartwert(), mode: 'taeglich', starter: 'charmander' });
+    run.region = 6; run.stats.battles = 44; run.stats.catches = 15;
+    PL.meta.setzeTagesErgebnis(PL.share.ergebnis(run, 'niederlage'));
+    globalThis.PokelikeApp.show('daily');
+  });
+  await page.waitForSelector('.daily-urteil');
+  const urteil = await page.locator('.daily-urteil').innerText();
+  check('Das eigene Ergebnis wird an der Messlatte gemessen', urteil.length > 5, urteil);
+  const eigenText = await page.locator('.teilen-text').innerText();
+  check('Der Ergebnistext nennt den Tages-Run', eigenText.indexOf('Tages-Run') >= 0, eigenText.slice(0, 60));
+  check('… und trägt einen Code bei sich', /TR-[A-Z0-9-]+/.test(eigenText), eigenText);
+
+  // Ein fremder Code stellt beide nebeneinander
+  const fremd = await page.evaluate(() => {
+    const run = new PL.Run({ seed: PL.meta.tagesStartwert(), mode: 'taeglich', starter: 'squirtle' });
+    run.region = 6; run.state = 'victory'; run.stats.battles = 61; run.stats.catches = 20;
+    return PL.share.tagesCode(PL.share.ergebnis(run, 'sieg'));
+  });
+  await page.locator('.code-feld').fill(fremd);
+  await page.getByRole('button', { name: 'Vergleichen' }).click();
+  await page.waitForSelector('.vgl-tafel');
+  check('Zwei Ergebnisse stehen nebeneinander', (await page.locator('.vgl-spalte').count()) === 2);
+  const sieger = await page.locator('.vgl-spalte.gewinner').innerText();
+  check('… und der Bessere ist hervorgehoben', sieger.indexOf('Der andere') === 0, sieger.replace(/\n/g, ' | '));
+
+  await page.locator('.code-feld').fill('TR-quatsch');
+  await page.getByRole('button', { name: 'Vergleichen' }).click();
+  await page.waitForSelector('.vergleich .bad');
+  check('Ein kaputter Code wird abgewiesen, nicht geraten',
+    (await page.locator('.vergleich .bad').innerText()).indexOf('stimmt nicht') > 0);
+
+  // Vom Titel aus muss man hinkommen
+  await page.evaluate(() => globalThis.PokelikeApp.show('title'));
+  await page.waitForSelector('.tages-banner');
+  const banner = await page.locator('.tages-banner').innerText();
+  check('Der Titel führt zum Tages-Run', banner.indexOf('Tages-Run') >= 0, banner.replace(/\n/g, ' | '));
+  check('… und verrät, wie der Tag ausging', /Region 6|Liga/.test(banner), banner.replace(/\n/g, ' | '));
+  await page.locator('.tages-banner').click();
+  await page.waitForSelector('.daily-screen');
+  check('Der Knopf öffnet den Bildschirm', true);
+}
+
 await page.evaluate(() => globalThis.PokelikeApp.show('settings'));
 await page.waitForSelector('.settings-screen');
 check('Einstellungen erscheinen', (await page.locator('.setting').count()) >= 4);
@@ -637,6 +699,22 @@ console.log('\nHandy');
     sheet.bottom + ' von ' + sheet.ih);
   await phone.locator('.modal-actions .btn').last().tap();
   await phone.waitForSelector('.modal', { state: 'detached' });
+
+  // Der Tages-Run mit Vergleichstafel ist die engste Stelle: zwei Spalten
+  // nebeneinander auf einem schmalen Bildschirm.
+  await phone.evaluate(() => {
+    const run = new PL.Run({ seed: PL.meta.tagesStartwert(), mode: 'taeglich', starter: 'charmander' });
+    run.region = 4; run.stats.battles = 30; run.stats.catches = 8;
+    PL.meta.setzeMesslatte({ region: 5, gewonnen: false, kaempfe: 38, faenge: 11 });
+    PL.meta.setzeTagesErgebnis(PL.share.ergebnis(run, 'niederlage'));
+    globalThis.PokelikeApp.show('daily');
+  });
+  await phone.waitForSelector('.daily-urteil');
+  await phone.locator('.code-feld').fill(await phone.evaluate(() =>
+    PL.share.tagesCode(PL.meta.tagesStand().eigen)));
+  await phone.getByRole('button', { name: 'Vergleichen' }).tap();
+  await phone.waitForSelector('.vgl-tafel');
+  await fits('Tages-Run');
 
   for (const [screen, label] of [['team', 'Team'], ['dex', 'Pokédex'], ['settings', 'Einstellungen']]) {
     await phone.evaluate((s) => globalThis.PokelikeApp.show(s), screen);

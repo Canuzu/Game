@@ -320,6 +320,30 @@
   /* ---------- 2) Titel und neuer Run --------------------------------------------- */
 
   /**
+   * Der Tages-Run bekommt einen eigenen Platz auf dem Titel: Er ist der eine
+   * Modus, bei dem alle dasselbe spielen, und der einzige mit einem Ergebnis,
+   * das sich vergleichen lässt.
+   */
+  function tagesBanner() {
+    var stand = meta.tagesStand();
+    var gespielt = !!stand.eigen;
+    var unterzeile = gespielt
+      ? (stand.eigen.gewonnen ? 'Heute: Liga bezwungen 👑' : 'Heute: Region ' + stand.eigen.region + ' von 6')
+      : 'Für alle derselbe Startwert · noch nicht gespielt';
+    return el('button', {
+      className: 'tages-banner' + (gespielt ? ' fertig' : ''), type: 'button',
+      onclick: function () { show('daily'); }
+    }, [
+      el('span', { className: 'tages-icon', text: '📅' }),
+      el('span', {}, [
+        el('strong', { text: 'Tages-Run' }),
+        el('span', { className: 'muted small block', text: unterzeile })
+      ]),
+      el('span', { className: 'tages-pfeil', text: '›' })
+    ]);
+  }
+
+  /**
    * Hat jemand einen Run geschickt? Dann steht die Einladung ganz oben auf
    * dem Titelbildschirm — mit einem Knopf, der genau dieselbe Welt startet.
    * Das Startpokémon wählt trotzdem jeder selbst; alles andere hängt am
@@ -364,6 +388,7 @@
       ]),
       profileBar(),
       einladungsBanner(),
+      tagesBanner(),
       el('div', { className: 'title-actions' }, [
         meta.hasRun() ? el('button', {
           className: 'btn big primary', type: 'button',
@@ -815,6 +840,7 @@
       chosen.seed = einladung.startwert;
       App.einladung = null;
     }
+    if (arg && arg.tagesRun) chosen.mode = 'taeglich';
 
     var modeBox = el('div', { className: 'choice-row' });
     Object.keys(PL.Run.MODES).forEach(function (key) {
@@ -825,15 +851,18 @@
           chosen.mode = key;
           Array.prototype.forEach.call(modeBox.children, function (c) { c.classList.remove('selected'); });
           btn.classList.add('selected');
-          if (key === 'taeglich') U.toast('Tages-Run: fester Startwert vom ' + new Date().toISOString().slice(0, 10));
+          if (key === 'taeglich') U.toast('Tages-Run: fester Startwert vom ' + meta.heute());
         }
       }, [el('strong', { text: mode.name }), el('span', { text: mode.desc })]);
       modeBox.appendChild(btn);
     });
 
-    var ascLabel = el('span', { className: 'asc-value', text: 'Aufstieg 0 — ' + meta.ASCENSIONS[0] });
+    // Regler und Schalter starten dort, wo die Einladung sie hingesetzt hat —
+    // sonst zeigt der Bildschirm etwas anderes an, als gestartet würde.
+    var ascLabel = el('span', { className: 'asc-value',
+      text: 'Aufstieg ' + chosen.ascension + ' — ' + meta.ASCENSIONS[chosen.ascension] });
     var ascInput = el('input', {
-      type: 'range', min: 0, max: Math.max(0, maxAsc), value: 0, className: 'slider',
+      type: 'range', min: 0, max: Math.max(0, maxAsc), value: chosen.ascension, className: 'slider',
       oninput: function () {
         chosen.ascension = +ascInput.value;
         ascLabel.textContent = 'Aufstieg ' + chosen.ascension + ' — ' + meta.ASCENSIONS[chosen.ascension];
@@ -841,7 +870,7 @@
     });
 
     var nuzBtn = el('button', {
-      className: 'toggle', type: 'button',
+      className: 'toggle' + (chosen.nuzlocke ? ' on' : ''), type: 'button',
       onclick: function () {
         chosen.nuzlocke = !chosen.nuzlocke;
         nuzBtn.classList.toggle('on', chosen.nuzlocke);
@@ -850,7 +879,7 @@
     }, [
       el('strong', { text: 'Nuzlocke' }),
       el('span', { text: 'Besiegte Pokémon verlassen das Team für immer.' }),
-      el('span', { className: 'toggle-state', text: 'aus' })
+      el('span', { className: 'toggle-state', text: chosen.nuzlocke ? 'an' : 'aus' })
     ]);
 
     var startBtn = el('button', {
@@ -907,7 +936,7 @@
     // Ein geschickter Run bringt seinen Startwert mit; der Tages-Run holt sich
     // seinen aus dem Datum und schlägt alles andere.
     var seed = chosen.seed;
-    if (chosen.mode === 'taeglich') seed = PL.util.hashSeed('daily-' + new Date().toISOString().slice(0, 10));
+    if (chosen.mode === 'taeglich') seed = meta.tagesStartwert();
     App.run = new PL.Run({
       mode: chosen.mode, ascension: chosen.ascension, nuzlocke: chosen.nuzlocke,
       starter: chosen.starter, seed: seed
@@ -3324,6 +3353,12 @@
     setAuto(false);                    // der Run ist vorbei, der Automat auch
     var outcome = run.state === 'victory' ? 'sieg' : 'niederlage';
     meta.noteParty(run);
+    // Der Tages-Run zählt nur einmal — und nur, wenn er zum heutigen
+    // Startwert gehört. Ein fortgesetzter Run von gestern zählt nicht.
+    if (run.mode === 'taeglich' && PL.share &&
+        run.seed === meta.tagesStartwert() && !meta.tagGespielt()) {
+      meta.setzeTagesErgebnis(PL.share.ergebnis(run, outcome));
+    }
     var fresh = meta.recordRun(run, outcome);
     meta.clearRun();
     fresh.forEach(function (a) { U.toast('Erfolg freigeschaltet: ' + a.name, 'good'); });
@@ -3361,6 +3396,203 @@
       ])
     ]);
   };
+
+  /* ---------- Der Tages-Run ---------------------------------------------------
+   * Ein Startwert für alle, ein Versuch, ein Ergebnis. Woran man sich misst,
+   * rechnet das Spiel selbst aus: Der Automat spielt denselben Tag durch und
+   * setzt damit die Messlatte. Das braucht keinen Server, gilt für jeden
+   * gleich — und funktioniert auch in zehn Jahren noch.
+   * -------------------------------------------------------------------------- */
+
+  var latteLaeuft = false;
+
+  /**
+   * Lässt den Automaten den heutigen Startwert durchspielen. Gerechnet wird in
+   * Scheiben: ein paar Knoten, dann darf die Oberfläche atmen. Ein ganzer Run
+   * dauert Bruchteile einer Sekunde, aber auf einem müden Telefon soll nichts
+   * einfrieren.
+   */
+  function berechneMesslatte(fertig) {
+    if (latteLaeuft) return;
+    latteLaeuft = true;
+    var treiber = autoPilot().durchlauf({
+      seed: meta.tagesStartwert(), mode: 'taeglich', starter: 'charmander'
+    });
+    function scheibe() {
+      var n = 0;
+      while (n++ < 8 && treiber.schritt()) { /* mehrere Knoten je Runde */ }
+      if (treiber.fertig()) {
+        var run = treiber.run;
+        var gewonnen = run.state === 'victory';
+        var latte = {
+          region: Math.min(6, run.region + (gewonnen ? 1 : 0)),
+          gewonnen: gewonnen,
+          kaempfe: run.stats.battles,
+          faenge: run.stats.catches
+        };
+        meta.setzeMesslatte(latte);
+        latteLaeuft = false;
+        fertig(latte);
+        return;
+      }
+      root.setTimeout(scheibe, 0);
+    }
+    root.setTimeout(scheibe, 30);
+  }
+
+  function tagesUeberschrift(datum) {
+    var d = new Date(datum + 'T12:00:00Z');
+    var monate = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+                  'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'];
+    return d.getUTCDate() + '. ' + monate[d.getUTCMonth()] + ' ' + d.getUTCFullYear();
+  }
+
+  /** Eine Zeile Kästchen wie im Ergebnistext — hier als Bausteine. */
+  function kaestchenReihe(region, gesamt, gewonnen) {
+    var out = [];
+    for (var i = 0; i < gesamt; i++) {
+      var geschafft = i < region - 1 || (i === region - 1 && gewonnen);
+      var aktuell = i === region - 1 && !gewonnen;
+      out.push(el('i', { className: 'kaestchen' + (geschafft ? ' voll' : aktuell ? ' halb' : '') }));
+    }
+    return el('div', { className: 'kaestchen-reihe' }, out);
+  }
+
+  SCREENS.daily = function () {
+    var stand = meta.tagesStand();
+    var wrap = el('div', { className: 'daily-screen' });
+
+    wrap.appendChild(el('div', { className: 'team-head' }, [
+      el('h2', { text: 'Tages-Run' }),
+      el('button', { className: 'btn', type: 'button',
+        onclick: function () { show('title'); } }, 'Zurück')
+    ]));
+    wrap.appendChild(el('p', { className: 'muted', text:
+      tagesUeberschrift(stand.datum) + ' · für alle derselbe Startwert · ein Versuch' }));
+
+    /* --- Die Messlatte --- */
+    var latteHost = el('div', { className: 'daily-karte' });
+    wrap.appendChild(latteHost);
+
+    function zeigeLatte(latte) {
+      clear(latteHost);
+      latteHost.appendChild(el('h3', { text: '🤖 Die Messlatte' }));
+      if (!latte) {
+        latteHost.appendChild(el('p', { className: 'muted', text:
+          'Der Automat spielt den heutigen Startwert gerade durch …' }));
+        return;
+      }
+      latteHost.appendChild(el('p', { className: 'daily-gross', text: latte.gewonnen
+        ? 'Der Automat hat die Liga bezwungen.'
+        : 'Der Automat kam bis Region ' + latte.region + '.' }));
+      latteHost.appendChild(kaestchenReihe(latte.region, 6, latte.gewonnen));
+      latteHost.appendChild(el('p', { className: 'muted small', text:
+        latte.kaempfe + ' Kämpfe · ' + latte.faenge + ' Fänge' }));
+    }
+
+    zeigeLatte(stand.latte);
+    if (!stand.latte) {
+      berechneMesslatte(function (latte) {
+        if (App.screen === 'daily') zeigeLatte(latte);
+      });
+    }
+
+    /* --- Das eigene Ergebnis --- */
+    var eigenHost = el('div', { className: 'daily-karte' });
+    wrap.appendChild(eigenHost);
+    eigenHost.appendChild(el('h3', { text: '🎮 Dein Ergebnis' }));
+
+    if (stand.eigen) {
+      var e = stand.eigen;
+      var latte = stand.latte;
+      eigenHost.appendChild(el('p', { className: 'daily-gross', text: e.gewonnen
+        ? 'Liga bezwungen!' : 'Region ' + e.region + ' von 6' }));
+      eigenHost.appendChild(kaestchenReihe(e.region, 6, e.gewonnen));
+      if (latte) {
+        var besser = (e.gewonnen && !latte.gewonnen) ||
+          (!e.gewonnen && !latte.gewonnen && e.region > latte.region);
+        var gleich = (e.gewonnen && latte.gewonnen) || e.region === latte.region;
+        eigenHost.appendChild(el('p', {
+          className: besser ? 'daily-urteil gut' : gleich ? 'daily-urteil' : 'daily-urteil schlecht',
+          text: besser ? '🏆 Du hast den Automaten geschlagen!'
+            : gleich ? 'Gleichauf mit dem Automaten.'
+            : 'Der Automat kam weiter. Morgen wieder.'
+        }));
+      }
+      var text = PL.share.tagesText(e, stand.latte);
+      eigenHost.appendChild(el('pre', { className: 'teilen-text', text: text }));
+      eigenHost.appendChild(el('div', { className: 'setting-actions' }, [
+        el('button', { className: 'btn primary', type: 'button',
+          onclick: function () { kopiere(text, 'Ergebnis kopiert.'); } }, '📋 Ergebnis teilen')
+      ]));
+    } else {
+      eigenHost.appendChild(el('p', { className: 'muted', text:
+        'Heute noch nicht gespielt. Ein Versuch — das Ergebnis zählt, so wie es ausgeht.' }));
+      eigenHost.appendChild(el('div', { className: 'setting-actions' }, [
+        el('button', { className: 'btn big primary', type: 'button', onclick: function () {
+          function los() { show('newrun', { tagesRun: true }); }
+          if (meta.hasRun()) {
+            U.confirm('Der laufende Run wird dabei gelöscht. Trotzdem den Tages-Run starten?',
+              los, { danger: true });
+          } else los();
+        } }, '▶ Tages-Run starten')
+      ]));
+    }
+
+    /* --- Vergleichen --- */
+    var vglHost = el('div', { className: 'daily-karte' });
+    wrap.appendChild(vglHost);
+    vglHost.appendChild(el('h3', { text: '👥 Mit Freunden vergleichen' }));
+    vglHost.appendChild(el('p', { className: 'muted small', text:
+      'Füge den Code eines anderen ein — dann stehen beide Ergebnisse nebeneinander.' }));
+    var feld = el('input', { type: 'text', className: 'code-feld', placeholder: 'TR-…',
+      spellcheck: 'false', autocapitalize: 'characters' });
+    var ausgabe = el('div', { className: 'vergleich' });
+    vglHost.appendChild(el('div', { className: 'setting-actions' }, [
+      feld,
+      el('button', { className: 'btn', type: 'button', onclick: function () {
+        var fremd = PL.share.ausTagesCode(feld.value);
+        clear(ausgabe);
+        if (!fremd) {
+          ausgabe.appendChild(el('p', { className: 'bad', text:
+            'Der Code stimmt nicht. Achte darauf, ihn vollständig einzufügen.' }));
+          return;
+        }
+        if (fremd.datum !== stand.datum) {
+          ausgabe.appendChild(el('p', { className: 'muted', text:
+            'Das ist der Tages-Run vom ' + tagesUeberschrift(fremd.datum) + ' — nicht von heute.' }));
+        }
+        ausgabe.appendChild(vergleichsTafel(stand.eigen, fremd));
+      } }, 'Vergleichen')
+    ]));
+    vglHost.appendChild(ausgabe);
+
+    return wrap;
+  };
+
+  /** Zwei Ergebnisse nebeneinander. Ohne eigenes steht nur das fremde da. */
+  function vergleichsTafel(eigen, fremd) {
+    function spalte(titel, e, hervor) {
+      if (!e) {
+        return el('div', { className: 'vgl-spalte' }, [
+          el('strong', { text: titel }),
+          el('p', { className: 'muted small', text: 'Heute noch nicht gespielt.' })
+        ]);
+      }
+      return el('div', { className: 'vgl-spalte' + (hervor ? ' gewinner' : '') }, [
+        el('strong', { text: titel }),
+        el('div', { className: 'daily-gross', text: e.gewonnen ? '👑 Sieg' : 'Region ' + e.region }),
+        kaestchenReihe(e.region, 6, e.gewonnen),
+        el('div', { className: 'muted small', text: e.kaempfe + ' Kämpfe · ' + e.faenge + ' Fänge' })
+      ]);
+    }
+    var wert = function (e) { return e ? (e.gewonnen ? 100 : e.region) : -1; };
+    var a = wert(eigen), b = wert(fremd);
+    return el('div', { className: 'vgl-tafel' }, [
+      spalte('Du', eigen, a > b),
+      spalte('Der andere', fremd, b > a)
+    ]);
+  }
 
   /* ---------- Teilen ----------------------------------------------------------
    * Ein Run endete bisher im Nichts: Die Zahlen standen da und verschwanden.

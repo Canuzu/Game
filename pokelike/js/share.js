@@ -333,7 +333,88 @@
     };
   }
 
+  /* ---------- 5) Der Tages-Run ----------------------------------------------
+   * Alle spielen denselben Startwert, also lassen sich Ergebnisse vergleichen —
+   * aber es gibt keinen Ort, an dem sie zusammenlaufen. Statt eines Servers
+   * gibt es deshalb einen kurzen Code: Er trägt das Ergebnis in sich, ist von
+   * Hand abtippbar, und ein Prüfzeichen sorgt dafür, dass ein Vertipper nicht
+   * als echtes Ergebnis durchgeht.
+   * ------------------------------------------------------------------------ */
+
+  var URSPRUNG = Date.UTC(2020, 0, 1);
+
+  function tageSeit(datum) {
+    var t = Date.parse(datum + 'T00:00:00Z');
+    if (!isFinite(t)) return 0;
+    return Math.max(0, Math.round((t - URSPRUNG) / 86400000));
+  }
+
+  function datumAusTagen(n) {
+    return new Date(URSPRUNG + n * 86400000).toISOString().slice(0, 10);
+  }
+
+  function pruefzeichen(text) {
+    var summe = 0;
+    for (var i = 0; i < text.length; i++) summe = (summe * 31 + text.charCodeAt(i)) >>> 0;
+    return (summe % 36).toString(36).toUpperCase();
+  }
+
+  /** Macht aus einem Tagesergebnis einen Code zum Verschicken. */
+  function tagesCode(erg) {
+    var teile = [
+      tageSeit(erg.datum),
+      Math.min(99, erg.region || 0),
+      erg.gewonnen ? 1 : 0,
+      Math.min(9999, erg.kaempfe || 0),
+      Math.min(999, erg.faenge || 0)
+    ].map(function (n) { return (n >>> 0).toString(36); });
+    var kern = teile.join('-');
+    return ('TR-' + kern + '-' + pruefzeichen(kern)).toUpperCase();
+  }
+
+  /** Liest einen Code wieder ein. Liefert null, wenn er nicht stimmt. */
+  function ausTagesCode(code) {
+    var sauber = String(code || '').trim().toUpperCase().replace(/\s+/g, '');
+    var teile = sauber.split('-');
+    if (teile.length !== 7 || teile[0] !== 'TR') return null;
+    var kern = teile.slice(1, 6).join('-').toLowerCase();
+    if (pruefzeichen(kern) !== teile[6]) return null;
+    var zahlen = teile.slice(1, 6).map(function (t) { return parseInt(t, 36); });
+    if (zahlen.some(function (n) { return !isFinite(n) || n < 0; })) return null;
+    return {
+      datum: datumAusTagen(zahlen[0]),
+      region: zahlen[1],
+      gewonnen: zahlen[2] === 1,
+      kaempfe: zahlen[3],
+      faenge: zahlen[4]
+    };
+  }
+
+  /**
+   * Der Text zum Tages-Run: Ergebnis, Kästchenreihe, der Vergleich mit dem
+   * Automaten — und der Code, damit der Empfänger sein eigenes danebenlegen kann.
+   */
+  function tagesText(erg, latte) {
+    var zeilen = ['Pokélike+ Tages-Run · ' + erg.datum];
+    zeilen.push(erg.gewonnen ? '👑 Liga bezwungen!' : 'Region ' + erg.region + ' von ' + erg.regionen);
+    zeilen.push(kaestchen(erg));
+    if (latte) {
+      var lattenText = latte.gewonnen ? 'Liga bezwungen' : 'Region ' + latte.region;
+      var besser = erg.gewonnen && !latte.gewonnen ? ' — geschlagen! 🏆'
+        : (!erg.gewonnen && !latte.gewonnen && erg.region > latte.region) ? ' — geschlagen! 🏆'
+        : (erg.gewonnen && latte.gewonnen) || erg.region === latte.region ? ' — gleichauf'
+        : '';
+      zeilen.push('Der Automat: ' + lattenText + besser);
+    }
+    zeilen.push(tagesCode(erg));
+    return zeilen.join('\n');
+  }
+
   PL.share = {
+    tagesCode: tagesCode,
+    ausTagesCode: ausTagesCode,
+    tagesText: tagesText,
+    tageSeit: tageSeit,
     ergebnis: ergebnis,
     alsText: alsText,
     alsBild: alsBild,

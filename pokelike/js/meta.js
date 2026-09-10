@@ -170,6 +170,7 @@
       version: 1,
       runs: 0, wins: 0, bestRegion: 0, bestAscension: -1,
       unlocked: {}, achievements: {}, seen: {}, caught: {}, shinies: {},
+      taeglich: {},
       totals: { battles: 0, kos: 0, catches: 0, faints: 0, money: 0, turns: 0, evolutions: 0, playtime: 0 },
       history: [],
       settings: { theme: 'auto', lang: 'de', speed: 'normal', sound: true, music: true, volume: 0.5, confirmRisky: true, figur: 'rot' }
@@ -200,6 +201,12 @@
     if (!s || !cache) return false;
     try { s.setItem(metaKey(), JSON.stringify(cache)); return true; } catch (e) { return false; }
   }
+
+  /**
+   * Vergisst den gemerkten Stand und liest ihn neu ein. Nötig, wenn der
+   * Speicher von außen verändert wurde — etwa in einem zweiten Fenster.
+   */
+  function reload() { cache = null; return load(); }
 
   function reset() {
     cache = emptyMeta();
@@ -394,6 +401,52 @@
     Object.keys(m.caught).forEach(function (i) { gens[dex.species[i].g] = 1; });
     if (Object.keys(gens).length >= 9) award('dex_all_gens');
   }
+
+  /* ---------- Der Tages-Run ---------------------------------------------------
+   * Für alle derselbe Startwert, ein Versuch, ein Ergebnis. Gemerkt wird nur
+   * der heutige Tag: die Messlatte, die der Automat gesetzt hat, und das
+   * eigene Ergebnis. Was gestern war, interessiert morgen niemanden mehr —
+   * das hält den Spielstand klein.
+   * -------------------------------------------------------------------------- */
+
+  function heute() { return new Date().toISOString().slice(0, 10); }
+
+  /** Der Startwert des Tages. Er hängt am Datum, also hat ihn jeder gleich. */
+  function tagesStartwert(datum) {
+    return PL.util.hashSeed('daily-' + (datum || heute()));
+  }
+
+  /** Der Stand von heute — leer, wenn der Tag noch frisch ist. */
+  function tagesStand() {
+    var m = load(), t = m.taeglich || {};
+    if (t.datum !== heute()) return { datum: heute() };
+    return t;
+  }
+
+  /** Trägt ein, was der Automat geschafft hat. */
+  function setzeMesslatte(latte) {
+    var m = load();
+    var t = tagesStand();
+    t.datum = heute();
+    t.latte = latte;
+    m.taeglich = t;
+    save();
+    return t;
+  }
+
+  /** Trägt das eigene Ergebnis ein. Der erste Versuch zählt. */
+  function setzeTagesErgebnis(erg) {
+    var m = load();
+    var t = tagesStand();
+    t.datum = heute();
+    if (!t.eigen) t.eigen = erg;
+    m.taeglich = t;
+    save();
+    return t;
+  }
+
+  /** Wurde der heutige Tages-Run schon gespielt? */
+  function tagGespielt() { return !!tagesStand().eigen; }
 
   function dexStats() {
     var m = load();
@@ -653,6 +706,10 @@
     SLOTS: SLOTS,
     starters: starters, unlockState: unlockState, unlockText: UNLOCK_TEXT,
     achievements: achievements, refreshAchievements: refreshAchievements, award: award,
+    reload: reload,
+    heute: heute, tagesStartwert: tagesStartwert, tagesStand: tagesStand,
+    setzeMesslatte: setzeMesslatte, setzeTagesErgebnis: setzeTagesErgebnis,
+    tagGespielt: tagGespielt,
     noteSeen: noteSeen, noteCaught: noteCaught, noteOwned: noteOwned,
     noteParty: noteParty, dexStats: dexStats,
     ASCENSIONS: ASCENSIONS, maxAscension: maxAscension,

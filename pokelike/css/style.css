@@ -1295,6 +1295,53 @@ button.move-row:hover { border-color: var(--accent); }
 
 /* Der Lautstärkeregler. Die Bahn ist überall gleich, der Knopf muss auf dem
    Telefon mit dem Daumen zu treffen sein — deshalb 26 Pixel und nicht 14. */
+/* ---------- Tages-Run --------------------------------------------------------- */
+
+.tages-banner {
+  display: flex; align-items: center; gap: .8rem; width: 100%; text-align: left;
+  margin: .8rem 0; padding: .8rem 1rem; cursor: pointer;
+  border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--panel); color: var(--text); font: inherit;
+}
+.tages-banner:hover { border-color: var(--accent); }
+.tages-banner:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tages-banner.fertig { border-color: color-mix(in srgb, var(--good) 60%, var(--line)); }
+.tages-icon { font-size: 1.4rem; }
+.tages-pfeil { margin-left: auto; color: var(--muted); font-size: 1.3rem; }
+.block { display: block; }
+
+.daily-screen { display: grid; gap: .9rem; }
+.daily-karte {
+  padding: 1rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel);
+}
+.daily-karte h3 { margin: 0 0 .5rem; font-size: 1rem; }
+.daily-gross { margin: 0 0 .5rem; font-size: 1.25rem; font-weight: 650; }
+.daily-urteil { margin: .5rem 0; font-weight: 600; }
+.daily-urteil.gut { color: var(--good); }
+.daily-urteil.schlecht { color: var(--muted); }
+
+.kaestchen-reihe { display: flex; gap: .3rem; margin: .3rem 0 .5rem; flex-wrap: wrap; }
+.kaestchen {
+  width: 22px; height: 22px; border-radius: 3px; background: var(--panel-2);
+  border: 1px solid var(--line); display: block;
+}
+.kaestchen.voll { background: var(--good); border-color: transparent; }
+.kaestchen.halb { background: var(--accent); border-color: transparent; }
+
+.code-feld {
+  flex: 1; min-width: 150px; padding: .5rem .6rem; font-family: ui-monospace, Menlo, monospace;
+  font-size: .9rem; background: var(--panel-2); color: var(--text);
+  border: 1px solid var(--line); border-radius: var(--radius);
+}
+.vergleich { margin-top: .8rem; }
+.vgl-tafel { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; }
+.vgl-spalte {
+  padding: .7rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel-2);
+}
+.vgl-spalte.gewinner { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+.vgl-spalte .kaestchen { width: 14px; height: 14px; }
+.vgl-spalte .daily-gross { font-size: 1.05rem; }
+
 /* ---------- Teilen: Run-Karte, Ergebnistext, Einladung ------------------------ */
 
 .teilen-zone {

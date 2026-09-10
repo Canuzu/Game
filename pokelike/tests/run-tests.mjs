@@ -2193,6 +2193,96 @@ section('Ein Run im Automatikbetrieb');
     run.party.map((m) => m.hp + '/' + mons.maxHP(m)).join(' '));
 }
 
+section('Tages-Run: ein Startwert für alle');
+{
+  const store = {};
+  globalThis.localStorage = {
+    getItem: (k) => (k in store ? store[k] : null),
+    setItem: (k, v) => { store[k] = String(v); },
+    removeItem: (k) => { delete store[k]; }
+  };
+  await import('../js/meta.js');
+  await import('../js/share.js');
+  const meta = PL.meta, S = PL.share;
+  meta.reset();
+
+  const heute = meta.heute();
+  eq('Das Datum hat die Form JJJJ-MM-TT', /^\d{4}-\d{2}-\d{2}$/.test(heute), true, heute);
+  eq('Derselbe Tag ergibt denselben Startwert',
+    meta.tagesStartwert(heute), meta.tagesStartwert(heute));
+  check('Ein anderer Tag ergibt einen anderen Startwert',
+    meta.tagesStartwert('2026-01-01') !== meta.tagesStartwert('2026-01-02'));
+
+  const leer = meta.tagesStand();
+  eq('Vor dem ersten Versuch steht nichts da', !!leer.eigen, false);
+  eq('Und noch keine Messlatte', !!leer.latte, false);
+  eq('Der Tag gilt als ungespielt', meta.tagGespielt(), false);
+
+  meta.setzeMesslatte({ region: 4, gewonnen: false, kaempfe: 30, faenge: 9 });
+  eq('Die Messlatte bleibt liegen', meta.tagesStand().latte.region, 4);
+
+  const run = new PL.Run({ seed: meta.tagesStartwert(), mode: 'taeglich', starter: 'bulbasaur' });
+  run.region = 5; run.stats.battles = 41; run.stats.catches = 12;
+  meta.setzeTagesErgebnis(S.ergebnis(run, 'niederlage'));
+  eq('Das eigene Ergebnis steht fest', meta.tagesStand().eigen.region, 5);
+  eq('Der Tag gilt jetzt als gespielt', meta.tagGespielt(), true);
+
+  // Ein zweiter Anlauf darf das Ergebnis nicht schönrechnen.
+  const run2 = new PL.Run({ seed: meta.tagesStartwert(), mode: 'taeglich', starter: 'bulbasaur' });
+  run2.region = 6; run2.state = 'victory';
+  meta.setzeTagesErgebnis(S.ergebnis(run2, 'sieg'));
+  eq('Der erste Versuch zählt, kein zweiter', meta.tagesStand().eigen.region, 5);
+  eq('… und der Sieg wird nicht nachgereicht', meta.tagesStand().eigen.gewonnen, false);
+
+  // Der Stand von gestern ist heute kein Stand mehr.
+  const schluessel = 'pokelike.plus.v1';
+  const roh = JSON.parse(store[schluessel]);
+  roh.taeglich.datum = '2020-01-01';
+  store[schluessel] = JSON.stringify(roh);
+  meta.reload();
+  eq('Ein alter Tag wird verworfen', meta.tagesStand().datum, heute);
+  eq('… samt Ergebnis', !!meta.tagesStand().eigen, false);
+
+  /* --- Der Code, den man verschickt --- */
+  const erg = S.ergebnis(run, 'niederlage');
+  erg.datum = '2026-09-10';
+  const code = S.tagesCode(erg);
+  check('Der Code ist kurz genug für eine Nachricht', code.length <= 24, code + ' (' + code.length + ')');
+  eq('Er beginnt erkennbar', code.slice(0, 3), 'TR-');
+  const zurueck = S.ausTagesCode(code);
+  eq('Der Tag kommt heil zurück', zurueck.datum, '2026-09-10');
+  eq('Die Region auch', zurueck.region, 5);
+  eq('Die Kämpfe auch', zurueck.kaempfe, 41);
+  eq('Die Fänge auch', zurueck.faenge, 12);
+  eq('Und der Ausgang', zurueck.gewonnen, false);
+  eq('Kleinschreibung ist erlaubt', S.ausTagesCode(code.toLowerCase()).region, 5);
+  eq('Ein Tippfehler wird bemerkt',
+    S.ausTagesCode(code.slice(0, -1) + (code.slice(-1) === 'A' ? 'B' : 'A')), null);
+  eq('Und Unsinn erst recht', S.ausTagesCode('hallo'), null);
+  eq('Leer bleibt leer', S.ausTagesCode(''), null);
+
+  /* --- Die Messlatte muss für alle dieselbe sein --- */
+  function messlatte(seed) {
+    const t = PL.autopilot.durchlauf({ seed: seed, mode: 'taeglich', starter: 'charmander' });
+    let schutz = 0;
+    while (t.schritt() && schutz++ < 500) { /* Knoten für Knoten */ }
+    return { region: t.run.region, gewonnen: t.run.state === 'victory',
+             kaempfe: t.run.stats.battles, ende: t.fertig() };
+  }
+  const l1 = messlatte(4242), l2 = messlatte(4242), l3 = messlatte(9999);
+  check('Der Automat spielt den Tag zu Ende', l1.ende, JSON.stringify(l1));
+  check('… und kämpft dabei wirklich', l1.kaempfe > 5, l1.kaempfe + ' Kämpfe');
+  eq('Derselbe Startwert ergibt dieselbe Messlatte', JSON.stringify(l1), JSON.stringify(l2));
+  check('Ein anderer Startwert ergibt einen anderen Verlauf',
+    JSON.stringify(l1) !== JSON.stringify(l3), JSON.stringify(l3));
+
+  const text = S.tagesText(erg, { region: 4, gewonnen: false, kaempfe: 30, faenge: 9 });
+  check('Der Text nennt den Tages-Run', text.indexOf('Tages-Run') >= 0, text);
+  check('… und trägt den Code bei sich', text.indexOf(code) >= 0, text);
+
+  delete globalThis.localStorage;
+}
+
 /* ------------------------------------------------------------- Ergebnis -- */
 
 console.log('\n' + '─'.repeat(60));
