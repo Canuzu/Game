@@ -171,8 +171,15 @@
       runs: 0, wins: 0, bestRegion: 0, bestAscension: -1,
       unlocked: {}, achievements: {}, seen: {}, caught: {}, shinies: {},
       taeglich: {},
-      stufenFassung: 2,
+      // Beide Marken stehen bewusst auf "noch nicht erledigt": Ein
+      // Spielstand von früher kennt den Schlüssel gar nicht, und load()
+      // übernimmt nur Schlüssel, die dort auch stehen. Stünde hier schon der
+      // Endwert, liefe die Umstellung nie — bei einem frischen Stand ist sie
+      // ohnehin ein Durchlauf über nichts.
+      stufenFassung: 1,
+      legendenReset: false,
       meilensteine: {},          // welche Sammelmarken schon geholt sind
+      meisterbaelle: 0,          // die Kasse für den Legendären Run
       vorrat: {},                // erspielter Startvorteil für den nächsten Run
       wochen: {},                // die Aufträge dieser Woche und ihr Stand
       arten: {},                 // je Art der eigene Bestwert
@@ -202,6 +209,20 @@
     // noch die alte Zahl; unumgerechnet stünde "Aufstieg 9" plötzlich für den
     // Legendären Run. Umgerechnet bleibt der Rang erhalten, er heißt nur
     // anders — verschenkt wird die letzte Stufe dabei nicht.
+    // Legendäre Pokémon gibt es nur noch im Legendären Run, und dort nur mit
+    // einem Meisterball. Was vorher auf gewöhnlichem Weg in den Pokédex kam,
+    // steht damit auf einer Grundlage, die es nicht mehr gibt — also wird es
+    // einmalig gestrichen. Alles andere bleibt, wie es war.
+    if (!cache.legendenReset) {
+      dex.species.forEach(function (sp) {
+        if (!dex.isLegendary(sp)) return;
+        delete cache.seen[sp.i];
+        delete cache.caught[sp.i];
+        delete cache.shinies[sp.i];
+        if (cache.arten) delete cache.arten[sp.i];
+      });
+      cache.legendenReset = true;
+    }
     if (cache.stufenFassung !== 2) {
       // -1 heißt "noch nichts gewonnen" — das bleibt so, sonst schenkte die
       // Umrechnung jedem frischen Spielstand die zweite Stufe.
@@ -526,7 +547,7 @@
       lohn: { reroll: 1 }, lohnText: 'Einmal je Run eine Auswahl neu würfeln' },
     { id: 'gen9', name: 'Alle neun', bed: 'Alle neun Generationen vollständig',
       wert: function (st) { return [st.volleGen, 9]; },
-      lohn: { meisterball: 1 }, lohnText: 'Ein Meisterball zum Start' }
+      lohn: {}, einmal: { meisterball: 1 }, lohnText: 'Ein Meisterball in die Kasse' }
   ];
 
   /** Der Sammlungsstand, wie ihn die Meilensteine sehen. */
@@ -561,6 +582,8 @@
       var w = ms.wert(st);
       if (w[0] < w[1]) return;
       m.meilensteine[ms.id] = Date.now();
+      // Manche Marken zahlen einmalig in die Kasse statt dauerhaft in den Beutel.
+      if (ms.einmal && ms.einmal.meisterball) gibMeisterball(ms.einmal.meisterball);
       neue.push({ id: ms.id, name: ms.name, lohnText: ms.lohnText });
     });
     if (neue.length) save();
@@ -575,7 +598,7 @@
   function sammelLohn() {
     var m = load();
     var lohn = { geld: 0, baelle: 0, superbaelle: 0, traenke: 0, beleber: 0,
-                 relikte: 0, reroll: 0, meisterball: 0, shiny: 1 };
+                 relikte: 0, reroll: 0, shiny: 1 };
     MEILENSTEINE.forEach(function (ms) {
       if (!m.meilensteine[ms.id]) return;
       Object.keys(ms.lohn).forEach(function (k) {
@@ -584,6 +607,40 @@
       });
     });
     return lohn;
+  }
+
+  /* ---------- 4b2) Die Meisterball-Kasse ---------------------------------------
+   * Legendäre Pokémon lassen sich nicht mehr auf dem gewöhnlichen Weg fangen.
+   * Der einzige Ball, der bei ihnen wirkt, ist der Meisterball — und den gibt
+   * es nur für einen durchgespielten Legendären Run.
+   *
+   * Die Kasse liegt hier und nicht im Run: Ein Meisterball überlebt das Ende
+   * eines Runs und wartet auf den nächsten. Weg ist er erst, wenn er wirklich
+   * geworfen wurde. Wer drei Runs schafft und keinen wirft, hat drei.
+   * -------------------------------------------------------------------------- */
+
+  function meisterbaelle() { return load().meisterbaelle || 0; }
+
+  /** Legt Meisterbälle in die Kasse — der Lohn für einen geschafften Run. */
+  function gibMeisterball(n) {
+    var m = load();
+    m.meisterbaelle = Math.max(0, (m.meisterbaelle || 0) + (n === undefined ? 1 : n));
+    save();
+    return m.meisterbaelle;
+  }
+
+  /**
+   * Schreibt die Kasse auf den Stand fort, den der laufende Run übrig hat.
+   * Der Beutel des Runs ist während des Spielens die Wahrheit; geworfen ist
+   * geworfen, und das gilt auch für den nächsten Run.
+   */
+  function setzeMeisterbaelle(n) {
+    var m = load();
+    var wert = Math.max(0, n | 0);
+    if (m.meisterbaelle === wert) return wert;
+    m.meisterbaelle = wert;
+    save();
+    return wert;
   }
 
   /* ---------- 4c) Wochenaufträge -----------------------------------------------
@@ -736,9 +793,12 @@
    */
   function startVorteil(modus) {
     if (modus === 'taeglich') return null;
+    // Der Legendäre Run bringt keinen Sammlungslohn mit — er hat seine eigene
+    // Währung. Was zählt, ist die Kasse.
+    if (modus === 'legenden') return { meisterbaelle: meisterbaelle() };
     var lohn = sammelLohn(), v = hebeVorrat();
     ['geld', 'baelle', 'superbaelle', 'traenke', 'beleber', 'relikte',
-     'reroll', 'meisterball'].forEach(function (k) {
+     'reroll'].forEach(function (k) {
       lohn[k] = (lohn[k] || 0) + (v[k] || 0);
     });
     return lohn;
@@ -1033,6 +1093,7 @@
     wochenSchluessel: wochenSchluessel, wochenAuftraege: wochenAuftraege,
     wochenStand: wochenStand, zaehleWoche: zaehleWoche,
     vorrat: vorrat, legeInVorrat: legeInVorrat, hebeVorrat: hebeVorrat, startVorteil: startVorteil,
+    meisterbaelle: meisterbaelle, gibMeisterball: gibMeisterball, setzeMeisterbaelle: setzeMeisterbaelle,
     merkeArten: merkeArten, artRekord: artRekord,
     recordRun: recordRun,
     saveRun: saveRun, loadRun: loadRun, clearRun: clearRun, hasRun: hasRun,

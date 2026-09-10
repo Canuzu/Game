@@ -395,8 +395,12 @@
   /** Alle Bälle im Beutel mit ihrer Fangchance gegen dieses Ziel. */
   function ballOptions(bt, run, foe) {
     var out = [];
+    // Im Legendären Run wirft der Automat nicht: Welche Legende einen
+    // Meisterball wert ist, entscheidet der Spieler, nicht die Maschine.
+    if (run.mode === 'legenden') return out;
     Object.keys(run.bag).forEach(function (id) {
       if (!(run.bag[id] > 0)) return;
+      if (run.ballErlaubt && !run.ballErlaubt(id)) return;
       var it = PL.items.get(id);
       if (!it || it.kind !== 'ball') return;
       var mult = it.ball ? it.ball(bt, foe) : 1;

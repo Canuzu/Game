@@ -396,6 +396,15 @@ await page.waitForSelector('.sammlung-screen');
   check('Der Run startet mit den erspielten Bällen', beutel.baelle === 2, String(beutel.baelle));
   check('Der Tages-Run bekommt keinen Vorteil', beutel.taeglich === null);
 
+  // Die Meisterball-Kasse steht in der Sammlung
+  const kasseText = await page.evaluate(() => {
+    PL.meta.gibMeisterball(2);
+    globalThis.PokelikeApp.show('sammlung');
+    return document.querySelector('.sammlung-screen').innerText;
+  });
+  check('Die Sammlung zeigt die Meisterball-Kasse', /2 Meisterbälle/.test(kasseText),
+    (kasseText.match(/Meisterball[^\n]*/g) || []).join(' | '));
+
   // Der Bestwert steht im Pokédex unter der Art
   await page.evaluate(() => {
     const run = new PL.Run({ seed: 8, starter: 'charmander' });
@@ -475,6 +484,22 @@ await page.waitForSelector('.asc-box');
     lauf.knoten.filter((t) => t === 'legendboss').length === 5, lauf.knoten.join(','));
   const kopf = await page.locator('.chip-region').innerText();
   check('Die Kopfzeile zählt die Legenden', /0\/125/.test(kopf), kopf);
+  const kasse = await page.locator('.chip-ball').innerText();
+  check('Ohne geschafften Run steht die Kasse auf null', /0/.test(kasse), kasse);
+
+  // Ohne Meisterball lässt sich nichts fangen — und kein anderer Ball hilft
+  const fangbar = await page.evaluate(() => {
+    const run = globalThis.PokelikeApp.run;
+    run.addItem('ultraball', 5);
+    return {
+      erlaubt: run.ballErlaubt('ultraball'),
+      fangen: run.catchAllowed(),
+      mitBall: (function () { run.addItem('masterball', 1); return run.catchAllowed(); })()
+    };
+  });
+  check('Ein Hyperball ist im Legendären Run gesperrt', fangbar.erlaubt === false);
+  check('Ohne Meisterball ist kein Fang erlaubt', fangbar.fangen === false);
+  check('Mit Meisterball schon', fangbar.mitBall === true);
 
   await page.evaluate(() => {
     globalThis.PokelikeApp.run = null;

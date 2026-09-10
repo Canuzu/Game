@@ -1332,6 +1332,7 @@ button.move-row:hover { border-color: var(--accent); }
 .marken-gitter { display: grid; gap: .5rem; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
 
 .art-rekord { margin: .3rem 0; font-size: .85rem; color: var(--accent); }
+.chip-ball { border-color: color-mix(in srgb, #a56cff 55%, var(--line)); }
 
 /* ---------- Tages-Run --------------------------------------------------------- */
 

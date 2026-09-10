@@ -818,22 +818,6 @@
       ]
     },
     {
-      id: 'legendenschrein', title: 'Schrein der Legenden',
-      // Nur, solange der Run sein einziges legendäres Pokémon noch vor sich
-      // hat: Sonst steht hier nichts hinter dem Siegel.
-      available: function (run) {
-        if (run.legendAvailable && !run.legendAvailable()) return false;
-        return run.region >= 5 || run.leagueStage >= 0;
-      },
-      text: 'Ein Schrein, älter als jede Aufzeichnung. Hinter dem Siegel bewegt sich etwas Großes — und es hat dich bemerkt.',
-      options: [
-        { label: 'Das Siegel brechen', desc: 'Kampf gegen ein legendäres Pokémon. Fangen erlaubt.',
-          run: function (run, rng) { return { battle: run.makeLegendary(rng) }; } },
-        { label: 'Ehrfürchtig zurücktreten', desc: 'Der Schrein belohnt Respekt mit einem Relikt.',
-          run: function (run, rng) { return { relicChoice: 2, text: 'Der Schrein bleibt verschlossen — aber etwas liegt davor.' }; } }
-      ]
-    },
-    {
       id: 'labor', title: 'Verlassenes Labor',
       text: 'Ein aufgegebener Forschungsposten. Auf dem Tisch liegen Notizen, in der Ecke summt noch ein Gerät.',
       options: [
@@ -1031,7 +1015,6 @@
     steinhoehle:     [7, 5],
     kraftstein:      [8, 6],
     haendler:        [function (r) { return r.money >= 2500 ? 7 : 3; }, 8],
-    legendenschrein: [function (r) { return autoHurt(r) < 0.2 && autoRoom(r) ? 8 : 4; }, 7],
     labor:           [6, 7],
     streuner:        [function (r) { return autoRoom(r) ? 7 : 3; }, 6],
     pilze:           [7, 5],

@@ -41,9 +41,21 @@
     T.setLang(settings().lang);
   }
 
+  /**
+   * Der Beutel des laufenden Legendären Runs ist die Wahrheit über die
+   * Meisterbälle: Geworfen ist geworfen, und das gilt auch für den nächsten
+   * Run. Ungeworfene bleiben liegen und warten.
+   */
+  function synchronisiereMeisterbaelle() {
+    var run = App.run;
+    if (!run || run.mode !== 'legenden') return;
+    meta.setzeMeisterbaelle(run.bag.masterball || 0);
+  }
+
   function autosave() {
     // Erst der Pokédex, dann der Run: Wer im Team oder in der Box liegt, steht
     // eingetragen — gleich, ob gefangen, entwickelt, geschenkt oder geschlüpft.
+    synchronisiereMeisterbaelle();
     if (App.run) meta.noteParty(App.run);
     if (App.run && App.run.state !== 'gameover' && App.run.state !== 'victory') meta.saveRun(App.run);
     // Der Browser vergisst eingebettete Seiten gern; die Wolke tut das nicht.
@@ -231,6 +243,10 @@
             text: '🌟 ' + run.legendenBesiegt() + '/' + PL.Run.legendenGesamt() })
         : el('span', { className: 'chip chip-region', text: '👑 ' + (run.leagueStage >= 0 ? 'Finale' : 'Region ' + (run.region + 1) + '/' + (run.mode === 'endlos' ? '∞' : run.totalRegions())) }));
       mid.appendChild(el('span', { className: 'chip chip-money', text: '💰 ' + U.money(run.money) }));
+      if (run.mode === 'legenden') {
+        mid.appendChild(el('span', { className: 'chip chip-ball', title: 'Meisterbälle — nur damit lässt sich hier fangen',
+          text: '🟣 ' + (run.bag.masterball || 0) }));
+      }
       mid.appendChild(el('span', { className: 'chip chip-cap', title: 'Höchstes erreichbares Level' }, [
         el('span', { text: '⬆\u00a0' }),
         el('span', { className: 'cap-word', text: 'Lv ' }),
@@ -888,8 +904,13 @@
       oninput: function () { setzeStufe(+ascInput.value); }
     });
 
+    var kasse = meta.meisterbaelle();
     var modusNotiz = el('p', { className: 'muted small', hidden: true, text:
-      'Der Legendäre Run bringt seinen eigenen Weg mit — die Moduswahl darüber ruht so lange.' });
+      'Der Legendäre Run bringt seinen eigenen Weg mit — die Moduswahl darüber ruht so lange. ' +
+      (kasse
+        ? 'Du nimmst ' + (kasse === 1 ? 'einen Meisterball' : kasse + ' Meisterbälle') +
+          ' mit; nur damit lassen sich Legenden fangen.'
+        : 'Du hast keinen Meisterball — fangen kannst du diesmal nichts. Wer den Run schafft, bekommt einen.') });
 
     function setzeStufe(n) {
       chosen.ascension = n;
@@ -1779,11 +1800,18 @@
   function openBallDialog() {
     var run = App.run, bt = App.battle;
     var balls = Object.keys(run.bag).map(function (id) { return PL.items.get(id); })
-      .filter(function (it) { return it && it.kind === 'ball'; });
-    if (run.hasMod('freeMasterball') && !run.masterballUsed) {
+      .filter(function (it) { return it && it.kind === 'ball' && run.ballErlaubt(it.id); });
+    // Der Splitter ist ein Meisterball aus dem Nichts — im Legendären Run
+    // wäre er ein Fang, den niemand bezahlt hat.
+    if (run.mode !== 'legenden' && run.hasMod('freeMasterball') && !run.masterballUsed) {
       balls.unshift({ id: '__free', name: 'Meisterball-Splitter', desc: 'Einmal pro Run: garantierter Fang.', kind: 'ball', free: true });
     }
-    if (!balls.length) { U.toast('Du hast keine Bälle mehr.', 'bad'); return; }
+    if (!balls.length) {
+      U.toast(run.mode === 'legenden'
+        ? 'Keine Meisterbälle mehr. Legendäre Pokémon lassen sich nur damit fangen — der nächste geschaffte Run bringt einen.'
+        : 'Du hast keine Bälle mehr.', 'bad');
+      return;
+    }
     var box = U.modal({
       title: 'Welchen Ball?',
       content: el('div', { className: 'list' }, balls.map(function (it) {
@@ -1796,6 +1824,9 @@
               submitAction({ type: 'ball', item: 'masterball' });
             } else {
               run.removeItem(it.id, 1);
+              // Ein geworfener Meisterball ist sofort weg — auch dann, wenn
+              // der Kampf noch läuft oder das Fenster gleich zugeht.
+              synchronisiereMeisterbaelle();
               submitAction({ type: 'ball', item: it.id });
             }
           }
@@ -3174,6 +3205,7 @@
     var woche = meta.wochenStand();
     var lohn = meta.sammelLohn();
     var v = meta.vorrat();
+    var kasse = meta.meisterbaelle();
     var offen = marken.filter(function (m) { return !m.geschafft; });
     var geholt = marken.length - offen.length;
 
@@ -3223,6 +3255,17 @@
         ]),
         vorratZeilen.length ? el('p', { className: 'muted small', text:
           'Im Vorrat für den nächsten Run: ' + vorratZeilen.join(' · ') }) : null
+      ]),
+
+      /* --- Die Meisterball-Kasse --- */
+      el('div', { className: 'sammlung-karte' }, [
+        el('h3', { text: '🟣 Meisterball-Kasse' }),
+        el('p', { className: 'daily-gross', text: kasse === 1
+          ? 'Ein Meisterball' : kasse + ' Meisterbälle' }),
+        el('p', { className: 'muted small', text:
+          'Legendäre Pokémon lassen sich nur mit einem Meisterball fangen, und nur im Legendären Run. ' +
+          'Jeder geschaffte Legendäre Run bringt einen. Ungeworfen bleiben sie liegen und wandern in den ' +
+          'nächsten Run — weg ist nur, was du wirklich wirfst.' })
       ]),
 
       /* --- Die Wochenaufträge --- */
@@ -3552,6 +3595,16 @@
     }
     var fresh = meta.recordRun(run, outcome);
     meta.merkeArten(run);
+    // Der Legendäre Run zahlt in die Kasse: Wer alle 125 Legenden hinter sich
+    // gebracht hat, nimmt einen Meisterball mit in den nächsten.
+    App.neuerMeisterball = false;
+    if (run.mode === 'legenden') {
+      synchronisiereMeisterbaelle();
+      if (outcome === 'sieg') {
+        meta.gibMeisterball(1);
+        App.neuerMeisterball = true;
+      }
+    }
 
     // Was dieser Run für die Woche und für die Sammlung gebracht hat. Der
     // Tages-Run zählt hier mit — er ist ein Run wie jeder andere, nur dass
@@ -3572,6 +3625,10 @@
     meta.clearRun();
     fresh.forEach(function (a) { U.toast('Erfolg freigeschaltet: ' + a.name, 'good'); });
     App.neueMarken.forEach(function (ms) { U.toast('Sammelmarke: ' + ms.name + ' — ' + ms.lohnText, 'good'); });
+    if (App.neuerMeisterball) {
+      U.toast('Ein Meisterball wandert in deine Kasse — du hast jetzt ' +
+        meta.meisterbaelle() + '.', 'good');
+    }
     App.wochenLohn.forEach(function (a) { U.toast('Wochenauftrag geschafft: ' + a.text, 'good'); });
     show('end');
   }

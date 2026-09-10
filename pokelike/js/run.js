@@ -84,13 +84,6 @@
    */
   var ALTE_AUFSTIEGE = [0, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4];
 
-  /* Legendäre Pokémon sollen selten bleiben — eins je Run ist die Obergrenze,
-     und die meisten Runs haben gar keins. Der Wert ist die Wahrscheinlichkeit,
-     dass ein Run überhaupt eine legendäre Spur trägt; er ist etwas höher als
-     jeder zehnte Run angesetzt, weil kaum ein Run bis in die letzte Region
-     kommt. Gemessen begegnet man damit etwa in jedem zehnten Run einem. */
-  var LEGEND_CHANCE = 0.13;
-
   var NODE_WEIGHTS = {
     wild: 34, trainer: 30, item: 8, event: 9, shop: 6, catch: 8, relic: 4, elite: 5
   };
@@ -172,7 +165,6 @@
     this.addItem('potion', 10);
     this.addItem('superpotion', 3);
     this.addItem('revive', 3);
-    this.nimmVorteil(opts.vorteil);
     if (opts.starter) {
       this.gainPokemon(this.rng, opts.starter, 8, 'Starter', {
         quality: 0.9, ivFloor: 14, hiddenChance: 0.2
@@ -180,7 +172,10 @@
       this.rival.starter = W.counterStarter(opts.starter, this.rng);
     }
     if (!this.rival.starter) this.rival.starter = 'squirtle';
+    // Der Legendäre Run räumt den Beutel leer, bevor er ihn neu packt — der
+    // Sammlungslohn kommt deshalb erst danach dazu.
     if (this.mode === 'legenden') this.ruesteLegendenTeam(opts.starter);
+    this.nimmVorteil(opts.vorteil);
     this.buildMap();
   }
 
@@ -263,10 +258,11 @@
       this.holeKaempfer(rng, sp, level);
     }
 
-    // Ein Strang ohne Abzweigung heißt: keine Umwege zum Nachkaufen.
+    // Ein Strang ohne Abzweigung heißt: keine Umwege zum Nachkaufen. Und
+    // keine Bälle: Legendäre Pokémon lassen sich hier nur mit einem
+    // Meisterball fangen, und den bringt man aus einem geschafften Run mit.
     this.money = 9000;
     this.bag = {};
-    this.addItem('ultraball', 12);
     this.addItem('hyperpotion', 12);
     this.addItem('fullrestore', 4);
     this.addItem('revive', 6);
@@ -301,18 +297,11 @@
   };
 
   /**
-   * Der Wurf, der alles entscheidet: Trägt dieser Run eine legendäre Spur,
-   * und in welcher seiner Regionen liegt sie? Gerechnet wird allein aus dem
-   * Startwert — derselbe Run kommt so immer zur selben Antwort, auch nach
-   * dem Laden eines Spielstands aus einer Fassung, die das noch nicht kannte.
-   * -1 heißt: in diesem Run kommt keines vor.
+   * Legendäre Pokémon kommen im gewöhnlichen Run nicht mehr vor — sie gehören
+   * jetzt ganz dem Legendären Run. Die Funktion bleibt, weil Spielstände von
+   * früher sie erwarten; sie antwortet nur noch mit -1: keine Spur.
    */
-  Run.rollLegend = function (seed, mode) {
-    var rng = PL.rng('legend-' + seed);
-    if (!rng.chance(LEGEND_CHANCE)) return -1;
-    var regions = Math.min(9, (MODES[mode] || MODES.standard).regions);
-    return rng.int(regions);
-  };
+  Run.rollLegend = function () { return -1; };
 
   Object.defineProperty(R, 'levelCap', {
     get: function () {
@@ -376,7 +365,7 @@
     if (vorteil.superbaelle) this.addItem('greatball', vorteil.superbaelle);
     if (vorteil.traenke) this.addItem('hyperpotion', vorteil.traenke);
     if (vorteil.beleber) this.addItem('revive', vorteil.beleber);
-    if (vorteil.meisterball) this.addItem('masterball', vorteil.meisterball);
+    if (vorteil.meisterbaelle) this.addItem('masterball', vorteil.meisterbaelle);
     if (vorteil.shiny) this.sammelShiny = vorteil.shiny;
     if (vorteil.relikte) this.startRelikte = vorteil.relikte;
     if (vorteil.reroll) this.bonusReroll = true;
@@ -452,11 +441,6 @@
     // Der Rivale taucht in jeder zweiten Region auf — vier Begegnungen pro Run.
     if (this.leagueStage < 0 && this.region % 2 === 1 && this.rival && this.rival.stage < 4) {
       mustHave.push('rival');
-    }
-    // Die legendäre Spur, wenn dieser Run eine trägt und sie hier liegt.
-    // Höchstens eine je Run — welche Region es trifft, entschied der Start.
-    if (this.leagueStage < 0 && this.region === this.legendRegion && this.legendAvailable()) {
-      mustHave.push('legend');
     }
     var middleSlots = [];
     for (r = 1; r < rows - 1; r++) for (i = 0; i < map[r].length; i++) middleSlots.push(map[r][i]);
@@ -669,12 +653,9 @@
   ];
 
   R.makeBlessing = function (rng) {
-    var pool = BLESSINGS.slice();
-    // Auch hier gilt die Obergrenze: Wer sein legendäres Pokémon schon hatte
-    // — oder in diesem Run keines bekommt —, dem wird auch keines angeboten.
-    if (this.party.length >= 6 || !this.legendAvailable()) {
-      pool = pool.filter(function (b) { return b.id !== 'legende'; });
-    }
+    // Der Segen der Legende gibt es nicht mehr: Legendäre Pokémon gehören
+    // ganz dem Legendären Run.
+    var pool = BLESSINGS.filter(function (b) { return b.id !== 'legende'; });
     return { kind: 'blessing', offers: rng.sample(pool, 3), loop: this.loop() };
   };
 
@@ -1264,12 +1245,17 @@
 
   /** Nuzlocke erlaubt genau einen Fang je Region. */
   R.catchAllowed = function () {
+    // Im Legendären Run entscheidet allein die Kasse: Wer keinen Meisterball
+    // mehr hat, kämpft weiter, fängt aber nichts. Genau das ist die
+    // Entscheidung, um die es geht — welche Legende ist dir deinen Ball wert?
+    if (this.mode === 'legenden') return (this.bag.masterball || 0) > 0;
     if (this.nuzlocke) return (this.regionCatches || 0) < 1;
-    // Im Legendären Run steht in jedem Kampf ein legendäres Pokémon. Ohne
-    // Grenze hätte man nach der zweiten Generation ein Team, das den Rest
-    // allein erledigt — zwei je Generation sind Beute, nicht Ernte.
-    if (this.mode === 'legenden') return (this.regionCatches || 0) < 2;
     return true;
+  };
+
+  /** Welche Bälle dürfen in diesem Run überhaupt geworfen werden? */
+  R.ballErlaubt = function (id) {
+    return this.mode !== 'legenden' || id === 'masterball';
   };
 
   /** Trägt ein gefallenes Pokémon in den Friedhof ein. */
@@ -1360,6 +1346,9 @@
     var out = [], self = this, deep = this.region + (this.leagueStage >= 0 ? 6 : 0);
     function add(id, w) {
       var it = PL.items.get(id);
+      // Im Legendären Run wirkt kein Ball außer dem Meisterball, und den gibt
+      // es nirgends zu kaufen oder zu finden. Also liegt auch keiner herum.
+      if (it && it.kind === 'ball' && !self.ballErlaubt(id)) return;
       if (it) out.push({ item: it, w: w });
     }
     add('pokeball', 20); add('greatball', deep > 1 ? 22 : 8); add('ultraball', deep > 3 ? 20 : 4);
@@ -1820,20 +1809,14 @@
     // Umrechnung stünde ein Run mit "Aufstieg 9" plötzlich auf der Stufe des
     // Legendären Runs — mit dessen Regeln, aber ohne dessen Strang.
     if (data.stufenFassung !== 2) run.ascension = Run.stufeAusAltem(run.ascension);
-    // Spielstände von vorher kannten die legendäre Spur noch nicht; der Wurf
-    // hängt nur am Startwert und lässt sich deshalb nachholen. Die schon
-    // gebaute Karte trägt dann aber noch eine Spur aus der alten Regel — die
-    // wird zu einer gewöhnlichen Begegnung, sonst bliebe der laufende Run bei
-    // der alten Häufigkeit stehen, bis er zu Ende ist.
-    if (run.legendRegion === undefined) {
-      run.legendRegion = Run.rollLegend(run.seed, run.mode);
-      if (run.region !== run.legendRegion) {
-        (run.map || []).forEach(function (row) {
-          row.forEach(function (n) { if (n.type === 'legend' && !n.done) n.type = 'wild'; });
-        });
-      }
-    }
-    run.legendUsed = !!run.legendUsed;
+    // Ein laufender Run kann noch eine legendäre Spur aus der alten Regel auf
+    // der Karte tragen. Die gibt es nicht mehr — was noch nicht betreten
+    // wurde, wird zu einer gewöhnlichen Begegnung.
+    run.legendRegion = -1;
+    run.legendUsed = true;
+    (run.map || []).forEach(function (row) {
+      row.forEach(function (n) { if (n.type === 'legend' && !n.done) n.type = 'wild'; });
+    });
     // Aus älteren Spielständen können Megasteine kommen, die es nicht mehr gibt.
     Object.keys(run.bag || {}).forEach(function (id) {
       if (!PL.items.get(id)) delete run.bag[id];

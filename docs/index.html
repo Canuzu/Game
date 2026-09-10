@@ -1341,6 +1341,7 @@ button.move-row:hover { border-color: var(--accent); }
 .marken-gitter { display: grid; gap: .5rem; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
 
 .art-rekord { margin: .3rem 0; font-size: .85rem; color: var(--accent); }
+.chip-ball { border-color: color-mix(in srgb, #a56cff 55%, var(--line)); }
 
 /* ---------- Tages-Run --------------------------------------------------------- */
 
@@ -1586,7 +1587,7 @@ button.move-row:hover { border-color: var(--accent); }
   var PL = root.PL || (root.PL = {});
 
   // Diese Zeile ersetzt tools/build-single.mjs beim Bauen.
-  var BUILD = '20260910T155859Z-598b8c4';
+  var BUILD = '20260910T164945Z-6bf8238';
 
   var TRIED_KEY = 'pokelike.plus.update.versucht';
   var state = { build: BUILD, latest: null, checking: false, stuck: false };
@@ -8507,22 +8508,6 @@ button.move-row:hover { border-color: var(--accent); }
       ]
     },
     {
-      id: 'legendenschrein', title: 'Schrein der Legenden',
-      // Nur, solange der Run sein einziges legendäres Pokémon noch vor sich
-      // hat: Sonst steht hier nichts hinter dem Siegel.
-      available: function (run) {
-        if (run.legendAvailable && !run.legendAvailable()) return false;
-        return run.region >= 5 || run.leagueStage >= 0;
-      },
-      text: 'Ein Schrein, älter als jede Aufzeichnung. Hinter dem Siegel bewegt sich etwas Großes — und es hat dich bemerkt.',
-      options: [
-        { label: 'Das Siegel brechen', desc: 'Kampf gegen ein legendäres Pokémon. Fangen erlaubt.',
-          run: function (run, rng) { return { battle: run.makeLegendary(rng) }; } },
-        { label: 'Ehrfürchtig zurücktreten', desc: 'Der Schrein belohnt Respekt mit einem Relikt.',
-          run: function (run, rng) { return { relicChoice: 2, text: 'Der Schrein bleibt verschlossen — aber etwas liegt davor.' }; } }
-      ]
-    },
-    {
       id: 'labor', title: 'Verlassenes Labor',
       text: 'Ein aufgegebener Forschungsposten. Auf dem Tisch liegen Notizen, in der Ecke summt noch ein Gerät.',
       options: [
@@ -8720,7 +8705,6 @@ button.move-row:hover { border-color: var(--accent); }
     steinhoehle:     [7, 5],
     kraftstein:      [8, 6],
     haendler:        [function (r) { return r.money >= 2500 ? 7 : 3; }, 8],
-    legendenschrein: [function (r) { return autoHurt(r) < 0.2 && autoRoom(r) ? 8 : 4; }, 7],
     labor:           [6, 7],
     streuner:        [function (r) { return autoRoom(r) ? 7 : 3; }, 6],
     pilze:           [7, 5],
@@ -9171,8 +9155,12 @@ button.move-row:hover { border-color: var(--accent); }
   /** Alle Bälle im Beutel mit ihrer Fangchance gegen dieses Ziel. */
   function ballOptions(bt, run, foe) {
     var out = [];
+    // Im Legendären Run wirft der Automat nicht: Welche Legende einen
+    // Meisterball wert ist, entscheidet der Spieler, nicht die Maschine.
+    if (run.mode === 'legenden') return out;
     Object.keys(run.bag).forEach(function (id) {
       if (!(run.bag[id] > 0)) return;
+      if (run.ballErlaubt && !run.ballErlaubt(id)) return;
       var it = PL.items.get(id);
       if (!it || it.kind !== 'ball') return;
       var mult = it.ball ? it.ball(bt, foe) : 1;
@@ -9417,13 +9405,6 @@ button.move-row:hover { border-color: var(--accent); }
    */
   var ALTE_AUFSTIEGE = [0, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4];
 
-  /* Legendäre Pokémon sollen selten bleiben — eins je Run ist die Obergrenze,
-     und die meisten Runs haben gar keins. Der Wert ist die Wahrscheinlichkeit,
-     dass ein Run überhaupt eine legendäre Spur trägt; er ist etwas höher als
-     jeder zehnte Run angesetzt, weil kaum ein Run bis in die letzte Region
-     kommt. Gemessen begegnet man damit etwa in jedem zehnten Run einem. */
-  var LEGEND_CHANCE = 0.13;
-
   var NODE_WEIGHTS = {
     wild: 34, trainer: 30, item: 8, event: 9, shop: 6, catch: 8, relic: 4, elite: 5
   };
@@ -9505,7 +9486,6 @@ button.move-row:hover { border-color: var(--accent); }
     this.addItem('potion', 10);
     this.addItem('superpotion', 3);
     this.addItem('revive', 3);
-    this.nimmVorteil(opts.vorteil);
     if (opts.starter) {
       this.gainPokemon(this.rng, opts.starter, 8, 'Starter', {
         quality: 0.9, ivFloor: 14, hiddenChance: 0.2
@@ -9513,7 +9493,10 @@ button.move-row:hover { border-color: var(--accent); }
       this.rival.starter = W.counterStarter(opts.starter, this.rng);
     }
     if (!this.rival.starter) this.rival.starter = 'squirtle';
+    // Der Legendäre Run räumt den Beutel leer, bevor er ihn neu packt — der
+    // Sammlungslohn kommt deshalb erst danach dazu.
     if (this.mode === 'legenden') this.ruesteLegendenTeam(opts.starter);
+    this.nimmVorteil(opts.vorteil);
     this.buildMap();
   }
 
@@ -9596,10 +9579,11 @@ button.move-row:hover { border-color: var(--accent); }
       this.holeKaempfer(rng, sp, level);
     }
 
-    // Ein Strang ohne Abzweigung heißt: keine Umwege zum Nachkaufen.
+    // Ein Strang ohne Abzweigung heißt: keine Umwege zum Nachkaufen. Und
+    // keine Bälle: Legendäre Pokémon lassen sich hier nur mit einem
+    // Meisterball fangen, und den bringt man aus einem geschafften Run mit.
     this.money = 9000;
     this.bag = {};
-    this.addItem('ultraball', 12);
     this.addItem('hyperpotion', 12);
     this.addItem('fullrestore', 4);
     this.addItem('revive', 6);
@@ -9634,18 +9618,11 @@ button.move-row:hover { border-color: var(--accent); }
   };
 
   /**
-   * Der Wurf, der alles entscheidet: Trägt dieser Run eine legendäre Spur,
-   * und in welcher seiner Regionen liegt sie? Gerechnet wird allein aus dem
-   * Startwert — derselbe Run kommt so immer zur selben Antwort, auch nach
-   * dem Laden eines Spielstands aus einer Fassung, die das noch nicht kannte.
-   * -1 heißt: in diesem Run kommt keines vor.
+   * Legendäre Pokémon kommen im gewöhnlichen Run nicht mehr vor — sie gehören
+   * jetzt ganz dem Legendären Run. Die Funktion bleibt, weil Spielstände von
+   * früher sie erwarten; sie antwortet nur noch mit -1: keine Spur.
    */
-  Run.rollLegend = function (seed, mode) {
-    var rng = PL.rng('legend-' + seed);
-    if (!rng.chance(LEGEND_CHANCE)) return -1;
-    var regions = Math.min(9, (MODES[mode] || MODES.standard).regions);
-    return rng.int(regions);
-  };
+  Run.rollLegend = function () { return -1; };
 
   Object.defineProperty(R, 'levelCap', {
     get: function () {
@@ -9709,7 +9686,7 @@ button.move-row:hover { border-color: var(--accent); }
     if (vorteil.superbaelle) this.addItem('greatball', vorteil.superbaelle);
     if (vorteil.traenke) this.addItem('hyperpotion', vorteil.traenke);
     if (vorteil.beleber) this.addItem('revive', vorteil.beleber);
-    if (vorteil.meisterball) this.addItem('masterball', vorteil.meisterball);
+    if (vorteil.meisterbaelle) this.addItem('masterball', vorteil.meisterbaelle);
     if (vorteil.shiny) this.sammelShiny = vorteil.shiny;
     if (vorteil.relikte) this.startRelikte = vorteil.relikte;
     if (vorteil.reroll) this.bonusReroll = true;
@@ -9785,11 +9762,6 @@ button.move-row:hover { border-color: var(--accent); }
     // Der Rivale taucht in jeder zweiten Region auf — vier Begegnungen pro Run.
     if (this.leagueStage < 0 && this.region % 2 === 1 && this.rival && this.rival.stage < 4) {
       mustHave.push('rival');
-    }
-    // Die legendäre Spur, wenn dieser Run eine trägt und sie hier liegt.
-    // Höchstens eine je Run — welche Region es trifft, entschied der Start.
-    if (this.leagueStage < 0 && this.region === this.legendRegion && this.legendAvailable()) {
-      mustHave.push('legend');
     }
     var middleSlots = [];
     for (r = 1; r < rows - 1; r++) for (i = 0; i < map[r].length; i++) middleSlots.push(map[r][i]);
@@ -10002,12 +9974,9 @@ button.move-row:hover { border-color: var(--accent); }
   ];
 
   R.makeBlessing = function (rng) {
-    var pool = BLESSINGS.slice();
-    // Auch hier gilt die Obergrenze: Wer sein legendäres Pokémon schon hatte
-    // — oder in diesem Run keines bekommt —, dem wird auch keines angeboten.
-    if (this.party.length >= 6 || !this.legendAvailable()) {
-      pool = pool.filter(function (b) { return b.id !== 'legende'; });
-    }
+    // Der Segen der Legende gibt es nicht mehr: Legendäre Pokémon gehören
+    // ganz dem Legendären Run.
+    var pool = BLESSINGS.filter(function (b) { return b.id !== 'legende'; });
     return { kind: 'blessing', offers: rng.sample(pool, 3), loop: this.loop() };
   };
 
@@ -10597,12 +10566,17 @@ button.move-row:hover { border-color: var(--accent); }
 
   /** Nuzlocke erlaubt genau einen Fang je Region. */
   R.catchAllowed = function () {
+    // Im Legendären Run entscheidet allein die Kasse: Wer keinen Meisterball
+    // mehr hat, kämpft weiter, fängt aber nichts. Genau das ist die
+    // Entscheidung, um die es geht — welche Legende ist dir deinen Ball wert?
+    if (this.mode === 'legenden') return (this.bag.masterball || 0) > 0;
     if (this.nuzlocke) return (this.regionCatches || 0) < 1;
-    // Im Legendären Run steht in jedem Kampf ein legendäres Pokémon. Ohne
-    // Grenze hätte man nach der zweiten Generation ein Team, das den Rest
-    // allein erledigt — zwei je Generation sind Beute, nicht Ernte.
-    if (this.mode === 'legenden') return (this.regionCatches || 0) < 2;
     return true;
+  };
+
+  /** Welche Bälle dürfen in diesem Run überhaupt geworfen werden? */
+  R.ballErlaubt = function (id) {
+    return this.mode !== 'legenden' || id === 'masterball';
   };
 
   /** Trägt ein gefallenes Pokémon in den Friedhof ein. */
@@ -10693,6 +10667,9 @@ button.move-row:hover { border-color: var(--accent); }
     var out = [], self = this, deep = this.region + (this.leagueStage >= 0 ? 6 : 0);
     function add(id, w) {
       var it = PL.items.get(id);
+      // Im Legendären Run wirkt kein Ball außer dem Meisterball, und den gibt
+      // es nirgends zu kaufen oder zu finden. Also liegt auch keiner herum.
+      if (it && it.kind === 'ball' && !self.ballErlaubt(id)) return;
       if (it) out.push({ item: it, w: w });
     }
     add('pokeball', 20); add('greatball', deep > 1 ? 22 : 8); add('ultraball', deep > 3 ? 20 : 4);
@@ -11153,20 +11130,14 @@ button.move-row:hover { border-color: var(--accent); }
     // Umrechnung stünde ein Run mit "Aufstieg 9" plötzlich auf der Stufe des
     // Legendären Runs — mit dessen Regeln, aber ohne dessen Strang.
     if (data.stufenFassung !== 2) run.ascension = Run.stufeAusAltem(run.ascension);
-    // Spielstände von vorher kannten die legendäre Spur noch nicht; der Wurf
-    // hängt nur am Startwert und lässt sich deshalb nachholen. Die schon
-    // gebaute Karte trägt dann aber noch eine Spur aus der alten Regel — die
-    // wird zu einer gewöhnlichen Begegnung, sonst bliebe der laufende Run bei
-    // der alten Häufigkeit stehen, bis er zu Ende ist.
-    if (run.legendRegion === undefined) {
-      run.legendRegion = Run.rollLegend(run.seed, run.mode);
-      if (run.region !== run.legendRegion) {
-        (run.map || []).forEach(function (row) {
-          row.forEach(function (n) { if (n.type === 'legend' && !n.done) n.type = 'wild'; });
-        });
-      }
-    }
-    run.legendUsed = !!run.legendUsed;
+    // Ein laufender Run kann noch eine legendäre Spur aus der alten Regel auf
+    // der Karte tragen. Die gibt es nicht mehr — was noch nicht betreten
+    // wurde, wird zu einer gewöhnlichen Begegnung.
+    run.legendRegion = -1;
+    run.legendUsed = true;
+    (run.map || []).forEach(function (row) {
+      row.forEach(function (n) { if (n.type === 'legend' && !n.done) n.type = 'wild'; });
+    });
     // Aus älteren Spielständen können Megasteine kommen, die es nicht mehr gibt.
     Object.keys(run.bag || {}).forEach(function (id) {
       if (!PL.items.get(id)) delete run.bag[id];
@@ -12174,8 +12145,15 @@ button.move-row:hover { border-color: var(--accent); }
       runs: 0, wins: 0, bestRegion: 0, bestAscension: -1,
       unlocked: {}, achievements: {}, seen: {}, caught: {}, shinies: {},
       taeglich: {},
-      stufenFassung: 2,
+      // Beide Marken stehen bewusst auf "noch nicht erledigt": Ein
+      // Spielstand von früher kennt den Schlüssel gar nicht, und load()
+      // übernimmt nur Schlüssel, die dort auch stehen. Stünde hier schon der
+      // Endwert, liefe die Umstellung nie — bei einem frischen Stand ist sie
+      // ohnehin ein Durchlauf über nichts.
+      stufenFassung: 1,
+      legendenReset: false,
       meilensteine: {},          // welche Sammelmarken schon geholt sind
+      meisterbaelle: 0,          // die Kasse für den Legendären Run
       vorrat: {},                // erspielter Startvorteil für den nächsten Run
       wochen: {},                // die Aufträge dieser Woche und ihr Stand
       arten: {},                 // je Art der eigene Bestwert
@@ -12205,6 +12183,20 @@ button.move-row:hover { border-color: var(--accent); }
     // noch die alte Zahl; unumgerechnet stünde "Aufstieg 9" plötzlich für den
     // Legendären Run. Umgerechnet bleibt der Rang erhalten, er heißt nur
     // anders — verschenkt wird die letzte Stufe dabei nicht.
+    // Legendäre Pokémon gibt es nur noch im Legendären Run, und dort nur mit
+    // einem Meisterball. Was vorher auf gewöhnlichem Weg in den Pokédex kam,
+    // steht damit auf einer Grundlage, die es nicht mehr gibt — also wird es
+    // einmalig gestrichen. Alles andere bleibt, wie es war.
+    if (!cache.legendenReset) {
+      dex.species.forEach(function (sp) {
+        if (!dex.isLegendary(sp)) return;
+        delete cache.seen[sp.i];
+        delete cache.caught[sp.i];
+        delete cache.shinies[sp.i];
+        if (cache.arten) delete cache.arten[sp.i];
+      });
+      cache.legendenReset = true;
+    }
     if (cache.stufenFassung !== 2) {
       // -1 heißt "noch nichts gewonnen" — das bleibt so, sonst schenkte die
       // Umrechnung jedem frischen Spielstand die zweite Stufe.
@@ -12529,7 +12521,7 @@ button.move-row:hover { border-color: var(--accent); }
       lohn: { reroll: 1 }, lohnText: 'Einmal je Run eine Auswahl neu würfeln' },
     { id: 'gen9', name: 'Alle neun', bed: 'Alle neun Generationen vollständig',
       wert: function (st) { return [st.volleGen, 9]; },
-      lohn: { meisterball: 1 }, lohnText: 'Ein Meisterball zum Start' }
+      lohn: {}, einmal: { meisterball: 1 }, lohnText: 'Ein Meisterball in die Kasse' }
   ];
 
   /** Der Sammlungsstand, wie ihn die Meilensteine sehen. */
@@ -12564,6 +12556,8 @@ button.move-row:hover { border-color: var(--accent); }
       var w = ms.wert(st);
       if (w[0] < w[1]) return;
       m.meilensteine[ms.id] = Date.now();
+      // Manche Marken zahlen einmalig in die Kasse statt dauerhaft in den Beutel.
+      if (ms.einmal && ms.einmal.meisterball) gibMeisterball(ms.einmal.meisterball);
       neue.push({ id: ms.id, name: ms.name, lohnText: ms.lohnText });
     });
     if (neue.length) save();
@@ -12578,7 +12572,7 @@ button.move-row:hover { border-color: var(--accent); }
   function sammelLohn() {
     var m = load();
     var lohn = { geld: 0, baelle: 0, superbaelle: 0, traenke: 0, beleber: 0,
-                 relikte: 0, reroll: 0, meisterball: 0, shiny: 1 };
+                 relikte: 0, reroll: 0, shiny: 1 };
     MEILENSTEINE.forEach(function (ms) {
       if (!m.meilensteine[ms.id]) return;
       Object.keys(ms.lohn).forEach(function (k) {
@@ -12587,6 +12581,40 @@ button.move-row:hover { border-color: var(--accent); }
       });
     });
     return lohn;
+  }
+
+  /* ---------- 4b2) Die Meisterball-Kasse ---------------------------------------
+   * Legendäre Pokémon lassen sich nicht mehr auf dem gewöhnlichen Weg fangen.
+   * Der einzige Ball, der bei ihnen wirkt, ist der Meisterball — und den gibt
+   * es nur für einen durchgespielten Legendären Run.
+   *
+   * Die Kasse liegt hier und nicht im Run: Ein Meisterball überlebt das Ende
+   * eines Runs und wartet auf den nächsten. Weg ist er erst, wenn er wirklich
+   * geworfen wurde. Wer drei Runs schafft und keinen wirft, hat drei.
+   * -------------------------------------------------------------------------- */
+
+  function meisterbaelle() { return load().meisterbaelle || 0; }
+
+  /** Legt Meisterbälle in die Kasse — der Lohn für einen geschafften Run. */
+  function gibMeisterball(n) {
+    var m = load();
+    m.meisterbaelle = Math.max(0, (m.meisterbaelle || 0) + (n === undefined ? 1 : n));
+    save();
+    return m.meisterbaelle;
+  }
+
+  /**
+   * Schreibt die Kasse auf den Stand fort, den der laufende Run übrig hat.
+   * Der Beutel des Runs ist während des Spielens die Wahrheit; geworfen ist
+   * geworfen, und das gilt auch für den nächsten Run.
+   */
+  function setzeMeisterbaelle(n) {
+    var m = load();
+    var wert = Math.max(0, n | 0);
+    if (m.meisterbaelle === wert) return wert;
+    m.meisterbaelle = wert;
+    save();
+    return wert;
   }
 
   /* ---------- 4c) Wochenaufträge -----------------------------------------------
@@ -12739,9 +12767,12 @@ button.move-row:hover { border-color: var(--accent); }
    */
   function startVorteil(modus) {
     if (modus === 'taeglich') return null;
+    // Der Legendäre Run bringt keinen Sammlungslohn mit — er hat seine eigene
+    // Währung. Was zählt, ist die Kasse.
+    if (modus === 'legenden') return { meisterbaelle: meisterbaelle() };
     var lohn = sammelLohn(), v = hebeVorrat();
     ['geld', 'baelle', 'superbaelle', 'traenke', 'beleber', 'relikte',
-     'reroll', 'meisterball'].forEach(function (k) {
+     'reroll'].forEach(function (k) {
       lohn[k] = (lohn[k] || 0) + (v[k] || 0);
     });
     return lohn;
@@ -13036,6 +13067,7 @@ button.move-row:hover { border-color: var(--accent); }
     wochenSchluessel: wochenSchluessel, wochenAuftraege: wochenAuftraege,
     wochenStand: wochenStand, zaehleWoche: zaehleWoche,
     vorrat: vorrat, legeInVorrat: legeInVorrat, hebeVorrat: hebeVorrat, startVorteil: startVorteil,
+    meisterbaelle: meisterbaelle, gibMeisterball: gibMeisterball, setzeMeisterbaelle: setzeMeisterbaelle,
     merkeArten: merkeArten, artRekord: artRekord,
     recordRun: recordRun,
     saveRun: saveRun, loadRun: loadRun, clearRun: clearRun, hasRun: hasRun,
@@ -15540,9 +15572,21 @@ button.move-row:hover { border-color: var(--accent); }
     T.setLang(settings().lang);
   }
 
+  /**
+   * Der Beutel des laufenden Legendären Runs ist die Wahrheit über die
+   * Meisterbälle: Geworfen ist geworfen, und das gilt auch für den nächsten
+   * Run. Ungeworfene bleiben liegen und warten.
+   */
+  function synchronisiereMeisterbaelle() {
+    var run = App.run;
+    if (!run || run.mode !== 'legenden') return;
+    meta.setzeMeisterbaelle(run.bag.masterball || 0);
+  }
+
   function autosave() {
     // Erst der Pokédex, dann der Run: Wer im Team oder in der Box liegt, steht
     // eingetragen — gleich, ob gefangen, entwickelt, geschenkt oder geschlüpft.
+    synchronisiereMeisterbaelle();
     if (App.run) meta.noteParty(App.run);
     if (App.run && App.run.state !== 'gameover' && App.run.state !== 'victory') meta.saveRun(App.run);
     // Der Browser vergisst eingebettete Seiten gern; die Wolke tut das nicht.
@@ -15730,6 +15774,10 @@ button.move-row:hover { border-color: var(--accent); }
             text: '🌟 ' + run.legendenBesiegt() + '/' + PL.Run.legendenGesamt() })
         : el('span', { className: 'chip chip-region', text: '👑 ' + (run.leagueStage >= 0 ? 'Finale' : 'Region ' + (run.region + 1) + '/' + (run.mode === 'endlos' ? '∞' : run.totalRegions())) }));
       mid.appendChild(el('span', { className: 'chip chip-money', text: '💰 ' + U.money(run.money) }));
+      if (run.mode === 'legenden') {
+        mid.appendChild(el('span', { className: 'chip chip-ball', title: 'Meisterbälle — nur damit lässt sich hier fangen',
+          text: '🟣 ' + (run.bag.masterball || 0) }));
+      }
       mid.appendChild(el('span', { className: 'chip chip-cap', title: 'Höchstes erreichbares Level' }, [
         el('span', { text: '⬆\u00a0' }),
         el('span', { className: 'cap-word', text: 'Lv ' }),
@@ -16387,8 +16435,13 @@ button.move-row:hover { border-color: var(--accent); }
       oninput: function () { setzeStufe(+ascInput.value); }
     });
 
+    var kasse = meta.meisterbaelle();
     var modusNotiz = el('p', { className: 'muted small', hidden: true, text:
-      'Der Legendäre Run bringt seinen eigenen Weg mit — die Moduswahl darüber ruht so lange.' });
+      'Der Legendäre Run bringt seinen eigenen Weg mit — die Moduswahl darüber ruht so lange. ' +
+      (kasse
+        ? 'Du nimmst ' + (kasse === 1 ? 'einen Meisterball' : kasse + ' Meisterbälle') +
+          ' mit; nur damit lassen sich Legenden fangen.'
+        : 'Du hast keinen Meisterball — fangen kannst du diesmal nichts. Wer den Run schafft, bekommt einen.') });
 
     function setzeStufe(n) {
       chosen.ascension = n;
@@ -17278,11 +17331,18 @@ button.move-row:hover { border-color: var(--accent); }
   function openBallDialog() {
     var run = App.run, bt = App.battle;
     var balls = Object.keys(run.bag).map(function (id) { return PL.items.get(id); })
-      .filter(function (it) { return it && it.kind === 'ball'; });
-    if (run.hasMod('freeMasterball') && !run.masterballUsed) {
+      .filter(function (it) { return it && it.kind === 'ball' && run.ballErlaubt(it.id); });
+    // Der Splitter ist ein Meisterball aus dem Nichts — im Legendären Run
+    // wäre er ein Fang, den niemand bezahlt hat.
+    if (run.mode !== 'legenden' && run.hasMod('freeMasterball') && !run.masterballUsed) {
       balls.unshift({ id: '__free', name: 'Meisterball-Splitter', desc: 'Einmal pro Run: garantierter Fang.', kind: 'ball', free: true });
     }
-    if (!balls.length) { U.toast('Du hast keine Bälle mehr.', 'bad'); return; }
+    if (!balls.length) {
+      U.toast(run.mode === 'legenden'
+        ? 'Keine Meisterbälle mehr. Legendäre Pokémon lassen sich nur damit fangen — der nächste geschaffte Run bringt einen.'
+        : 'Du hast keine Bälle mehr.', 'bad');
+      return;
+    }
     var box = U.modal({
       title: 'Welchen Ball?',
       content: el('div', { className: 'list' }, balls.map(function (it) {
@@ -17295,6 +17355,9 @@ button.move-row:hover { border-color: var(--accent); }
               submitAction({ type: 'ball', item: 'masterball' });
             } else {
               run.removeItem(it.id, 1);
+              // Ein geworfener Meisterball ist sofort weg — auch dann, wenn
+              // der Kampf noch läuft oder das Fenster gleich zugeht.
+              synchronisiereMeisterbaelle();
               submitAction({ type: 'ball', item: it.id });
             }
           }
@@ -18673,6 +18736,7 @@ button.move-row:hover { border-color: var(--accent); }
     var woche = meta.wochenStand();
     var lohn = meta.sammelLohn();
     var v = meta.vorrat();
+    var kasse = meta.meisterbaelle();
     var offen = marken.filter(function (m) { return !m.geschafft; });
     var geholt = marken.length - offen.length;
 
@@ -18722,6 +18786,17 @@ button.move-row:hover { border-color: var(--accent); }
         ]),
         vorratZeilen.length ? el('p', { className: 'muted small', text:
           'Im Vorrat für den nächsten Run: ' + vorratZeilen.join(' · ') }) : null
+      ]),
+
+      /* --- Die Meisterball-Kasse --- */
+      el('div', { className: 'sammlung-karte' }, [
+        el('h3', { text: '🟣 Meisterball-Kasse' }),
+        el('p', { className: 'daily-gross', text: kasse === 1
+          ? 'Ein Meisterball' : kasse + ' Meisterbälle' }),
+        el('p', { className: 'muted small', text:
+          'Legendäre Pokémon lassen sich nur mit einem Meisterball fangen, und nur im Legendären Run. ' +
+          'Jeder geschaffte Legendäre Run bringt einen. Ungeworfen bleiben sie liegen und wandern in den ' +
+          'nächsten Run — weg ist nur, was du wirklich wirfst.' })
       ]),
 
       /* --- Die Wochenaufträge --- */
@@ -19051,6 +19126,16 @@ button.move-row:hover { border-color: var(--accent); }
     }
     var fresh = meta.recordRun(run, outcome);
     meta.merkeArten(run);
+    // Der Legendäre Run zahlt in die Kasse: Wer alle 125 Legenden hinter sich
+    // gebracht hat, nimmt einen Meisterball mit in den nächsten.
+    App.neuerMeisterball = false;
+    if (run.mode === 'legenden') {
+      synchronisiereMeisterbaelle();
+      if (outcome === 'sieg') {
+        meta.gibMeisterball(1);
+        App.neuerMeisterball = true;
+      }
+    }
 
     // Was dieser Run für die Woche und für die Sammlung gebracht hat. Der
     // Tages-Run zählt hier mit — er ist ein Run wie jeder andere, nur dass
@@ -19071,6 +19156,10 @@ button.move-row:hover { border-color: var(--accent); }
     meta.clearRun();
     fresh.forEach(function (a) { U.toast('Erfolg freigeschaltet: ' + a.name, 'good'); });
     App.neueMarken.forEach(function (ms) { U.toast('Sammelmarke: ' + ms.name + ' — ' + ms.lohnText, 'good'); });
+    if (App.neuerMeisterball) {
+      U.toast('Ein Meisterball wandert in deine Kasse — du hast jetzt ' +
+        meta.meisterbaelle() + '.', 'good');
+    }
     App.wochenLohn.forEach(function (a) { U.toast('Wochenauftrag geschafft: ' + a.text, 'good'); });
     show('end');
   }

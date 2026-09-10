@@ -636,25 +636,9 @@ section('Neue Systeme');
   eq('Der Friedhof merkt sich den Gefallenen', run.graveyard.length, 1);
   check('Mit Todesursache', run.graveyard[0].by === 'Rihorn' && !!run.graveyard[0].region);
 
-  // Legendäres
-  run.region = 6;
-  const legend = run.makeLegendary(run.rng);
-  const boss = legend.sides[1].team[0];
-  check('Der Schrein ruft ein legendäres Pokémon', dex.isLegendary(dex.sp(boss.sp)), PL.mon.name(boss));
-  check('Es ist wild und damit fangbar', legend.wild === true);
-  const schrein = PL.world.EVENTS.filter((e) => e.id === 'legendenschrein')[0];
-  run.legendRegion = 4; run.legendUsed = false;
-  check('Der Schrein erscheint erst spät', (function () {
-    const early = new PL.Run({ seed: 3, starter: 'squirtle' });
-    early.legendRegion = 4; early.legendUsed = false;
-    return schrein && schrein.available && !schrein.available(early) && schrein.available(run);
-  })());
-  run.legendUsed = true;
-  check('… und gar nicht mehr, wenn der Run sein Legendäres schon hatte',
-    !schrein.available(run));
-  run.legendRegion = -1; run.legendUsed = false;
-  check('… und auch nicht in einem Run ganz ohne Legendäres',
-    !schrein.available(run));
+  // Legendäres gibt es im gewöhnlichen Run nicht mehr.
+  check('Der Schrein der Legenden ist verschwunden',
+    PL.world.EVENTS.every((e) => e.id !== 'legendenschrein'));
 
   // Segen im Endlosmodus
   const endless = new PL.Run({ seed: 9, mode: 'endlos', starter: 'chikorita' });
@@ -668,26 +652,17 @@ section('Neue Systeme');
   check('Jeder Segen hat Namen und Beschreibung',
     PL.Run.BLESSINGS.every((b) => b.id && b.name && b.desc && b.icon));
   {
-    // Auch der »Ruf der Legende« hält sich an die Obergrenze.
+    // Der »Ruf der Legende« ist aus dem Segen verschwunden.
     const e2 = new PL.Run({ seed: 12, mode: 'endlos', starter: 'chikorita' });
-    e2.legendRegion = 2; e2.legendUsed = true;
     let angeboten = 0;
     for (let i = 0; i < 200; i++) {
       if (e2.makeBlessing(PL.rng('b' + i)).offers.some((b) => b.id === 'legende')) angeboten++;
     }
-    eq('Ein aufgebrauchter Run bekommt keinen Ruf der Legende mehr', angeboten, 0);
-    e2.legendUsed = false;
-    let mit = 0;
-    for (let i = 0; i < 200; i++) {
-      if (e2.makeBlessing(PL.rng('b' + i)).offers.some((b) => b.id === 'legende')) mit++;
-    }
-    check('Solange er offen ist, steht der Ruf zur Wahl', mit > 0, String(mit));
-    e2.takeBlessing('legende', PL.rng('l'));
-    check('… und ist danach verbraucht', e2.legendUsed === true);
+    eq('Kein Segen ruft mehr eine Legende herbei', angeboten, 0);
   }
 
   // Ereignisse
-  check('Deutlich mehr Ereignisse als vorher', PL.world.EVENTS.length >= 30, String(PL.world.EVENTS.length));
+  check('Deutlich mehr Ereignisse als vorher', PL.world.EVENTS.length >= 29, String(PL.world.EVENTS.length));
   check('Jedes Ereignis hat Titel, Text und Optionen',
     PL.world.EVENTS.every((e) => e.title && e.text && e.options.length >= 2));
   check('Bedingte Ereignisse haben eine Prüffunktion',
@@ -1805,120 +1780,69 @@ section('Entwicklungen: Level und Stein');
   }
 }
 
-section('Legendäre Begegnungen');
+section('Legendäre Pokémon gehören dem Legendären Run');
 {
-  // Höchstens eine je Run, in einer zufälligen Region, und selten.
+  // Im gewöhnlichen Run kommt keines mehr vor — in keiner Region, in keinem Modus.
+  ['standard', 'kurz', 'endlos', 'bossrush', 'taeglich'].forEach((modus) => {
+    eq('Kein Run im Modus ' + modus + ' trägt eine legendäre Spur',
+      PL.Run.rollLegend(4242, modus), -1);
+  });
   {
-    let mit = 0, daneben = 0;
-    const regionen = {};
-    const N = 3000;
-    for (let i = 0; i < N; i++) {
-      const r = PL.Run.rollLegend(70000 + i, 'standard');
-      if (r >= 0) { mit++; regionen[r] = (regionen[r] || 0) + 1; }
-      if (r < -1 || r >= 9) daneben++;
+    let spuren = 0;
+    for (let i = 0; i < 40; i++) {
+      const r = new PL.Run({ seed: 6000 + i, starter: 'bulbasaur' });
+      for (let reg = 0; reg < 9; reg++) {
+        r.region = reg;
+        r.buildMap();
+        spuren += r.map.reduce((a, row) => a + row.filter((n) => n.type === 'legend').length, 0);
+      }
     }
-    eq('Keine Spur liegt außerhalb des Runs', daneben, 0);
-    const quote = mit / N;
-    check('Nur wenige Runs tragen überhaupt ein legendäres Pokémon',
-      quote > 0.10 && quote < 0.16, (quote * 100).toFixed(1) + ' % von ' + N + ' Runs');
-    check('Es kann jede Region treffen', Object.keys(regionen).length === 9,
-      Object.keys(regionen).sort((a, b) => a - b).join(', '));
-    const kurz = [];
-    for (let i = 0; i < 600; i++) {
-      const r = PL.Run.rollLegend(80000 + i, 'kurz');
-      if (r >= 0) kurz.push(r);
-    }
-    check('Im Kurzrun liegt sie in einer Region, die es auch gibt',
-      kurz.length > 0 && kurz.every((r) => r < 4), kurz.join(','));
+    eq('Über 40 Runs und alle Regionen steht keine einzige Spur', spuren, 0);
   }
 
-  // Ein Run, der eine trägt: sie steht in genau einer Region und sonst nirgends.
-  let seed = 5150;
-  while (PL.Run.rollLegend(seed, 'standard') < 0) seed++;
-  const run = new PL.Run({ seed, starter: 'bulbasaur' });
-  const ziel = run.legendRegion;
-  check('Dieser Run trägt eine legendäre Spur', ziel >= 0, String(ziel));
-  let gesamt = 0;
-  for (let r = 0; r < 9; r++) {
-    run.region = r;
-    run.buildMap();
-    const hier = run.map.reduce((a, row) => a + row.filter((n) => n.type === 'legend').length, 0);
-    gesamt += hier;
-    eq('Region ' + r + (r === ziel ? ' trägt die Spur' : ' trägt keine'), hier, r === ziel ? 1 : 0);
-  }
-  eq('Über den ganzen Run steht genau eine legendäre Spur', gesamt, 1);
-
-  // Ein Run ohne Spur hat auf keiner Karte eine.
+  // Ein laufender Run aus der alten Fassung wird beim Laden entschärft.
   {
-    let leer = 5150;
-    while (PL.Run.rollLegend(leer, 'standard') >= 0) leer++;
-    const ohne = new PL.Run({ seed: leer, starter: 'bulbasaur' });
-    let n = 0;
-    for (let r = 0; r < 9; r++) { ohne.region = r; ohne.buildMap(); n += ohne.map.reduce((a, row) => a + row.filter((x) => x.type === 'legend').length, 0); }
-    eq('Ein Run ohne Kontingent bleibt ohne legendäre Spur', n, 0);
-  }
-
-  // Einmal betreten, ist das Kontingent weg — auch wenn die Karte neu entsteht.
-  {
-    const r2 = new PL.Run({ seed, starter: 'bulbasaur' });
-    r2.region = ziel;
-    r2.buildMap();
-    const stelle = [];
-    r2.map.forEach((row, ri) => row.forEach((n, ci) => { if (n.type === 'legend') stelle.push([ri, ci]); }));
-    eq('Die Spur liegt auf der Karte', stelle.length, 1);
-    r2.enterNode(stelle[0][0], stelle[0][1], true);
-    check('Nach dem Betreten ist das Kontingent verbraucht', r2.legendUsed === true);
-    r2.buildMap();
-    eq('… und die Karte trägt keine zweite',
-      r2.map.reduce((a, row) => a + row.filter((n) => n.type === 'legend').length, 0), 0);
-  }
-
-  // Der Spielstand merkt sich beides.
-  {
-    const gespeichert = JSON.parse(JSON.stringify(run.toJSON()));
-    const zurueck = PL.Run.fromJSON(gespeichert);
-    eq('Der Spielstand merkt sich die Region der Spur', zurueck.legendRegion, run.legendRegion);
-    delete gespeichert.legendRegion;
-    const alt = PL.Run.fromJSON(gespeichert);
-    eq('Ein älterer Spielstand bekommt sie aus dem Startwert zurück',
-      alt.legendRegion, PL.Run.rollLegend(run.seed, run.mode));
-
-    // Ein laufender Run aus der alten Fassung trägt noch alte Spuren auf der
-    // Karte — die verschwinden beim Laden.
+    const run = new PL.Run({ seed: 5150, starter: 'bulbasaur' });
     const veraltet = JSON.parse(JSON.stringify(run.toJSON()));
-    delete veraltet.legendRegion;
-    veraltet.region = (run.legendRegion + 1) % 9;   // irgendeine andere Region
+    veraltet.legendRegion = 3;
+    veraltet.legendUsed = false;
     veraltet.map[1][0].type = 'legend';
     veraltet.map[1][0].done = false;
     const geputzt = PL.Run.fromJSON(veraltet);
     eq('Eine Spur aus der alten Regel wird beim Laden entfernt',
       geputzt.map.reduce((a, row) => a + row.filter((n) => n.type === 'legend').length, 0), 0);
+    eq('… und das Kontingent gilt als aufgebraucht', geputzt.legendUsed, true);
+    eq('… und die Region als keine', geputzt.legendRegion, -1);
   }
 
-  run.region = 3;
-  run.legendUsed = false;
+  /* --- Der Meisterball ist die einzige Währung --- */
+  const leg = new PL.Run({ seed: 77, mode: 'legenden', ascension: 5, starter: 'charmander' });
+  eq('Der Legendäre Run beginnt ohne gewöhnliche Bälle', leg.bag.pokeball || 0, 0);
+  eq('… auch ohne Hyperbälle', leg.bag.ultraball || 0, 0);
+  eq('Ohne Meisterball ist kein Fang möglich', leg.catchAllowed(), false);
+  eq('Nur der Meisterball darf geworfen werden', leg.ballErlaubt('masterball'), true);
+  eq('Ein Pokéball nicht', leg.ballErlaubt('pokeball'), false);
+  eq('Ein Hyperball auch nicht', leg.ballErlaubt('ultraball'), false);
 
-  // Die Begegnung selbst
-  const bt = run.makeLegend(PL.rng('leg'));
-  const foe = bt.sides[1].team[0];
-  const sp = dex.sp(foe.sp);
-  check('Was dort auftaucht, ist wirklich legendär', dex.isLegendary(sp), sp.n);
-  eq('… und gehört zur Region', sp.g, PL.world.REGIONS[3].gen);
-  check('… und lässt sich fangen', bt.canCatch === true);
-  check('… mit einer Aussicht, die den Namen verdient', bt.catchMult > 1,
-    String(bt.catchMult));
+  const mitBall = new PL.Run({ seed: 77, mode: 'legenden', ascension: 5, starter: 'charmander',
+    vorteil: { meisterbaelle: 3 } });
+  eq('Die Kasse landet im Beutel', mitBall.bag.masterball, 3);
+  eq('Mit Meisterball darf gefangen werden', mitBall.catchAllowed(), true);
+  mitBall.removeItem('masterball', 3);
+  eq('Ist der letzte geworfen, ist Schluss', mitBall.catchAllowed(), false);
 
-  // Ein Fang bei wenig KP und Schlaf muss machbar sein
-  foe.hp = Math.max(1, Math.round(PL.mon.maxHP(foe) * 0.1));
-  foe.status = 'slp';
-  const chance = PL.mon.tryCatch(foe, 2, PL.rng('c'), { rateMult: bt.catchMult }).chance;
-  check('Geschwächt und schlafend ist der Fang keine Lotterie', chance > 0.1,
-    (chance * 100).toFixed(1) + ' % je Hyperball');
+  // Im gewöhnlichen Run gilt die Sperre nicht.
+  const normal = new PL.Run({ seed: 77, starter: 'charmander' });
+  eq('Im gewöhnlichen Run sind alle Bälle erlaubt', normal.ballErlaubt('pokeball'), true);
 
-  // Die Belohnung darf den Geldbeutel nicht zerstören
-  check('Der Kampf hat eine Belohnung mit Betrag',
-    bt.reward && typeof bt.reward.money === 'number' && isFinite(bt.reward.money),
-    JSON.stringify(bt.reward));
+  // Der Kampf gegen eine Legende erlaubt das Fangen nur mit Ball in der Kasse.
+  mitBall.addItem('masterball', 1);
+  mitBall.enterNode(0, 0); mitBall.closeScene();
+  const kampf = mitBall.enterNode(1, 0);
+  eq('Mit Ball ist der Kampf fangbar', kampf.battle.canCatch, true);
+  const ohne = new PL.Run({ seed: 77, mode: 'legenden', ascension: 5, starter: 'charmander' });
+  ohne.enterNode(0, 0); ohne.closeScene();
+  eq('Ohne Ball nicht', ohne.enterNode(1, 0).battle.canCatch, false);
 }
 
 section('Auto-Kampf');
@@ -2544,12 +2468,12 @@ section('Sammlung: Marken, Aufträge, Bestwerte');
     check('… und schüttet keine Bälle aus', voll.superbaelle + voll.baelle <= 6,
       String(voll.superbaelle + voll.baelle));
     eq('… gibt höchstens ein Relikt', voll.relikte, 1);
-    eq('… genau einen Meisterball', voll.meisterball, 1);
+    eq('… keinen Meisterball im Dauerlohn — der liegt in der Kasse', voll.meisterball, undefined);
     eq('… und einen Wurf zum Wiederholen', voll.reroll, 1);
     check('Der Schillernd-Faktor bleibt unter dem Dreifachen', voll.shiny <= 2.5, String(voll.shiny));
 
     const mit = new PL.Run({ seed: 2, starter: 'bulbasaur', vorteil: voll });
-    eq('Der Meisterball liegt wirklich im Beutel', mit.bag.masterball, 1);
+    eq('Ein gewöhnlicher Run bekommt keinen Meisterball', mit.bag.masterball, undefined);
     eq('Der zusätzliche Wurf ist vermerkt', mit.bonusReroll, true);
     mit.setScene(mit.makeRelicChoice(mit.rng, 3, 'Test'));
     eq('… und er lässt sich auch benutzen', mit.canReroll(), true);
@@ -2559,6 +2483,80 @@ section('Sammlung: Marken, Aufträge, Bestwerte');
     ohneWurf.setScene(ohneWurf.makeRelicChoice(ohneWurf.rng, 3, 'Test'));
     eq('Ohne Marke gibt es keinen zweiten Wurf', ohneWurf.canReroll(), false);
     void alles;
+  }
+
+  /* --- Die Meisterball-Kasse --- */
+  {
+    const store3 = {};
+    globalThis.localStorage = {
+      getItem: (k) => (k in store3 ? store3[k] : null),
+      setItem: (k, v) => { store3[k] = String(v); },
+      removeItem: (k) => { delete store3[k]; }
+    };
+    meta.reload();
+    meta.reset();
+    eq('Die Kasse fängt bei null an', meta.meisterbaelle(), 0);
+    eq('Ein geschaffter Run zahlt einen ein', meta.gibMeisterball(1), 1);
+    eq('Drei Runs, drei Bälle', meta.gibMeisterball(2), 3);
+    eq('Der Legendäre Run bekommt sie mit',
+      meta.startVorteil('legenden').meisterbaelle, 3);
+    eq('… und sonst nichts aus der Sammlung',
+      Object.keys(meta.startVorteil('legenden')).join(','), 'meisterbaelle');
+
+    // Ungeworfene bleiben liegen, geworfene sind weg.
+    const run = new PL.Run({ seed: 5, mode: 'legenden', ascension: 5, starter: 'squirtle',
+      vorteil: meta.startVorteil('legenden') });
+    eq('Sie liegen im Beutel', run.bag.masterball, 3);
+    eq('Die Kasse ist dadurch nicht leer', meta.meisterbaelle(), 3);
+    run.removeItem('masterball', 1);
+    meta.setzeMeisterbaelle(run.bag.masterball || 0);
+    eq('Ein geworfener Ball fehlt danach auch in der Kasse', meta.meisterbaelle(), 2);
+    eq('Ein neuer Run bekommt nur noch zwei',
+      new PL.Run({ seed: 6, mode: 'legenden', ascension: 5, starter: 'squirtle',
+        vorteil: meta.startVorteil('legenden') }).bag.masterball, 2);
+
+    // Die Marke für alle neun Generationen zahlt einmalig ein.
+    const stand = meta.load();
+    delete stand.meilensteine.gen9;
+    meta.save();
+    PL.dex.species.forEach((sp) => { if (!PL.dex.isLegendary(sp)) meta.noteCaught({ sp: sp.i, lvl: 5 }); });
+    const vorher = meta.meisterbaelle();
+    meta.pruefeMeilensteine();
+    check('Die Marke zahlt höchstens einmal ein',
+      meta.meisterbaelle() - vorher <= 1, String(meta.meisterbaelle() - vorher));
+  }
+
+  /* --- Legendäre sind aus dem Pokédex verschwunden --- */
+  {
+    const store4 = {};
+    globalThis.localStorage = {
+      getItem: (k) => (k in store4 ? store4[k] : null),
+      setItem: (k, v) => { store4[k] = String(v); },
+      removeItem: (k) => { delete store4[k]; }
+    };
+    const mewtwo = PL.dex.sp('mewtwo'), pika = PL.dex.sp('pikachu'), arceus = PL.dex.sp('arceus');
+    store4['pokelike.plus.v1'] = JSON.stringify({
+      caught: { [pika.i]: 1, [mewtwo.i]: 1, [arceus.i]: 1 },
+      seen: { [pika.i]: 1, [mewtwo.i]: 1 },
+      shinies: { [mewtwo.i]: 1 },
+      arten: { [mewtwo.i]: { lvl: 70, runs: 2 }, [pika.i]: { lvl: 30, runs: 1 } }
+    });
+    meta.reload();
+    const m = meta.load();
+    eq('Pikachu bleibt gefangen', !!m.caught[pika.i], true);
+    eq('Mewtu ist wieder ungefangen', !!m.caught[mewtwo.i], false);
+    eq('Arceus auch', !!m.caught[arceus.i], false);
+    eq('… und ungesehen', !!m.seen[mewtwo.i], false);
+    eq('… und nicht mehr schillernd vermerkt', !!m.shinies[mewtwo.i], false);
+    eq('… und ohne Bestwert', !!m.arten[mewtwo.i], false);
+    eq('Der Bestwert gewöhnlicher Arten bleibt', !!m.arten[pika.i], true);
+    eq('Die Umstellung ist danach erledigt', m.legendenReset, true);
+
+    // Ein zweiter Ladevorgang löscht nichts Neues mehr weg.
+    meta.noteCaught({ sp: mewtwo.i, lvl: 60 });
+    meta.reload();
+    eq('Ein danach gefangenes Legendäres bleibt stehen',
+      !!meta.load().caught[mewtwo.i], true);
   }
 
   /* --- Bestwerte je Art --- */
