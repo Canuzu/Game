@@ -369,13 +369,17 @@
   R.nimmVorteil = function (vorteil) {
     this.sammelShiny = 1;
     this.startRelikte = 0;
+    this.bonusReroll = false;
     if (!vorteil) return;
-    if (vorteil.geld) { this.money += vorteil.geld; }
+    if (vorteil.geld) this.money += vorteil.geld;
     if (vorteil.baelle) this.addItem('pokeball', vorteil.baelle);
-    if (vorteil.traenke) this.addItem('superpotion', vorteil.traenke);
+    if (vorteil.superbaelle) this.addItem('greatball', vorteil.superbaelle);
+    if (vorteil.traenke) this.addItem('hyperpotion', vorteil.traenke);
     if (vorteil.beleber) this.addItem('revive', vorteil.beleber);
+    if (vorteil.meisterball) this.addItem('masterball', vorteil.meisterball);
     if (vorteil.shiny) this.sammelShiny = vorteil.shiny;
     if (vorteil.relikte) this.startRelikte = vorteil.relikte;
+    if (vorteil.reroll) this.bonusReroll = true;
   };
 
   /** Die Chance auf ein schillerndes Pokémon: Relikte mal Sammlungslohn. */
@@ -1391,7 +1395,9 @@
 
   /** Kann die aktuelle Auswahl noch einmal gewürfelt werden? */
   R.canReroll = function () {
-    if (!this.hasMod('reroll') || this.rerollUsed) return false;
+    // Das Relikt kann es, und die Sammlung kann es — beides führt zu
+    // demselben einen Wurf je Knoten.
+    if ((!this.hasMod('reroll') && !this.bonusReroll) || this.rerollUsed) return false;
     return !!this.scene && /catch|item|relic|shop/.test(this.scene.kind);
   };
 
@@ -1793,6 +1799,7 @@
       legendRegion: this.legendRegion, legendUsed: !!this.legendUsed,
       stufenFassung: 2,
       sammelShiny: this.sammelShiny || 1, startRelikte: this.startRelikte || 0,
+      bonusReroll: !!this.bonusReroll,
       bossHint: this.bossHint || null,
       pendingNode: this.pendingNode || null,
       seenEvents: this.seenEvents || {}, masterballUsed: this.masterballUsed, result: this.result,

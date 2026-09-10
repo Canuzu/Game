@@ -2455,14 +2455,14 @@ section('Sammlung: Marken, Aufträge, Bestwerte');
   const neue = meta.pruefeMeilensteine();
   eq('Nach 25 Arten fällt die erste Marke', neue.length, 1);
   eq('… und sie heißt Sammler', neue[0].id, 'faenge25');
-  eq('… und bringt Startgeld', meta.sammelLohn().geld, 400);
+  eq('… und bringt Superbälle für den Start', meta.sammelLohn().superbaelle, 2);
   eq('Dieselbe Marke fällt kein zweites Mal', meta.pruefeMeilensteine().length, 0);
 
   // Der Schillernd-Faktor addiert sich nicht, sondern nimmt den höchsten.
   const m2 = meta.load();
   m2.meilensteine.shiny1 = 1; m2.meilensteine.shiny5 = 1; m2.meilensteine.shiny15 = 1;
   meta.save();
-  eq('Beim Schillernd-Faktor gilt der höchste, nicht die Summe', meta.sammelLohn().shiny, 3);
+  eq('Beim Schillernd-Faktor gilt der höchste, nicht die Summe', meta.sammelLohn().shiny, 2.5);
 
   /* --- Wochenaufträge --- */
   eq('Die Kalenderwoche folgt der ISO-Regel', meta.wochenSchluessel('2026-01-01'), '2026-W01');
@@ -2492,9 +2492,9 @@ section('Sammlung: Marken, Aufträge, Bestwerte');
 
   /* --- Vorrat und Startvorteil --- */
   const vor = meta.startVorteil('standard');
-  check('Der Startvorteil enthält Marken und Vorrat', vor.geld >= 400, JSON.stringify(vor));
+  check('Der Startvorteil enthält Marken und Vorrat', vor.superbaelle > 2, JSON.stringify(vor));
   eq('Der Vorrat ist danach leer', Object.keys(meta.vorrat()).length, 0);
-  eq('Ein zweiter Griff bringt nur noch die Marken', meta.startVorteil('standard').geld, 400);
+  eq('Ein zweiter Griff bringt nur noch die Marken', meta.startVorteil('standard').superbaelle, 2);
   eq('Der Tages-Run bekommt nichts', meta.startVorteil('taeglich'), null);
 
   // Und ein Run nimmt ihn wirklich mit.
@@ -2503,10 +2503,63 @@ section('Sammlung: Marken, Aufträge, Bestwerte');
     vorteil: { geld: 500, baelle: 5, traenke: 2, beleber: 1, shiny: 2, relikte: 1 } });
   eq('Der Vorteil landet im Geldbeutel', mit.money - ohne.money, 500);
   eq('… die Bälle im Beutel', mit.bag.pokeball - ohne.bag.pokeball, 5);
-  eq('… die Tränke auch', (mit.bag.superpotion || 0) - (ohne.bag.superpotion || 0), 2);
+  eq('… die Tränke auch', (mit.bag.hyperpotion || 0) - (ohne.bag.hyperpotion || 0), 2);
   eq('… und das Relikt wartet auf die Wahl', mit.startRelikte, 1);
   eq('Der Schillernd-Faktor wirkt', mit.shinyMult(), 2);
   eq('Ohne Vorteil bleibt er bei eins', ohne.shinyMult(), 1);
+
+  /* --- Der Preis für die volle Woche --- */
+  {
+    const store2 = {};
+    globalThis.localStorage = {
+      getItem: (k) => (k in store2 ? store2[k] : null),
+      setItem: (k, v) => { store2[k] = String(v); },
+      removeItem: (k) => { delete store2[k]; }
+    };
+    meta.reload();
+    meta.reset();
+    const drei = meta.wochenStand().auftraege;
+    const erste = meta.zaehleWoche({ [drei[0].id]: drei[0].ziel });
+    eq('Ein Auftrag allein bringt noch keinen Wochenpreis', erste.length, 1);
+    meta.zaehleWoche({ [drei[1].id]: drei[1].ziel });
+    const letzte = meta.zaehleWoche({ [drei[2].id]: drei[2].ziel });
+    eq('Der dritte Auftrag bringt den Preis gleich mit', letzte.length, 2);
+    eq('… und es ist ein Relikt', letzte[1].id, 'wochenpreis');
+    eq('Der Wochenstand weiß davon', meta.wochenStand().preisGeholt, true);
+    eq('Das Relikt liegt im Vorrat', meta.vorrat().relikte, 1);
+    eq('Ein zweites Mal gibt es keines',
+      meta.zaehleWoche({ [drei[0].id]: drei[0].ziel }).length, 0);
+  }
+
+  /* --- Die Marken bleiben in Maßen --- */
+  {
+    const alles = meta.load();
+    PL.Run.STUFEN;                                    // nur zur Sicherheit geladen
+    meta.MEILENSTEINE.forEach((ms) => { alles.meilensteine[ms.id] = 1; });
+    meta.save();
+    const voll = meta.sammelLohn();
+    const frisch = new PL.Run({ seed: 2, starter: 'bulbasaur' });
+    check('Selbst die volle Sammlung verdoppelt das Startgeld nicht',
+      voll.geld < frisch.money * 0.6, voll.geld + ' auf ' + frisch.money);
+    check('… und schüttet keine Bälle aus', voll.superbaelle + voll.baelle <= 6,
+      String(voll.superbaelle + voll.baelle));
+    eq('… gibt höchstens ein Relikt', voll.relikte, 1);
+    eq('… genau einen Meisterball', voll.meisterball, 1);
+    eq('… und einen Wurf zum Wiederholen', voll.reroll, 1);
+    check('Der Schillernd-Faktor bleibt unter dem Dreifachen', voll.shiny <= 2.5, String(voll.shiny));
+
+    const mit = new PL.Run({ seed: 2, starter: 'bulbasaur', vorteil: voll });
+    eq('Der Meisterball liegt wirklich im Beutel', mit.bag.masterball, 1);
+    eq('Der zusätzliche Wurf ist vermerkt', mit.bonusReroll, true);
+    mit.setScene(mit.makeRelicChoice(mit.rng, 3, 'Test'));
+    eq('… und er lässt sich auch benutzen', mit.canReroll(), true);
+    mit.reroll();
+    eq('Aber nur einmal je Knoten', mit.canReroll(), false);
+    const ohneWurf = new PL.Run({ seed: 2, starter: 'bulbasaur' });
+    ohneWurf.setScene(ohneWurf.makeRelicChoice(ohneWurf.rng, 3, 'Test'));
+    eq('Ohne Marke gibt es keinen zweiten Wurf', ohneWurf.canReroll(), false);
+    void alles;
+  }
 
   /* --- Bestwerte je Art --- */
   const run = new PL.Run({ seed: 8, starter: 'charmander' });

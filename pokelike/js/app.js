@@ -878,50 +878,32 @@
       modeBox.appendChild(btn);
     });
 
-    // Fünf Stufen mit Namen statt elf Zahlen: Was eine Stufe ändert, steht
-    // dran, bevor man sie wählt. Die sechste ist keine Stufe mehr, sondern
-    // ein eigener Weg — sie schaltet den Modus gleich mit um.
-    var stufenListe = el('div', { className: 'stufen-liste' });
-    var stufenKnoepfe = [];
+    // Der Regler, wie er war — nur dass daneben jetzt der Name der Stufe
+    // steht und nicht mehr eine Zahl. Die letzte Raste ist keine
+    // Schwierigkeit mehr, sondern der Legendäre Run; sie stellt den Modus
+    // gleich mit um.
+    var ascLabel = el('span', { className: 'asc-value', text: meta.stufenName(chosen.ascension) });
+    var ascInput = el('input', {
+      type: 'range', min: 0, max: Math.max(0, maxAsc), value: chosen.ascension, className: 'slider',
+      oninput: function () { setzeStufe(+ascInput.value); }
+    });
 
-    function waehleStufe(i) {
-      chosen.ascension = i;
-      var legenden = !!PL.Run.STUFEN[i].legenden;
+    var modusNotiz = el('p', { className: 'muted small', hidden: true, text:
+      'Der Legendäre Run bringt seinen eigenen Weg mit — die Moduswahl darüber ruht so lange.' });
+
+    function setzeStufe(n) {
+      chosen.ascension = n;
+      ascLabel.textContent = meta.stufenName(n);
+      var legenden = !!PL.Run.STUFEN[n].legenden;
       if (legenden) chosen.mode = 'legenden';
       else if (chosen.mode === 'legenden') chosen.mode = 'standard';
-      stufenKnoepfe.forEach(function (b, k) { b.classList.toggle('selected', k === i); });
       Array.prototype.forEach.call(modeBox.children, function (c) {
         c.classList.toggle('selected', !legenden && c.getAttribute('data-modus') === chosen.mode);
       });
       modeBox.classList.toggle('stillgelegt', legenden);
       modusNotiz.hidden = !legenden;
     }
-
-    var modusNotiz = el('p', { className: 'muted small', hidden: true, text:
-      'Der Legendäre Run bringt seinen eigenen Weg mit — die Moduswahl darüber ruht so lange.' });
-
-    PL.Run.STUFEN.forEach(function (stufe, i) {
-      var offen = i <= maxAsc;
-      var btn = el('button', {
-        className: 'stufe' + (stufe.legenden ? ' legendaer' : '') + (offen ? '' : ' locked') +
-          (i === chosen.ascension ? ' selected' : ''),
-        type: 'button', disabled: !offen,
-        title: offen ? '' : 'Gewinne einen Run auf Stufe ' + i + ', um sie freizuschalten.',
-        onclick: function () { waehleStufe(i); }
-      }, [
-        el('span', { className: 'stufe-kopf' }, [
-          el('strong', { text: 'Stufe ' + (i + 1) + ' — ' + stufe.name }),
-          offen ? null : el('span', { className: 'lock', text: '🔒' })
-        ]),
-        el('span', { className: 'stufe-kurz', text: stufe.kurz }),
-        el('ul', { className: 'stufe-punkte' }, stufe.punkte.map(function (t) {
-          return el('li', { text: t });
-        }))
-      ]);
-      stufenKnoepfe.push(btn);
-      stufenListe.appendChild(btn);
-    });
-    waehleStufe(Math.min(chosen.ascension, maxAsc));
+    setzeStufe(Math.min(chosen.ascension, maxAsc));
 
     var nuzBtn = el('button', {
       className: 'toggle' + (chosen.nuzlocke ? ' on' : ''), type: 'button',
@@ -970,7 +952,12 @@
         el('p', { className: 'muted', text:
           'Stufe 1 ist das Spiel, wie es gedacht ist. Jede weitere Stufe schaltet mehrere Regeln auf einmal an — ' +
           'und die nächste schaltest du frei, indem du auf der davor gewinnst.' }),
-        stufenListe,
+        el('div', { className: 'asc-box' }, [
+          ascInput, ascLabel,
+          maxAsc === 0 ? el('span', { className: 'muted', text:
+            'Höhere Stufen schaltest du frei, indem du Runs gewinnst.' }) : null
+        ]),
+        modusNotiz,
         nuzBtn
       ]),
       el('section', {}, [
@@ -1016,9 +1003,11 @@
     if (!vorteil) return;
     var teile = [];
     if (vorteil.geld) teile.push(U.money(vorteil.geld));
-    if (vorteil.baelle) teile.push(vorteil.baelle + ' Bälle');
-    if (vorteil.traenke) teile.push(vorteil.traenke + ' Tränke');
+    if (vorteil.baelle) teile.push(vorteil.baelle + ' Pokébälle');
+    if (vorteil.superbaelle) teile.push(vorteil.superbaelle + ' Superbälle');
+    if (vorteil.traenke) teile.push(vorteil.traenke + ' Hypertränke');
     if (vorteil.beleber) teile.push(vorteil.beleber + ' Beleber');
+    if (vorteil.meisterball) teile.push('ein Meisterball');
     if (!teile.length) return;
     U.toast('Aus deiner Sammlung: ' + teile.join(', '), 'good');
   }
@@ -3174,6 +3163,12 @@
     ]);
   }
 
+  /** Bringt die Sammlung überhaupt schon etwas ein? */
+  function hatVorteil(lohn) {
+    return !!(lohn.geld || lohn.baelle || lohn.superbaelle || lohn.traenke || lohn.beleber ||
+      lohn.relikte || lohn.reroll || lohn.meisterball || lohn.shiny > 1);
+  }
+
   SCREENS.sammlung = function () {
     var marken = meta.meilensteine();
     var woche = meta.wochenStand();
@@ -3195,8 +3190,8 @@
     }
 
     var vorratZeilen = [];
-    [['geld', 'Startgeld'], ['baelle', 'Bälle'], ['traenke', 'Tränke'],
-     ['beleber', 'Beleber'], ['relikte', 'Relikte']].forEach(function (paar) {
+    [['geld', 'Startgeld'], ['baelle', 'Pokébälle'], ['superbaelle', 'Superbälle'],
+     ['traenke', 'Hypertränke'], ['beleber', 'Beleber'], ['relikte', 'Relikte']].forEach(function (paar) {
       if (v[paar[0]]) vorratZeilen.push(paar[1] + ': ' + v[paar[0]]);
     });
 
@@ -3214,12 +3209,15 @@
           'Gilt in jedem Run — nur nicht im Tages-Run, wo alle gleich anfangen.' }),
         el('div', { className: 'vorteil-liste' }, [
           lohn.geld ? el('span', { className: 'chip', text: '💰 +' + U.money(lohn.geld) }) : null,
-          lohn.baelle ? el('span', { className: 'chip', text: '⚪ +' + lohn.baelle + ' Bälle' }) : null,
-          lohn.traenke ? el('span', { className: 'chip', text: '🧪 +' + lohn.traenke + ' Tränke' }) : null,
+          lohn.baelle ? el('span', { className: 'chip', text: '⚪ +' + lohn.baelle + ' Pokébälle' }) : null,
+          lohn.superbaelle ? el('span', { className: 'chip', text: '🔵 +' + lohn.superbaelle + ' Superbälle' }) : null,
+          lohn.traenke ? el('span', { className: 'chip', text: '🧪 +' + lohn.traenke + ' Hypertränke' }) : null,
           lohn.beleber ? el('span', { className: 'chip', text: '💊 +' + lohn.beleber + ' Beleber' }) : null,
-          lohn.relikte ? el('span', { className: 'chip', text: '🏛️ +' + lohn.relikte + ' Relikt zur Wahl' }) : null,
+          lohn.meisterball ? el('span', { className: 'chip', text: '🟣 Meisterball' }) : null,
+          lohn.relikte ? el('span', { className: 'chip', text: '🏛️ ' + lohn.relikte + ' Relikt zur Wahl' }) : null,
+          lohn.reroll ? el('span', { className: 'chip', text: '🎲 Ein Wurf neu je Run' }) : null,
           lohn.shiny > 1 ? el('span', { className: 'chip', text: '✨ Schillernde ×' + lohn.shiny }) : null,
-          (!lohn.geld && !lohn.baelle && !lohn.traenke && !lohn.beleber && !lohn.relikte && lohn.shiny <= 1)
+          !hatVorteil(lohn)
             ? el('span', { className: 'muted', text: 'Noch keine Marke geholt — fang 25 Arten, dann geht es los.' })
             : null
         ]),
@@ -3232,6 +3230,10 @@
         el('h3', { text: '📋 Aufträge dieser Woche' }),
         el('p', { className: 'muted small', text:
           'Kalenderwoche ' + woche.woche + ' · für alle dieselben · zählt über alle Runs der Woche' }),
+        el('div', { className: 'wochenpreis' + (woche.preisGeholt ? ' fertig' : '') }, [
+          el('strong', { text: woche.preisGeholt ? '✓ Volle Woche geschafft' : '🏛️ Alle drei schaffen' }),
+          el('span', { className: 'marke-lohn', text: woche.preis })
+        ]),
         el('div', { className: 'auftrag-liste' }, woche.auftraege.map(function (a) {
           return el('div', { className: 'auftrag' + (a.geschafft ? ' fertig' : '') }, [
             el('div', { className: 'marke-kopf' }, [

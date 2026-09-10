@@ -208,26 +208,8 @@ button { font: inherit; color: inherit; }
 .option-list { display: flex; flex-direction: column; gap: .5rem; }
 .slider { flex: 1; min-width: 180px; accent-color: var(--accent); }
 
-/* Die fünf Schwierigkeitsstufen (und die sechste, die keine mehr ist) */
-.stufen-liste { display: grid; gap: .5rem; margin-bottom: .9rem; }
-.stufe {
-  display: grid; gap: .25rem; width: 100%; text-align: left; cursor: pointer;
-  padding: .7rem .9rem; border: 1px solid var(--line); border-radius: var(--radius);
-  background: var(--panel); color: var(--text); font: inherit;
-}
-.stufe:hover:not(:disabled) { border-color: var(--accent); }
-.stufe.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); background: var(--panel-2); }
-.stufe.locked { opacity: .45; cursor: not-allowed; }
-.stufe-kopf { display: flex; align-items: center; gap: .5rem; }
-.stufe-kurz { color: var(--muted); font-size: .85rem; }
-.stufe-punkte { margin: .2rem 0 0; padding-left: 1.1rem; color: var(--muted); font-size: .85rem; }
-.stufe-punkte li { margin: .1rem 0; }
-.stufe.legendaer { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
-.stufe.legendaer.selected {
-  background: linear-gradient(135deg, var(--panel-2), color-mix(in srgb, var(--accent) 16%, var(--panel-2)));
-}
-.stufe.legendaer strong { color: var(--accent); }
-.stufe.legendaer.locked strong { color: inherit; }
+.asc-box { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; margin-bottom: .8rem; }
+.asc-value { font-weight: 600; }
 .choice-row.stillgelegt { opacity: .4; pointer-events: none; }
 .toggle {
   display: flex; align-items: center; gap: .6rem; padding: .6rem .9rem; width: 100%;
@@ -1342,6 +1324,12 @@ button.move-row:hover { border-color: var(--accent); }
 .fortschritt-zahl { font-size: .78rem; color: var(--muted); white-space: nowrap; }
 
 .auftrag-liste { display: grid; gap: .5rem; }
+.wochenpreis {
+  display: grid; gap: .15rem; margin: .5rem 0; padding: .6rem .8rem;
+  border: 1px dashed var(--accent); border-radius: var(--radius);
+  background: color-mix(in srgb, var(--accent) 8%, var(--panel-2));
+}
+.wochenpreis.fertig { border-style: solid; border-color: var(--good); }
 .auftrag, .marke {
   padding: .65rem .8rem; border: 1px solid var(--line); border-radius: var(--radius);
   background: var(--panel-2); display: grid; gap: .2rem;
@@ -1598,7 +1586,7 @@ button.move-row:hover { border-color: var(--accent); }
   var PL = root.PL || (root.PL = {});
 
   // Diese Zeile ersetzt tools/build-single.mjs beim Bauen.
-  var BUILD = '20260910T125836Z-5454595';
+  var BUILD = '20260910T155859Z-598b8c4';
 
   var TRIED_KEY = 'pokelike.plus.update.versucht';
   var state = { build: BUILD, latest: null, checking: false, stuck: false };
@@ -9714,13 +9702,17 @@ button.move-row:hover { border-color: var(--accent); }
   R.nimmVorteil = function (vorteil) {
     this.sammelShiny = 1;
     this.startRelikte = 0;
+    this.bonusReroll = false;
     if (!vorteil) return;
-    if (vorteil.geld) { this.money += vorteil.geld; }
+    if (vorteil.geld) this.money += vorteil.geld;
     if (vorteil.baelle) this.addItem('pokeball', vorteil.baelle);
-    if (vorteil.traenke) this.addItem('superpotion', vorteil.traenke);
+    if (vorteil.superbaelle) this.addItem('greatball', vorteil.superbaelle);
+    if (vorteil.traenke) this.addItem('hyperpotion', vorteil.traenke);
     if (vorteil.beleber) this.addItem('revive', vorteil.beleber);
+    if (vorteil.meisterball) this.addItem('masterball', vorteil.meisterball);
     if (vorteil.shiny) this.sammelShiny = vorteil.shiny;
     if (vorteil.relikte) this.startRelikte = vorteil.relikte;
+    if (vorteil.reroll) this.bonusReroll = true;
   };
 
   /** Die Chance auf ein schillerndes Pokémon: Relikte mal Sammlungslohn. */
@@ -10736,7 +10728,9 @@ button.move-row:hover { border-color: var(--accent); }
 
   /** Kann die aktuelle Auswahl noch einmal gewürfelt werden? */
   R.canReroll = function () {
-    if (!this.hasMod('reroll') || this.rerollUsed) return false;
+    // Das Relikt kann es, und die Sammlung kann es — beides führt zu
+    // demselben einen Wurf je Knoten.
+    if ((!this.hasMod('reroll') && !this.bonusReroll) || this.rerollUsed) return false;
     return !!this.scene && /catch|item|relic|shop/.test(this.scene.kind);
   };
 
@@ -11138,6 +11132,7 @@ button.move-row:hover { border-color: var(--accent); }
       legendRegion: this.legendRegion, legendUsed: !!this.legendUsed,
       stufenFassung: 2,
       sammelShiny: this.sammelShiny || 1, startRelikte: this.startRelikte || 0,
+      bonusReroll: !!this.bonusReroll,
       bossHint: this.bossHint || null,
       pendingNode: this.pendingNode || null,
       seenEvents: this.seenEvents || {}, masterballUsed: this.masterballUsed, result: this.result,
@@ -12500,29 +12495,41 @@ button.move-row:hover { border-color: var(--accent); }
 
   var MEILENSTEINE = [
     { id: 'faenge25', name: 'Sammler', bed: '25 Arten gefangen',
-      wert: function (st) { return [st.caught, 25]; }, lohn: { geld: 400 }, lohnText: '+400 Startgeld' },
+      wert: function (st) { return [st.caught, 25]; },
+      lohn: { superbaelle: 2 }, lohnText: '+2 Superbälle zum Start' },
     { id: 'faenge75', name: 'Forscher', bed: '75 Arten gefangen',
-      wert: function (st) { return [st.caught, 75]; }, lohn: { baelle: 5 }, lohnText: '+5 Pokébälle' },
+      wert: function (st) { return [st.caught, 75]; },
+      lohn: { geld: 250 }, lohnText: '+250 Startgeld' },
     { id: 'faenge150', name: 'Kenner', bed: '150 Arten gefangen',
-      wert: function (st) { return [st.caught, 150]; }, lohn: { traenke: 4 }, lohnText: '+4 Tränke' },
+      wert: function (st) { return [st.caught, 150]; },
+      lohn: { traenke: 2 }, lohnText: '+2 Hypertränke zum Start' },
     { id: 'faenge300', name: 'Chronist', bed: '300 Arten gefangen',
-      wert: function (st) { return [st.caught, 300]; }, lohn: { geld: 1200 }, lohnText: '+1200 Startgeld' },
+      wert: function (st) { return [st.caught, 300]; },
+      lohn: { beleber: 1 }, lohnText: '+1 Beleber zum Start' },
     { id: 'faenge500', name: 'Archivar', bed: '500 Arten gefangen',
-      wert: function (st) { return [st.caught, 500]; }, lohn: { beleber: 3 }, lohnText: '+3 Beleber' },
+      wert: function (st) { return [st.caught, 500]; },
+      lohn: { geld: 350 }, lohnText: '+350 Startgeld' },
     { id: 'faenge800', name: 'Meistersammler', bed: '800 Arten gefangen',
-      wert: function (st) { return [st.caught, 800]; }, lohn: { relikte: 1 }, lohnText: 'Ein Relikt zur Wahl beim Start' },
+      wert: function (st) { return [st.caught, 800]; },
+      lohn: { relikte: 1 }, lohnText: 'Ein Relikt zur Wahl beim Start' },
     { id: 'gesehen500', name: 'Weitgereist', bed: '500 Arten gesehen',
-      wert: function (st) { return [st.seen, 500]; }, lohn: { geld: 600 }, lohnText: '+600 Startgeld' },
+      wert: function (st) { return [st.seen, 500]; },
+      lohn: { superbaelle: 2 }, lohnText: '+2 Superbälle zum Start' },
     { id: 'shiny1', name: 'Glücksgriff', bed: 'Ein schillerndes Pokémon',
-      wert: function (st) { return [st.shinies, 1]; }, lohn: { shiny: 1.5 }, lohnText: 'Schillernde Pokémon 1,5-mal so häufig' },
+      wert: function (st) { return [st.shinies, 1]; },
+      lohn: { shiny: 1.5 }, lohnText: 'Schillernde 1,5-mal so häufig' },
     { id: 'shiny5', name: 'Schimmerjäger', bed: 'Fünf schillernde Pokémon',
-      wert: function (st) { return [st.shinies, 5]; }, lohn: { shiny: 2 }, lohnText: 'Schillernde Pokémon doppelt so häufig' },
+      wert: function (st) { return [st.shinies, 5]; },
+      lohn: { shiny: 2 }, lohnText: 'Schillernde doppelt so häufig' },
     { id: 'shiny15', name: 'Farbensammler', bed: 'Fünfzehn schillernde Pokémon',
-      wert: function (st) { return [st.shinies, 15]; }, lohn: { shiny: 3 }, lohnText: 'Schillernde Pokémon dreimal so häufig' },
+      wert: function (st) { return [st.shinies, 15]; },
+      lohn: { shiny: 2.5 }, lohnText: 'Schillernde zweieinhalbmal so häufig' },
     { id: 'gen3', name: 'Drei Generationen', bed: 'Drei Generationen vollständig gefangen',
-      wert: function (st) { return [st.volleGen, 3]; }, lohn: { traenke: 4, baelle: 5 }, lohnText: '+4 Tränke, +5 Bälle' },
+      wert: function (st) { return [st.volleGen, 3]; },
+      lohn: { reroll: 1 }, lohnText: 'Einmal je Run eine Auswahl neu würfeln' },
     { id: 'gen9', name: 'Alle neun', bed: 'Alle neun Generationen vollständig',
-      wert: function (st) { return [st.volleGen, 9]; }, lohn: { relikte: 1, geld: 2000 }, lohnText: 'Ein weiteres Relikt und +2000 Startgeld' }
+      wert: function (st) { return [st.volleGen, 9]; },
+      lohn: { meisterball: 1 }, lohnText: 'Ein Meisterball zum Start' }
   ];
 
   /** Der Sammlungsstand, wie ihn die Meilensteine sehen. */
@@ -12570,7 +12577,8 @@ button.move-row:hover { border-color: var(--accent); }
    */
   function sammelLohn() {
     var m = load();
-    var lohn = { geld: 0, baelle: 0, traenke: 0, beleber: 0, relikte: 0, shiny: 1 };
+    var lohn = { geld: 0, baelle: 0, superbaelle: 0, traenke: 0, beleber: 0,
+                 relikte: 0, reroll: 0, meisterball: 0, shiny: 1 };
     MEILENSTEINE.forEach(function (ms) {
       if (!m.meilensteine[ms.id]) return;
       Object.keys(ms.lohn).forEach(function (k) {
@@ -12589,15 +12597,30 @@ button.move-row:hover { border-color: var(--accent); }
    * -------------------------------------------------------------------------- */
 
   var AUFTRAEGE = [
-    { id: 'siege', text: 'Gewinne {n} Kämpfe', ziele: [40, 60, 90], lohn: { geld: 800 }, lohnText: '+800 Startgeld' },
-    { id: 'faenge', text: 'Fange {n} Pokémon', ziele: [10, 18, 25], lohn: { baelle: 8 }, lohnText: '+8 Bälle' },
-    { id: 'arten', text: 'Trage {n} neue Arten in den Pokédex ein', ziele: [8, 15, 25], lohn: { traenke: 5 }, lohnText: '+5 Tränke' },
-    { id: 'entwicklungen', text: 'Entwickle {n} Pokémon', ziele: [6, 10, 16], lohn: { traenke: 4 }, lohnText: '+4 Tränke' },
-    { id: 'regionen', text: 'Schaffe {n} Regionen', ziele: [8, 14, 20], lohn: { beleber: 3 }, lohnText: '+3 Beleber' },
-    { id: 'runs', text: 'Beende {n} Runs', ziele: [3, 5, 8], lohn: { geld: 600 }, lohnText: '+600 Startgeld' },
-    { id: 'bosse', text: 'Besiege {n} Arenaleiter', ziele: [10, 16, 24], lohn: { relikte: 1 }, lohnText: 'Ein Relikt zur Wahl' },
-    { id: 'legenden', text: 'Besiege {n} legendäre Pokémon', ziele: [1, 2, 4], lohn: { geld: 1000 }, lohnText: '+1000 Startgeld' }
+    { id: 'siege', text: 'Gewinne {n} Kämpfe', ziele: [40, 60, 90],
+      lohn: { traenke: 3 }, lohnText: '+3 Hypertränke' },
+    { id: 'faenge', text: 'Fange {n} Pokémon', ziele: [10, 18, 25],
+      lohn: { superbaelle: 4 }, lohnText: '+4 Superbälle' },
+    { id: 'arten', text: 'Trage {n} neue Arten in den Pokédex ein', ziele: [8, 15, 25],
+      lohn: { geld: 300 }, lohnText: '+300 Startgeld' },
+    { id: 'entwicklungen', text: 'Entwickle {n} Pokémon', ziele: [6, 10, 16],
+      lohn: { traenke: 2, beleber: 1 }, lohnText: '+2 Hypertränke, +1 Beleber' },
+    { id: 'regionen', text: 'Schaffe {n} Regionen', ziele: [8, 14, 20],
+      lohn: { beleber: 2 }, lohnText: '+2 Beleber' },
+    { id: 'runs', text: 'Beende {n} Runs', ziele: [3, 5, 8],
+      lohn: { geld: 300 }, lohnText: '+300 Startgeld' },
+    { id: 'bosse', text: 'Besiege {n} Arenaleiter', ziele: [10, 16, 24],
+      lohn: { superbaelle: 3, traenke: 2 }, lohnText: '+3 Superbälle, +2 Hypertränke' },
+    { id: 'legenden', text: 'Besiege {n} legendäre Pokémon', ziele: [1, 2, 4],
+      lohn: { beleber: 1, geld: 250 }, lohnText: '+1 Beleber, +250 Startgeld' }
   ];
+
+  /**
+   * Der Preis für eine volle Woche. Er ist der eigentliche Grund, alle drei
+   * Aufträge zu machen: Ein Relikt bestimmt einen Run mehr als jeder Beutel
+   * voll Tränke — und genau deshalb gibt es höchstens eines pro Woche.
+   */
+  var WOCHENPREIS = { lohn: { relikte: 1 }, text: 'Ein Relikt zur Wahl beim nächsten Run' };
 
   /**
    * Die Kalenderwoche nach ISO — Montag ist der erste Tag, und die Woche mit
@@ -12644,6 +12667,8 @@ button.move-row:hover { border-color: var(--accent); }
     var w = m.wochen;
     return {
       woche: key,
+      preis: WOCHENPREIS.text,
+      preisGeholt: !!w.preis,
       auftraege: wochenAuftraege(key).map(function (a) {
         return {
           id: a.id, text: a.text, ziel: a.ziel, lohnText: a.lohnText,
@@ -12666,12 +12691,19 @@ button.move-row:hover { border-color: var(--accent); }
       if (!werte[k]) return;
       w.zaehler[k] = (w.zaehler[k] || 0) + werte[k];
     });
-    wochenAuftraege(w.woche).forEach(function (a) {
+    var alle = wochenAuftraege(w.woche);
+    alle.forEach(function (a) {
       if (w.geholt[a.id] || (w.zaehler[a.id] || 0) < a.ziel) return;
       w.geholt[a.id] = true;
       legeInVorrat(a.lohn);
       fertig.push({ id: a.id, text: a.text, lohnText: a.lohnText });
     });
+    // Die volle Woche zählt extra — einmal, und nur einmal.
+    if (!w.preis && alle.every(function (a) { return w.geholt[a.id]; })) {
+      w.preis = true;
+      legeInVorrat(WOCHENPREIS.lohn);
+      fertig.push({ id: 'wochenpreis', text: 'Alle drei Aufträge dieser Woche', lohnText: WOCHENPREIS.text });
+    }
     save();
     return fertig;
   }
@@ -12708,7 +12740,8 @@ button.move-row:hover { border-color: var(--accent); }
   function startVorteil(modus) {
     if (modus === 'taeglich') return null;
     var lohn = sammelLohn(), v = hebeVorrat();
-    ['geld', 'baelle', 'traenke', 'beleber', 'relikte'].forEach(function (k) {
+    ['geld', 'baelle', 'superbaelle', 'traenke', 'beleber', 'relikte',
+     'reroll', 'meisterball'].forEach(function (k) {
       lohn[k] = (lohn[k] || 0) + (v[k] || 0);
     });
     return lohn;
@@ -12999,6 +13032,7 @@ button.move-row:hover { border-color: var(--accent); }
     ASCENSIONS: ASCENSIONS, maxAscension: maxAscension, stufenName: stufenName,
     MEILENSTEINE: MEILENSTEINE, meilensteine: meilensteine,
     pruefeMeilensteine: pruefeMeilensteine, sammelLohn: sammelLohn, sammelStand: sammelStand,
+    WOCHENPREIS: WOCHENPREIS,
     wochenSchluessel: wochenSchluessel, wochenAuftraege: wochenAuftraege,
     wochenStand: wochenStand, zaehleWoche: zaehleWoche,
     vorrat: vorrat, legeInVorrat: legeInVorrat, hebeVorrat: hebeVorrat, startVorteil: startVorteil,
@@ -16343,50 +16377,32 @@ button.move-row:hover { border-color: var(--accent); }
       modeBox.appendChild(btn);
     });
 
-    // Fünf Stufen mit Namen statt elf Zahlen: Was eine Stufe ändert, steht
-    // dran, bevor man sie wählt. Die sechste ist keine Stufe mehr, sondern
-    // ein eigener Weg — sie schaltet den Modus gleich mit um.
-    var stufenListe = el('div', { className: 'stufen-liste' });
-    var stufenKnoepfe = [];
+    // Der Regler, wie er war — nur dass daneben jetzt der Name der Stufe
+    // steht und nicht mehr eine Zahl. Die letzte Raste ist keine
+    // Schwierigkeit mehr, sondern der Legendäre Run; sie stellt den Modus
+    // gleich mit um.
+    var ascLabel = el('span', { className: 'asc-value', text: meta.stufenName(chosen.ascension) });
+    var ascInput = el('input', {
+      type: 'range', min: 0, max: Math.max(0, maxAsc), value: chosen.ascension, className: 'slider',
+      oninput: function () { setzeStufe(+ascInput.value); }
+    });
 
-    function waehleStufe(i) {
-      chosen.ascension = i;
-      var legenden = !!PL.Run.STUFEN[i].legenden;
+    var modusNotiz = el('p', { className: 'muted small', hidden: true, text:
+      'Der Legendäre Run bringt seinen eigenen Weg mit — die Moduswahl darüber ruht so lange.' });
+
+    function setzeStufe(n) {
+      chosen.ascension = n;
+      ascLabel.textContent = meta.stufenName(n);
+      var legenden = !!PL.Run.STUFEN[n].legenden;
       if (legenden) chosen.mode = 'legenden';
       else if (chosen.mode === 'legenden') chosen.mode = 'standard';
-      stufenKnoepfe.forEach(function (b, k) { b.classList.toggle('selected', k === i); });
       Array.prototype.forEach.call(modeBox.children, function (c) {
         c.classList.toggle('selected', !legenden && c.getAttribute('data-modus') === chosen.mode);
       });
       modeBox.classList.toggle('stillgelegt', legenden);
       modusNotiz.hidden = !legenden;
     }
-
-    var modusNotiz = el('p', { className: 'muted small', hidden: true, text:
-      'Der Legendäre Run bringt seinen eigenen Weg mit — die Moduswahl darüber ruht so lange.' });
-
-    PL.Run.STUFEN.forEach(function (stufe, i) {
-      var offen = i <= maxAsc;
-      var btn = el('button', {
-        className: 'stufe' + (stufe.legenden ? ' legendaer' : '') + (offen ? '' : ' locked') +
-          (i === chosen.ascension ? ' selected' : ''),
-        type: 'button', disabled: !offen,
-        title: offen ? '' : 'Gewinne einen Run auf Stufe ' + i + ', um sie freizuschalten.',
-        onclick: function () { waehleStufe(i); }
-      }, [
-        el('span', { className: 'stufe-kopf' }, [
-          el('strong', { text: 'Stufe ' + (i + 1) + ' — ' + stufe.name }),
-          offen ? null : el('span', { className: 'lock', text: '🔒' })
-        ]),
-        el('span', { className: 'stufe-kurz', text: stufe.kurz }),
-        el('ul', { className: 'stufe-punkte' }, stufe.punkte.map(function (t) {
-          return el('li', { text: t });
-        }))
-      ]);
-      stufenKnoepfe.push(btn);
-      stufenListe.appendChild(btn);
-    });
-    waehleStufe(Math.min(chosen.ascension, maxAsc));
+    setzeStufe(Math.min(chosen.ascension, maxAsc));
 
     var nuzBtn = el('button', {
       className: 'toggle' + (chosen.nuzlocke ? ' on' : ''), type: 'button',
@@ -16435,7 +16451,12 @@ button.move-row:hover { border-color: var(--accent); }
         el('p', { className: 'muted', text:
           'Stufe 1 ist das Spiel, wie es gedacht ist. Jede weitere Stufe schaltet mehrere Regeln auf einmal an — ' +
           'und die nächste schaltest du frei, indem du auf der davor gewinnst.' }),
-        stufenListe,
+        el('div', { className: 'asc-box' }, [
+          ascInput, ascLabel,
+          maxAsc === 0 ? el('span', { className: 'muted', text:
+            'Höhere Stufen schaltest du frei, indem du Runs gewinnst.' }) : null
+        ]),
+        modusNotiz,
         nuzBtn
       ]),
       el('section', {}, [
@@ -16481,9 +16502,11 @@ button.move-row:hover { border-color: var(--accent); }
     if (!vorteil) return;
     var teile = [];
     if (vorteil.geld) teile.push(U.money(vorteil.geld));
-    if (vorteil.baelle) teile.push(vorteil.baelle + ' Bälle');
-    if (vorteil.traenke) teile.push(vorteil.traenke + ' Tränke');
+    if (vorteil.baelle) teile.push(vorteil.baelle + ' Pokébälle');
+    if (vorteil.superbaelle) teile.push(vorteil.superbaelle + ' Superbälle');
+    if (vorteil.traenke) teile.push(vorteil.traenke + ' Hypertränke');
     if (vorteil.beleber) teile.push(vorteil.beleber + ' Beleber');
+    if (vorteil.meisterball) teile.push('ein Meisterball');
     if (!teile.length) return;
     U.toast('Aus deiner Sammlung: ' + teile.join(', '), 'good');
   }
@@ -18639,6 +18662,12 @@ button.move-row:hover { border-color: var(--accent); }
     ]);
   }
 
+  /** Bringt die Sammlung überhaupt schon etwas ein? */
+  function hatVorteil(lohn) {
+    return !!(lohn.geld || lohn.baelle || lohn.superbaelle || lohn.traenke || lohn.beleber ||
+      lohn.relikte || lohn.reroll || lohn.meisterball || lohn.shiny > 1);
+  }
+
   SCREENS.sammlung = function () {
     var marken = meta.meilensteine();
     var woche = meta.wochenStand();
@@ -18660,8 +18689,8 @@ button.move-row:hover { border-color: var(--accent); }
     }
 
     var vorratZeilen = [];
-    [['geld', 'Startgeld'], ['baelle', 'Bälle'], ['traenke', 'Tränke'],
-     ['beleber', 'Beleber'], ['relikte', 'Relikte']].forEach(function (paar) {
+    [['geld', 'Startgeld'], ['baelle', 'Pokébälle'], ['superbaelle', 'Superbälle'],
+     ['traenke', 'Hypertränke'], ['beleber', 'Beleber'], ['relikte', 'Relikte']].forEach(function (paar) {
       if (v[paar[0]]) vorratZeilen.push(paar[1] + ': ' + v[paar[0]]);
     });
 
@@ -18679,12 +18708,15 @@ button.move-row:hover { border-color: var(--accent); }
           'Gilt in jedem Run — nur nicht im Tages-Run, wo alle gleich anfangen.' }),
         el('div', { className: 'vorteil-liste' }, [
           lohn.geld ? el('span', { className: 'chip', text: '💰 +' + U.money(lohn.geld) }) : null,
-          lohn.baelle ? el('span', { className: 'chip', text: '⚪ +' + lohn.baelle + ' Bälle' }) : null,
-          lohn.traenke ? el('span', { className: 'chip', text: '🧪 +' + lohn.traenke + ' Tränke' }) : null,
+          lohn.baelle ? el('span', { className: 'chip', text: '⚪ +' + lohn.baelle + ' Pokébälle' }) : null,
+          lohn.superbaelle ? el('span', { className: 'chip', text: '🔵 +' + lohn.superbaelle + ' Superbälle' }) : null,
+          lohn.traenke ? el('span', { className: 'chip', text: '🧪 +' + lohn.traenke + ' Hypertränke' }) : null,
           lohn.beleber ? el('span', { className: 'chip', text: '💊 +' + lohn.beleber + ' Beleber' }) : null,
-          lohn.relikte ? el('span', { className: 'chip', text: '🏛️ +' + lohn.relikte + ' Relikt zur Wahl' }) : null,
+          lohn.meisterball ? el('span', { className: 'chip', text: '🟣 Meisterball' }) : null,
+          lohn.relikte ? el('span', { className: 'chip', text: '🏛️ ' + lohn.relikte + ' Relikt zur Wahl' }) : null,
+          lohn.reroll ? el('span', { className: 'chip', text: '🎲 Ein Wurf neu je Run' }) : null,
           lohn.shiny > 1 ? el('span', { className: 'chip', text: '✨ Schillernde ×' + lohn.shiny }) : null,
-          (!lohn.geld && !lohn.baelle && !lohn.traenke && !lohn.beleber && !lohn.relikte && lohn.shiny <= 1)
+          !hatVorteil(lohn)
             ? el('span', { className: 'muted', text: 'Noch keine Marke geholt — fang 25 Arten, dann geht es los.' })
             : null
         ]),
@@ -18697,6 +18729,10 @@ button.move-row:hover { border-color: var(--accent); }
         el('h3', { text: '📋 Aufträge dieser Woche' }),
         el('p', { className: 'muted small', text:
           'Kalenderwoche ' + woche.woche + ' · für alle dieselben · zählt über alle Runs der Woche' }),
+        el('div', { className: 'wochenpreis' + (woche.preisGeholt ? ' fertig' : '') }, [
+          el('strong', { text: woche.preisGeholt ? '✓ Volle Woche geschafft' : '🏛️ Alle drei schaffen' }),
+          el('span', { className: 'marke-lohn', text: woche.preis })
+        ]),
         el('div', { className: 'auftrag-liste' }, woche.auftraege.map(function (a) {
           return el('div', { className: 'auftrag' + (a.geschafft ? ' fertig' : '') }, [
             el('div', { className: 'marke-kopf' }, [

@@ -492,29 +492,41 @@
 
   var MEILENSTEINE = [
     { id: 'faenge25', name: 'Sammler', bed: '25 Arten gefangen',
-      wert: function (st) { return [st.caught, 25]; }, lohn: { geld: 400 }, lohnText: '+400 Startgeld' },
+      wert: function (st) { return [st.caught, 25]; },
+      lohn: { superbaelle: 2 }, lohnText: '+2 Superbälle zum Start' },
     { id: 'faenge75', name: 'Forscher', bed: '75 Arten gefangen',
-      wert: function (st) { return [st.caught, 75]; }, lohn: { baelle: 5 }, lohnText: '+5 Pokébälle' },
+      wert: function (st) { return [st.caught, 75]; },
+      lohn: { geld: 250 }, lohnText: '+250 Startgeld' },
     { id: 'faenge150', name: 'Kenner', bed: '150 Arten gefangen',
-      wert: function (st) { return [st.caught, 150]; }, lohn: { traenke: 4 }, lohnText: '+4 Tränke' },
+      wert: function (st) { return [st.caught, 150]; },
+      lohn: { traenke: 2 }, lohnText: '+2 Hypertränke zum Start' },
     { id: 'faenge300', name: 'Chronist', bed: '300 Arten gefangen',
-      wert: function (st) { return [st.caught, 300]; }, lohn: { geld: 1200 }, lohnText: '+1200 Startgeld' },
+      wert: function (st) { return [st.caught, 300]; },
+      lohn: { beleber: 1 }, lohnText: '+1 Beleber zum Start' },
     { id: 'faenge500', name: 'Archivar', bed: '500 Arten gefangen',
-      wert: function (st) { return [st.caught, 500]; }, lohn: { beleber: 3 }, lohnText: '+3 Beleber' },
+      wert: function (st) { return [st.caught, 500]; },
+      lohn: { geld: 350 }, lohnText: '+350 Startgeld' },
     { id: 'faenge800', name: 'Meistersammler', bed: '800 Arten gefangen',
-      wert: function (st) { return [st.caught, 800]; }, lohn: { relikte: 1 }, lohnText: 'Ein Relikt zur Wahl beim Start' },
+      wert: function (st) { return [st.caught, 800]; },
+      lohn: { relikte: 1 }, lohnText: 'Ein Relikt zur Wahl beim Start' },
     { id: 'gesehen500', name: 'Weitgereist', bed: '500 Arten gesehen',
-      wert: function (st) { return [st.seen, 500]; }, lohn: { geld: 600 }, lohnText: '+600 Startgeld' },
+      wert: function (st) { return [st.seen, 500]; },
+      lohn: { superbaelle: 2 }, lohnText: '+2 Superbälle zum Start' },
     { id: 'shiny1', name: 'Glücksgriff', bed: 'Ein schillerndes Pokémon',
-      wert: function (st) { return [st.shinies, 1]; }, lohn: { shiny: 1.5 }, lohnText: 'Schillernde Pokémon 1,5-mal so häufig' },
+      wert: function (st) { return [st.shinies, 1]; },
+      lohn: { shiny: 1.5 }, lohnText: 'Schillernde 1,5-mal so häufig' },
     { id: 'shiny5', name: 'Schimmerjäger', bed: 'Fünf schillernde Pokémon',
-      wert: function (st) { return [st.shinies, 5]; }, lohn: { shiny: 2 }, lohnText: 'Schillernde Pokémon doppelt so häufig' },
+      wert: function (st) { return [st.shinies, 5]; },
+      lohn: { shiny: 2 }, lohnText: 'Schillernde doppelt so häufig' },
     { id: 'shiny15', name: 'Farbensammler', bed: 'Fünfzehn schillernde Pokémon',
-      wert: function (st) { return [st.shinies, 15]; }, lohn: { shiny: 3 }, lohnText: 'Schillernde Pokémon dreimal so häufig' },
+      wert: function (st) { return [st.shinies, 15]; },
+      lohn: { shiny: 2.5 }, lohnText: 'Schillernde zweieinhalbmal so häufig' },
     { id: 'gen3', name: 'Drei Generationen', bed: 'Drei Generationen vollständig gefangen',
-      wert: function (st) { return [st.volleGen, 3]; }, lohn: { traenke: 4, baelle: 5 }, lohnText: '+4 Tränke, +5 Bälle' },
+      wert: function (st) { return [st.volleGen, 3]; },
+      lohn: { reroll: 1 }, lohnText: 'Einmal je Run eine Auswahl neu würfeln' },
     { id: 'gen9', name: 'Alle neun', bed: 'Alle neun Generationen vollständig',
-      wert: function (st) { return [st.volleGen, 9]; }, lohn: { relikte: 1, geld: 2000 }, lohnText: 'Ein weiteres Relikt und +2000 Startgeld' }
+      wert: function (st) { return [st.volleGen, 9]; },
+      lohn: { meisterball: 1 }, lohnText: 'Ein Meisterball zum Start' }
   ];
 
   /** Der Sammlungsstand, wie ihn die Meilensteine sehen. */
@@ -562,7 +574,8 @@
    */
   function sammelLohn() {
     var m = load();
-    var lohn = { geld: 0, baelle: 0, traenke: 0, beleber: 0, relikte: 0, shiny: 1 };
+    var lohn = { geld: 0, baelle: 0, superbaelle: 0, traenke: 0, beleber: 0,
+                 relikte: 0, reroll: 0, meisterball: 0, shiny: 1 };
     MEILENSTEINE.forEach(function (ms) {
       if (!m.meilensteine[ms.id]) return;
       Object.keys(ms.lohn).forEach(function (k) {
@@ -581,15 +594,30 @@
    * -------------------------------------------------------------------------- */
 
   var AUFTRAEGE = [
-    { id: 'siege', text: 'Gewinne {n} Kämpfe', ziele: [40, 60, 90], lohn: { geld: 800 }, lohnText: '+800 Startgeld' },
-    { id: 'faenge', text: 'Fange {n} Pokémon', ziele: [10, 18, 25], lohn: { baelle: 8 }, lohnText: '+8 Bälle' },
-    { id: 'arten', text: 'Trage {n} neue Arten in den Pokédex ein', ziele: [8, 15, 25], lohn: { traenke: 5 }, lohnText: '+5 Tränke' },
-    { id: 'entwicklungen', text: 'Entwickle {n} Pokémon', ziele: [6, 10, 16], lohn: { traenke: 4 }, lohnText: '+4 Tränke' },
-    { id: 'regionen', text: 'Schaffe {n} Regionen', ziele: [8, 14, 20], lohn: { beleber: 3 }, lohnText: '+3 Beleber' },
-    { id: 'runs', text: 'Beende {n} Runs', ziele: [3, 5, 8], lohn: { geld: 600 }, lohnText: '+600 Startgeld' },
-    { id: 'bosse', text: 'Besiege {n} Arenaleiter', ziele: [10, 16, 24], lohn: { relikte: 1 }, lohnText: 'Ein Relikt zur Wahl' },
-    { id: 'legenden', text: 'Besiege {n} legendäre Pokémon', ziele: [1, 2, 4], lohn: { geld: 1000 }, lohnText: '+1000 Startgeld' }
+    { id: 'siege', text: 'Gewinne {n} Kämpfe', ziele: [40, 60, 90],
+      lohn: { traenke: 3 }, lohnText: '+3 Hypertränke' },
+    { id: 'faenge', text: 'Fange {n} Pokémon', ziele: [10, 18, 25],
+      lohn: { superbaelle: 4 }, lohnText: '+4 Superbälle' },
+    { id: 'arten', text: 'Trage {n} neue Arten in den Pokédex ein', ziele: [8, 15, 25],
+      lohn: { geld: 300 }, lohnText: '+300 Startgeld' },
+    { id: 'entwicklungen', text: 'Entwickle {n} Pokémon', ziele: [6, 10, 16],
+      lohn: { traenke: 2, beleber: 1 }, lohnText: '+2 Hypertränke, +1 Beleber' },
+    { id: 'regionen', text: 'Schaffe {n} Regionen', ziele: [8, 14, 20],
+      lohn: { beleber: 2 }, lohnText: '+2 Beleber' },
+    { id: 'runs', text: 'Beende {n} Runs', ziele: [3, 5, 8],
+      lohn: { geld: 300 }, lohnText: '+300 Startgeld' },
+    { id: 'bosse', text: 'Besiege {n} Arenaleiter', ziele: [10, 16, 24],
+      lohn: { superbaelle: 3, traenke: 2 }, lohnText: '+3 Superbälle, +2 Hypertränke' },
+    { id: 'legenden', text: 'Besiege {n} legendäre Pokémon', ziele: [1, 2, 4],
+      lohn: { beleber: 1, geld: 250 }, lohnText: '+1 Beleber, +250 Startgeld' }
   ];
+
+  /**
+   * Der Preis für eine volle Woche. Er ist der eigentliche Grund, alle drei
+   * Aufträge zu machen: Ein Relikt bestimmt einen Run mehr als jeder Beutel
+   * voll Tränke — und genau deshalb gibt es höchstens eines pro Woche.
+   */
+  var WOCHENPREIS = { lohn: { relikte: 1 }, text: 'Ein Relikt zur Wahl beim nächsten Run' };
 
   /**
    * Die Kalenderwoche nach ISO — Montag ist der erste Tag, und die Woche mit
@@ -636,6 +664,8 @@
     var w = m.wochen;
     return {
       woche: key,
+      preis: WOCHENPREIS.text,
+      preisGeholt: !!w.preis,
       auftraege: wochenAuftraege(key).map(function (a) {
         return {
           id: a.id, text: a.text, ziel: a.ziel, lohnText: a.lohnText,
@@ -658,12 +688,19 @@
       if (!werte[k]) return;
       w.zaehler[k] = (w.zaehler[k] || 0) + werte[k];
     });
-    wochenAuftraege(w.woche).forEach(function (a) {
+    var alle = wochenAuftraege(w.woche);
+    alle.forEach(function (a) {
       if (w.geholt[a.id] || (w.zaehler[a.id] || 0) < a.ziel) return;
       w.geholt[a.id] = true;
       legeInVorrat(a.lohn);
       fertig.push({ id: a.id, text: a.text, lohnText: a.lohnText });
     });
+    // Die volle Woche zählt extra — einmal, und nur einmal.
+    if (!w.preis && alle.every(function (a) { return w.geholt[a.id]; })) {
+      w.preis = true;
+      legeInVorrat(WOCHENPREIS.lohn);
+      fertig.push({ id: 'wochenpreis', text: 'Alle drei Aufträge dieser Woche', lohnText: WOCHENPREIS.text });
+    }
     save();
     return fertig;
   }
@@ -700,7 +737,8 @@
   function startVorteil(modus) {
     if (modus === 'taeglich') return null;
     var lohn = sammelLohn(), v = hebeVorrat();
-    ['geld', 'baelle', 'traenke', 'beleber', 'relikte'].forEach(function (k) {
+    ['geld', 'baelle', 'superbaelle', 'traenke', 'beleber', 'relikte',
+     'reroll', 'meisterball'].forEach(function (k) {
       lohn[k] = (lohn[k] || 0) + (v[k] || 0);
     });
     return lohn;
@@ -991,6 +1029,7 @@
     ASCENSIONS: ASCENSIONS, maxAscension: maxAscension, stufenName: stufenName,
     MEILENSTEINE: MEILENSTEINE, meilensteine: meilensteine,
     pruefeMeilensteine: pruefeMeilensteine, sammelLohn: sammelLohn, sammelStand: sammelStand,
+    WOCHENPREIS: WOCHENPREIS,
     wochenSchluessel: wochenSchluessel, wochenAuftraege: wochenAuftraege,
     wochenStand: wochenStand, zaehleWoche: zaehleWoche,
     vorrat: vorrat, legeInVorrat: legeInVorrat, hebeVorrat: hebeVorrat, startVorteil: startVorteil,

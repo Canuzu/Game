@@ -380,15 +380,20 @@ await page.waitForSelector('.sammlung-screen');
   const geholt = await page.locator('.marke.fertig').count();
   check('Nach 30 Fängen ist die erste Marke geholt', geholt === 1, String(geholt));
   const vorteil = await page.locator('.vorteil-liste').innerText();
-  check('Der Startvorteil steht da', /400/.test(vorteil), vorteil.replace(/\n/g, ' | '));
+  check('Der Startvorteil steht da', /Superbälle/.test(vorteil), vorteil.replace(/\n/g, ' | '));
+  const preis = await page.locator('.wochenpreis').innerText();
+  check('Der Preis für die volle Woche steht dabei', /Relikt/.test(preis), preis.replace(/\n/g, ' | '));
 
   // Und er landet wirklich im Beutel eines neuen Runs
   const beutel = await page.evaluate(() => {
-    const vorteil = PL.meta.startVorteil('standard');
-    const run = new PL.Run({ seed: 1, starter: 'bulbasaur', vorteil: vorteil });
-    return { geld: run.money, taeglich: PL.meta.startVorteil('taeglich') };
+    const ohne = new PL.Run({ seed: 1, starter: 'bulbasaur' });
+    const run = new PL.Run({ seed: 1, starter: 'bulbasaur', vorteil: PL.meta.startVorteil('standard') });
+    return {
+      baelle: (run.bag.greatball || 0) - (ohne.bag.greatball || 0),
+      taeglich: PL.meta.startVorteil('taeglich')
+    };
   });
-  check('Der Run startet mit mehr Geld', beutel.geld >= 1600, String(beutel.geld));
+  check('Der Run startet mit den erspielten Bällen', beutel.baelle === 2, String(beutel.baelle));
   check('Der Tages-Run bekommt keinen Vorteil', beutel.taeglich === null);
 
   // Der Bestwert steht im Pokédex unter der Art
@@ -419,31 +424,41 @@ await page.evaluate(() => {
   PL.meta.reset();
   globalThis.PokelikeApp.show('newrun');
 });
-await page.waitForSelector('.stufen-liste');
+await page.waitForSelector('.asc-box');
 {
-  check('Es stehen sechs Stufen zur Wahl', (await page.locator('.stufe').count()) === 6);
-  const erste = await page.locator('.stufe').first().innerText();
-  check('Die erste heißt Stufe 1', erste.indexOf('Stufe 1') === 0, erste.replace(/\n/g, ' | '));
-  check('Jede Stufe sagt, was sie ändert', (await page.locator('.stufe-punkte li').count()) >= 10);
-  check('Ohne einen einzigen Sieg steht nur Stufe 1 offen',
-    (await page.locator('.stufe:disabled').count()) === 5,
-    String(await page.locator('.stufe:disabled').count()));
-  check('Der Legendäre Run ist verschlossen',
-    await page.locator('.stufe.legendaer').isDisabled());
+  const regler = page.locator('.newrun .slider');
+  check('Die Schwierigkeit hat einen Regler', (await regler.count()) === 1);
+  const beschriftung = await page.locator('.asc-value').innerText();
+  check('Daneben steht der Name der Stufe', beschriftung.trim() === 'Stufe 1 — Reise', beschriftung);
+  check('Ohne einen einzigen Sieg endet der Regler bei der ersten Stufe',
+    (await regler.getAttribute('max')) === '0', await regler.getAttribute('max'));
   const modi = await page.locator('.choice-row .choice').count();
   check('Der Legendäre Run steht nicht in der Modusliste', modi === 5, String(modi));
 
-  // Mit freigeschalteter letzter Stufe: sie bestimmt den Modus
+  // Mit Siegen wandert der Regler weiter — und die letzte Raste ist der Weg
   await page.evaluate(() => {
     const m = PL.meta.load();
     m.bestAscension = 4;
     PL.meta.save();
     globalThis.PokelikeApp.show('newrun');
   });
-  await page.waitForSelector('.stufe.legendaer:not(:disabled)');
-  await page.locator('.stufe.legendaer').click();
+  await page.waitForSelector('.asc-box');
+  const regler2 = page.locator('.newrun .slider');
+  check('Nach Stufe 5 steht der Legendäre Run offen',
+    (await regler2.getAttribute('max')) === '5', await regler2.getAttribute('max'));
+  await regler2.fill('2');
+  await regler2.dispatchEvent('input');
+  check('Der Regler nennt die Stufe beim Namen',
+    (await page.locator('.asc-value').innerText()).trim() === 'Stufe 3 — Prüfung',
+    await page.locator('.asc-value').innerText());
+  await regler2.fill('5');
+  await regler2.dispatchEvent('input');
   await page.waitForSelector('.choice-row.stillgelegt');
-  check('Die letzte Stufe legt die Moduswahl still', true);
+  check('Die letzte Raste legt die Moduswahl still', true);
+  check('… und heißt nach dem Weg, den sie öffnet',
+    (await page.locator('.asc-value').innerText()).indexOf('Legendärer Run') > 0,
+    await page.locator('.asc-value').innerText());
+
   await page.locator('.starter:not(.locked)').first().click();
   await page.getByRole('button', { name: 'Los geht’s' }).click();
   await page.waitForSelector('.map-screen', { timeout: 15000 });
