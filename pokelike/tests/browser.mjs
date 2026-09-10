@@ -9,6 +9,7 @@
  * ========================================================================== */
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { startOptionen } from '../tools/browser.mjs';
 
 // Playwright ist keine Abhängigkeit des Spiels — fehlt es, überspringt sich
 // dieser Test selbst, statt fehlzuschlagen:
@@ -37,8 +38,7 @@ function check(name, cond, detail) {
   return false;
 }
 
-const launchOpts = {};
-if (process.env.CHROMIUM_PFAD) launchOpts.executablePath = process.env.CHROMIUM_PFAD;
+const launchOpts = startOptionen();
 const browser = await chromium.launch(launchOpts);
 const browser2 = await chromium.launch(launchOpts);
 const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
@@ -61,7 +61,7 @@ check('Pokédex-Daten geladen', await page.evaluate(() => globalThis.PL.dex.spec
 if (SHOT_DIR) await page.screenshot({ path: join(SHOT_DIR, '01-titel.png') });
 
 console.log('\nNeuer Run');
-await page.click('text=✦ Neuer Run');
+await page.getByRole('button', { name: 'Neuer Run' }).click();
 await page.waitForSelector('.starter-grid');
 check('Startpokémon zur Auswahl', (await page.locator('.starter').count()) >= 27);
 check('Gesperrte Starter sind gesperrt', (await page.locator('.starter.locked').count()) > 0);
@@ -787,7 +787,7 @@ console.log('\nHandy');
   };
 
   await fits('Titel');
-  await phone.click('text=✦ Neuer Run');
+  await phone.getByRole('button', { name: 'Neuer Run' }).click();
   await phone.waitForSelector('.starter-grid');
   await fits('Neuer Run');
   check('Der Startknopf bleibt beim Scrollen stehen', await phone.evaluate(() =>

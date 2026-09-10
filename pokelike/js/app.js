@@ -404,50 +404,84 @@
     } catch (e) { return 0; }
   }
 
+  /**
+   * Eine Menüzeile, wie sie in den Vorbildern aussieht: ein Zeiger links, der
+   * erst erscheint, wenn die Zeile dran ist, und dahinter der Text. Kein
+   * eigener Kasten je Eintrag — das Fenster drumherum reicht.
+   */
+  function menueZeile(text, aktion, opts) {
+    opts = opts || {};
+    return el('button', {
+      className: 'menue-zeile' + (opts.stark ? ' stark' : ''),
+      type: 'button', onclick: aktion
+    }, [
+      el('span', { className: 'menue-zeiger', text: '\u25b8' }),
+      el('span', { className: 'menue-text', text: text }),
+      opts.notiz ? el('span', { className: 'menue-notiz', text: opts.notiz }) : null
+    ]);
+  }
+
   SCREENS.title = function () {
     var m = meta.load();
     var d = meta.dexStats();
-    var wrap = el('div', { className: 'title-screen' }, [
-      el('div', { className: 'title-hero' }, [
-        el('h1', { className: 'game-title' }, [
-          el('span', { className: 'title-poke', text: 'Poké' }),
-          el('span', { className: 'title-like', text: 'like' }),
-          el('span', { className: 'title-plus', text: '+' })
-        ]),
-        el('p', { className: 'tagline', text: 'Ein Roguelike durch neun Generationen. Ein Team, ein Weg, kein Zurück.' })
+    var offen = offeneAuftraege();
+
+    /* --- Das Titelbild: Himmel, Ball, Schriftzug --- */
+    var bild = el('div', { className: 'titel-bild' }, [
+      el('div', { className: 'titel-himmel' }, [
+        el('i', { className: 'titel-wolke w1' }),
+        el('i', { className: 'titel-wolke w2' }),
+        el('i', { className: 'titel-wolke w3' }),
+        el('i', { className: 'titel-huegel h1' }),
+        el('i', { className: 'titel-huegel h2' }),
+        el('i', { className: 'titel-boden' })
       ]),
-      profileBar(),
+      el('div', { className: 'titel-ball' }, [
+        el('i', { className: 'ball-oben' }),
+        el('i', { className: 'ball-band' }),
+        el('i', { className: 'ball-knopf' })
+      ]),
+      el('h1', { className: 'game-title' }, [
+        el('span', { className: 'title-poke', text: 'Pok\u00e9' }),
+        el('span', { className: 'title-like', text: 'like' }),
+        el('span', { className: 'title-plus', text: '+' })
+      ]),
+      el('p', { className: 'tagline', text: 'Neun Generationen. Ein Team. Kein Zur\u00fcck.' })
+    ]);
+
+    /* --- Das Men\u00fcfenster --- */
+    var eintraege = [];
+    if (meta.hasRun()) {
+      eintraege.push(menueZeile('Run fortsetzen', function () { continueRun(); }, { stark: true }));
+    }
+    eintraege.push(menueZeile('Neuer Run', function () {
+      if (meta.hasRun()) {
+        U.confirm('Der laufende Run wird dabei gel\u00f6scht. Wirklich neu anfangen?',
+          function () { show('newrun'); }, { danger: true });
+      } else show('newrun');
+    }, { stark: !meta.hasRun() }));
+    eintraege.push(menueZeile('Pok\u00e9dex', function () { show('dex'); },
+      { notiz: d.caught + '/' + d.total }));
+    eintraege.push(menueZeile('Sammlung', function () { show('sammlung'); },
+      { notiz: offen ? offen + ' offen' : null }));
+    eintraege.push(menueZeile('Spielst\u00e4nde', function () { show('saves'); }));
+    eintraege.push(menueZeile('Statistik', function () { show('stats'); }));
+    eintraege.push(menueZeile('Einstellungen', function () { show('settings'); }));
+
+    return el('div', { className: 'title-screen' }, [
+      bild,
       einladungsBanner(),
       tagesBanner(),
-      el('div', { className: 'title-actions' }, [
-        meta.hasRun() ? el('button', {
-          className: 'btn big primary', type: 'button',
-          onclick: function () { continueRun(); }
-        }, '▶ Run fortsetzen') : null,
-        el('button', {
-          className: 'btn big' + (meta.hasRun() ? '' : ' primary'), type: 'button',
-          onclick: function () {
-            if (meta.hasRun()) {
-              U.confirm('Der laufende Run wird dabei gelöscht. Wirklich neu anfangen?', function () { show('newrun'); }, { danger: true });
-            } else show('newrun');
-          }
-        }, '✦ Neuer Run'),
-        el('button', { className: 'btn big', type: 'button', onclick: function () { show('saves'); } }, '💾 Spielstände'),
-        el('button', { className: 'btn big', type: 'button', onclick: function () { show('dex'); } }, '📖 Pokédex'),
-        el('button', { className: 'btn big', type: 'button', onclick: function () { show('sammlung'); } },
-          '🎁 Sammlung' + (offeneAuftraege() ? ' (' + offeneAuftraege() + ')' : '')),
-        el('button', { className: 'btn big', type: 'button', onclick: function () { show('stats'); } }, '📊 Statistik'),
-        el('button', { className: 'btn big', type: 'button', onclick: function () { show('settings'); } }, '⚙ Einstellungen')
+      el('nav', { className: 'menue-fenster' }, eintraege),
+      el('div', { className: 'title-fuss' }, [
+        el('span', { className: 'fuss-teil', text: 'Runs ' + m.runs }),
+        el('span', { className: 'fuss-teil', text: 'Siege ' + m.wins }),
+        el('span', { className: 'fuss-teil', text: 'Schillernde ' + d.shinies }),
+        el('span', { className: 'fuss-teil', text: meta.stufenName(Math.max(0, m.bestAscension)) })
       ]),
-      el('div', { className: 'title-stats' }, [
-        stat('Runs', m.runs), stat('Siege', m.wins),
-        stat('Pokédex', d.caught + ' / ' + d.total),
-        stat('Schillernde', d.shinies),
-        stat('Beste Region', m.bestRegion + 1)
-      ]),
+      profileBar(),
       saveNote()
     ]);
-    return wrap;
   };
 
   /**

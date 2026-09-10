@@ -19,6 +19,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+import { startOptionen } from './browser.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -54,7 +55,7 @@ const SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   </g>
 </svg>`;
 
-const browser = await chromium.launch();
+const browser = await chromium.launch(startOptionen());
 const page = await browser.newPage();
 
 async function png(size) {

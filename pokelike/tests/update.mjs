@@ -18,6 +18,7 @@ import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+import { startOptionen } from '../tools/browser.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const HTML = join(ROOT, 'dist', 'pokelike.html');
@@ -51,7 +52,7 @@ function pruef(name, cond, detail) {
   if (cond) ok++; else schlecht++;
 }
 
-const browser = await chromium.launch();
+const browser = await chromium.launch(startOptionen());
 const page = await browser.newPage();
 const fehler = [];
 page.on('console', (m) => { if (m.type() === 'error') fehler.push(m.text()); });
