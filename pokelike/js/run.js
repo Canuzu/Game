@@ -172,6 +172,7 @@
     this.addItem('potion', 10);
     this.addItem('superpotion', 3);
     this.addItem('revive', 3);
+    this.nimmVorteil(opts.vorteil);
     if (opts.starter) {
       this.gainPokemon(this.rng, opts.starter, 8, 'Starter', {
         quality: 0.9, ivFloor: 14, hiddenChance: 0.2
@@ -279,7 +280,7 @@
   R.holeKaempfer = function (rng, sp, level) {
     var mon = W.buildMon(rng, sp, level, {
       quality: 1, ivFloor: 26, hiddenChance: 0.45,
-      shinyOdds: (1 / 400) * this.mod('shinyMult', 1)
+      shinyOdds: (1 / 400) * this.shinyMult()
     });
     mons.addEVs(mon, mon.ivs[1] >= mon.ivs[3] ? 'atk' : 'spa', 160);
     mons.addEVs(mon, 'spe', 96);
@@ -360,6 +361,25 @@
     return W.REGIONS[this.regionOrder[this.region % this.regionOrder.length]];
   };
   R.loop = function () { return Math.floor(this.region / W.REGIONS.length); };
+
+  /**
+   * Was die Sammlung mitbringt: Geld, Vorräte und die Chance auf schillernde
+   * Pokémon. Der Tages-Run bekommt nichts — dort fängt jeder gleich an.
+   */
+  R.nimmVorteil = function (vorteil) {
+    this.sammelShiny = 1;
+    this.startRelikte = 0;
+    if (!vorteil) return;
+    if (vorteil.geld) { this.money += vorteil.geld; }
+    if (vorteil.baelle) this.addItem('pokeball', vorteil.baelle);
+    if (vorteil.traenke) this.addItem('superpotion', vorteil.traenke);
+    if (vorteil.beleber) this.addItem('revive', vorteil.beleber);
+    if (vorteil.shiny) this.sammelShiny = vorteil.shiny;
+    if (vorteil.relikte) this.startRelikte = vorteil.relikte;
+  };
+
+  /** Die Chance auf ein schillerndes Pokémon: Relikte mal Sammlungslohn. */
+  R.shinyMult = function () { return this.mod('shinyMult', 1) * (this.sammelShiny || 1); };
 
   /** Zahlenwert aus allen Relikten (Multiplikatoren multiplizieren sich). */
   R.mod = function (key, base) {
@@ -866,7 +886,7 @@
     this.noteMet(sp);
     var mon = W.buildMon(rng, sp, level, {
       quality: 0.72, ivFloor: 10, hiddenChance: 0.3,
-      shinyOdds: (1 / 200) * this.mod('shinyMult', 1)
+      shinyOdds: (1 / 200) * this.shinyMult()
     });
     if (mon.shiny) this.stats.shinies++;
     var biome = this.biomeFor('legend');
@@ -900,7 +920,7 @@
     this.noteMet(sp);
     var mon = W.buildMon(rng, sp, level + (opts.rare ? 3 : 0), {
       quality: 0.55 + this.region * 0.03,
-      shinyOdds: (1 / 400) * this.mod('shinyMult', 1),
+      shinyOdds: (1 / 400) * this.shinyMult(),
       hiddenChance: 0.12
     });
     if (mon.shiny) this.stats.shinies++;
@@ -972,7 +992,7 @@
     var sp = rng.pick(pool);
     var mon = W.buildMon(rng, sp, level, {
       quality: 1, ivFloor: 26, hiddenChance: 0.4,
-      shinyOdds: (1 / 120) * this.mod('shinyMult', 1)
+      shinyOdds: (1 / 120) * this.shinyMult()
     });
     mon.item = 'sitrusberry';
     mons.addEVs(mon, mon.ivs[1] >= mon.ivs[3] ? 'atk' : 'spa', 120);
@@ -997,7 +1017,7 @@
     var level = Math.min(100, this.levelCap);
     var mon = W.buildMon(rng, sp, level, {
       quality: 1, ivFloor: 28, hiddenChance: 0.5,
-      shinyOdds: (1 / 90) * this.mod('shinyMult', 1)
+      shinyOdds: (1 / 90) * this.shinyMult()
     });
     mon.item = 'sitrusberry';
     mons.addEVs(mon, mon.ivs[1] >= mon.ivs[3] ? 'atk' : 'spa', 160);
@@ -1078,6 +1098,14 @@
       this.stats.catches++;
       res.caught = this.acceptCatch(bt.caught);
     }
+
+    // Wer auf dem Feld stand, hat den Kampf bestritten — das ist die Zahl,
+    // die später im Pokédex unter der Art steht. `used` merkt sich die
+    // Teamplätze, nicht die Pokémon selbst.
+    var aufDemFeld = (bt.sides[0] && bt.sides[0].used) || {};
+    this.party.forEach(function (mon, idx) {
+      if (mon && aufDemFeld[idx]) mon.kaempfe = (mon.kaempfe || 0) + 1;
+    });
 
     if (bt.outcome === 'win' || bt.outcome === 'caught') {
       this.stats.wins++;
@@ -1292,7 +1320,7 @@
       this.noteMet(sp);
       picks.push(W.buildMon(rng, sp, level, {
         quality: 0.85, ivFloor: 12,
-        shinyOdds: (1 / 300) * this.mod('shinyMult', 1)
+        shinyOdds: (1 / 300) * this.shinyMult()
       }));
     }
     return {
@@ -1668,7 +1696,7 @@
     var sp = dex.sp(speciesRef);
     if (!sp) return 'Nichts gefunden.';
     var mon = W.buildMon(rng, sp, clamp(level, 2, this.levelCap), Object.assign({
-      quality: 0.8, ivFloor: 6, shinyOdds: (1 / 300) * this.mod('shinyMult', 1)
+      quality: 0.8, ivFloor: 6, shinyOdds: (1 / 300) * this.shinyMult()
     }, opts || {}));
     var res = this.acceptCatch(mon);
     this.stats.catches++;
@@ -1764,6 +1792,7 @@
       levelBonus: this.levelBonus || 0, pendingBlessing: this.pendingBlessing || null,
       legendRegion: this.legendRegion, legendUsed: !!this.legendUsed,
       stufenFassung: 2,
+      sammelShiny: this.sammelShiny || 1, startRelikte: this.startRelikte || 0,
       bossHint: this.bossHint || null,
       pendingNode: this.pendingNode || null,
       seenEvents: this.seenEvents || {}, masterballUsed: this.masterballUsed, result: this.result,

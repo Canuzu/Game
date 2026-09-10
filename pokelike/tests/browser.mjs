@@ -364,6 +364,55 @@ await page.waitForSelector('.teilen-zone');
 }
 
 
+// Die Sammlung: Marken, Wochenaufträge, Vorrat
+await page.evaluate(() => {
+  globalThis.PokelikeApp.run = null;
+  PL.meta.reset();
+  PL.dex.species.slice(0, 30).forEach((sp) => PL.meta.noteCaught({ sp: sp.i, lvl: 5 }));
+  PL.meta.pruefeMeilensteine();
+  globalThis.PokelikeApp.show('sammlung');
+});
+await page.waitForSelector('.sammlung-screen');
+{
+  check('Die Sammlung zeigt Marken', (await page.locator('.marke').count()) >= 10);
+  check('… drei Wochenaufträge', (await page.locator('.auftrag').count()) === 3);
+  check('… und Balken für den Fortschritt', (await page.locator('.fortschritt-bahn').count()) >= 5);
+  const geholt = await page.locator('.marke.fertig').count();
+  check('Nach 30 Fängen ist die erste Marke geholt', geholt === 1, String(geholt));
+  const vorteil = await page.locator('.vorteil-liste').innerText();
+  check('Der Startvorteil steht da', /400/.test(vorteil), vorteil.replace(/\n/g, ' | '));
+
+  // Und er landet wirklich im Beutel eines neuen Runs
+  const beutel = await page.evaluate(() => {
+    const vorteil = PL.meta.startVorteil('standard');
+    const run = new PL.Run({ seed: 1, starter: 'bulbasaur', vorteil: vorteil });
+    return { geld: run.money, taeglich: PL.meta.startVorteil('taeglich') };
+  });
+  check('Der Run startet mit mehr Geld', beutel.geld >= 1600, String(beutel.geld));
+  check('Der Tages-Run bekommt keinen Vorteil', beutel.taeglich === null);
+
+  // Der Bestwert steht im Pokédex unter der Art
+  await page.evaluate(() => {
+    const run = new PL.Run({ seed: 8, starter: 'charmander' });
+    run.party[0].lvl = 44;
+    run.party[0].kaempfe = 12;
+    PL.meta.merkeArten(run);
+    globalThis.PokelikeApp.show('dex');
+  });
+  await page.waitForSelector('.dex-grid');
+  await page.locator('.dex-cell').filter({ hasText: 'Glumanda' }).first().click();
+  await page.waitForSelector('.art-rekord');
+  const rekord = await page.locator('.art-rekord').innerText();
+  check('Der Pokédex zeigt den eigenen Bestwert', /44/.test(rekord) && /12/.test(rekord), rekord);
+
+  await closeModals();
+  await page.evaluate(() => {
+    PL.meta.reset();
+    globalThis.PokelikeApp.show('title');
+  });
+  await page.waitForSelector('.title-screen');
+}
+
 // Die fünf Stufen — und die sechste, die den Weg mitbringt
 await page.evaluate(() => {
   globalThis.PokelikeApp.run = null;
@@ -772,7 +821,8 @@ console.log('\nHandy');
   await phone.waitForSelector('.vgl-tafel');
   await fits('Tages-Run');
 
-  for (const [screen, label] of [['team', 'Team'], ['dex', 'Pokédex'], ['settings', 'Einstellungen']]) {
+  for (const [screen, label] of [['team', 'Team'], ['dex', 'Pokédex'],
+                                ['sammlung', 'Sammlung'], ['settings', 'Einstellungen']]) {
     await phone.evaluate((s) => globalThis.PokelikeApp.show(s), screen);
     await phone.waitForTimeout(200);
     await fits(label);

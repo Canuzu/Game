@@ -1315,6 +1315,36 @@ button.move-row:hover { border-color: var(--accent); }
 
 /* Der Lautstärkeregler. Die Bahn ist überall gleich, der Knopf muss auf dem
    Telefon mit dem Daumen zu treffen sein — deshalb 26 Pixel und nicht 14. */
+/* ---------- Sammlung: Marken, Aufträge, Bestwerte ----------------------------- */
+
+.sammlung-screen { display: grid; gap: .9rem; }
+.sammlung-karte {
+  padding: 1rem; border: 1px solid var(--line); border-radius: var(--radius); background: var(--panel);
+}
+.sammlung-karte h3 { margin: 0 0 .4rem; font-size: 1rem; }
+.vorteil-liste { display: flex; flex-wrap: wrap; gap: .4rem; margin: .5rem 0; }
+
+.fortschritt { display: flex; align-items: center; gap: .5rem; margin: .35rem 0; }
+.fortschritt-bahn {
+  flex: 1; height: 8px; border-radius: 999px; background: var(--panel-2);
+  border: 1px solid var(--line); overflow: hidden;
+}
+.fortschritt-fuell { height: 100%; background: var(--accent); }
+.fortschritt-zahl { font-size: .78rem; color: var(--muted); white-space: nowrap; }
+
+.auftrag-liste { display: grid; gap: .5rem; }
+.auftrag, .marke {
+  padding: .65rem .8rem; border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--panel-2); display: grid; gap: .2rem;
+}
+.auftrag.fertig, .marke.fertig { border-color: color-mix(in srgb, var(--good) 55%, var(--line)); }
+.marke-kopf { display: flex; align-items: baseline; gap: .5rem; }
+.marke-haken { margin-left: auto; color: var(--good); font-weight: 700; }
+.marke-lohn { font-size: .8rem; color: var(--accent); }
+.marken-gitter { display: grid; gap: .5rem; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+
+.art-rekord { margin: .3rem 0; font-size: .85rem; color: var(--accent); }
+
 /* ---------- Tages-Run --------------------------------------------------------- */
 
 .tages-banner {

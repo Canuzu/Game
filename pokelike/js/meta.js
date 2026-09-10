@@ -172,6 +172,10 @@
       unlocked: {}, achievements: {}, seen: {}, caught: {}, shinies: {},
       taeglich: {},
       stufenFassung: 2,
+      meilensteine: {},          // welche Sammelmarken schon geholt sind
+      vorrat: {},                // erspielter Startvorteil für den nächsten Run
+      wochen: {},                // die Aufträge dieser Woche und ihr Stand
+      arten: {},                 // je Art der eigene Bestwert
       totals: { battles: 0, kos: 0, catches: 0, faints: 0, money: 0, turns: 0, evolutions: 0, playtime: 0 },
       history: [],
       settings: { theme: 'auto', lang: 'de', speed: 'normal', sound: true, music: true, volume: 0.5, confirmRisky: true, figur: 'rot' }
@@ -474,6 +478,270 @@
     return { seen: seen, caught: caught, total: dex.species.length, byGen: byGen, shinies: Object.keys(m.shinies).length };
   }
 
+  /* ---------- 4b) Meilensteine der Sammlung ------------------------------------
+   * Der Pokédex war bisher eine Liste, die vollläuft, und sonst nichts. Wer
+   * die dreihundertste Art fing, merkte es nicht einmal. Jetzt hängen an der
+   * Sammlung Marken, und an jeder Marke hängt etwas, das man im nächsten Run
+   * tatsächlich in der Hand hat.
+   *
+   * Der Lohn ist dauerhaft und gilt ab dem Moment, in dem die Marke fällt —
+   * mit einer Ausnahme: Im Tages-Run gilt er nicht. Dort spielen alle
+   * denselben Startwert, und ein Ergebnis ist nur vergleichbar, wenn auch
+   * alle mit demselben Beutel anfangen.
+   * -------------------------------------------------------------------------- */
+
+  var MEILENSTEINE = [
+    { id: 'faenge25', name: 'Sammler', bed: '25 Arten gefangen',
+      wert: function (st) { return [st.caught, 25]; }, lohn: { geld: 400 }, lohnText: '+400 Startgeld' },
+    { id: 'faenge75', name: 'Forscher', bed: '75 Arten gefangen',
+      wert: function (st) { return [st.caught, 75]; }, lohn: { baelle: 5 }, lohnText: '+5 Pokébälle' },
+    { id: 'faenge150', name: 'Kenner', bed: '150 Arten gefangen',
+      wert: function (st) { return [st.caught, 150]; }, lohn: { traenke: 4 }, lohnText: '+4 Tränke' },
+    { id: 'faenge300', name: 'Chronist', bed: '300 Arten gefangen',
+      wert: function (st) { return [st.caught, 300]; }, lohn: { geld: 1200 }, lohnText: '+1200 Startgeld' },
+    { id: 'faenge500', name: 'Archivar', bed: '500 Arten gefangen',
+      wert: function (st) { return [st.caught, 500]; }, lohn: { beleber: 3 }, lohnText: '+3 Beleber' },
+    { id: 'faenge800', name: 'Meistersammler', bed: '800 Arten gefangen',
+      wert: function (st) { return [st.caught, 800]; }, lohn: { relikte: 1 }, lohnText: 'Ein Relikt zur Wahl beim Start' },
+    { id: 'gesehen500', name: 'Weitgereist', bed: '500 Arten gesehen',
+      wert: function (st) { return [st.seen, 500]; }, lohn: { geld: 600 }, lohnText: '+600 Startgeld' },
+    { id: 'shiny1', name: 'Glücksgriff', bed: 'Ein schillerndes Pokémon',
+      wert: function (st) { return [st.shinies, 1]; }, lohn: { shiny: 1.5 }, lohnText: 'Schillernde Pokémon 1,5-mal so häufig' },
+    { id: 'shiny5', name: 'Schimmerjäger', bed: 'Fünf schillernde Pokémon',
+      wert: function (st) { return [st.shinies, 5]; }, lohn: { shiny: 2 }, lohnText: 'Schillernde Pokémon doppelt so häufig' },
+    { id: 'shiny15', name: 'Farbensammler', bed: 'Fünfzehn schillernde Pokémon',
+      wert: function (st) { return [st.shinies, 15]; }, lohn: { shiny: 3 }, lohnText: 'Schillernde Pokémon dreimal so häufig' },
+    { id: 'gen3', name: 'Drei Generationen', bed: 'Drei Generationen vollständig gefangen',
+      wert: function (st) { return [st.volleGen, 3]; }, lohn: { traenke: 4, baelle: 5 }, lohnText: '+4 Tränke, +5 Bälle' },
+    { id: 'gen9', name: 'Alle neun', bed: 'Alle neun Generationen vollständig',
+      wert: function (st) { return [st.volleGen, 9]; }, lohn: { relikte: 1, geld: 2000 }, lohnText: 'Ein weiteres Relikt und +2000 Startgeld' }
+  ];
+
+  /** Der Sammlungsstand, wie ihn die Meilensteine sehen. */
+  function sammelStand() {
+    var st = dexStats(), volle = 0;
+    for (var g = 1; g <= 9; g++) {
+      if (st.byGen[g] && st.byGen[g].total > 0 && st.byGen[g].caught >= st.byGen[g].total) volle++;
+    }
+    return { caught: st.caught, seen: st.seen, shinies: st.shinies, volleGen: volle };
+  }
+
+  /** Alle Meilensteine mit Stand — für die Anzeige und für die Prüfung. */
+  function meilensteine() {
+    var m = load(), st = sammelStand();
+    return MEILENSTEINE.map(function (ms) {
+      var w = ms.wert(st);
+      return {
+        id: ms.id, name: ms.name, bed: ms.bed, lohnText: ms.lohnText,
+        stand: Math.min(w[0], w[1]), ziel: w[1], geschafft: !!m.meilensteine[ms.id]
+      };
+    });
+  }
+
+  /**
+   * Prüft, welche Marken neu gefallen sind. Gibt die neuen zurück, damit die
+   * Oberfläche sie zeigen kann — gemeldet wird jede genau einmal.
+   */
+  function pruefeMeilensteine() {
+    var m = load(), st = sammelStand(), neue = [];
+    MEILENSTEINE.forEach(function (ms) {
+      if (m.meilensteine[ms.id]) return;
+      var w = ms.wert(st);
+      if (w[0] < w[1]) return;
+      m.meilensteine[ms.id] = Date.now();
+      neue.push({ id: ms.id, name: ms.name, lohnText: ms.lohnText });
+    });
+    if (neue.length) save();
+    return neue;
+  }
+
+  /**
+   * Was die gesammelten Marken zusammen wert sind. Zahlen addieren sich,
+   * beim Schillernd-Faktor gilt der höchste — sonst käme man auf das
+   * Neunfache, bloß weil drei Marken übereinanderliegen.
+   */
+  function sammelLohn() {
+    var m = load();
+    var lohn = { geld: 0, baelle: 0, traenke: 0, beleber: 0, relikte: 0, shiny: 1 };
+    MEILENSTEINE.forEach(function (ms) {
+      if (!m.meilensteine[ms.id]) return;
+      Object.keys(ms.lohn).forEach(function (k) {
+        if (k === 'shiny') lohn.shiny = Math.max(lohn.shiny, ms.lohn[k]);
+        else lohn[k] += ms.lohn[k];
+      });
+    });
+    return lohn;
+  }
+
+  /* ---------- 4c) Wochenaufträge -----------------------------------------------
+   * Drei Aufträge, jede Woche andere. Welche es sind, rechnet das Spiel aus
+   * der Kalenderwoche aus — also hat sie jeder gleich, ohne dass irgendwo ein
+   * Server steht. Was man dafür bekommt, landet im Vorrat und wird beim
+   * nächsten Run mitgegeben.
+   * -------------------------------------------------------------------------- */
+
+  var AUFTRAEGE = [
+    { id: 'siege', text: 'Gewinne {n} Kämpfe', ziele: [40, 60, 90], lohn: { geld: 800 }, lohnText: '+800 Startgeld' },
+    { id: 'faenge', text: 'Fange {n} Pokémon', ziele: [10, 18, 25], lohn: { baelle: 8 }, lohnText: '+8 Bälle' },
+    { id: 'arten', text: 'Trage {n} neue Arten in den Pokédex ein', ziele: [8, 15, 25], lohn: { traenke: 5 }, lohnText: '+5 Tränke' },
+    { id: 'entwicklungen', text: 'Entwickle {n} Pokémon', ziele: [6, 10, 16], lohn: { traenke: 4 }, lohnText: '+4 Tränke' },
+    { id: 'regionen', text: 'Schaffe {n} Regionen', ziele: [8, 14, 20], lohn: { beleber: 3 }, lohnText: '+3 Beleber' },
+    { id: 'runs', text: 'Beende {n} Runs', ziele: [3, 5, 8], lohn: { geld: 600 }, lohnText: '+600 Startgeld' },
+    { id: 'bosse', text: 'Besiege {n} Arenaleiter', ziele: [10, 16, 24], lohn: { relikte: 1 }, lohnText: 'Ein Relikt zur Wahl' },
+    { id: 'legenden', text: 'Besiege {n} legendäre Pokémon', ziele: [1, 2, 4], lohn: { geld: 1000 }, lohnText: '+1000 Startgeld' }
+  ];
+
+  /**
+   * Die Kalenderwoche nach ISO — Montag ist der erste Tag, und die Woche mit
+   * dem ersten Donnerstag ist Woche 1. "2026-W37" ist der Schlüssel, unter
+   * dem die Aufträge stehen.
+   */
+  function wochenSchluessel(datum) {
+    var d = new Date((datum || heute()) + 'T12:00:00Z');
+    var tag = (d.getUTCDay() + 6) % 7;                 // Montag = 0
+    d.setUTCDate(d.getUTCDate() - tag + 3);            // auf den Donnerstag
+    var jahr = d.getUTCFullYear();
+    var ersterDo = new Date(Date.UTC(jahr, 0, 4));
+    ersterDo.setUTCDate(ersterDo.getUTCDate() - ((ersterDo.getUTCDay() + 6) % 7) + 3);
+    var woche = 1 + Math.round((d - ersterDo) / (7 * 864e5));
+    return jahr + '-W' + (woche < 10 ? '0' : '') + woche;
+  }
+
+  /** Die drei Aufträge dieser Woche — für alle dieselben. */
+  function wochenAuftraege(schluessel) {
+    var key = schluessel || wochenSchluessel();
+    var rng = PL.rng(PL.util.hashSeed('woche-' + key));
+    var topf = AUFTRAEGE.slice();
+    var gewaehlt = [];
+    for (var i = 0; i < 3 && topf.length; i++) {
+      var idx = rng.int(topf.length);
+      var a = topf.splice(idx, 1)[0];
+      var stufe = rng.int(a.ziele.length);
+      gewaehlt.push({
+        id: a.id, ziel: a.ziele[stufe],
+        text: a.text.replace('{n}', String(a.ziele[stufe])),
+        lohn: a.lohn, lohnText: a.lohnText
+      });
+    }
+    return gewaehlt;
+  }
+
+  /** Der Stand dieser Woche — eine neue Woche fängt bei null an. */
+  function wochenStand() {
+    var m = load(), key = wochenSchluessel();
+    if (!m.wochen || m.wochen.woche !== key) {
+      m.wochen = { woche: key, zaehler: {}, geholt: {} };
+      save();
+    }
+    var w = m.wochen;
+    return {
+      woche: key,
+      auftraege: wochenAuftraege(key).map(function (a) {
+        return {
+          id: a.id, text: a.text, ziel: a.ziel, lohnText: a.lohnText,
+          stand: Math.min(a.ziel, w.zaehler[a.id] || 0),
+          geschafft: !!w.geholt[a.id]
+        };
+      })
+    };
+  }
+
+  /**
+   * Zählt etwas auf die Wochenaufträge an. Liefert die Aufträge zurück, die
+   * dadurch fertig wurden — samt Lohn, der sofort in den Vorrat wandert.
+   */
+  function zaehleWoche(werte) {
+    var m = load();
+    wochenStand();                                     // sorgt für die richtige Woche
+    var w = m.wochen, fertig = [];
+    Object.keys(werte || {}).forEach(function (k) {
+      if (!werte[k]) return;
+      w.zaehler[k] = (w.zaehler[k] || 0) + werte[k];
+    });
+    wochenAuftraege(w.woche).forEach(function (a) {
+      if (w.geholt[a.id] || (w.zaehler[a.id] || 0) < a.ziel) return;
+      w.geholt[a.id] = true;
+      legeInVorrat(a.lohn);
+      fertig.push({ id: a.id, text: a.text, lohnText: a.lohnText });
+    });
+    save();
+    return fertig;
+  }
+
+  /* ---------- 4d) Vorrat ------------------------------------------------------- */
+
+  /** Legt erspielten Lohn beiseite. Verbraucht wird er beim nächsten Run. */
+  function legeInVorrat(lohn) {
+    var m = load();
+    m.vorrat = m.vorrat || {};
+    Object.keys(lohn || {}).forEach(function (k) {
+      m.vorrat[k] = (m.vorrat[k] || 0) + lohn[k];
+    });
+    save();
+    return m.vorrat;
+  }
+
+  function vorrat() { return Object.assign({}, load().vorrat || {}); }
+
+  /** Nimmt den Vorrat heraus und leert ihn — genau einmal, beim Start. */
+  function hebeVorrat() {
+    var m = load();
+    var v = Object.assign({}, m.vorrat || {});
+    m.vorrat = {};
+    save();
+    return v;
+  }
+
+  /**
+   * Was ein Run zum Start mitbekommt: die dauerhaften Marken plus alles, was
+   * seit dem letzten Mal im Vorrat lag. Der Tages-Run bekommt nichts — dort
+   * fängt jeder gleich an, sonst wäre kein Ergebnis vergleichbar.
+   */
+  function startVorteil(modus) {
+    if (modus === 'taeglich') return null;
+    var lohn = sammelLohn(), v = hebeVorrat();
+    ['geld', 'baelle', 'traenke', 'beleber', 'relikte'].forEach(function (k) {
+      lohn[k] = (lohn[k] || 0) + (v[k] || 0);
+    });
+    return lohn;
+  }
+
+  /* ---------- 4e) Bestwerte je Art ----------------------------------------------
+   * Wer mit demselben Pokémon zum fünften Mal antritt, soll sehen, dass es
+   * dasselbe ist. Gemerkt wird das höchste Level, das diese Art je erreicht
+   * hat, wie viele Kämpfe sie bestritten hat und in wie vielen Runs sie dabei
+   * war — im Pokédex steht es unter ihrem Bild.
+   * -------------------------------------------------------------------------- */
+
+  function merkeArten(run) {
+    if (!run) return false;
+    var m = load(), geaendert = false;
+    var alle = (run.party || []).concat(run.box || []);
+    var gesehen = {};
+    alle.forEach(function (mon) {
+      if (!mon || mon.sp === undefined) return;
+      var eintrag = m.arten[mon.sp] || (m.arten[mon.sp] = { lvl: 0, kaempfe: 0, runs: 0 });
+      if (mon.lvl > eintrag.lvl) { eintrag.lvl = mon.lvl; geaendert = true; }
+      if (mon.kaempfe) { eintrag.kaempfe += mon.kaempfe; geaendert = true; }
+      if (!gesehen[mon.sp]) { gesehen[mon.sp] = true; eintrag.runs++; geaendert = true; }
+    });
+    // Auch wer gefallen ist, hat gelebt.
+    (run.graveyard || []).forEach(function (g) {
+      if (!g || g.sp === undefined) return;
+      var eintrag = m.arten[g.sp] || (m.arten[g.sp] = { lvl: 0, kaempfe: 0, runs: 0 });
+      if (g.lvl > eintrag.lvl) { eintrag.lvl = g.lvl; geaendert = true; }
+      if (!gesehen[g.sp]) { gesehen[g.sp] = true; eintrag.runs++; geaendert = true; }
+    });
+    if (geaendert) save();
+    return geaendert;
+  }
+
+  /** Der eigene Bestwert einer Art — oder nichts, wenn sie nie dabei war. */
+  function artRekord(spIndex) {
+    var e = load().arten[spIndex];
+    return e && (e.lvl || e.runs) ? e : null;
+  }
+
   /* ---------- 5) Aufstiege ---------------------------------------------------- */
 
   // Die Stufen selbst stehen in run.js — dort, wo ihre Regeln wirken.
@@ -721,6 +989,12 @@
     noteSeen: noteSeen, noteCaught: noteCaught, noteOwned: noteOwned,
     noteParty: noteParty, dexStats: dexStats,
     ASCENSIONS: ASCENSIONS, maxAscension: maxAscension, stufenName: stufenName,
+    MEILENSTEINE: MEILENSTEINE, meilensteine: meilensteine,
+    pruefeMeilensteine: pruefeMeilensteine, sammelLohn: sammelLohn, sammelStand: sammelStand,
+    wochenSchluessel: wochenSchluessel, wochenAuftraege: wochenAuftraege,
+    wochenStand: wochenStand, zaehleWoche: zaehleWoche,
+    vorrat: vorrat, legeInVorrat: legeInVorrat, hebeVorrat: hebeVorrat, startVorteil: startVorteil,
+    merkeArten: merkeArten, artRekord: artRekord,
     recordRun: recordRun,
     saveRun: saveRun, loadRun: loadRun, clearRun: clearRun, hasRun: hasRun,
     exportSave: exportSave, importSave: importSave,

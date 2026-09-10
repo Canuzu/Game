@@ -2429,6 +2429,107 @@ section('Musik: das Stück für die Legenden');
   void audio;
 }
 
+section('Sammlung: Marken, Aufträge, Bestwerte');
+{
+  const store = {};
+  globalThis.localStorage = {
+    getItem: (k) => (k in store ? store[k] : null),
+    setItem: (k, v) => { store[k] = String(v); },
+    removeItem: (k) => { delete store[k]; }
+  };
+  await import('../js/meta.js');
+  const meta = PL.meta;
+  meta.reset();
+
+  /* --- Marken --- */
+  const marken = meta.meilensteine();
+  check('Es gibt eine Reihe von Sammelmarken', marken.length >= 10, String(marken.length));
+  check('Jede sagt, was sie verlangt und was sie bringt',
+    marken.every((m) => m.name && m.bed && m.lohnText && m.ziel > 0));
+  eq('Am Anfang ist keine geholt', marken.filter((m) => m.geschafft).length, 0);
+  eq('… und der Lohn ist noch leer', meta.sammelLohn().geld, 0);
+  eq('… auch der Schillernd-Faktor steht auf eins', meta.sammelLohn().shiny, 1);
+
+  // 25 Arten fangen — die erste Marke muss fallen.
+  PL.dex.species.slice(0, 25).forEach((sp) => meta.noteCaught({ sp: sp.i, lvl: 5 }));
+  const neue = meta.pruefeMeilensteine();
+  eq('Nach 25 Arten fällt die erste Marke', neue.length, 1);
+  eq('… und sie heißt Sammler', neue[0].id, 'faenge25');
+  eq('… und bringt Startgeld', meta.sammelLohn().geld, 400);
+  eq('Dieselbe Marke fällt kein zweites Mal', meta.pruefeMeilensteine().length, 0);
+
+  // Der Schillernd-Faktor addiert sich nicht, sondern nimmt den höchsten.
+  const m2 = meta.load();
+  m2.meilensteine.shiny1 = 1; m2.meilensteine.shiny5 = 1; m2.meilensteine.shiny15 = 1;
+  meta.save();
+  eq('Beim Schillernd-Faktor gilt der höchste, nicht die Summe', meta.sammelLohn().shiny, 3);
+
+  /* --- Wochenaufträge --- */
+  eq('Die Kalenderwoche folgt der ISO-Regel', meta.wochenSchluessel('2026-01-01'), '2026-W01');
+  eq('… auch über den Jahreswechsel', meta.wochenSchluessel('2027-01-03'), '2026-W53');
+  eq('Dieselbe Woche ergibt dieselben Aufträge',
+    JSON.stringify(meta.wochenAuftraege('2026-W12')), JSON.stringify(meta.wochenAuftraege('2026-W12')));
+  check('Eine andere Woche bringt andere Aufträge',
+    JSON.stringify(meta.wochenAuftraege('2026-W12')) !== JSON.stringify(meta.wochenAuftraege('2026-W13')));
+  const auf = meta.wochenAuftraege('2026-W12');
+  eq('Es sind immer drei', auf.length, 3);
+  eq('… und keiner doppelt', new Set(auf.map((a) => a.id)).size, 3);
+
+  const stand = meta.wochenStand();
+  eq('Diese Woche stehen drei Aufträge', stand.auftraege.length, 3);
+  eq('Am Anfang ist keiner geschafft', stand.auftraege.filter((a) => a.geschafft).length, 0);
+
+  // Einen davon gezielt erfüllen.
+  const ziel = stand.auftraege[0];
+  const halb = meta.zaehleWoche({ [ziel.id]: Math.floor(ziel.ziel / 2) });
+  eq('Halb erfüllt ist nicht erfüllt', halb.length, 0);
+  const fertig = meta.zaehleWoche({ [ziel.id]: ziel.ziel });
+  eq('Voll erfüllt zählt', fertig.length, 1);
+  eq('… und zwar der richtige', fertig[0].id, ziel.id);
+  eq('Ein zweites Mal gibt es nichts', meta.zaehleWoche({ [ziel.id]: ziel.ziel }).length, 0);
+  check('Der Lohn liegt jetzt im Vorrat',
+    Object.keys(meta.vorrat()).length > 0, JSON.stringify(meta.vorrat()));
+
+  /* --- Vorrat und Startvorteil --- */
+  const vor = meta.startVorteil('standard');
+  check('Der Startvorteil enthält Marken und Vorrat', vor.geld >= 400, JSON.stringify(vor));
+  eq('Der Vorrat ist danach leer', Object.keys(meta.vorrat()).length, 0);
+  eq('Ein zweiter Griff bringt nur noch die Marken', meta.startVorteil('standard').geld, 400);
+  eq('Der Tages-Run bekommt nichts', meta.startVorteil('taeglich'), null);
+
+  // Und ein Run nimmt ihn wirklich mit.
+  const ohne = new PL.Run({ seed: 4, starter: 'bulbasaur' });
+  const mit = new PL.Run({ seed: 4, starter: 'bulbasaur',
+    vorteil: { geld: 500, baelle: 5, traenke: 2, beleber: 1, shiny: 2, relikte: 1 } });
+  eq('Der Vorteil landet im Geldbeutel', mit.money - ohne.money, 500);
+  eq('… die Bälle im Beutel', mit.bag.pokeball - ohne.bag.pokeball, 5);
+  eq('… die Tränke auch', (mit.bag.superpotion || 0) - (ohne.bag.superpotion || 0), 2);
+  eq('… und das Relikt wartet auf die Wahl', mit.startRelikte, 1);
+  eq('Der Schillernd-Faktor wirkt', mit.shinyMult(), 2);
+  eq('Ohne Vorteil bleibt er bei eins', ohne.shinyMult(), 1);
+
+  /* --- Bestwerte je Art --- */
+  const run = new PL.Run({ seed: 8, starter: 'charmander' });
+  run.party[0].lvl = 42;
+  run.party[0].kaempfe = 17;
+  meta.merkeArten(run);
+  const rek = meta.artRekord(run.party[0].sp);
+  check('Die Art bekommt einen Bestwert', !!rek, JSON.stringify(rek));
+  eq('Das höchste Level steht drin', rek.lvl, 42);
+  eq('Die Kämpfe auch', rek.kaempfe, 17);
+  eq('Und der Run wird gezählt', rek.runs, 1);
+
+  // Ein schlechterer Lauf drückt den Bestwert nicht.
+  const run2 = new PL.Run({ seed: 9, starter: 'charmander' });
+  run2.party[0].lvl = 12;
+  meta.merkeArten(run2);
+  eq('Ein schwächerer Lauf drückt das Bestlevel nicht', meta.artRekord(run.party[0].sp).lvl, 42);
+  eq('… zählt aber als weiterer Run', meta.artRekord(run.party[0].sp).runs, 2);
+  eq('Eine nie gespielte Art hat keinen Bestwert', meta.artRekord(9999), null);
+
+  delete globalThis.localStorage;
+}
+
 /* ------------------------------------------------------------- Ergebnis -- */
 
 console.log('\n' + '─'.repeat(60));

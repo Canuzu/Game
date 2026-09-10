@@ -381,6 +381,13 @@
     ]);
   }
 
+  /** Wie viele Wochenaufträge noch offen sind — als Zahl am Knopf. */
+  function offeneAuftraege() {
+    try {
+      return meta.wochenStand().auftraege.filter(function (a) { return !a.geschafft; }).length;
+    } catch (e) { return 0; }
+  }
+
   SCREENS.title = function () {
     var m = meta.load();
     var d = meta.dexStats();
@@ -411,6 +418,8 @@
         }, '✦ Neuer Run'),
         el('button', { className: 'btn big', type: 'button', onclick: function () { show('saves'); } }, '💾 Spielstände'),
         el('button', { className: 'btn big', type: 'button', onclick: function () { show('dex'); } }, '📖 Pokédex'),
+        el('button', { className: 'btn big', type: 'button', onclick: function () { show('sammlung'); } },
+          '🎁 Sammlung' + (offeneAuftraege() ? ' (' + offeneAuftraege() + ')' : '')),
         el('button', { className: 'btn big', type: 'button', onclick: function () { show('stats'); } }, '📊 Statistik'),
         el('button', { className: 'btn big', type: 'button', onclick: function () { show('settings'); } }, '⚙ Einstellungen')
       ]),
@@ -981,14 +990,37 @@
     // seinen aus dem Datum und schlägt alles andere.
     var seed = chosen.seed;
     if (chosen.mode === 'taeglich') seed = meta.tagesStartwert();
+    // Was die Sammlung und die Wochenaufträge eingebracht haben, kommt hier
+    // in den Beutel. Der Tages-Run bekommt bewusst nichts.
+    var vorteil = meta.startVorteil(chosen.mode);
     App.run = new PL.Run({
       mode: chosen.mode, ascension: chosen.ascension, nuzlocke: chosen.nuzlocke,
-      starter: chosen.starter, seed: seed
+      starter: chosen.starter, seed: seed, vorteil: vorteil
     });
     App.run.party.forEach(function (m) { meta.noteCaught(m); });
     meta.save();
     autosave();
+    zeigeVorteil(vorteil);
+    // Ein erspieltes Relikt darf man sich aussuchen, bevor es losgeht.
+    if (App.run.startRelikte > 0) {
+      App.run.startRelikte--;
+      openScene(App.run.makeRelicChoice(App.run.rng, 3,
+        'Aus deiner Sammlung: Ein Relikt darfst du dir aussuchen, bevor der Weg beginnt.'));
+      return;
+    }
     show('map');
+  }
+
+  /** Sagt in einem Satz, was der Run an Sammlungslohn mitbekommen hat. */
+  function zeigeVorteil(vorteil) {
+    if (!vorteil) return;
+    var teile = [];
+    if (vorteil.geld) teile.push(U.money(vorteil.geld));
+    if (vorteil.baelle) teile.push(vorteil.baelle + ' Bälle');
+    if (vorteil.traenke) teile.push(vorteil.traenke + ' Tränke');
+    if (vorteil.beleber) teile.push(vorteil.beleber + ' Beleber');
+    if (!teile.length) return;
+    U.toast('Aus deiner Sammlung: ' + teile.join(', '), 'good');
   }
 
   function continueRun() {
@@ -2909,6 +2941,7 @@
       actions.push({ label: 'Zum Titel', onClick: function () { autosave(); App.battle = null; show('title'); } });
     }
     actions.push({ label: 'Pokédex', onClick: function () { show('dex'); } });
+    actions.push({ label: 'Sammlung', onClick: function () { show('sammlung'); } });
     actions.push({ label: 'Erfolge', onClick: function () { show('achievements'); } });
     actions.push({ label: 'Statistik', onClick: function () { show('stats'); } });
     actions.push({ label: 'Einstellungen', onClick: function () { show('settings'); } });
@@ -3068,6 +3101,7 @@
         // Eine Körpergröße führen die Daten nicht — sie stand hier als
         // »undefined m«, seit es diesen Bildschirm gibt.
         el('p', { className: 'muted', text: 'Generation ' + sp.g + ' · ' + sp.wt + ' kg' }),
+        artRekordZeile(sp),
         el('p', { className: 'muted', text: 'Fähigkeiten: ' +
           mons.abilityOptions(sp).map(function (a) { return T.ability(a); }).join(', ') }),
         el('div', { className: 'stat-block' }, PL.STATS.map(function (key, i) {
@@ -3121,6 +3155,116 @@
       el('div', { className: 'history' }, history)
     ]);
   };
+
+  /* ---------- Sammlung: Marken, Wochenaufträge, Vorrat -------------------------
+   * Der Pokédex lief bisher voll und blieb folgenlos. Hier hängt an ihm
+   * etwas: Marken, die dauerhaft etwas einbringen, und drei Aufträge, die
+   * jede Woche wechseln. Was sie einbringen, liegt danach im Vorrat und geht
+   * beim nächsten Run mit — außer beim Tages-Run, wo alle gleich anfangen.
+   * -------------------------------------------------------------------------- */
+
+  /** Ein Balken mit Zahl daneben — für Marken wie für Aufträge. */
+  function fortschritt(stand, ziel) {
+    var anteil = Math.max(0, Math.min(1, ziel ? stand / ziel : 0));
+    return el('div', { className: 'fortschritt' }, [
+      el('div', { className: 'fortschritt-bahn' }, [
+        el('div', { className: 'fortschritt-fuell', style: { width: (anteil * 100).toFixed(1) + '%' } })
+      ]),
+      el('span', { className: 'fortschritt-zahl', text: Math.min(stand, ziel) + ' / ' + ziel })
+    ]);
+  }
+
+  SCREENS.sammlung = function () {
+    var marken = meta.meilensteine();
+    var woche = meta.wochenStand();
+    var lohn = meta.sammelLohn();
+    var v = meta.vorrat();
+    var offen = marken.filter(function (m) { return !m.geschafft; });
+    var geholt = marken.length - offen.length;
+
+    function markenKarte(m) {
+      return el('div', { className: 'marke' + (m.geschafft ? ' fertig' : '') }, [
+        el('div', { className: 'marke-kopf' }, [
+          el('strong', { text: m.name }),
+          el('span', { className: 'marke-haken', text: m.geschafft ? '✓' : '' })
+        ]),
+        el('span', { className: 'muted small', text: m.bed }),
+        m.geschafft ? null : fortschritt(m.stand, m.ziel),
+        el('span', { className: 'marke-lohn', text: '🎁 ' + m.lohnText })
+      ]);
+    }
+
+    var vorratZeilen = [];
+    [['geld', 'Startgeld'], ['baelle', 'Bälle'], ['traenke', 'Tränke'],
+     ['beleber', 'Beleber'], ['relikte', 'Relikte']].forEach(function (paar) {
+      if (v[paar[0]]) vorratZeilen.push(paar[1] + ': ' + v[paar[0]]);
+    });
+
+    return el('div', { className: 'sammlung-screen' }, [
+      el('div', { className: 'team-head' }, [
+        el('h2', { text: 'Sammlung' }),
+        el('button', { className: 'btn', type: 'button',
+          onclick: function () { show(App.run ? 'map' : 'title'); } }, 'Zurück')
+      ]),
+
+      /* --- Was gerade gilt --- */
+      el('div', { className: 'sammlung-karte' }, [
+        el('h3', { text: '🎁 Dein Startvorteil' }),
+        el('p', { className: 'muted small', text:
+          'Gilt in jedem Run — nur nicht im Tages-Run, wo alle gleich anfangen.' }),
+        el('div', { className: 'vorteil-liste' }, [
+          lohn.geld ? el('span', { className: 'chip', text: '💰 +' + U.money(lohn.geld) }) : null,
+          lohn.baelle ? el('span', { className: 'chip', text: '⚪ +' + lohn.baelle + ' Bälle' }) : null,
+          lohn.traenke ? el('span', { className: 'chip', text: '🧪 +' + lohn.traenke + ' Tränke' }) : null,
+          lohn.beleber ? el('span', { className: 'chip', text: '💊 +' + lohn.beleber + ' Beleber' }) : null,
+          lohn.relikte ? el('span', { className: 'chip', text: '🏛️ +' + lohn.relikte + ' Relikt zur Wahl' }) : null,
+          lohn.shiny > 1 ? el('span', { className: 'chip', text: '✨ Schillernde ×' + lohn.shiny }) : null,
+          (!lohn.geld && !lohn.baelle && !lohn.traenke && !lohn.beleber && !lohn.relikte && lohn.shiny <= 1)
+            ? el('span', { className: 'muted', text: 'Noch keine Marke geholt — fang 25 Arten, dann geht es los.' })
+            : null
+        ]),
+        vorratZeilen.length ? el('p', { className: 'muted small', text:
+          'Im Vorrat für den nächsten Run: ' + vorratZeilen.join(' · ') }) : null
+      ]),
+
+      /* --- Die Wochenaufträge --- */
+      el('div', { className: 'sammlung-karte' }, [
+        el('h3', { text: '📋 Aufträge dieser Woche' }),
+        el('p', { className: 'muted small', text:
+          'Kalenderwoche ' + woche.woche + ' · für alle dieselben · zählt über alle Runs der Woche' }),
+        el('div', { className: 'auftrag-liste' }, woche.auftraege.map(function (a) {
+          return el('div', { className: 'auftrag' + (a.geschafft ? ' fertig' : '') }, [
+            el('div', { className: 'marke-kopf' }, [
+              el('strong', { text: a.text }),
+              el('span', { className: 'marke-haken', text: a.geschafft ? '✓' : '' })
+            ]),
+            a.geschafft ? null : fortschritt(a.stand, a.ziel),
+            el('span', { className: 'marke-lohn', text: '🎁 ' + a.lohnText })
+          ]);
+        }))
+      ]),
+
+      /* --- Die Marken --- */
+      el('h3', { className: 'section-label', text:
+        'Marken der Sammlung · ' + geholt + ' von ' + marken.length }),
+      el('div', { className: 'marken-gitter' }, marken.map(markenKarte))
+    ]);
+  };
+
+  /**
+   * Der eigene Bestwert einer Art. Wer zum fünften Mal mit demselben Pokémon
+   * antritt, soll sehen, dass es dasselbe ist — und was es bisher geschafft
+   * hat. Arten, die noch nie im Team waren, bekommen keine leere Zeile.
+   */
+  function artRekordZeile(sp) {
+    var r = meta.artRekord(sp.i);
+    if (!r) return null;
+    var teile = [];
+    if (r.lvl) teile.push('höchstes Level ' + r.lvl);
+    if (r.kaempfe) teile.push(r.kaempfe + ' Kämpfe');
+    if (r.runs) teile.push(r.runs + (r.runs === 1 ? ' Run' : ' Runs'));
+    return el('p', { className: 'art-rekord', text: '🏅 Dein Bestwert: ' + teile.join(' · ') });
+  }
 
   SCREENS.achievements = function () {
     var list = meta.achievements();
@@ -3405,8 +3549,28 @@
       meta.setzeTagesErgebnis(PL.share.ergebnis(run, outcome));
     }
     var fresh = meta.recordRun(run, outcome);
+    meta.merkeArten(run);
+
+    // Was dieser Run für die Woche und für die Sammlung gebracht hat. Der
+    // Tages-Run zählt hier mit — er ist ein Run wie jeder andere, nur dass
+    // er selbst keinen Startvorteil bekommt.
+    var neueArten = Object.keys(run.met || {}).length;
+    App.wochenLohn = meta.zaehleWoche({
+      siege: run.stats.wins,
+      faenge: run.stats.catches,
+      arten: neueArten,
+      entwicklungen: run.stats.evolutions,
+      regionen: run.region,
+      runs: 1,
+      bosse: run.bossesBeaten || 0,
+      legenden: run.mode === 'legenden' ? run.legendenBesiegt() : (run.legendUsed ? 1 : 0)
+    });
+    App.neueMarken = meta.pruefeMeilensteine();
+
     meta.clearRun();
     fresh.forEach(function (a) { U.toast('Erfolg freigeschaltet: ' + a.name, 'good'); });
+    App.neueMarken.forEach(function (ms) { U.toast('Sammelmarke: ' + ms.name + ' — ' + ms.lohnText, 'good'); });
+    App.wochenLohn.forEach(function (a) { U.toast('Wochenauftrag geschafft: ' + a.text, 'good'); });
     show('end');
   }
 
@@ -3434,6 +3598,7 @@
         el('h3', { className: 'section-label', text: 'In der Box' }),
         el('div', { className: 'party-strip' }, run.box.map(function (mon) { return U.monCard(mon, {}); }))
       ]) : null,
+      ausbeuteBereich(),
       PL.share ? teilenBereich(PL.share.ergebnis(run, won ? 'sieg' : 'niederlage')) : null,
       el('div', { className: 'scene-actions' }, [
         el('button', { className: 'btn big primary', type: 'button', onclick: function () { App.run = null; show('newrun'); } }, 'Neuer Run'),
@@ -3441,6 +3606,31 @@
       ])
     ]);
   };
+
+  /**
+   * Was dieser Run für die Sammlung gebracht hat. Steht nur da, wenn wirklich
+   * etwas dazugekommen ist — eine leere Überschrift hilft niemandem.
+   */
+  function ausbeuteBereich() {
+    var marken = App.neueMarken || [], auftraege = App.wochenLohn || [];
+    if (!marken.length && !auftraege.length) return null;
+    return el('div', { className: 'sammlung-karte' }, [
+      el('h3', { text: '🎁 Dazugekommen' }),
+      el('div', { className: 'auftrag-liste' }, marken.map(function (ms) {
+        return el('div', { className: 'auftrag fertig' }, [
+          el('strong', { text: 'Sammelmarke: ' + ms.name }),
+          el('span', { className: 'marke-lohn', text: ms.lohnText })
+        ]);
+      }).concat(auftraege.map(function (a) {
+        return el('div', { className: 'auftrag fertig' }, [
+          el('strong', { text: 'Wochenauftrag: ' + a.text }),
+          el('span', { className: 'marke-lohn', text: a.lohnText })
+        ]);
+      }))),
+      el('p', { className: 'muted small', text:
+        'Liegt im Vorrat und geht beim nächsten Run mit.' })
+    ]);
+  }
 
   /* ---------- Der Tages-Run ---------------------------------------------------
    * Ein Startwert für alle, ein Versuch, ein Ergebnis. Woran man sich misst,
