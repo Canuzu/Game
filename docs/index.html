@@ -206,9 +206,29 @@ button { font: inherit; color: inherit; }
 .choice span, .option span { color: var(--muted); font-size: .85rem; }
 .option:disabled { opacity: .45; cursor: not-allowed; }
 .option-list { display: flex; flex-direction: column; gap: .5rem; }
-.asc-box { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; margin-bottom: .8rem; }
 .slider { flex: 1; min-width: 180px; accent-color: var(--accent); }
-.asc-value { font-weight: 600; }
+
+/* Die fünf Schwierigkeitsstufen (und die sechste, die keine mehr ist) */
+.stufen-liste { display: grid; gap: .5rem; margin-bottom: .9rem; }
+.stufe {
+  display: grid; gap: .25rem; width: 100%; text-align: left; cursor: pointer;
+  padding: .7rem .9rem; border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--panel); color: var(--text); font: inherit;
+}
+.stufe:hover:not(:disabled) { border-color: var(--accent); }
+.stufe.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); background: var(--panel-2); }
+.stufe.locked { opacity: .45; cursor: not-allowed; }
+.stufe-kopf { display: flex; align-items: center; gap: .5rem; }
+.stufe-kurz { color: var(--muted); font-size: .85rem; }
+.stufe-punkte { margin: .2rem 0 0; padding-left: 1.1rem; color: var(--muted); font-size: .85rem; }
+.stufe-punkte li { margin: .1rem 0; }
+.stufe.legendaer { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+.stufe.legendaer.selected {
+  background: linear-gradient(135deg, var(--panel-2), color-mix(in srgb, var(--accent) 16%, var(--panel-2)));
+}
+.stufe.legendaer strong { color: var(--accent); }
+.stufe.legendaer.locked strong { color: inherit; }
+.choice-row.stillgelegt { opacity: .4; pointer-events: none; }
 .toggle {
   display: flex; align-items: center; gap: .6rem; padding: .6rem .9rem; width: 100%;
   border-radius: var(--radius); background: var(--panel); border: 1px solid var(--line); cursor: pointer; text-align: left;
@@ -1548,7 +1568,7 @@ button.move-row:hover { border-color: var(--accent); }
   var PL = root.PL || (root.PL = {});
 
   // Diese Zeile ersetzt tools/build-single.mjs beim Bauen.
-  var BUILD = '20260910T083509Z-2de69b7';
+  var BUILD = '20260910T124648Z-295859c';
 
   var TRIED_KEY = 'pokelike.plus.update.versucht';
   var state = { build: BUILD, latest: null, checking: false, stuck: false };
@@ -9324,8 +9344,60 @@ button.move-row:hover { border-color: var(--accent); }
     kurz: { name: 'Kurzrun', regions: 4, rows: 10, desc: 'Vier Regionen, dann direkt zur Liga.' },
     endlos: { name: 'Endlos', regions: 99, rows: 9, desc: 'Die Regionen wiederholen sich und werden härter.' },
     bossrush: { name: 'Boss-Rush', regions: 9, rows: 3, desc: 'Fast nur Arenaleiter. Kurz und brutal.' },
-    taeglich: { name: 'Tages-Run', regions: 6, rows: 8, desc: 'Fester Startwert für alle: heute für jeden gleich.' }
+    taeglich: { name: 'Tages-Run', regions: 6, rows: 8, desc: 'Fester Startwert für alle: heute für jeden gleich.' },
+    legenden: { name: 'Legendärer Run', regions: 9, rows: 0, versteckt: true,
+      desc: 'Ein einziger Strang gegen alle legendären Pokémon der Generationen 1 bis 9.' }
   };
+
+  /* ---------- Schwierigkeitsstufen -------------------------------------------
+   * Vorher waren es elf Aufstiege, von denen jeder genau eine Schraube drehte.
+   * Zum Einmessen war das gut, zum Auswählen nicht: Niemand wusste vor dem
+   * Start, was Aufstieg 7 von Aufstieg 6 unterscheidet, und die meisten Stufen
+   * fühlten sich gleich an.
+   *
+   * Jetzt sind es fünf Stufen mit Namen. Jede bündelt mehrere Regeln, jede
+   * erbt alles von den Stufen darunter — und die sechste ist keine
+   * Schwierigkeitsstufe mehr, sondern ein eigener Weg.
+   *
+   * Die Zahlen in `regeln` sind die Kennungen, unter denen der Code die
+   * einzelne Erschwernis abfragt. Sie bleiben, wie sie waren: die Wirkung ist
+   * mit tools/balance.mjs eingemessen, nur die Bündelung ist neu.
+   * -------------------------------------------------------------------------- */
+
+  var STUFEN = [
+    { name: 'Reise', kurz: 'Grundschwierigkeit', regeln: [],
+      punkte: ['So ist das Spiel gedacht: fordernd, aber fair.'] },
+    { name: 'Herausforderung', kurz: 'Der erste Widerstand', regeln: [1, 2],
+      punkte: ['Gegner starten zwei Level höher.', 'Läden verlangen 25 % mehr.'] },
+    { name: 'Prüfung', kurz: 'Weniger Polster', regeln: [3, 5, 7],
+      punkte: ['Arenaleiter führen ein Pokémon mehr.', 'Fangchancen sinken deutlich.',
+               'Erfahrung um 20 % reduziert.'] },
+    { name: 'Härte', kurz: 'Kein Durchatmen', regeln: [4, 6, 8],
+      punkte: ['Rastplätze heilen nur zur Hälfte.', 'Gegner tragen häufiger Gegenstände.',
+               'Kein Vollheilen mehr nach Arenaleitern.'] },
+    { name: 'Meisterschaft', kurz: 'Alles auf einmal', regeln: [9, 10],
+      punkte: ['Gegner mega-entwickeln, sobald sie können.', 'Noch einmal zwei Level obendrauf.'] },
+    { name: 'Legendärer Run', kurz: 'Der eine Strang', regeln: [], legenden: true,
+      punkte: ['Alle 125 legendären Pokémon der Generationen 1 bis 9, hintereinander.',
+               'Ein vorbereitetes Team, keine Abzweigungen, kein Zurück.',
+               'Alle Regeln der Meisterschaft gelten weiter.'] }
+  ];
+
+  /** Ab welcher Stufe eine einzelne Regel greift. */
+  var REGEL_AB = {};
+  STUFEN.forEach(function (stufe, i) {
+    stufe.regeln.forEach(function (r) { REGEL_AB[r] = i; });
+  });
+
+  var LEGENDENSTUFE = STUFEN.length - 1;
+
+  /**
+   * Elf alte Aufstiege werden zu fünf Stufen. Wer Aufstieg 7 geschafft hatte,
+   * steht jetzt auf Stufe 4 — der Rang bleibt erhalten, er heißt nur anders.
+   * Die letzte Stufe verschenkt die Umrechnung nicht: Den Legendären Run muss
+   * sich jeder selbst verdienen.
+   */
+  var ALTE_AUFSTIEGE = [0, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4];
 
   /* Legendäre Pokémon sollen selten bleiben — eins je Run ist die Obergrenze,
      und die meisten Runs haben gar keins. Der Wert ist die Wahrscheinlichkeit,
@@ -9348,6 +9420,7 @@ button.move-row:hover { border-color: var(--accent); }
     rest: { name: 'Rastplatz', icon: '🔥', desc: 'Heilen, entwickeln oder trainieren.' },
     rival: { name: 'Rivale', icon: '🧢', desc: 'Dein Rivale stellt sich dir wieder in den Weg.' },
     legend: { name: 'Legendäre Spur', icon: '✨', desc: 'Etwas Seltenes hält sich hier auf. Fangen erlaubt.' },
+    legendboss: { name: 'Legende', icon: '🌟', desc: 'Eine Legende stellt sich dir. Es gibt keinen Weg daran vorbei.' },
     event: { name: 'Ereignis', icon: '❓', desc: 'Etwas Ungewöhnliches.' },
     relic: { name: 'Schrein', icon: '🏛️', desc: 'Ein Relikt zur Auswahl.' },
     boss: { name: 'Arenaleiter', icon: '🏅', desc: 'Der Weg aus der Region führt nur hier hindurch.' },
@@ -9381,7 +9454,7 @@ button.move-row:hover { border-color: var(--accent); }
     this.money = 1200;
     this.region = 0;
     this.regionOrder = this.rng.shuffle(W.REGIONS.map(function (r, i) { return i; }));
-    if (this.mode === 'standard' || this.mode === 'endlos') {
+    if (this.mode === 'standard' || this.mode === 'endlos' || this.mode === 'legenden') {
       this.regionOrder = W.REGIONS.map(function (r, i) { return i; });
     }
     this.leagueStage = -1;
@@ -9421,10 +9494,114 @@ button.move-row:hover { border-color: var(--accent); }
       this.rival.starter = W.counterStarter(opts.starter, this.rng);
     }
     if (!this.rival.starter) this.rival.starter = 'squirtle';
+    if (this.mode === 'legenden') this.ruesteLegendenTeam(opts.starter);
     this.buildMap();
   }
 
+
   var R = Run.prototype;
+
+  Run.STUFEN = STUFEN;
+  Run.LEGENDENSTUFE = LEGENDENSTUFE;
+
+  /** Rechnet einen alten Aufstiegswert (0–10) in eine Stufe (0–4) um. */
+  Run.stufeAusAltem = function (n) {
+    n = Math.max(0, Math.round(n || 0));
+    return n < ALTE_AUFSTIEGE.length ? ALTE_AUFSTIEGE[n] : LEGENDENSTUFE - 1;
+  };
+
+  /**
+   * Alle legendären Pokémon einer Generation, in Pokédex-Reihenfolge.
+   * Gezählt wird, was das Spiel überall sonst als legendär ausweist — also
+   * auch Ultrabestien und Paradoxformen. Wer die Plakette im Pokédex sieht,
+   * trifft sie hier wieder.
+   */
+  var legendenNachGen = {};
+  Run.legendenDerGeneration = function (gen) {
+    if (legendenNachGen[gen]) return legendenNachGen[gen];
+    var liste = dex.species.filter(function (sp) {
+      return sp.g === gen && !sp.f && !sp.bo && dex.isLegendary(sp);
+    });
+    legendenNachGen[gen] = liste;
+    return liste;
+  };
+
+  /** Wie viele Kämpfe der Legendäre Run insgesamt umfasst. */
+  Run.legendenGesamt = function () {
+    var n = 0;
+    for (var g = 1; g <= 9; g++) n += Run.legendenDerGeneration(g).length;
+    return n;
+  };
+
+  /* ---------- Ausrüstung für den Legendären Run --------------------------------
+   * Der Legendäre Run beginnt nicht bei Level 8 mit einem Starter. Der erste
+   * Gegner ist Arktos auf Level 58 — wer da mit einem Glumanda anträte, hätte
+   * kein Spiel, sondern eine Zwischensequenz. Also tritt man mit einem
+   * vorbereiteten Sechserteam an: der eigene Starter in seiner letzten
+   * Entwicklung, dazu fünf ausgewachsene Kämpfer. Wer sie sind, entscheidet
+   * der Startwert — derselbe Run stellt also immer dasselbe Team.
+   * -------------------------------------------------------------------------- */
+
+  /** Die letzte Entwicklungsstufe einer Art. */
+  function letzteStufe(sp) {
+    var cur = sp, schutz = 0;
+    while (cur && cur.ev && cur.ev.length && schutz++ < 4) {
+      var next = dex.species[cur.ev[0]];
+      if (!next) break;
+      cur = next;
+    }
+    return cur || sp;
+  }
+
+  R.ruesteLegendenTeam = function (starterId) {
+    var rng = this.rng.fork('legendenteam-' + this.seed);
+    var level = this.levelCap;
+    var self = this;
+
+    // Der Starter wächst mit: Er ist der, den man gewählt hat, nur erwachsen.
+    this.party = [];
+    var starter = dex.sp(starterId || 'charmander');
+    if (starter) this.holeKaempfer(rng, letzteStufe(starter), level);
+
+    // Fünf Gefährten: ausgewachsen, stark, aber nichts Legendäres — die
+    // stehen auf der anderen Seite.
+    var pool = dex.species.filter(function (sp) {
+      return !sp.bo && !sp.f && !dex.isLegendary(sp) && sp.bst >= 525 &&
+        (!sp.ev || !sp.ev.length);
+    });
+    var gewaehlt = {};
+    while (this.party.length < 6 && pool.length) {
+      var sp = rng.pick(pool);
+      if (gewaehlt[sp.id]) continue;
+      gewaehlt[sp.id] = true;
+      this.holeKaempfer(rng, sp, level);
+    }
+
+    // Ein Strang ohne Abzweigung heißt: keine Umwege zum Nachkaufen.
+    this.money = 9000;
+    this.bag = {};
+    this.addItem('ultraball', 12);
+    this.addItem('hyperpotion', 12);
+    this.addItem('fullrestore', 4);
+    this.addItem('revive', 6);
+    this.addItem('maxrevive', 2);
+    this.addItem('fullheal', 4);
+    this.addItem('ether', 6);
+    void self;
+  };
+
+  /** Ein einzelnes Teammitglied für den Legendären Run. */
+  R.holeKaempfer = function (rng, sp, level) {
+    var mon = W.buildMon(rng, sp, level, {
+      quality: 1, ivFloor: 26, hiddenChance: 0.45,
+      shinyOdds: (1 / 400) * this.mod('shinyMult', 1)
+    });
+    mons.addEVs(mon, mon.ivs[1] >= mon.ivs[3] ? 'atk' : 'spa', 160);
+    mons.addEVs(mon, 'spe', 96);
+    mons.heal(mon);
+    this.party.push(mon);
+    return mon;
+  };
 
   R.modeInfo = function () { return MODES[this.mode]; };
 
@@ -9453,6 +9630,14 @@ button.move-row:hover { border-color: var(--accent); }
 
   Object.defineProperty(R, 'levelCap', {
     get: function () {
+      // Der Legendäre Run beginnt nicht bei null: Man tritt mit einem
+      // vorbereiteten Team an, und die Grenze steigt Generation für
+      // Generation bis auf 100.
+      // Von 58 in Generation 1 gleichmäßig bis 100 in Generation 9 — die
+      // Grenze soll genau dann oben ankommen, wenn die letzte Legende steht.
+      if (this.mode === 'legenden') {
+        return Math.min(100, Math.round(58 + Math.min(8, this.region) * 42 / 8) + (this.levelBonus || 0));
+      }
       if (this.leagueStage >= 0) return 78 + this.leagueStage * 4 + this.ascension * 2;
       var step = this.mode === 'kurz' ? 17 : 8;
       return Math.min(100, 8 + (this.regionsCleared() + 1) * step + this.ascension * 2 +
@@ -9469,8 +9654,17 @@ button.move-row:hover { border-color: var(--accent); }
     return this.ascension + (this.mode === 'endlos' ? this.loop() : 0);
   };
 
-  /** Gilt die Erschwernis dieser Aufstiegsstufe schon? */
-  R.asc = function (level) { return this.effectiveAscension() >= level; };
+  /**
+   * Gilt diese einzelne Erschwernis schon? Gefragt wird nach der Regel, nicht
+   * nach der Stufe — welche Stufe sie anschaltet, steht in STUFEN.
+   */
+  R.asc = function (regel) {
+    var ab = REGEL_AB[regel];
+    return ab !== undefined && this.effectiveAscension() >= ab;
+  };
+
+  /** Die Stufe dieses Runs als Beschreibung. */
+  R.stufe = function () { return STUFEN[Math.min(this.ascension, LEGENDENSTUFE)] || STUFEN[0]; };
 
   R.regionsCleared = function () { return this.region; };
   R.totalRegions = function () {
@@ -9518,6 +9712,7 @@ button.move-row:hover { border-color: var(--accent); }
    */
   R.buildMap = function () {
     if (this.leagueStage >= 0) return this.buildLeague();
+    if (this.mode === 'legenden') return this.buildLegendStrand();
     var rng = this.rng.fork('map-' + this.region + '-' + this.seed);
     var rows = MODES[this.mode].rows;
     var map = [], r, i;
@@ -9622,6 +9817,50 @@ button.move-row:hover { border-color: var(--accent); }
     this.rowIndex = -1;
   };
 
+  /* ---------- Der Legendäre Run -----------------------------------------------
+   * Keine Karte, keine Abzweigung, keine Wahl: eine Generation ist eine Reihe
+   * von Kämpfen gegen ihre legendären Pokémon, in der Reihenfolge des
+   * Pokédex. Alle vier Kämpfe steht ein Rastplatz, alle acht ein Händler —
+   * sonst wäre der Strang kein Weg, sondern eine Wand.
+   * -------------------------------------------------------------------------- */
+
+  R.buildLegendStrand = function () {
+    var gen = Math.min(9, this.region + 1);
+    var liste = Run.legendenDerGeneration(gen);
+    var rng = this.rng.fork('legenden-' + gen + '-' + this.seed);
+    var folge = [{ type: 'rest' }];
+    liste.forEach(function (sp, i) {
+      folge.push({ type: 'legendboss', sp: sp.id });
+      var letzter = i === liste.length - 1;
+      if (!letzter && (i + 1) % 4 === 0) folge.push({ type: (i + 1) % 8 === 0 ? 'shop' : 'rest' });
+    });
+    // Wer eine ganze Generation hinter sich gebracht hat, nimmt etwas mit.
+    folge.push({ type: 'relic' });
+
+    this.map = folge.map(function (stufe, i) {
+      return [{
+        row: i, col: 0, count: 1, type: stufe.type, sp: stufe.sp, done: false,
+        next: i < folge.length - 1 ? [0] : [], seed: rng.int(1e9)
+      }];
+    });
+    this.pos = null;
+    this.rowIndex = -1;
+  };
+
+  /** Wie viele legendäre Kämpfe in diesem Run schon geschafft sind. */
+  R.legendenBesiegt = function () {
+    var n = 0, g;
+    for (g = 1; g <= Math.min(9, this.region); g++) n += Run.legendenDerGeneration(g).length;
+    // Der laufende Strang zählt nur, solange er läuft: Nach dem Sieg steht die
+    // Karte der neunten Generation noch da und würde ein zweites Mal gezählt.
+    if (this.map && this.region < 9) {
+      this.map.forEach(function (reihe) {
+        if (reihe[0].type === 'legendboss' && reihe[0].done) n++;
+      });
+    }
+    return Math.min(Run.legendenGesamt(), n);
+  };
+
   /** Welche Knoten darf der Spieler als Nächstes betreten? */
   R.available = function () {
     if (!this.map) return [];
@@ -9665,6 +9904,8 @@ button.move-row:hover { border-color: var(--accent); }
       case 'legend':
         this.legendUsed = true;
         return this.setScene({ kind: 'battle', battle: this.makeLegend(rng), node: node });
+      case 'legendboss':
+        return this.setScene({ kind: 'battle', battle: this.makeLegendBoss(rng, node.sp), node: node });
       case 'trainer': return this.setScene({ kind: 'battle', battle: this.makeTrainer(rng), node: node });
       case 'elite': return this.setScene({ kind: 'battle', battle: this.makeTrainer(rng, { elite: true }), node: node });
       case 'rival': return this.setScene({ kind: 'battle', battle: this.makeRival(rng), node: node });
@@ -9773,6 +10014,11 @@ button.move-row:hover { border-color: var(--accent); }
       return;
     }
     this.region++;
+    if (this.mode === 'legenden' && this.region >= 9) {
+      this.state = 'victory';
+      this.result = 'sieg';
+      return;
+    }
     if (this.region >= this.totalRegions()) {
       this.leagueStage = 0;
       this.buildLeague();
@@ -10056,6 +10302,31 @@ button.move-row:hover { border-color: var(--accent); }
   };
 
   /**
+   * Ein fest gesetzter Kampf des Legendären Runs. Anders als die zufällige
+   * legendäre Spur steht hier vorher fest, wer gegenübersteht — der Strang
+   * geht den Pokédex entlang.
+   */
+  R.makeLegendBoss = function (rng, id) {
+    var sp = dex.sp(id);
+    if (!sp) sp = rng.pick(Run.legendenDerGeneration(Math.min(9, this.region + 1)));
+    var level = Math.min(100, this.levelCap);
+    var mon = W.buildMon(rng, sp, level, {
+      quality: 1, ivFloor: 28, hiddenChance: 0.5,
+      shinyOdds: (1 / 90) * this.mod('shinyMult', 1)
+    });
+    mon.item = 'sitrusberry';
+    mons.addEVs(mon, mon.ivs[1] >= mon.ivs[3] ? 'atk' : 'spa', 160);
+    mons.addEVs(mon, 'spe', 96);
+    var bt = new PL.Battle(this.battleOpts({ team: [mon], wild: true }));
+    bt.aiLevel = 3;
+    bt.canCatch = this.catchAllowed();
+    bt.legendary = true;
+    bt.biome = 'ruine';
+    bt.reward = { money: 2200 + this.region * 300, kind: 'trainer' };
+    return bt;
+  };
+
+  /**
    * Vor Arenaleiter, Top Vier und Champ erholt sich das Team vollständig.
    *
    * Die Messung zeigte, woran Runs scheitern: nicht an der Stärke des
@@ -10143,7 +10414,14 @@ button.move-row:hover { border-color: var(--accent); }
       var benchShare = this.mod('benchExp') || 0.25;
       // 1,45 statt 1,08: gemessen lagen Teams beim Aus zwölf Level hinter der
       // Grenze zurück — sie kamen also nie dazu, sich zu entwickeln.
-      var expMult = this.mod('expMult', 1) * 1.45 * (this.asc(7) ? 0.8 : 1);
+      // Im Legendären Run gibt es nichts zu grinden: keine wilden Pokémon,
+      // keine Trainer, kein Umweg. Wer hier hinter der Levelgrenze
+      // zurückbleibt, bleibt es für immer — gemessen war das Team nach
+      // vierzehn Legenden acht Level im Rückstand und chancenlos. Also ist
+      // die Legende selbst die Erfahrung: Ein gewonnener Kampf bringt so
+      // viel, dass das Team der steigenden Grenze folgen kann.
+      var expMult = this.mod('expMult', 1) * 1.45 * (this.asc(7) ? 0.8 : 1) *
+        (this.mode === 'legenden' ? 5 : 1);
       var alive = this.party.filter(function (m) { return m.hp > 0; });
       var imKampf = (bt.sides[0] && bt.sides[0].used) || {};
       var summe = [];      // je Pokémon ein Eintrag, in Teamreihenfolge
@@ -10229,6 +10507,16 @@ button.move-row:hover { border-color: var(--accent); }
       this.healTeam(1, true);
       this.restorePP();
     }
+    // Der Legendäre Run besteht nur aus Bossen. Zwischen zwei Legenden gibt es
+    // kein Center, keinen Umweg und kein Zurück — also steht das Team nach
+    // jedem gewonnenen Kampf wieder vollständig da, gefallene Pokémon
+    // eingeschlossen. Gemessen: ohne das ist der Strang nach der dritten
+    // Legende zu Ende, und die anderen 122 sieht niemand.
+    // Im Nuzlocke bleibt es dabei, dass Gefallene fortbleiben — sie sind dann
+    // gar nicht mehr im Team, und was fort ist, holt auch das nicht zurück.
+    if (this.mode === 'legenden' && (bt.outcome === 'win' || bt.outcome === 'caught')) {
+      this.erholeVollstaendig();
+    }
 
     if (bt.rival) {
       if (bt.outcome === 'win') { this.rival.wins++; this.rival.stage++; }
@@ -10259,7 +10547,12 @@ button.move-row:hover { border-color: var(--accent); }
 
   /** Nuzlocke erlaubt genau einen Fang je Region. */
   R.catchAllowed = function () {
-    return !this.nuzlocke || (this.regionCatches || 0) < 1;
+    if (this.nuzlocke) return (this.regionCatches || 0) < 1;
+    // Im Legendären Run steht in jedem Kampf ein legendäres Pokémon. Ohne
+    // Grenze hätte man nach der zweiten Generation ein Team, das den Rest
+    // allein erledigt — zwei je Generation sind Beute, nicht Ernte.
+    if (this.mode === 'legenden') return (this.regionCatches || 0) < 2;
+    return true;
   };
 
   /** Trägt ein gefallenes Pokémon in den Friedhof ein. */
@@ -10648,6 +10941,11 @@ button.move-row:hover { border-color: var(--accent); }
     return this.party.some(function (m) { return m.hp <= 0 || m.hp < mons.maxHP(m) || m.status; });
   };
 
+  /** Alles wieder auf die Beine: volle KP, kein Status, volle AP. */
+  R.erholeVollstaendig = function () {
+    this.party.forEach(function (m) { mons.fullRestore(m); });
+  };
+
   R.healTeam = function (fraction, cure) {
     var self = this;
     this.party.forEach(function (m) {
@@ -10780,6 +11078,7 @@ button.move-row:hover { border-color: var(--accent); }
       graveyard: this.graveyard || [], rival: this.rival,
       levelBonus: this.levelBonus || 0, pendingBlessing: this.pendingBlessing || null,
       legendRegion: this.legendRegion, legendUsed: !!this.legendUsed,
+      stufenFassung: 2,
       bossHint: this.bossHint || null,
       pendingNode: this.pendingNode || null,
       seenEvents: this.seenEvents || {}, masterballUsed: this.masterballUsed, result: this.result,
@@ -10796,6 +11095,10 @@ button.move-row:hover { border-color: var(--accent); }
     run.state = 'map';
     run.pendingLevelUps = [];
     run.history = run.history || [];
+    // Ein Run aus der Zeit der elf Aufstiege trägt noch die alte Zahl. Ohne
+    // Umrechnung stünde ein Run mit "Aufstieg 9" plötzlich auf der Stufe des
+    // Legendären Runs — mit dessen Regeln, aber ohne dessen Strang.
+    if (data.stufenFassung !== 2) run.ascension = Run.stufeAusAltem(run.ascension);
     // Spielstände von vorher kannten die legendäre Spur noch nicht; der Wurf
     // hängt nur am Startwert und lässt sich deshalb nachholen. Die schon
     // gebaute Karte trägt dann aber noch eine Spur aus der alten Regel — die
@@ -10891,7 +11194,7 @@ button.move-row:hover { border-color: var(--accent); }
 
   var NODE_BASE = {
     rest: 30, catch: 40, relic: 78, shop: 44, item: 44, event: 40,
-    wild: 34, trainer: 44, elite: 50, rival: 60, legend: 130,
+    wild: 34, trainer: 44, elite: 50, rival: 60, legend: 130, legendboss: 100,
     boss: 100, e4: 100, champ: 100
   };
 
@@ -11817,6 +12120,7 @@ button.move-row:hover { border-color: var(--accent); }
       runs: 0, wins: 0, bestRegion: 0, bestAscension: -1,
       unlocked: {}, achievements: {}, seen: {}, caught: {}, shinies: {},
       taeglich: {},
+      stufenFassung: 2,
       totals: { battles: 0, kos: 0, catches: 0, faints: 0, money: 0, turns: 0, evolutions: 0, playtime: 0 },
       history: [],
       settings: { theme: 'auto', lang: 'de', speed: 'normal', sound: true, music: true, volume: 0.5, confirmRisky: true, figur: 'rot' }
@@ -11838,6 +12142,16 @@ button.move-row:hover { border-color: var(--accent); }
           else cache[k] = data[k];
         });
       } catch (e) { /* beschädigt — dann eben frisch */ }
+    }
+    // Aus elf Aufstiegen wurden fünf Stufen. Ein Spielstand von vorher trägt
+    // noch die alte Zahl; unumgerechnet stünde "Aufstieg 9" plötzlich für den
+    // Legendären Run. Umgerechnet bleibt der Rang erhalten, er heißt nur
+    // anders — verschenkt wird die letzte Stufe dabei nicht.
+    if (cache.stufenFassung !== 2) {
+      // -1 heißt "noch nichts gewonnen" — das bleibt so, sonst schenkte die
+      // Umrechnung jedem frischen Spielstand die zweite Stufe.
+      if (cache.bestAscension >= 0) cache.bestAscension = PL.Run.stufeAusAltem(cache.bestAscension);
+      cache.stufenFassung = 2;
     }
     return cache;
   }
@@ -11948,8 +12262,9 @@ button.move-row:hover { border-color: var(--accent); }
     { id: 'legendary', name: 'Legendenjäger', desc: 'Fange ein legendäres Pokémon.', manual: true },
     { id: 'relic10', name: 'Reliktjäger', desc: 'Sammle zehn Relikte in einem Run.', manual: true },
     { id: 'nuzlocke', name: 'Harte Schule', desc: 'Gewinne einen Run mit Nuzlocke-Regeln.', manual: true },
-    { id: 'ascend1', name: 'Aufstieg', desc: 'Gewinne auf Aufstieg 1 oder höher.', manual: true },
-    { id: 'ascend5', name: 'Hochgestiegen', desc: 'Gewinne auf Aufstieg 5 oder höher.', manual: true },
+    { id: 'ascend1', name: 'Aufstieg', desc: 'Gewinne auf Stufe 2 oder höher.', manual: true },
+    { id: 'ascend5', name: 'Meister', desc: 'Gewinne auf Stufe 5 — Meisterschaft.', manual: true },
+    { id: 'legendenrun', name: 'Legendenbezwinger', desc: 'Gewinne den Legendären Run.', manual: true },
     { id: 'notafraid', name: 'Kein Zurück', desc: 'Gewinne einen Kampf mit einem Pokémon auf 1 KP.', manual: true },
     { id: 'sweep', name: 'Alleingang', desc: 'Besiege ein volles Gegnerteam mit einem einzigen Pokémon.', manual: true },
     { id: 'mega', name: 'Mega', desc: 'Mega-entwickle ein Pokémon.', manual: true },
@@ -12110,23 +12425,18 @@ button.move-row:hover { border-color: var(--accent); }
 
   /* ---------- 5) Aufstiege ---------------------------------------------------- */
 
-  var ASCENSIONS = [
-    'Grundschwierigkeit.',
-    'Gegner starten zwei Level höher.',
-    'Läden verlangen 25 % mehr.',
-    'Arenaleiter führen ein Pokémon mehr.',
-    'Rastplätze heilen nur noch zur Hälfte.',
-    'Fangchancen sinken deutlich.',
-    'Gegner tragen häufiger Gegenstände.',
-    'Erfahrung um 20 % reduziert.',
-    'Kein Vollheilen nach Arenaleitern.',
-    'Gegner mega-entwickeln, sobald sie können.',
-    'Alles zusammen — und noch zwei Level obendrauf. Viel Glück.'
-  ];
+  // Die Stufen selbst stehen in run.js — dort, wo ihre Regeln wirken.
+  var ASCENSIONS = PL.Run.STUFEN;
 
   function maxAscension() {
     var m = load();
     return Math.min(ASCENSIONS.length - 1, m.bestAscension + 1);
+  }
+
+  /** Name und Kurzfassung einer Stufe, wie sie überall angezeigt werden. */
+  function stufenName(n) {
+    var st = ASCENSIONS[Math.min(Math.max(0, n | 0), ASCENSIONS.length - 1)];
+    return 'Stufe ' + (Math.min(Math.max(0, n | 0), ASCENSIONS.length - 1) + 1) + ' — ' + st.name;
   }
 
   /* ---------- 6) Statistik und Runs ------------------------------------------- */
@@ -12139,7 +12449,8 @@ button.move-row:hover { border-color: var(--accent); }
       m.wins++;
       if (run.ascension > m.bestAscension) m.bestAscension = run.ascension;
       if (run.ascension >= 1) award('ascend1');
-      if (run.ascension >= 5) award('ascend5');
+      if (run.ascension >= 4) award('ascend5');
+      if (run.mode === 'legenden') award('legendenrun');
       if (run.nuzlocke) award('nuzlocke');
       if (run.mode === 'taeglich') award('daily');
     }
@@ -12358,7 +12669,7 @@ button.move-row:hover { border-color: var(--accent); }
     tagGespielt: tagGespielt,
     noteSeen: noteSeen, noteCaught: noteCaught, noteOwned: noteOwned,
     noteParty: noteParty, dexStats: dexStats,
-    ASCENSIONS: ASCENSIONS, maxAscension: maxAscension,
+    ASCENSIONS: ASCENSIONS, maxAscension: maxAscension, stufenName: stufenName,
     recordRun: recordRun,
     saveRun: saveRun, loadRun: loadRun, clearRun: clearRun, hasRun: hasRun,
     exportSave: exportSave, importSave: importSave,
@@ -12843,6 +13154,60 @@ button.move-row:hover { border-color: var(--accent); }
         k h s h k h s h k h s h k h s h
         k h s h k h s h k h s h k h s h
         k h s h k h s h k h s h s s s s`)
+    },
+
+    /* Legenden: e-Moll, acht Zeilen statt vier — das einzige Stück im Spiel,
+     * das sich Zeit lässt, bevor es zuschlägt.
+     *
+     * Alle anderen Stücke sind vier Zeilen lang und wiederholen sich nach
+     * knapp zehn Sekunden. Für einen Kampf gegen einen Arenaleiter reicht
+     * das. Der Legendäre Run dauert Stunden, und wer 125-mal dasselbe
+     * Vierzeilenstück hört, dreht den Ton ab. Also: zwei Zeilen Anlauf ohne
+     * Schlagzeug, dann das Thema, eine absteigende Fortspinnung, und zum
+     * Schluss ein Oktavsprung nach oben. Das Tempo liegt unter dem des
+     * Arenaleiterstücks — Schwere entsteht nicht durch Hetze.
+     *
+     * Geschrieben, nicht abgehört: Die Musik der Spiele gehört Nintendo und
+     * hat hier nichts zu suchen. Gesucht war die Stimmung von etwas, das
+     * größer ist als man selbst. */
+    legenden: {
+      bpm: 138, lead: 'square', harm: 'triangle', bass: 'square',
+      melody: pattern(`
+        E4 . . . B4 . . . E5 . . . B4 . . .
+        C5 . . . B4 . . . A4 . . . G4 . F#4 .
+        E5 . . B5 . . G5 . A5 . B5 . . . . .
+        C6 . . B5 . . A5 . G5 . F#5 . E5 . . .
+        D5 . . A5 . . F#5 . G5 . A5 . B5 . . .
+        C6 . . . B5 . . . A5 . G5 . A5 . . .
+        B5 . . . E6 . . . D6 . . . B5 . . .
+        C6 . B5 . A5 . G5 . E5 . B5 . E6 . . .`),
+      chords: pattern(`
+        E4 B4 E4 B4 E4 B4 E4 B4 E4 B4 E4 B4 E4 B4 E4 B4
+        C4 G4 C4 G4 C4 G4 C4 G4 B3 F#4 B3 F#4 B3 F#4 B3 F#4
+        E4 B4 E4 B4 G4 D5 G4 D5 E4 B4 E4 B4 G4 D5 G4 D5
+        C4 G4 C4 G4 C4 G4 C4 G4 D4 A4 D4 A4 D4 A4 D4 A4
+        D4 A4 D4 A4 D4 A4 D4 A4 G4 D5 G4 D5 G4 D5 G4 D5
+        C4 G4 C4 G4 C4 G4 C4 G4 A3 E4 A3 E4 A3 E4 A3 E4
+        B3 F#4 B3 F#4 B3 F#4 B3 F#4 E4 B4 E4 B4 E4 B4 E4 B4
+        C4 G4 C4 G4 D4 A4 D4 A4 E4 B4 E4 B4 E4 B4 E4 B4`),
+      low: pattern(`
+        E2 . . . E2 . . . E2 . . . E2 . E2 .
+        C2 . . . C2 . . . B1 . . . B1 . B1 .
+        E2 . E2 . G2 . G2 . E2 . E2 . G2 . G2 .
+        C2 . C2 . C2 . C2 . D2 . D2 . D2 . D2 .
+        D2 . D2 . D2 . D2 . G2 . G2 . G2 . G2 .
+        C2 . C2 . C2 . C2 . A1 . A1 . A1 . A1 .
+        B1 . B1 . B1 . B1 . E2 . E2 . E2 . E2 .
+        C2 . C2 . D2 . D2 . E2 . E2 . E2 E2 E2 E2`),
+      beat: pattern(`
+        k . . . . . . . k . . . . . . .
+        k . . . . . . . k . . . k . k .
+        k . h . s . h . k . h . s . h .
+        k . h . s . h . k . h . s . h s
+        k . h . s . h . k . h . s . h .
+        k . h . s . h . k . h s k s h s
+        k h k h s h s h k h k h s h s h
+        k h s h k h s h k s k s k s k s`)
     }
   };
 
@@ -13264,6 +13629,7 @@ button.move-row:hover { border-color: var(--accent); }
 
   /** Welches Stück gehört zu diesem Ort? */
   function trackFor(kind, biome) {
+    if (kind === 'legend') return 'legenden';
     if (kind === 'boss') return 'boss';
     if (kind === 'battle') return 'battle';
     if (biome === 'stadt' || biome === 'arena' || kind === 'shop') return 'town';
@@ -13975,8 +14341,15 @@ button.move-row:hover { border-color: var(--accent); }
 
   var MODUS_NAME = {
     standard: 'Standard', kurz: 'Kurzrun', endlos: 'Endlos',
-    bossrush: 'Boss-Rush', taeglich: 'Tages-Run'
+    bossrush: 'Boss-Rush', taeglich: 'Tages-Run', legenden: 'Legendärer Run'
   };
+
+  /** "Stufe 3 — Prüfung", auch ohne geladenes Fortschrittsmodul. */
+  function stufenName(n) {
+    var liste = (PL.Run && PL.Run.STUFEN) || [];
+    var i = Math.min(Math.max(0, n | 0), Math.max(0, liste.length - 1));
+    return liste[i] ? 'Stufe ' + (i + 1) + ' — ' + liste[i].name : 'Stufe ' + (i + 1);
+  }
 
   /**
    * Fasst einen beendeten Run zusammen. Nimmt nur, was auf eine Karte passt —
@@ -14036,7 +14409,7 @@ button.move-row:hover { border-color: var(--accent); }
   function alsText(erg) {
     var zeilen = [];
     var kopf = 'Pokélike+ · ' + erg.modusName;
-    if (erg.aufstieg > 0) kopf += ' · Aufstieg ' + erg.aufstieg;
+    if (erg.aufstieg > 0) kopf += ' · ' + stufenName(erg.aufstieg);
     if (erg.nuzlocke) kopf += ' · Nuzlocke';
     zeilen.push(kopf);
     zeilen.push(erg.gewonnen
@@ -14140,7 +14513,7 @@ button.move-row:hover { border-color: var(--accent); }
     y += 44;
     g.fillStyle = KARTE.leise;
     g.font = '400 26px system-ui, sans-serif';
-    var unter = erg.modusName + (erg.aufstieg ? ' · Aufstieg ' + erg.aufstieg : '') +
+    var unter = erg.modusName + (erg.aufstieg ? ' · ' + stufenName(erg.aufstieg) : '') +
       (erg.nuzlocke ? ' · Nuzlocke' : '') +
       (erg.gewonnen ? '' : ' · von ' + erg.regionen + ' Regionen');
     g.fillText(unter, rand, y);
@@ -14952,7 +15325,8 @@ button.move-row:hover { border-color: var(--accent); }
     if (!settings().music) { PL.audio.stop(); return; }
     var run = App.run, bt = App.battle;
     if (screen === 'battle' && bt) {
-      PL.audio.play(PL.audio.trackFor(bt.aiLevel >= 3 ? 'boss' : 'battle', bt.biome));
+      PL.audio.play(PL.audio.trackFor(
+        bt.legendary ? 'legend' : bt.aiLevel >= 3 ? 'boss' : 'battle', bt.biome));
       return;
     }
     // Jede Region hat ihr eigenes Stück; in der Liga spielt keines von ihnen.
@@ -14982,14 +15356,20 @@ button.move-row:hover { border-color: var(--accent); }
     if (run && App.screen !== 'title' && App.screen !== 'newrun') {
       var region = run.leagueStage >= 0 ? { name: 'Pokémon-Liga', color: '#c9a227' } : run.currentRegion();
       mid.appendChild(el('span', { className: 'region-badge', style: { borderColor: region.color }, text: region.name }));
-      mid.appendChild(el('span', { className: 'chip chip-region', text: '👑 ' + (run.leagueStage >= 0 ? 'Finale' : 'Region ' + (run.region + 1) + '/' + (run.mode === 'endlos' ? '∞' : run.totalRegions())) }));
+      // Im Legendären Run zählt nicht die Region, sondern wie viele Legenden
+      // schon gefallen sind. Das ist der einzige Fortschritt, den es dort gibt.
+      mid.appendChild(run.mode === 'legenden'
+        ? el('span', { className: 'chip chip-region', title: 'Besiegte Legenden',
+            text: '🌟 ' + run.legendenBesiegt() + '/' + PL.Run.legendenGesamt() })
+        : el('span', { className: 'chip chip-region', text: '👑 ' + (run.leagueStage >= 0 ? 'Finale' : 'Region ' + (run.region + 1) + '/' + (run.mode === 'endlos' ? '∞' : run.totalRegions())) }));
       mid.appendChild(el('span', { className: 'chip chip-money', text: '💰 ' + U.money(run.money) }));
       mid.appendChild(el('span', { className: 'chip chip-cap', title: 'Höchstes erreichbares Level' }, [
         el('span', { text: '⬆\u00a0' }),
         el('span', { className: 'cap-word', text: 'Lv ' }),
         el('span', { text: String(run.levelCap) })
       ]));
-      if (run.ascension) mid.appendChild(el('span', { className: 'chip warn', text: '🔥 Aufstieg ' + run.ascension }));
+      if (run.ascension) mid.appendChild(el('span', { className: 'chip warn',
+        text: (run.mode === 'legenden' ? '🌟 ' : '🔥 ') + meta.stufenName(run.ascension) }));
       if (run.nuzlocke) mid.appendChild(el('span', { className: 'chip warn', text: '💀 Nuzlocke' }));
     }
 
@@ -15115,7 +15495,7 @@ button.move-row:hover { border-color: var(--accent); }
       el('div', {}, [
         el('strong', { text: '🔗 Ein Run wurde dir geschickt' }),
         el('div', { className: 'muted small', text:
-          ein.modusName + (ein.aufstieg ? ' · Aufstieg ' + ein.aufstieg : '') +
+          ein.modusName + (ein.aufstieg ? ' · ' + meta.stufenName(ein.aufstieg) : '') +
           (ein.nuzlocke ? ' · Nuzlocke' : '') + ' · Startwert ' + ein.startwert })
       ]),
       el('div', { className: 'setting-actions' }, [
@@ -15456,7 +15836,7 @@ button.move-row:hover { border-color: var(--accent); }
         })),
         el('div', { className: 'slot-line muted small' }, [
           el('span', { text: info.mode + (info.nuzlocke ? ' · Nuzlocke' : '') +
-            (info.ascension ? ' · Aufstieg ' + info.ascension : '') }),
+            (info.ascension ? ' · ' + meta.stufenName(info.ascension) : '') }),
           el('span', { text: info.saved ? new Date(info.saved).toLocaleString('de-DE') : 'läuft gerade' })
         ])
       ]);
@@ -15604,9 +15984,14 @@ button.move-row:hover { border-color: var(--accent); }
     var modeBox = el('div', { className: 'choice-row' });
     Object.keys(PL.Run.MODES).forEach(function (key) {
       var mode = PL.Run.MODES[key];
+      // Der Legendäre Run ist kein Modus zum Anklicken, sondern die letzte
+      // Stufe. Er steht weiter unten.
+      if (mode.versteckt) return;
       var btn = el('button', {
         className: 'choice' + (key === chosen.mode ? ' selected' : ''), type: 'button',
+        'data-modus': key,
         onclick: function () {
+          if (PL.Run.STUFEN[chosen.ascension].legenden) return;   // die Stufe bestimmt den Weg
           chosen.mode = key;
           Array.prototype.forEach.call(modeBox.children, function (c) { c.classList.remove('selected'); });
           btn.classList.add('selected');
@@ -15616,17 +16001,50 @@ button.move-row:hover { border-color: var(--accent); }
       modeBox.appendChild(btn);
     });
 
-    // Regler und Schalter starten dort, wo die Einladung sie hingesetzt hat —
-    // sonst zeigt der Bildschirm etwas anderes an, als gestartet würde.
-    var ascLabel = el('span', { className: 'asc-value',
-      text: 'Aufstieg ' + chosen.ascension + ' — ' + meta.ASCENSIONS[chosen.ascension] });
-    var ascInput = el('input', {
-      type: 'range', min: 0, max: Math.max(0, maxAsc), value: chosen.ascension, className: 'slider',
-      oninput: function () {
-        chosen.ascension = +ascInput.value;
-        ascLabel.textContent = 'Aufstieg ' + chosen.ascension + ' — ' + meta.ASCENSIONS[chosen.ascension];
-      }
+    // Fünf Stufen mit Namen statt elf Zahlen: Was eine Stufe ändert, steht
+    // dran, bevor man sie wählt. Die sechste ist keine Stufe mehr, sondern
+    // ein eigener Weg — sie schaltet den Modus gleich mit um.
+    var stufenListe = el('div', { className: 'stufen-liste' });
+    var stufenKnoepfe = [];
+
+    function waehleStufe(i) {
+      chosen.ascension = i;
+      var legenden = !!PL.Run.STUFEN[i].legenden;
+      if (legenden) chosen.mode = 'legenden';
+      else if (chosen.mode === 'legenden') chosen.mode = 'standard';
+      stufenKnoepfe.forEach(function (b, k) { b.classList.toggle('selected', k === i); });
+      Array.prototype.forEach.call(modeBox.children, function (c) {
+        c.classList.toggle('selected', !legenden && c.getAttribute('data-modus') === chosen.mode);
+      });
+      modeBox.classList.toggle('stillgelegt', legenden);
+      modusNotiz.hidden = !legenden;
+    }
+
+    var modusNotiz = el('p', { className: 'muted small', hidden: true, text:
+      'Der Legendäre Run bringt seinen eigenen Weg mit — die Moduswahl darüber ruht so lange.' });
+
+    PL.Run.STUFEN.forEach(function (stufe, i) {
+      var offen = i <= maxAsc;
+      var btn = el('button', {
+        className: 'stufe' + (stufe.legenden ? ' legendaer' : '') + (offen ? '' : ' locked') +
+          (i === chosen.ascension ? ' selected' : ''),
+        type: 'button', disabled: !offen,
+        title: offen ? '' : 'Gewinne einen Run auf Stufe ' + i + ', um sie freizuschalten.',
+        onclick: function () { waehleStufe(i); }
+      }, [
+        el('span', { className: 'stufe-kopf' }, [
+          el('strong', { text: 'Stufe ' + (i + 1) + ' — ' + stufe.name }),
+          offen ? null : el('span', { className: 'lock', text: '🔒' })
+        ]),
+        el('span', { className: 'stufe-kurz', text: stufe.kurz }),
+        el('ul', { className: 'stufe-punkte' }, stufe.punkte.map(function (t) {
+          return el('li', { text: t });
+        }))
+      ]);
+      stufenKnoepfe.push(btn);
+      stufenListe.appendChild(btn);
     });
+    waehleStufe(Math.min(chosen.ascension, maxAsc));
 
     var nuzBtn = el('button', {
       className: 'toggle' + (chosen.nuzlocke ? ' on' : ''), type: 'button',
@@ -15672,11 +16090,10 @@ button.move-row:hover { border-color: var(--accent); }
       el('section', {}, [el('h3', { text: 'Modus' }), modeBox]),
       el('section', {}, [
         el('h3', { text: 'Schwierigkeit' }),
-        el('p', { className: 'muted', text: 'Der Grundlauf ist freundlich eingestellt. Härtere Stufen schaltest du frei, indem du Runs gewinnst.' }),
-        el('div', { className: 'asc-box' }, [
-          ascInput, ascLabel,
-          maxAsc === 0 ? el('span', { className: 'muted', text: 'Höhere Aufstiege schaltest du frei, indem du Runs gewinnst.' }) : null
-        ]),
+        el('p', { className: 'muted', text:
+          'Stufe 1 ist das Spiel, wie es gedacht ist. Jede weitere Stufe schaltet mehrere Regeln auf einmal an — ' +
+          'und die nächste schaltest du frei, indem du auf der davor gewinnst.' }),
+        stufenListe,
         nuzBtn
       ]),
       el('section', {}, [
@@ -15905,7 +16322,8 @@ button.move-row:hover { border-color: var(--accent); }
     bt.sides[1].team.forEach(function (m) { meta.noteSeen(m.sp); });
     meta.save();
     if (bt.banter) bt.log.splice(1, 0, { k: 'banter', s: '»' + bt.banter.before + '«' });
-    if (PL.audio) PL.audio.play(PL.audio.trackFor(bt.aiLevel >= 3 || bt.rival ? 'boss' : 'battle', bt.biome));
+    if (PL.audio) PL.audio.play(PL.audio.trackFor(
+      bt.legendary ? 'legend' : bt.aiLevel >= 3 || bt.rival ? 'boss' : 'battle', bt.biome));
     sfx('encounter');
     if (PL.fx) {
       App.transitioning = true;
@@ -17803,7 +18221,7 @@ button.move-row:hover { border-color: var(--accent); }
     var t = m.totals;
     var rows = [
       ['Runs gestartet', m.runs], ['Runs gewonnen', m.wins],
-      ['Beste Region', m.bestRegion + 1], ['Höchster Aufstieg', Math.max(0, m.bestAscension)],
+      ['Beste Region', m.bestRegion + 1], ['Höchste Stufe', meta.stufenName(Math.max(0, m.bestAscension))],
       ['Kämpfe', t.battles], ['Besiegte Pokémon', t.kos], ['Gefangen', t.catches],
       ['Eigene Ausfälle', t.faints], ['Arenaleiter besiegt', t.bosses || 0],
       ['Entwicklungen', t.evolutions], ['Runden gekämpft', t.turns],
@@ -17814,7 +18232,7 @@ button.move-row:hover { border-color: var(--accent); }
         return el('div', { className: 'history-row ' + (h.outcome === 'sieg' ? 'won' : 'lost') }, [
           el('span', { className: 'history-date', text: h.date }),
           el('span', { text: PL.Run.MODES[h.mode] ? PL.Run.MODES[h.mode].name : h.mode }),
-          el('span', { text: 'Aufstieg ' + h.ascension + (h.nuzlocke ? ' · Nuzlocke' : '') }),
+          el('span', { text: meta.stufenName(h.ascension) + (h.nuzlocke ? ' · Nuzlocke' : '') }),
           el('span', { text: 'Region ' + (h.region + 1) }),
           el('span', { text: h.battles + ' Kämpfe' }),
           el('span', { className: 'history-team' }, h.team.map(function (p) {
@@ -18130,7 +18548,7 @@ button.move-row:hover { border-color: var(--accent); }
     return el('div', { className: 'end-screen ' + (won ? 'won' : 'lost') }, [
       el('h2', { text: won ? 'Champ!' : 'Der Run endet hier.' }),
       el('p', { className: 'muted', text: won
-        ? 'Du hast die Liga bezwungen. Der nächste Aufstieg wartet.'
+        ? 'Du hast die Liga bezwungen. Die nächste Stufe wartet.'
         : 'Alle Pokémon sind kampfunfähig. Aber der Pokédex bleibt — und der nächste Versuch beginnt stärker.' }),
       el('div', { className: 'stat-grid' }, [
         stat('Regionen', run.region + (won ? 1 : 0)),

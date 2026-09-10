@@ -2283,6 +2283,152 @@ section('Tages-Run: ein Startwert für alle');
   delete globalThis.localStorage;
 }
 
+section('Fünf Stufen statt elf Aufstiege');
+{
+  const S = PL.Run.STUFEN;
+  eq('Es sind sechs Einträge: fünf Stufen und der Legendäre Run', S.length, 6);
+  eq('Die erste Stufe ist die Grundschwierigkeit', S[0].regeln.length, 0);
+  eq('Die letzte ist der Legendäre Run', !!S[5].legenden, true);
+  check('Jede Stufe sagt, was sie ändert', S.every((st) => st.name && st.kurz && st.punkte.length));
+
+  // Keine Regel darf verschwinden und keine doppelt vergeben sein.
+  const alle = S.flatMap((st) => st.regeln).sort((a, b) => a - b);
+  eq('Alle zehn Erschwernisse sind untergebracht', alle.join(','), '1,2,3,4,5,6,7,8,9,10');
+
+  const auf = (n) => new PL.Run({ seed: 5, ascension: n, starter: 'bulbasaur' });
+  eq('Stufe 1 schaltet nichts an', auf(0).asc(1), false);
+  eq('Stufe 2 bringt die höheren Gegnerlevel', auf(1).asc(1), true);
+  eq('… und die teureren Läden', auf(1).asc(2), true);
+  eq('… aber noch nicht die Fangchancen', auf(1).asc(5), false);
+  eq('Stufe 3 senkt die Fangchancen', auf(2).asc(5), true);
+  eq('… und erbt die Regeln von Stufe 2', auf(2).asc(1), true);
+  eq('Stufe 5 schaltet alles an', [1,2,3,4,5,6,7,8,9,10].every((r) => auf(4).asc(r)), true);
+  eq('Der Legendäre Run behält alle Regeln', [1,2,3,4,5,6,7,8,9,10].every((r) => auf(5).asc(r)), true);
+  eq('Eine Regel, die es nicht gibt, gilt nie', auf(5).asc(99), false);
+
+  // Elf alte Aufstiege werden zu fünf Stufen — ohne die letzte zu verschenken.
+  eq('Aufstieg 0 bleibt Stufe 1', PL.Run.stufeAusAltem(0), 0);
+  eq('Aufstieg 7 wird Stufe 4', PL.Run.stufeAusAltem(7), 3);
+  eq('Aufstieg 10 wird Stufe 5', PL.Run.stufeAusAltem(10), 4);
+  check('Der Legendäre Run wird nie verschenkt',
+    [0,1,2,3,4,5,6,7,8,9,10,99].every((n) => PL.Run.stufeAusAltem(n) < 5));
+  check('Die Umrechnung steigt monoton', (() => {
+    let letzte = -1;
+    for (let n = 0; n <= 10; n++) {
+      const v = PL.Run.stufeAusAltem(n);
+      if (v < letzte) return false;
+      letzte = v;
+    }
+    return true;
+  })());
+
+  // Ein laufender Run aus der alten Zeit wird beim Laden umgerechnet.
+  const alt = new PL.Run({ seed: 9, ascension: 2, starter: 'squirtle' });
+  const roh = JSON.parse(JSON.stringify(alt.toJSON()));
+  eq('Neue Runs tragen die Fassung mit sich', roh.stufenFassung, 2);
+  delete roh.stufenFassung;
+  roh.ascension = 9;
+  eq('Ein alter Spielstand landet auf Stufe 5', PL.Run.fromJSON(roh).ascension, 4);
+  eq('Wer noch nichts gewonnen hat, bekommt nichts geschenkt', PL.Run.stufeAusAltem(-1), 0);
+  const neu2 = JSON.parse(JSON.stringify(alt.toJSON()));
+  eq('Ein neuer wird nicht noch einmal umgerechnet', PL.Run.fromJSON(neu2).ascension, 2);
+}
+
+section('Der Legendäre Run');
+{
+  eq('Alle Legenden der neun Generationen', PL.Run.legendenGesamt(), 125);
+  check('Jede Generation bringt welche mit',
+    [1,2,3,4,5,6,7,8,9].every((g) => PL.Run.legendenDerGeneration(g).length > 0));
+  check('Es sind wirklich nur legendäre Arten',
+    [1,5,9].every((g) => PL.Run.legendenDerGeneration(g).every((sp) => PL.dex.isLegendary(sp))));
+  eq('Die Reihenfolge ist die des Pokédex',
+    PL.Run.legendenDerGeneration(1).map((sp) => sp.n).join(','),
+    'Articuno,Zapdos,Moltres,Mewtwo,Mew');
+
+  const run = new PL.Run({ seed: 77, mode: 'legenden', ascension: 5, starter: 'charmander' });
+  eq('Man tritt mit sechs Pokémon an', run.party.length, 6);
+  check('… alle auf der Levelgrenze', run.party.every((m) => m.lvl === run.levelCap), run.levelCap);
+  check('… und keines davon ist selbst legendär',
+    run.party.every((m) => !PL.dex.isLegendary(PL.dex.sp(m.sp))));
+  eq('Der Starter steht vorn und ist ausgewachsen',
+    PL.dex.sp(run.party[0].sp).id, 'charizard');
+  check('Der Beutel trägt genug für einen langen Weg', (run.bag.hyperpotion || 0) >= 10);
+
+  const arten = run.map.map((r) => r[0].type);
+  eq('Der Strang beginnt mit einer Verschnaufpause', arten[0], 'rest');
+  eq('Er endet mit einem Relikt', arten[arten.length - 1], 'relic');
+  eq('Generation 1 bringt fünf Legenden', arten.filter((t) => t === 'legendboss').length, 5);
+  check('Der Weg hat keine Abzweigung', run.map.every((r) => r.length === 1));
+  check('Jeder Knoten führt genau zum nächsten',
+    run.map.every((r, i) => r[0].next.length === (i < run.map.length - 1 ? 1 : 0)));
+
+  // Derselbe Startwert stellt dasselbe Team.
+  const zwilling = new PL.Run({ seed: 77, mode: 'legenden', ascension: 5, starter: 'charmander' });
+  eq('Derselbe Startwert stellt dasselbe Team',
+    run.party.map((m) => m.sp).join(','), zwilling.party.map((m) => m.sp).join(','));
+
+  // Der erste Kampf steht fest — und es ist der erste des Pokédex.
+  run.enterNode(0, 0); run.closeScene();
+  const szene = run.enterNode(1, 0);
+  eq('Der erste Gegner ist Arktos', PL.dex.sp(szene.battle.sides[1].team[0].sp).n, 'Articuno');
+  eq('… auf der Levelgrenze', szene.battle.sides[1].team[0].lvl, run.levelCap);
+  eq('… und als Legende gekennzeichnet', szene.battle.legendary, true);
+
+  // Zwischen den Legenden steht das Team wieder auf den Beinen.
+  run.party.forEach((m) => { m.hp = 0; });
+  run.finishBattle({ outcome: 'win', sides: [{ used: [] }, { team: [] }], reward: null, turns: 1 });
+  check('Nach einem gewonnenen Kampf ist das Team vollständig zurück',
+    run.party.every((m) => m.hp === PL.mon.maxHP(m)), run.party.map((m) => m.hp).join('/'));
+
+  eq('Zwei Fänge je Generation sind erlaubt', (() => {
+    const r = new PL.Run({ seed: 3, mode: 'legenden', ascension: 5, starter: 'squirtle' });
+    r.regionCatches = 2;
+    return r.catchAllowed();
+  })(), false);
+
+  // Die Levelgrenze wächst mit den Generationen bis auf 100.
+  const grenzen = [];
+  for (let g = 0; g < 9; g++) {
+    const r = new PL.Run({ seed: 3, mode: 'legenden', ascension: 5, starter: 'squirtle' });
+    r.region = g;
+    grenzen.push(r.levelCap);
+  }
+  check('Die Levelgrenze steigt Generation für Generation',
+    grenzen.every((v, i) => i === 0 || v > grenzen[i - 1]), grenzen.join(','));
+  eq('Am Ende steht Level 100', grenzen[8], 100);
+
+  // Nach der neunten Generation ist Schluss — keine Liga hinterher.
+  const ende = new PL.Run({ seed: 3, mode: 'legenden', ascension: 5, starter: 'squirtle' });
+  ende.region = 8;
+  ende.advanceRegion();
+  eq('Nach Generation 9 ist der Run gewonnen', ende.state, 'victory');
+  eq('… und die Liga kommt nicht mehr', ende.leagueStage, -1);
+  eq('Alle 125 zählen als besiegt', ende.legendenBesiegt(), 125);
+}
+
+section('Musik: das Stück für die Legenden');
+{
+  const audio = await import('../js/audio.js');
+  const stueck = PL.audio.tracks.legenden;
+  check('Es gibt ein eigenes Stück für die Legenden', !!stueck);
+  eq('Kampf gegen eine Legende bekommt es', PL.audio.trackFor('legend'), 'legenden');
+  eq('Ein Arenaleiter behält seines', PL.audio.trackFor('boss'), 'boss');
+  check('Es ist doppelt so lang wie die anderen',
+    stueck.melody.length === 128 && stueck.chords.length === 128 &&
+    stueck.low.length === 128 && stueck.beat.length === 128,
+    [stueck.melody.length, stueck.chords.length, stueck.low.length, stueck.beat.length].join('/'));
+  check('Es beginnt ohne Schlagzeugwirbel — erst Anlauf, dann Wucht',
+    stueck.beat.slice(0, 16).filter((z) => z !== '.').length <= 2);
+  check('Später schlägt es voll durch',
+    stueck.beat.slice(96, 128).filter((z) => z !== '.').length >= 24);
+  const toene = stueck.melody.concat(stueck.chords, stueck.low).filter((n) => n !== '.');
+  check('Jeder Ton lässt sich lesen', toene.every((n) => PL.audio.freq(n) > 0),
+    toene.filter((n) => !(PL.audio.freq(n) > 0)).slice(0, 5).join(','));
+  check('Es ist ruhiger im Tempo als das Arenaleiterstück',
+    stueck.bpm < PL.audio.tracks.boss.bpm, stueck.bpm + ' vs ' + PL.audio.tracks.boss.bpm);
+  void audio;
+}
+
 /* ------------------------------------------------------------- Ergebnis -- */
 
 console.log('\n' + '─'.repeat(60));

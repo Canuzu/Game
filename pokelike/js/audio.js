@@ -219,6 +219,60 @@
         k h s h k h s h k h s h k h s h
         k h s h k h s h k h s h k h s h
         k h s h k h s h k h s h s s s s`)
+    },
+
+    /* Legenden: e-Moll, acht Zeilen statt vier — das einzige Stück im Spiel,
+     * das sich Zeit lässt, bevor es zuschlägt.
+     *
+     * Alle anderen Stücke sind vier Zeilen lang und wiederholen sich nach
+     * knapp zehn Sekunden. Für einen Kampf gegen einen Arenaleiter reicht
+     * das. Der Legendäre Run dauert Stunden, und wer 125-mal dasselbe
+     * Vierzeilenstück hört, dreht den Ton ab. Also: zwei Zeilen Anlauf ohne
+     * Schlagzeug, dann das Thema, eine absteigende Fortspinnung, und zum
+     * Schluss ein Oktavsprung nach oben. Das Tempo liegt unter dem des
+     * Arenaleiterstücks — Schwere entsteht nicht durch Hetze.
+     *
+     * Geschrieben, nicht abgehört: Die Musik der Spiele gehört Nintendo und
+     * hat hier nichts zu suchen. Gesucht war die Stimmung von etwas, das
+     * größer ist als man selbst. */
+    legenden: {
+      bpm: 138, lead: 'square', harm: 'triangle', bass: 'square',
+      melody: pattern(`
+        E4 . . . B4 . . . E5 . . . B4 . . .
+        C5 . . . B4 . . . A4 . . . G4 . F#4 .
+        E5 . . B5 . . G5 . A5 . B5 . . . . .
+        C6 . . B5 . . A5 . G5 . F#5 . E5 . . .
+        D5 . . A5 . . F#5 . G5 . A5 . B5 . . .
+        C6 . . . B5 . . . A5 . G5 . A5 . . .
+        B5 . . . E6 . . . D6 . . . B5 . . .
+        C6 . B5 . A5 . G5 . E5 . B5 . E6 . . .`),
+      chords: pattern(`
+        E4 B4 E4 B4 E4 B4 E4 B4 E4 B4 E4 B4 E4 B4 E4 B4
+        C4 G4 C4 G4 C4 G4 C4 G4 B3 F#4 B3 F#4 B3 F#4 B3 F#4
+        E4 B4 E4 B4 G4 D5 G4 D5 E4 B4 E4 B4 G4 D5 G4 D5
+        C4 G4 C4 G4 C4 G4 C4 G4 D4 A4 D4 A4 D4 A4 D4 A4
+        D4 A4 D4 A4 D4 A4 D4 A4 G4 D5 G4 D5 G4 D5 G4 D5
+        C4 G4 C4 G4 C4 G4 C4 G4 A3 E4 A3 E4 A3 E4 A3 E4
+        B3 F#4 B3 F#4 B3 F#4 B3 F#4 E4 B4 E4 B4 E4 B4 E4 B4
+        C4 G4 C4 G4 D4 A4 D4 A4 E4 B4 E4 B4 E4 B4 E4 B4`),
+      low: pattern(`
+        E2 . . . E2 . . . E2 . . . E2 . E2 .
+        C2 . . . C2 . . . B1 . . . B1 . B1 .
+        E2 . E2 . G2 . G2 . E2 . E2 . G2 . G2 .
+        C2 . C2 . C2 . C2 . D2 . D2 . D2 . D2 .
+        D2 . D2 . D2 . D2 . G2 . G2 . G2 . G2 .
+        C2 . C2 . C2 . C2 . A1 . A1 . A1 . A1 .
+        B1 . B1 . B1 . B1 . E2 . E2 . E2 . E2 .
+        C2 . C2 . D2 . D2 . E2 . E2 . E2 E2 E2 E2`),
+      beat: pattern(`
+        k . . . . . . . k . . . . . . .
+        k . . . . . . . k . . . k . k .
+        k . h . s . h . k . h . s . h .
+        k . h . s . h . k . h . s . h s
+        k . h . s . h . k . h . s . h .
+        k . h . s . h . k . h s k s h s
+        k h k h s h s h k h k h s h s h
+        k h s h k h s h k s k s k s k s`)
     }
   };
 
@@ -640,6 +694,7 @@
 
   /** Welches Stück gehört zu diesem Ort? */
   function trackFor(kind, biome) {
+    if (kind === 'legend') return 'legenden';
     if (kind === 'boss') return 'boss';
     if (kind === 'battle') return 'battle';
     if (biome === 'stadt' || biome === 'arena' || kind === 'shop') return 'town';

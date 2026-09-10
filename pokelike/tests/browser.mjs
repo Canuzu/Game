@@ -364,6 +364,62 @@ await page.waitForSelector('.teilen-zone');
 }
 
 
+// Die fünf Stufen — und die sechste, die den Weg mitbringt
+await page.evaluate(() => {
+  globalThis.PokelikeApp.run = null;
+  PL.meta.reset();
+  globalThis.PokelikeApp.show('newrun');
+});
+await page.waitForSelector('.stufen-liste');
+{
+  check('Es stehen sechs Stufen zur Wahl', (await page.locator('.stufe').count()) === 6);
+  const erste = await page.locator('.stufe').first().innerText();
+  check('Die erste heißt Stufe 1', erste.indexOf('Stufe 1') === 0, erste.replace(/\n/g, ' | '));
+  check('Jede Stufe sagt, was sie ändert', (await page.locator('.stufe-punkte li').count()) >= 10);
+  check('Ohne einen einzigen Sieg steht nur Stufe 1 offen',
+    (await page.locator('.stufe:disabled').count()) === 5,
+    String(await page.locator('.stufe:disabled').count()));
+  check('Der Legendäre Run ist verschlossen',
+    await page.locator('.stufe.legendaer').isDisabled());
+  const modi = await page.locator('.choice-row .choice').count();
+  check('Der Legendäre Run steht nicht in der Modusliste', modi === 5, String(modi));
+
+  // Mit freigeschalteter letzter Stufe: sie bestimmt den Modus
+  await page.evaluate(() => {
+    const m = PL.meta.load();
+    m.bestAscension = 4;
+    PL.meta.save();
+    globalThis.PokelikeApp.show('newrun');
+  });
+  await page.waitForSelector('.stufe.legendaer:not(:disabled)');
+  await page.locator('.stufe.legendaer').click();
+  await page.waitForSelector('.choice-row.stillgelegt');
+  check('Die letzte Stufe legt die Moduswahl still', true);
+  await page.locator('.starter:not(.locked)').first().click();
+  await page.getByRole('button', { name: 'Los geht’s' }).click();
+  await page.waitForSelector('.map-screen', { timeout: 15000 });
+  const lauf = await page.evaluate(() => ({
+    modus: globalThis.PokelikeApp.run.mode,
+    team: globalThis.PokelikeApp.run.party.length,
+    level: globalThis.PokelikeApp.run.party[0].lvl,
+    knoten: globalThis.PokelikeApp.run.map.map((r) => r[0].type)
+  }));
+  check('Der Legendäre Run läuft', lauf.modus === 'legenden', lauf.modus);
+  check('… mit einem vorbereiteten Sechserteam', lauf.team === 6 && lauf.level >= 55,
+    lauf.team + ' auf Lv' + lauf.level);
+  check('… und einem Strang aus Legendenkämpfen',
+    lauf.knoten.filter((t) => t === 'legendboss').length === 5, lauf.knoten.join(','));
+  const kopf = await page.locator('.chip-region').innerText();
+  check('Die Kopfzeile zählt die Legenden', /0\/125/.test(kopf), kopf);
+
+  await page.evaluate(() => {
+    globalThis.PokelikeApp.run = null;
+    PL.meta.reset();
+    globalThis.PokelikeApp.show('title');
+  });
+  await page.waitForSelector('.title-screen');
+}
+
 // Der Tages-Run: eine Messlatte, ein Versuch, ein Code zum Vergleichen
 await page.evaluate(() => {
   globalThis.PokelikeApp.run = null;

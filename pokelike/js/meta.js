@@ -171,6 +171,7 @@
       runs: 0, wins: 0, bestRegion: 0, bestAscension: -1,
       unlocked: {}, achievements: {}, seen: {}, caught: {}, shinies: {},
       taeglich: {},
+      stufenFassung: 2,
       totals: { battles: 0, kos: 0, catches: 0, faints: 0, money: 0, turns: 0, evolutions: 0, playtime: 0 },
       history: [],
       settings: { theme: 'auto', lang: 'de', speed: 'normal', sound: true, music: true, volume: 0.5, confirmRisky: true, figur: 'rot' }
@@ -192,6 +193,16 @@
           else cache[k] = data[k];
         });
       } catch (e) { /* beschädigt — dann eben frisch */ }
+    }
+    // Aus elf Aufstiegen wurden fünf Stufen. Ein Spielstand von vorher trägt
+    // noch die alte Zahl; unumgerechnet stünde "Aufstieg 9" plötzlich für den
+    // Legendären Run. Umgerechnet bleibt der Rang erhalten, er heißt nur
+    // anders — verschenkt wird die letzte Stufe dabei nicht.
+    if (cache.stufenFassung !== 2) {
+      // -1 heißt "noch nichts gewonnen" — das bleibt so, sonst schenkte die
+      // Umrechnung jedem frischen Spielstand die zweite Stufe.
+      if (cache.bestAscension >= 0) cache.bestAscension = PL.Run.stufeAusAltem(cache.bestAscension);
+      cache.stufenFassung = 2;
     }
     return cache;
   }
@@ -302,8 +313,9 @@
     { id: 'legendary', name: 'Legendenjäger', desc: 'Fange ein legendäres Pokémon.', manual: true },
     { id: 'relic10', name: 'Reliktjäger', desc: 'Sammle zehn Relikte in einem Run.', manual: true },
     { id: 'nuzlocke', name: 'Harte Schule', desc: 'Gewinne einen Run mit Nuzlocke-Regeln.', manual: true },
-    { id: 'ascend1', name: 'Aufstieg', desc: 'Gewinne auf Aufstieg 1 oder höher.', manual: true },
-    { id: 'ascend5', name: 'Hochgestiegen', desc: 'Gewinne auf Aufstieg 5 oder höher.', manual: true },
+    { id: 'ascend1', name: 'Aufstieg', desc: 'Gewinne auf Stufe 2 oder höher.', manual: true },
+    { id: 'ascend5', name: 'Meister', desc: 'Gewinne auf Stufe 5 — Meisterschaft.', manual: true },
+    { id: 'legendenrun', name: 'Legendenbezwinger', desc: 'Gewinne den Legendären Run.', manual: true },
     { id: 'notafraid', name: 'Kein Zurück', desc: 'Gewinne einen Kampf mit einem Pokémon auf 1 KP.', manual: true },
     { id: 'sweep', name: 'Alleingang', desc: 'Besiege ein volles Gegnerteam mit einem einzigen Pokémon.', manual: true },
     { id: 'mega', name: 'Mega', desc: 'Mega-entwickle ein Pokémon.', manual: true },
@@ -464,23 +476,18 @@
 
   /* ---------- 5) Aufstiege ---------------------------------------------------- */
 
-  var ASCENSIONS = [
-    'Grundschwierigkeit.',
-    'Gegner starten zwei Level höher.',
-    'Läden verlangen 25 % mehr.',
-    'Arenaleiter führen ein Pokémon mehr.',
-    'Rastplätze heilen nur noch zur Hälfte.',
-    'Fangchancen sinken deutlich.',
-    'Gegner tragen häufiger Gegenstände.',
-    'Erfahrung um 20 % reduziert.',
-    'Kein Vollheilen nach Arenaleitern.',
-    'Gegner mega-entwickeln, sobald sie können.',
-    'Alles zusammen — und noch zwei Level obendrauf. Viel Glück.'
-  ];
+  // Die Stufen selbst stehen in run.js — dort, wo ihre Regeln wirken.
+  var ASCENSIONS = PL.Run.STUFEN;
 
   function maxAscension() {
     var m = load();
     return Math.min(ASCENSIONS.length - 1, m.bestAscension + 1);
+  }
+
+  /** Name und Kurzfassung einer Stufe, wie sie überall angezeigt werden. */
+  function stufenName(n) {
+    var st = ASCENSIONS[Math.min(Math.max(0, n | 0), ASCENSIONS.length - 1)];
+    return 'Stufe ' + (Math.min(Math.max(0, n | 0), ASCENSIONS.length - 1) + 1) + ' — ' + st.name;
   }
 
   /* ---------- 6) Statistik und Runs ------------------------------------------- */
@@ -493,7 +500,8 @@
       m.wins++;
       if (run.ascension > m.bestAscension) m.bestAscension = run.ascension;
       if (run.ascension >= 1) award('ascend1');
-      if (run.ascension >= 5) award('ascend5');
+      if (run.ascension >= 4) award('ascend5');
+      if (run.mode === 'legenden') award('legendenrun');
       if (run.nuzlocke) award('nuzlocke');
       if (run.mode === 'taeglich') award('daily');
     }
@@ -712,7 +720,7 @@
     tagGespielt: tagGespielt,
     noteSeen: noteSeen, noteCaught: noteCaught, noteOwned: noteOwned,
     noteParty: noteParty, dexStats: dexStats,
-    ASCENSIONS: ASCENSIONS, maxAscension: maxAscension,
+    ASCENSIONS: ASCENSIONS, maxAscension: maxAscension, stufenName: stufenName,
     recordRun: recordRun,
     saveRun: saveRun, loadRun: loadRun, clearRun: clearRun, hasRun: hasRun,
     exportSave: exportSave, importSave: importSave,

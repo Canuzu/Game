@@ -58,7 +58,7 @@
 
   var NODE_BASE = {
     rest: 30, catch: 40, relic: 78, shop: 44, item: 44, event: 40,
-    wild: 34, trainer: 44, elite: 50, rival: 60, legend: 130,
+    wild: 34, trainer: 44, elite: 50, rival: 60, legend: 130, legendboss: 100,
     boss: 100, e4: 100, champ: 100
   };
 

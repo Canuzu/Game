@@ -193,7 +193,8 @@
     if (!settings().music) { PL.audio.stop(); return; }
     var run = App.run, bt = App.battle;
     if (screen === 'battle' && bt) {
-      PL.audio.play(PL.audio.trackFor(bt.aiLevel >= 3 ? 'boss' : 'battle', bt.biome));
+      PL.audio.play(PL.audio.trackFor(
+        bt.legendary ? 'legend' : bt.aiLevel >= 3 ? 'boss' : 'battle', bt.biome));
       return;
     }
     // Jede Region hat ihr eigenes Stück; in der Liga spielt keines von ihnen.
@@ -223,14 +224,20 @@
     if (run && App.screen !== 'title' && App.screen !== 'newrun') {
       var region = run.leagueStage >= 0 ? { name: 'Pokémon-Liga', color: '#c9a227' } : run.currentRegion();
       mid.appendChild(el('span', { className: 'region-badge', style: { borderColor: region.color }, text: region.name }));
-      mid.appendChild(el('span', { className: 'chip chip-region', text: '👑 ' + (run.leagueStage >= 0 ? 'Finale' : 'Region ' + (run.region + 1) + '/' + (run.mode === 'endlos' ? '∞' : run.totalRegions())) }));
+      // Im Legendären Run zählt nicht die Region, sondern wie viele Legenden
+      // schon gefallen sind. Das ist der einzige Fortschritt, den es dort gibt.
+      mid.appendChild(run.mode === 'legenden'
+        ? el('span', { className: 'chip chip-region', title: 'Besiegte Legenden',
+            text: '🌟 ' + run.legendenBesiegt() + '/' + PL.Run.legendenGesamt() })
+        : el('span', { className: 'chip chip-region', text: '👑 ' + (run.leagueStage >= 0 ? 'Finale' : 'Region ' + (run.region + 1) + '/' + (run.mode === 'endlos' ? '∞' : run.totalRegions())) }));
       mid.appendChild(el('span', { className: 'chip chip-money', text: '💰 ' + U.money(run.money) }));
       mid.appendChild(el('span', { className: 'chip chip-cap', title: 'Höchstes erreichbares Level' }, [
         el('span', { text: '⬆\u00a0' }),
         el('span', { className: 'cap-word', text: 'Lv ' }),
         el('span', { text: String(run.levelCap) })
       ]));
-      if (run.ascension) mid.appendChild(el('span', { className: 'chip warn', text: '🔥 Aufstieg ' + run.ascension }));
+      if (run.ascension) mid.appendChild(el('span', { className: 'chip warn',
+        text: (run.mode === 'legenden' ? '🌟 ' : '🔥 ') + meta.stufenName(run.ascension) }));
       if (run.nuzlocke) mid.appendChild(el('span', { className: 'chip warn', text: '💀 Nuzlocke' }));
     }
 
@@ -356,7 +363,7 @@
       el('div', {}, [
         el('strong', { text: '🔗 Ein Run wurde dir geschickt' }),
         el('div', { className: 'muted small', text:
-          ein.modusName + (ein.aufstieg ? ' · Aufstieg ' + ein.aufstieg : '') +
+          ein.modusName + (ein.aufstieg ? ' · ' + meta.stufenName(ein.aufstieg) : '') +
           (ein.nuzlocke ? ' · Nuzlocke' : '') + ' · Startwert ' + ein.startwert })
       ]),
       el('div', { className: 'setting-actions' }, [
@@ -697,7 +704,7 @@
         })),
         el('div', { className: 'slot-line muted small' }, [
           el('span', { text: info.mode + (info.nuzlocke ? ' · Nuzlocke' : '') +
-            (info.ascension ? ' · Aufstieg ' + info.ascension : '') }),
+            (info.ascension ? ' · ' + meta.stufenName(info.ascension) : '') }),
           el('span', { text: info.saved ? new Date(info.saved).toLocaleString('de-DE') : 'läuft gerade' })
         ])
       ]);
@@ -845,9 +852,14 @@
     var modeBox = el('div', { className: 'choice-row' });
     Object.keys(PL.Run.MODES).forEach(function (key) {
       var mode = PL.Run.MODES[key];
+      // Der Legendäre Run ist kein Modus zum Anklicken, sondern die letzte
+      // Stufe. Er steht weiter unten.
+      if (mode.versteckt) return;
       var btn = el('button', {
         className: 'choice' + (key === chosen.mode ? ' selected' : ''), type: 'button',
+        'data-modus': key,
         onclick: function () {
+          if (PL.Run.STUFEN[chosen.ascension].legenden) return;   // die Stufe bestimmt den Weg
           chosen.mode = key;
           Array.prototype.forEach.call(modeBox.children, function (c) { c.classList.remove('selected'); });
           btn.classList.add('selected');
@@ -857,17 +869,50 @@
       modeBox.appendChild(btn);
     });
 
-    // Regler und Schalter starten dort, wo die Einladung sie hingesetzt hat —
-    // sonst zeigt der Bildschirm etwas anderes an, als gestartet würde.
-    var ascLabel = el('span', { className: 'asc-value',
-      text: 'Aufstieg ' + chosen.ascension + ' — ' + meta.ASCENSIONS[chosen.ascension] });
-    var ascInput = el('input', {
-      type: 'range', min: 0, max: Math.max(0, maxAsc), value: chosen.ascension, className: 'slider',
-      oninput: function () {
-        chosen.ascension = +ascInput.value;
-        ascLabel.textContent = 'Aufstieg ' + chosen.ascension + ' — ' + meta.ASCENSIONS[chosen.ascension];
-      }
+    // Fünf Stufen mit Namen statt elf Zahlen: Was eine Stufe ändert, steht
+    // dran, bevor man sie wählt. Die sechste ist keine Stufe mehr, sondern
+    // ein eigener Weg — sie schaltet den Modus gleich mit um.
+    var stufenListe = el('div', { className: 'stufen-liste' });
+    var stufenKnoepfe = [];
+
+    function waehleStufe(i) {
+      chosen.ascension = i;
+      var legenden = !!PL.Run.STUFEN[i].legenden;
+      if (legenden) chosen.mode = 'legenden';
+      else if (chosen.mode === 'legenden') chosen.mode = 'standard';
+      stufenKnoepfe.forEach(function (b, k) { b.classList.toggle('selected', k === i); });
+      Array.prototype.forEach.call(modeBox.children, function (c) {
+        c.classList.toggle('selected', !legenden && c.getAttribute('data-modus') === chosen.mode);
+      });
+      modeBox.classList.toggle('stillgelegt', legenden);
+      modusNotiz.hidden = !legenden;
+    }
+
+    var modusNotiz = el('p', { className: 'muted small', hidden: true, text:
+      'Der Legendäre Run bringt seinen eigenen Weg mit — die Moduswahl darüber ruht so lange.' });
+
+    PL.Run.STUFEN.forEach(function (stufe, i) {
+      var offen = i <= maxAsc;
+      var btn = el('button', {
+        className: 'stufe' + (stufe.legenden ? ' legendaer' : '') + (offen ? '' : ' locked') +
+          (i === chosen.ascension ? ' selected' : ''),
+        type: 'button', disabled: !offen,
+        title: offen ? '' : 'Gewinne einen Run auf Stufe ' + i + ', um sie freizuschalten.',
+        onclick: function () { waehleStufe(i); }
+      }, [
+        el('span', { className: 'stufe-kopf' }, [
+          el('strong', { text: 'Stufe ' + (i + 1) + ' — ' + stufe.name }),
+          offen ? null : el('span', { className: 'lock', text: '🔒' })
+        ]),
+        el('span', { className: 'stufe-kurz', text: stufe.kurz }),
+        el('ul', { className: 'stufe-punkte' }, stufe.punkte.map(function (t) {
+          return el('li', { text: t });
+        }))
+      ]);
+      stufenKnoepfe.push(btn);
+      stufenListe.appendChild(btn);
     });
+    waehleStufe(Math.min(chosen.ascension, maxAsc));
 
     var nuzBtn = el('button', {
       className: 'toggle' + (chosen.nuzlocke ? ' on' : ''), type: 'button',
@@ -913,11 +958,10 @@
       el('section', {}, [el('h3', { text: 'Modus' }), modeBox]),
       el('section', {}, [
         el('h3', { text: 'Schwierigkeit' }),
-        el('p', { className: 'muted', text: 'Der Grundlauf ist freundlich eingestellt. Härtere Stufen schaltest du frei, indem du Runs gewinnst.' }),
-        el('div', { className: 'asc-box' }, [
-          ascInput, ascLabel,
-          maxAsc === 0 ? el('span', { className: 'muted', text: 'Höhere Aufstiege schaltest du frei, indem du Runs gewinnst.' }) : null
-        ]),
+        el('p', { className: 'muted', text:
+          'Stufe 1 ist das Spiel, wie es gedacht ist. Jede weitere Stufe schaltet mehrere Regeln auf einmal an — ' +
+          'und die nächste schaltest du frei, indem du auf der davor gewinnst.' }),
+        stufenListe,
         nuzBtn
       ]),
       el('section', {}, [
@@ -1146,7 +1190,8 @@
     bt.sides[1].team.forEach(function (m) { meta.noteSeen(m.sp); });
     meta.save();
     if (bt.banter) bt.log.splice(1, 0, { k: 'banter', s: '»' + bt.banter.before + '«' });
-    if (PL.audio) PL.audio.play(PL.audio.trackFor(bt.aiLevel >= 3 || bt.rival ? 'boss' : 'battle', bt.biome));
+    if (PL.audio) PL.audio.play(PL.audio.trackFor(
+      bt.legendary ? 'legend' : bt.aiLevel >= 3 || bt.rival ? 'boss' : 'battle', bt.biome));
     sfx('encounter');
     if (PL.fx) {
       App.transitioning = true;
@@ -3044,7 +3089,7 @@
     var t = m.totals;
     var rows = [
       ['Runs gestartet', m.runs], ['Runs gewonnen', m.wins],
-      ['Beste Region', m.bestRegion + 1], ['Höchster Aufstieg', Math.max(0, m.bestAscension)],
+      ['Beste Region', m.bestRegion + 1], ['Höchste Stufe', meta.stufenName(Math.max(0, m.bestAscension))],
       ['Kämpfe', t.battles], ['Besiegte Pokémon', t.kos], ['Gefangen', t.catches],
       ['Eigene Ausfälle', t.faints], ['Arenaleiter besiegt', t.bosses || 0],
       ['Entwicklungen', t.evolutions], ['Runden gekämpft', t.turns],
@@ -3055,7 +3100,7 @@
         return el('div', { className: 'history-row ' + (h.outcome === 'sieg' ? 'won' : 'lost') }, [
           el('span', { className: 'history-date', text: h.date }),
           el('span', { text: PL.Run.MODES[h.mode] ? PL.Run.MODES[h.mode].name : h.mode }),
-          el('span', { text: 'Aufstieg ' + h.ascension + (h.nuzlocke ? ' · Nuzlocke' : '') }),
+          el('span', { text: meta.stufenName(h.ascension) + (h.nuzlocke ? ' · Nuzlocke' : '') }),
           el('span', { text: 'Region ' + (h.region + 1) }),
           el('span', { text: h.battles + ' Kämpfe' }),
           el('span', { className: 'history-team' }, h.team.map(function (p) {
@@ -3371,7 +3416,7 @@
     return el('div', { className: 'end-screen ' + (won ? 'won' : 'lost') }, [
       el('h2', { text: won ? 'Champ!' : 'Der Run endet hier.' }),
       el('p', { className: 'muted', text: won
-        ? 'Du hast die Liga bezwungen. Der nächste Aufstieg wartet.'
+        ? 'Du hast die Liga bezwungen. Die nächste Stufe wartet.'
         : 'Alle Pokémon sind kampfunfähig. Aber der Pokédex bleibt — und der nächste Versuch beginnt stärker.' }),
       el('div', { className: 'stat-grid' }, [
         stat('Regionen', run.region + (won ? 1 : 0)),

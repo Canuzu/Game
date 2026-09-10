@@ -27,8 +27,15 @@
 
   var MODUS_NAME = {
     standard: 'Standard', kurz: 'Kurzrun', endlos: 'Endlos',
-    bossrush: 'Boss-Rush', taeglich: 'Tages-Run'
+    bossrush: 'Boss-Rush', taeglich: 'Tages-Run', legenden: 'Legendärer Run'
   };
+
+  /** "Stufe 3 — Prüfung", auch ohne geladenes Fortschrittsmodul. */
+  function stufenName(n) {
+    var liste = (PL.Run && PL.Run.STUFEN) || [];
+    var i = Math.min(Math.max(0, n | 0), Math.max(0, liste.length - 1));
+    return liste[i] ? 'Stufe ' + (i + 1) + ' — ' + liste[i].name : 'Stufe ' + (i + 1);
+  }
 
   /**
    * Fasst einen beendeten Run zusammen. Nimmt nur, was auf eine Karte passt —
@@ -88,7 +95,7 @@
   function alsText(erg) {
     var zeilen = [];
     var kopf = 'Pokélike+ · ' + erg.modusName;
-    if (erg.aufstieg > 0) kopf += ' · Aufstieg ' + erg.aufstieg;
+    if (erg.aufstieg > 0) kopf += ' · ' + stufenName(erg.aufstieg);
     if (erg.nuzlocke) kopf += ' · Nuzlocke';
     zeilen.push(kopf);
     zeilen.push(erg.gewonnen
@@ -192,7 +199,7 @@
     y += 44;
     g.fillStyle = KARTE.leise;
     g.font = '400 26px system-ui, sans-serif';
-    var unter = erg.modusName + (erg.aufstieg ? ' · Aufstieg ' + erg.aufstieg : '') +
+    var unter = erg.modusName + (erg.aufstieg ? ' · ' + stufenName(erg.aufstieg) : '') +
       (erg.nuzlocke ? ' · Nuzlocke' : '') +
       (erg.gewonnen ? '' : ' · von ' + erg.regionen + ' Regionen');
     g.fillText(unter, rand, y);

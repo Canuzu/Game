@@ -197,9 +197,29 @@ button { font: inherit; color: inherit; }
 .choice span, .option span { color: var(--muted); font-size: .85rem; }
 .option:disabled { opacity: .45; cursor: not-allowed; }
 .option-list { display: flex; flex-direction: column; gap: .5rem; }
-.asc-box { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; margin-bottom: .8rem; }
 .slider { flex: 1; min-width: 180px; accent-color: var(--accent); }
-.asc-value { font-weight: 600; }
+
+/* Die fünf Schwierigkeitsstufen (und die sechste, die keine mehr ist) */
+.stufen-liste { display: grid; gap: .5rem; margin-bottom: .9rem; }
+.stufe {
+  display: grid; gap: .25rem; width: 100%; text-align: left; cursor: pointer;
+  padding: .7rem .9rem; border: 1px solid var(--line); border-radius: var(--radius);
+  background: var(--panel); color: var(--text); font: inherit;
+}
+.stufe:hover:not(:disabled) { border-color: var(--accent); }
+.stufe.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); background: var(--panel-2); }
+.stufe.locked { opacity: .45; cursor: not-allowed; }
+.stufe-kopf { display: flex; align-items: center; gap: .5rem; }
+.stufe-kurz { color: var(--muted); font-size: .85rem; }
+.stufe-punkte { margin: .2rem 0 0; padding-left: 1.1rem; color: var(--muted); font-size: .85rem; }
+.stufe-punkte li { margin: .1rem 0; }
+.stufe.legendaer { border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+.stufe.legendaer.selected {
+  background: linear-gradient(135deg, var(--panel-2), color-mix(in srgb, var(--accent) 16%, var(--panel-2)));
+}
+.stufe.legendaer strong { color: var(--accent); }
+.stufe.legendaer.locked strong { color: inherit; }
+.choice-row.stillgelegt { opacity: .4; pointer-events: none; }
 .toggle {
   display: flex; align-items: center; gap: .6rem; padding: .6rem .9rem; width: 100%;
   border-radius: var(--radius); background: var(--panel); border: 1px solid var(--line); cursor: pointer; text-align: left;
