@@ -1242,9 +1242,11 @@
     // einem K. o. —, gehört die nächste Runde dem Spieler.
     if (!side.isPlayer && this.turn > 0) this.playerFirstNextTurn = true;
     if (!silent) {
-      this.say((side.isPlayer ? 'Los, ' : (this.wild ? 'Ein wildes ' : 'Der Gegner schickt ')) +
-        mons.name(mon) + (side.isPlayer ? '!' : (this.wild ? ' erscheint!' : ' in den Kampf!')),
-        'switchin', { side: side.id, mon: index });
+      // Eine Legende ist nicht »wild«: Sie steht da, wo sie immer stand, und
+      // wartet. Also bekommt sie ihre eigene Zeile.
+      var vorn = side.isPlayer ? 'Los, ' : this.legendary ? '' : this.wild ? 'Ein wildes ' : 'Der Gegner schickt ';
+      var hinten = side.isPlayer ? '!' : this.legendary ? ' stellt sich dir!' : this.wild ? ' erscheint!' : ' in den Kampf!';
+      this.say(vorn + mons.name(mon) + hinten, 'switchin', { side: side.id, mon: index });
     }
     this.applyHazards(side.active);
     if (side.active.mon.hp > 0) this.onSwitchInEffects(side.active);
@@ -1872,8 +1874,9 @@
   B.start = function () {
     // Der Name trägt seine Anrede schon („Arenaleiter Misty", „Käfersammler
     // Finn") — ein zusätzliches „Trainer" davor doppelt sie nur.
-    this.log.push({ k: 'start', s: this.wild ? 'Ein wildes Pokémon greift an!' :
-      ((this.trainer && this.trainer.name ? this.trainer.name : 'Ein Trainer') +
+    this.log.push({ k: 'start', s: this.legendary ? 'Eine Legende erwacht!'
+      : this.wild ? 'Ein wildes Pokémon greift an!'
+      : ((this.trainer && this.trainer.name ? this.trainer.name : 'Ein Trainer') +
         ' fordert dich heraus!') });
     var first0 = firstAlive(this.sides[0]), first1 = firstAlive(this.sides[1]);
     this.switchIn(this.sides[1], first1);

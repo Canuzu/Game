@@ -1435,7 +1435,8 @@ button.move-row:hover { border-color: var(--accent); }
 .move-row, .choice, .option, .offer, .relic-card, .starter, .stat-tile,
 .battle-log, .team-detail, .aftermath, .event-text, .region-header, .chip,
 .icon-btn, .filter, .search, .toast, .ach, .history-row, .relic-row, .scout,
-.nature-pick, .type-pick, .map-stage, .battle-stage, .dex-cell, .toggle {
+.nature-pick, .type-pick, .map-stage, .battle-stage, .dex-cell, .toggle,
+.gen-karte, .legende-karte, .duell-platz, .pool-karte, .move-pick, .menue-zeile.gold {
   border-radius: 0;
   border: 2px solid var(--frame-edge);
   box-shadow:
@@ -1452,7 +1453,8 @@ button.move-row:hover { border-color: var(--accent); }
    Region, die Bühne, die Karte, ein Dialog, das Menü. Alles, was für sich
    steht und nicht in einer Reihe von zwanzig gleichen Kästen liegt. */
 .region-header, .modal, .map-stage, .battle-stage, .menue-fenster,
-.titel-bild, .sammlung-karte, .daily-karte, .tages-banner, .title-fuss {
+.titel-bild, .sammlung-karte, .daily-karte, .tages-banner, .title-fuss,
+.legenden-kopf, .duell-kopf {
   box-shadow:
     inset 0 2px 0 0 var(--licht), inset 2px 0 0 0 var(--licht),
     inset 0 -2px 0 0 var(--schatten), inset -2px 0 0 0 var(--schatten),
@@ -1467,13 +1469,15 @@ button.move-row:hover { border-color: var(--accent); }
 }
 
 .btn, .action-btn, .icon-btn, .filter, .move-btn, .choice, .option, .offer,
-.relic-card, .starter, .mon-card, .item-row, .nature-pick, .type-pick, .dex-cell {
+.relic-card, .starter, .mon-card, .item-row, .nature-pick, .type-pick, .dex-cell,
+.gen-karte, .legende-karte, .pool-karte, .move-pick {
   transition: transform .05s steps(2), box-shadow .05s steps(2);
 }
 .btn:hover:not(:disabled), .action-btn:hover:not(:disabled), .icon-btn:hover,
 .move-btn:hover:not(:disabled), .choice:hover, .option:hover:not(:disabled),
 .offer:hover, .relic-card:hover, .starter:hover:not(:disabled),
-.mon-card:hover:not(:disabled):not(.empty), .item-row:hover:not(:disabled), .filter:hover {
+.mon-card:hover:not(:disabled):not(.empty), .item-row:hover:not(:disabled), .filter:hover,
+.gen-karte:hover, .legende-karte:hover, .pool-karte:hover:not(:disabled), .move-pick:hover {
   transform: translate(-1px, -1px);
   box-shadow:
     inset 0 2px 0 0 var(--licht), inset 2px 0 0 0 var(--licht),
@@ -1893,6 +1897,161 @@ button.move-row:hover { border-color: var(--accent); }
 .level-up-block .sprite { width: 56px; height: 56px; }
 .evo-host { position: relative; width: 76px; height: 76px; flex: 0 0 auto; }
 .evo-sprite { width: 76px; height: 76px; image-rendering: pixelated; }
+
+/* =============================================================================
+ * Der Legendäre Run
+ * -----------------------------------------------------------------------------
+ * Ein eigener Weg braucht eine eigene Farbe. Gold liegt neben keiner
+ * Regionsfarbe schlecht, und es sagt ohne ein Wort, dass hier das Schwerste
+ * steht. Innerhalb des Modus übernimmt dann die Generation: Jede Karte trägt
+ * die Farbe ihrer Region als --gen-farbe.
+ * ========================================================================== */
+
+:root {
+  --gold: #c9992a;
+  --gold-hell: #f0d070;
+  --gold-tief: #7a5a10;
+}
+[data-app-theme="dark"], [data-theme="dark"] {
+  --gold: #e0b84a;
+  --gold-hell: #ffe89a;
+  --gold-tief: #3a2c08;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --gold: #e0b84a;
+    --gold-hell: #ffe89a;
+    --gold-tief: #3a2c08;
+  }
+}
+
+/* --- Die goldene Zeile im Titelmenü --- */
+.menue-zeile.gold {
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--gold) 26%, var(--panel)),
+    color-mix(in srgb, var(--gold) 12%, var(--panel)));
+  box-shadow: inset 0 0 0 2px var(--gold);
+}
+.menue-zeile.gold .menue-zeiger { color: var(--gold-tief); }
+.menue-zeile.gold:hover { background: color-mix(in srgb, var(--gold) 36%, var(--panel)); }
+.menue-zeile .menue-text { display: flex; flex-direction: column; gap: .1rem; }
+.menue-unter { font-size: 20px; color: var(--muted); }
+.menue-zeile.gold .menue-notiz { color: var(--gold-tief); font-weight: 700; }
+
+/* --- Übersicht und Generationen --- */
+.legenden-screen { display: flex; flex-direction: column; gap: 1rem; }
+.legenden-kopf {
+  background: var(--panel); border: var(--kante) solid var(--rahmen);
+  padding: .9rem 1rem;
+}
+.legenden-kopf h2 { margin: 0 0 .4rem; }
+.legenden-sperre {
+  margin: .5rem 0 0; padding: .35rem .6rem;
+  background: color-mix(in srgb, var(--accent) 14%, var(--panel));
+  border: var(--kante) solid var(--accent); color: var(--accent-text);
+}
+
+.gen-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: .6rem; }
+.gen-karte {
+  display: flex; flex-direction: column; gap: .2rem; text-align: left;
+  padding: .7rem .8rem; cursor: pointer;
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--gen-farbe, var(--innen)) 22%, var(--panel)), var(--panel));
+  border: var(--kante) solid var(--gen-farbe, var(--line));
+}
+.gen-karte.voll { box-shadow: inset 0 0 0 4px var(--gold); }
+.gen-nummer { font-size: 20px; color: var(--muted); }
+.gen-name { font-size: 30px; }
+.gen-zahl { font-size: 20px; color: var(--text); }
+
+/* --- Die Legenden einer Generation --- */
+.legenden-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: .6rem; }
+.legende-karte {
+  display: flex; flex-direction: column; align-items: center; gap: .25rem;
+  padding: .6rem .4rem; cursor: pointer; text-align: center;
+  background: var(--panel); border: var(--kante) solid var(--line);
+}
+.legende-karte.bereit { border-color: var(--gold); box-shadow: inset 0 0 0 4px color-mix(in srgb, var(--gold) 35%, transparent); }
+.legende-karte.gefangen { background: color-mix(in srgb, var(--good) 12%, var(--panel)); border-color: var(--good); }
+.legende-bild { width: 84px; height: 84px; display: grid; place-items: center; }
+.legende-sprite { width: 84px; height: 84px; object-fit: contain; }
+.legende-name { font-size: 20px; }
+.legende-typen, .duell-typen { display: flex; gap: .2rem; flex-wrap: wrap; justify-content: center; }
+.legende-marke { font-size: 20px; color: var(--muted); }
+
+/* --- Der Teambau --- */
+.duell-kopf { background: var(--panel); border: var(--kante) solid var(--gen-farbe, var(--rahmen)); padding: .8rem 1rem; }
+.duell-gegner { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+.duell-gegner-sprite { width: 128px; height: 128px; object-fit: contain; }
+.duell-gegner h2 { margin: 0 0 .3rem; }
+
+/* Sechs Plätze, sechs Spalten: Ein Team ist eine Reihe, kein Absatz. */
+.duell-team { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: .5rem; }
+.duell-platz {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: .25rem;
+  padding: .6rem .5rem; background: var(--panel); border: var(--kante) solid var(--line);
+}
+.duell-platz.leer {
+  border-style: dashed; color: var(--muted); justify-content: center;
+  min-height: 150px; box-shadow: none; background: transparent;
+}
+.duell-bild { width: 72px; height: 72px; display: grid; place-items: center; }
+.duell-sprite { width: 72px; height: 72px; object-fit: contain; }
+.duell-weg {
+  position: absolute; top: 2px; right: 2px; width: 28px; height: 28px;
+  background: var(--panel); border: var(--kante) solid var(--line); cursor: pointer;
+  color: var(--accent-text); line-height: 1;
+}
+.duell-platz .btn.small { font-size: 20px; padding: .2rem .4rem; width: 100%; }
+
+.duell-pool { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: .4rem; }
+.pool-karte {
+  position: relative; display: flex; flex-direction: column; align-items: center; gap: .15rem;
+  padding: .45rem .3rem; cursor: pointer; text-align: center;
+  background: var(--panel); border: var(--kante) solid var(--line);
+}
+.pool-karte::before {
+  content: ''; position: absolute; left: 4px; right: 4px; top: 4px; height: 5px;
+  background: var(--typ-farbe, var(--line));
+}
+.pool-karte.drin { border-color: var(--good); background: color-mix(in srgb, var(--good) 16%, var(--panel)); }
+.pool-karte:disabled { opacity: .45; cursor: not-allowed; }
+.pool-bild { width: 56px; height: 56px; display: grid; place-items: center; }
+.pool-sprite { width: 56px; height: 56px; object-fit: contain; }
+.pool-name { font-size: 20px; }
+
+/* --- Die Attackenwahl --- */
+.move-wahl { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: .35rem; max-height: 58vh; overflow-y: auto; }
+.move-pick {
+  display: flex; flex-direction: column; gap: .1rem; text-align: left; cursor: pointer;
+  padding: .4rem .55rem; background: var(--panel); border: var(--kante) solid var(--line);
+  border-left-width: 6px; border-left-color: var(--typ-farbe, var(--line));
+}
+.move-pick.gewaehlt { background: color-mix(in srgb, var(--good) 18%, var(--panel)); border-color: var(--good); border-left-color: var(--typ-farbe, var(--good)); }
+
+/* --- Das Ende eines Duells --- */
+.duell-ende-bild { display: grid; place-items: center; margin: .5rem 0; }
+.duell-ende .party-strip { margin-bottom: 1rem; }
+.duell-ende .stat-grid { margin-bottom: .8rem; }
+
+@media (max-width: 560px) {
+  .gen-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+  .gen-name { font-size: 20px; }
+  .legenden-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .legende-bild, .legende-sprite { width: 64px; height: 64px; }
+  .duell-gegner-sprite { width: 96px; height: 96px; }
+  .duell-team { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .duell-platz.leer { min-height: 110px; }
+  .duell-pool { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .pool-bild, .pool-sprite { width: 44px; height: 44px; }
+  .move-wahl { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 900px) {
+  .duell-team { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+/* Der Automat versteckt sich per hidden — ohne das gewinnt display:flex. */
+.autopilot-btn[hidden] { display: none !important; }
 </style>
 <!-- symbol:anfang -->
 <link rel="icon" href="data:image/png;base64,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">
@@ -1952,7 +2111,7 @@ button.move-row:hover { border-color: var(--accent); }
   var PL = root.PL || (root.PL = {});
 
   // Diese Zeile ersetzt tools/build-single.mjs beim Bauen.
-  var BUILD = '20260911T082518Z-483197d';
+  var BUILD = '20260911T135417Z-06c60ee';
 
   var TRIED_KEY = 'pokelike.plus.update.versucht';
   var state = { build: BUILD, latest: null, checking: false, stuck: false };
@@ -2884,6 +3043,96 @@ button.move-row:hover { border-color: var(--accent); }
     }
   });
 
+  /* --- Drei Kulissen nur für die Legenden ------------------------------------
+   * Manche legendäre Pokémon stehen nirgendwo im Spiel richtig: Ein Wesen aus
+   * dem All gehört nicht auf eine Wiese, und ein Donnervogel nicht in eine
+   * Höhle. Diese drei Schauplätze gibt es deshalb nur im Duell.
+   * -------------------------------------------------------------------------- */
+
+  biome('weltraum', {
+    tile: 'fels',
+    sky: '#080614',
+    name: 'Zwischen den Sternen', ground: '#2a2440', platform: '#403868', edge: '#151030',
+    light: 'rgba(180,150,255,.18)',
+    particles: 'sparks',
+    draw: function (ctx) {
+      bands(ctx, 0, 58, ['#080614', '#120c26', '#1c1238', '#281a4c']);
+      speckle(ctx, 0, 0, W, 58, '#ffffff', 120, 5);
+      speckle(ctx, 0, 0, W, 40, '#a890ff', 50, 61);
+      speckle(ctx, 0, 0, W, 30, '#ffe0a0', 20, 13);
+      // Ein Planet am Rand, halb im Schatten
+      var i;
+      for (i = 0; i < 13; i++) {
+        var b = Math.round(Math.sqrt(169 - (i - 6) * (i - 6)) * 2);
+        px(ctx, 200 - b / 2 + 6, 8 + i, b, 1, '#6a58b0');
+        px(ctx, 200 - b / 2 + 6, 8 + i, Math.max(1, b / 3), 1, '#9c86e0');
+      }
+      px(ctx, 188, 12, 34, 1, '#c8b4ff');             // Ring
+      px(ctx, 186, 15, 38, 1, '#8c74d0');
+      silhouette(ctx, wave(4, 0.03, 1.1, 8), 60, '#2a2440', '#403868');
+      px(ctx, 0, 60, W, H - 60, '#2a2440');
+      px(ctx, 0, 60, W, 2, '#403868');
+      speckle(ctx, 0, 62, W, 18, '#544a80', 40, 29);
+    }
+  });
+
+  biome('gewitter', {
+    tile: 'gras',
+    sky: '#2c3446',
+    name: 'Gewitterhimmel', ground: '#4a5460', platform: '#5e6a78', edge: '#2a3038',
+    light: 'rgba(200,220,255,.16)',
+    particles: 'drops',
+    draw: function (ctx) {
+      bands(ctx, 0, 44, ['#2c3446', '#3a4458', '#4c5668', '#606a7c']);
+      var i;
+      for (i = 0; i < 5; i++) {                        // schwere Wolkenbänke
+        var x = i * 52 - 10, y = 4 + ((i * 7) % 12);
+        px(ctx, x, y, 46, 7, '#242c3c');
+        px(ctx, x + 6, y - 3, 30, 5, '#2e3648');
+        px(ctx, x + 4, y + 7, 38, 2, '#1c2230');
+      }
+      // Ein Blitz, in Stufen gezeichnet
+      px(ctx, 118, 16, 3, 8, '#ffe98a');
+      px(ctx, 114, 24, 4, 3, '#ffe98a');
+      px(ctx, 116, 27, 3, 9, '#fff4c0');
+      px(ctx, 112, 36, 4, 3, '#ffe98a');
+      px(ctx, 114, 39, 2, 8, '#fff4c0');
+      px(ctx, 100, 18, 44, 30, 'rgba(255,240,160,.07)');
+      silhouette(ctx, wave(6, 0.028, 2.2, 10), 56, '#39414e', '#4a5460');
+      px(ctx, 0, 56, W, H - 56, '#4a5460');
+      px(ctx, 0, 56, W, 2, '#5e6a78');
+      speckle(ctx, 0, 58, W, 20, '#38404c', 60, 43);
+    }
+  });
+
+  biome('tempel', {
+    tile: 'fels',
+    sky: '#f0d8a8',
+    name: 'Alter Tempel', ground: '#9c8460', platform: '#b8a078', edge: '#6c5a3c',
+    light: 'rgba(255,230,170,.20)',
+    particles: 'dust',
+    draw: function (ctx) {
+      bands(ctx, 0, 40, ['#f0d8a8', '#f8e8c0', '#fff4dc']);
+      var i;
+      // Eine Sonnenscheibe hinter dem Bauwerk
+      for (i = 0; i < 15; i++) {
+        var b = Math.round(Math.sqrt(225 - (i - 7) * (i - 7)) * 2);
+        px(ctx, 120 - b / 2, 6 + i, b, 1, '#ffd87c');
+      }
+      // Stufenpyramide
+      for (i = 0; i < 5; i++) {
+        px(ctx, 76 - i * 4, 56 - i * 7, 88 + i * 8, 7, i % 2 ? '#a88c64' : '#b89870');
+        px(ctx, 76 - i * 4, 56 - i * 7, 88 + i * 8, 1, '#d0b48c');
+      }
+      px(ctx, 110, 40, 20, 16, '#7c6448');            // Tor
+      px(ctx, 113, 43, 14, 13, '#4c3c28');
+      px(ctx, 0, 60, W, H - 60, '#9c8460');
+      px(ctx, 0, 60, W, 2, '#b8a078');
+      for (i = 0; i < 7; i++) px(ctx, i * 34 + 3, 66, 28, 1, '#8c7454');
+      speckle(ctx, 0, 62, W, 18, '#b09068', 40, 53);
+    }
+  });
+
   /* ---------- 3) Auswahl -------------------------------------------------------- */
 
   var REGION_BIOMES = {
@@ -2902,6 +3151,66 @@ button.move-row:hover { border-color: var(--accent); }
     boss: 'arena', e4: 'liga', champ: 'liga',
     shop: 'stadt', rest: 'nacht', item: 'hoehle'
   };
+
+  /* --- Welcher Schauplatz gehört zu welcher Legende? -------------------------
+   * Zuerst die mit Namen: Wer irgendwo herkommt, kämpft dort. Alles andere
+   * entscheidet der erste Typ — Feuer im Vulkan, Eis im Schnee, Geist in der
+   * Nacht. So hat jedes der 125 seinen Ort, ohne dass 125 Kulissen nötig
+   * wären.
+   * -------------------------------------------------------------------------- */
+
+  var LEGENDEN_ORT = {
+    // Raum, Zeit, Gestirne
+    deoxys: 'weltraum', rayquaza: 'weltraum', dialga: 'weltraum', palkia: 'weltraum',
+    arceus: 'weltraum', solgaleo: 'weltraum', lunala: 'weltraum', necrozma: 'weltraum',
+    cosmog: 'weltraum', cosmoem: 'weltraum', eternatus: 'weltraum', celesteela: 'weltraum',
+    nihilego: 'weltraum', kartana: 'weltraum', guzzlord: 'weltraum', poipole: 'weltraum',
+    naganadel: 'weltraum', stakataka: 'weltraum', blacephalon: 'weltraum', pheromosa: 'weltraum',
+    buzzwole: 'weltraum', xurkitree: 'weltraum', jirachi: 'weltraum',
+    // Donner und Sturm
+    zapdos: 'gewitter', raikou: 'gewitter', thundurus: 'gewitter', tornadus: 'gewitter',
+    zekrom: 'gewitter', kyurem: 'schnee', reshiram: 'vulkan', lugia: 'wasser',
+    // Tempel, Schreine, alte Mächte
+    mew: 'tempel', mewtwo: 'hoehle', celebi: 'wald', jirachi_: 'tempel',
+    regirock: 'tempel', regice: 'schnee', registeel: 'tempel', regigigas: 'tempel',
+    regieleki: 'tempel', regidrago: 'tempel', xerneas: 'wald', yveltal: 'gewitter',
+    zygarde: 'hoehle', diancie: 'hoehle', hoopa: 'tempel', volcanion: 'vulkan',
+    magearna: 'tempel', marshadow: 'nacht', zeraora: 'stadt', meltan: 'stadt',
+    melmetal: 'stadt', zacian: 'tempel', zamazenta: 'tempel', calyrex: 'wald',
+    glastrier: 'schnee', spectrier: 'nacht', koraidon: 'dschungel', miraidon: 'stadt',
+    terapagos: 'hoehle', pecharunt: 'ruine', ogerpon: 'wald', okidogi: 'ruine',
+    munkidori: 'ruine', fezandipiti: 'ruine',
+    // Meer und Land
+    kyogre: 'wasser', groudon: 'vulkan', manaphy: 'wasser', phione: 'wasser',
+    keldeo: 'wasser', suicune: 'wasser', entei: 'vulkan', hooh: 'berg',
+    heatran: 'vulkan', giratina: 'ruine', darkrai: 'nacht', cresselia: 'nacht',
+    shaymin: 'wiese', latias: 'berg', latios: 'berg', uxie: 'hoehle',
+    mesprit: 'hoehle', azelf: 'hoehle', victini: 'stadt', virizion: 'wald',
+    cobalion: 'berg', terrakion: 'wueste', landorus: 'wueste', enamorus: 'wiese',
+    meloetta: 'stadt', genesect: 'stadt', silvally: 'stadt', typenull: 'stadt',
+    tapukoko: 'dschungel', tapulele: 'dschungel', tapubulu: 'dschungel', tapufini: 'strand',
+    kubfu: 'berg', urshifu: 'berg', glastrier_: 'schnee'
+  };
+
+  var TYP_ORT = {
+    Fire: 'vulkan', Water: 'wasser', Ice: 'schnee', Grass: 'dschungel',
+    Electric: 'gewitter', Ground: 'wueste', Rock: 'berg', Steel: 'tempel',
+    Flying: 'berg', Dragon: 'berg', Psychic: 'tempel', Fairy: 'wald',
+    Ghost: 'nacht', Dark: 'nacht', Bug: 'wald', Fighting: 'arena',
+    Poison: 'ruine', Normal: 'wiese'
+  };
+
+  /** Der Schauplatz, an dem ein legendäres Pokémon im Duell steht. */
+  function fuerLegende(sp) {
+    if (!sp) return 'ruine';
+    var ort = LEGENDEN_ORT[sp.id];
+    if (ort && B[ort]) return ort;
+    // Formen erben den Ort ihrer Grundgestalt (»Zygarde-10%« steht wie Zygarde).
+    var basis = String(sp.id).split('-')[0];
+    if (LEGENDEN_ORT[basis] && B[LEGENDEN_ORT[basis]]) return LEGENDEN_ORT[basis];
+    var typ = (sp.t && sp.t[0]) || 'Normal';
+    return B[TYP_ORT[typ]] ? TYP_ORT[typ] : 'ruine';
+  }
 
   function pick(regionId, nodeType, seed) {
     if (NODE_BIOMES[nodeType]) return NODE_BIOMES[nodeType];
@@ -3367,7 +3676,7 @@ button.move-row:hover { border-color: var(--accent); }
 
   PL.scenery = {
     biomes: B, regionBiomes: REGION_BIOMES, nodeBiomes: NODE_BIOMES,
-    pick: pick, render: render, platform: platform, tile: tile, trainer: trainer,
+    pick: pick, fuerLegende: fuerLegende, render: render, platform: platform, tile: tile, trainer: trainer,
     realTrainer: realTrainer,
     trainerStyles: TRAINER_STYLE, size: { w: W, h: H },
     get: function (id) { return B[id] || B.wiese; },
@@ -3411,9 +3720,19 @@ button.move-row:hover { border-color: var(--accent); }
     return 1;
   }
 
-  /** Endwerte [KP, Ang, Ver, SpA, SpV, Ini] eines Pokémon. */
+  /**
+   * Endwerte [KP, Ang, Ver, SpA, SpV, Ini] eines Pokémon.
+   *
+   * mon.buff ist der Aufschlag für einen Bosskampf: { hp, stat }. Ein
+   * legendäres Pokémon steht im Duell allein gegen ein ganzes Team — ohne
+   * Aufschlag wäre das keine Frage des Könnens, sondern der Geduld, weil
+   * sechs Pokémon sechsmal so oft angreifen dürfen wie eines. Der Aufschlag
+   * liegt bewusst vor allem auf den KP: Das verlängert den Kampf, statt
+   * einzelne Treffer unfair hart zu machen.
+   */
   function stats(mon) {
     var sp = dex.sp(mon.sp), out = [0, 0, 0, 0, 0, 0], i, base, iv, ev, v;
+    var buff = mon.buff || null;
     for (i = 0; i < 6; i++) {
       base = sp.bs[i];
       iv = mon.ivs[i];
@@ -3425,6 +3744,7 @@ button.move-row:hover { border-color: var(--accent); }
         v = Math.floor((Math.floor((2 * base + iv + ev) * mon.lvl / 100) + 5) *
                        natureMod(mon.nat, PL.STATS[i]));
       }
+      if (buff) v = Math.max(1, Math.round(v * (i === 0 ? (buff.hp || 1) : (buff.stat || 1))));
       out[i] = v;
     }
     return out;
@@ -6466,9 +6786,11 @@ button.move-row:hover { border-color: var(--accent); }
     // einem K. o. —, gehört die nächste Runde dem Spieler.
     if (!side.isPlayer && this.turn > 0) this.playerFirstNextTurn = true;
     if (!silent) {
-      this.say((side.isPlayer ? 'Los, ' : (this.wild ? 'Ein wildes ' : 'Der Gegner schickt ')) +
-        mons.name(mon) + (side.isPlayer ? '!' : (this.wild ? ' erscheint!' : ' in den Kampf!')),
-        'switchin', { side: side.id, mon: index });
+      // Eine Legende ist nicht »wild«: Sie steht da, wo sie immer stand, und
+      // wartet. Also bekommt sie ihre eigene Zeile.
+      var vorn = side.isPlayer ? 'Los, ' : this.legendary ? '' : this.wild ? 'Ein wildes ' : 'Der Gegner schickt ';
+      var hinten = side.isPlayer ? '!' : this.legendary ? ' stellt sich dir!' : this.wild ? ' erscheint!' : ' in den Kampf!';
+      this.say(vorn + mons.name(mon) + hinten, 'switchin', { side: side.id, mon: index });
     }
     this.applyHazards(side.active);
     if (side.active.mon.hp > 0) this.onSwitchInEffects(side.active);
@@ -7096,8 +7418,9 @@ button.move-row:hover { border-color: var(--accent); }
   B.start = function () {
     // Der Name trägt seine Anrede schon („Arenaleiter Misty", „Käfersammler
     // Finn") — ein zusätzliches „Trainer" davor doppelt sie nur.
-    this.log.push({ k: 'start', s: this.wild ? 'Ein wildes Pokémon greift an!' :
-      ((this.trainer && this.trainer.name ? this.trainer.name : 'Ein Trainer') +
+    this.log.push({ k: 'start', s: this.legendary ? 'Eine Legende erwacht!'
+      : this.wild ? 'Ein wildes Pokémon greift an!'
+      : ((this.trainer && this.trainer.name ? this.trainer.name : 'Ein Trainer') +
         ' fordert dich heraus!') });
     var first0 = firstAlive(this.sides[0]), first1 = firstAlive(this.sides[1]);
     this.switchIn(this.sides[1], first1);
@@ -9716,8 +10039,12 @@ button.move-row:hover { border-color: var(--accent); }
     endlos: { name: 'Endlos', regions: 99, rows: 9, desc: 'Die Regionen wiederholen sich und werden härter.' },
     bossrush: { name: 'Boss-Rush', regions: 9, rows: 3, desc: 'Fast nur Arenaleiter. Kurz und brutal.' },
     taeglich: { name: 'Tages-Run', regions: 6, rows: 8, desc: 'Fester Startwert für alle: heute für jeden gleich.' },
-    legenden: { name: 'Legendärer Run', regions: 9, rows: 0, versteckt: true,
-      desc: 'Ein einziger Strang gegen alle legendären Pokémon der Generationen 1 bis 9.' }
+    // Der Legendäre Run ist kein Weg mehr, sondern ein Duell: ein Kampf
+    // gegen genau ein legendäres Pokémon, mit einem Team, das man vorher
+    // selbst zusammenstellt. Er steht als eigener Modus da und ist keine
+    // Schwierigkeitsstufe.
+    legenden: { name: 'Legendärer Run', regions: 1, rows: 0, versteckt: true,
+      desc: 'Ein Duell gegen ein einzelnes legendäres Pokémon.' }
   };
 
   /* ---------- Schwierigkeitsstufen -------------------------------------------
@@ -9747,11 +10074,7 @@ button.move-row:hover { border-color: var(--accent); }
       punkte: ['Rastplätze heilen nur zur Hälfte.', 'Gegner tragen häufiger Gegenstände.',
                'Kein Vollheilen mehr nach Arenaleitern.'] },
     { name: 'Meisterschaft', kurz: 'Alles auf einmal', regeln: [9, 10],
-      punkte: ['Gegner mega-entwickeln, sobald sie können.', 'Noch einmal zwei Level obendrauf.'] },
-    { name: 'Legendärer Run', kurz: 'Der eine Strang', regeln: [], legenden: true,
-      punkte: ['Alle 125 legendären Pokémon der Generationen 1 bis 9, hintereinander.',
-               'Ein vorbereitetes Team, keine Abzweigungen, kein Zurück.',
-               'Alle Regeln der Meisterschaft gelten weiter.'] }
+      punkte: ['Gegner mega-entwickeln, sobald sie können.', 'Noch einmal zwei Level obendrauf.'] }
   ];
 
   /** Ab welcher Stufe eine einzelne Regel greift. */
@@ -9760,7 +10083,7 @@ button.move-row:hover { border-color: var(--accent); }
     stufe.regeln.forEach(function (r) { REGEL_AB[r] = i; });
   });
 
-  var LEGENDENSTUFE = STUFEN.length - 1;
+  var HOECHSTE_STUFE = STUFEN.length - 1;
 
   /**
    * Elf alte Aufstiege werden zu fünf Stufen. Wer Aufstieg 7 geschafft hatte,
@@ -9858,9 +10181,10 @@ button.move-row:hover { border-color: var(--accent); }
       this.rival.starter = W.counterStarter(opts.starter, this.rng);
     }
     if (!this.rival.starter) this.rival.starter = 'squirtle';
-    // Der Legendäre Run räumt den Beutel leer, bevor er ihn neu packt — der
-    // Sammlungslohn kommt deshalb erst danach dazu.
-    if (this.mode === 'legenden') this.ruesteLegendenTeam(opts.starter);
+    // Das Duell bringt sein Team fertig mit: gewählte Arten, gewählte
+    // Attacken, Stufe 100. Es räumt den Beutel leer, bevor es ihn neu packt —
+    // der Sammlungslohn kommt deshalb erst danach dazu.
+    if (this.mode === 'legenden') this.ruesteDuell(opts.duell);
     this.nimmVorteil(opts.vorteil);
     this.buildMap();
   }
@@ -9869,12 +10193,12 @@ button.move-row:hover { border-color: var(--accent); }
   var R = Run.prototype;
 
   Run.STUFEN = STUFEN;
-  Run.LEGENDENSTUFE = LEGENDENSTUFE;
+  Run.HOECHSTE_STUFE = HOECHSTE_STUFE;
 
   /** Rechnet einen alten Aufstiegswert (0–10) in eine Stufe (0–4) um. */
   Run.stufeAusAltem = function (n) {
     n = Math.max(0, Math.round(n || 0));
-    return n < ALTE_AUFSTIEGE.length ? ALTE_AUFSTIEGE[n] : LEGENDENSTUFE - 1;
+    return n < ALTE_AUFSTIEGE.length ? ALTE_AUFSTIEGE[n] : HOECHSTE_STUFE;
   };
 
   /**
@@ -9900,75 +10224,80 @@ button.move-row:hover { border-color: var(--accent); }
     return n;
   };
 
-  /* ---------- Ausrüstung für den Legendären Run --------------------------------
-   * Der Legendäre Run beginnt nicht bei Level 8 mit einem Starter. Der erste
-   * Gegner ist Arktos auf Level 58 — wer da mit einem Glumanda anträte, hätte
-   * kein Spiel, sondern eine Zwischensequenz. Also tritt man mit einem
-   * vorbereiteten Sechserteam an: der eigene Starter in seiner letzten
-   * Entwicklung, dazu fünf ausgewachsene Kämpfer. Wer sie sind, entscheidet
-   * der Startwert — derselbe Run stellt also immer dasselbe Team.
+  /* ---------- Ausrüstung für das Duell ------------------------------------------
+   * Man tritt nicht mit einem gewürfelten Team an, sondern mit dem, das man
+   * sich vorher selbst gebaut hat: bis zu sechs Arten aus derselben
+   * Generation wie das legendäre Pokémon, jede mit vier gewählten Attacken,
+   * alle auf Stufe 100. Was im Pokédex fehlt, steht nicht zur Wahl — der
+   * Kader ist der Lohn dafür, dass man gesammelt hat.
    * -------------------------------------------------------------------------- */
 
-  /** Die letzte Entwicklungsstufe einer Art. */
-  function letzteStufe(sp) {
-    var cur = sp, schutz = 0;
-    while (cur && cur.ev && cur.ev.length && schutz++ < 4) {
-      var next = dex.species[cur.ev[0]];
-      if (!next) break;
-      cur = next;
-    }
-    return cur || sp;
-  }
-
-  R.ruesteLegendenTeam = function (starterId) {
-    var rng = this.rng.fork('legendenteam-' + this.seed);
-    var level = this.levelCap;
+  /**
+   * duell: { art: Spezies-ID des Legendären,
+   *          team: [{ sp: Spezies-ID, moves: [Attacken-Index] }],
+   *          meisterball: true, wenn der Ball dieses Pokémons mitkommt }
+   */
+  R.ruesteDuell = function (duell) {
+    duell = duell || {};
+    var rng = this.rng.fork('duell-' + this.seed);
     var self = this;
+    var ziel = dex.sp(duell.art);
+    this.duellArt = ziel ? ziel.id : null;
+    // Die Generation des Gegners ist die Region des Duells: Sie gibt dem
+    // Kampf seinen Namen, seine Farbe und seine Musik.
+    this.region = ziel ? Math.max(0, Math.min(8, (ziel.g || 1) - 1)) : 0;
+    this.regionOrder = W.REGIONS.map(function (r, i) { return i; });
 
-    // Der Starter wächst mit: Er ist der, den man gewählt hat, nur erwachsen.
     this.party = [];
-    var starter = dex.sp(starterId || 'charmander');
-    if (starter) this.holeKaempfer(rng, letzteStufe(starter), level);
-
-    // Fünf Gefährten: ausgewachsen, stark, aber nichts Legendäres — die
-    // stehen auf der anderen Seite.
-    var pool = dex.species.filter(function (sp) {
-      return !sp.bo && !sp.f && !dex.isLegendary(sp) && sp.bst >= 525 &&
-        (!sp.ev || !sp.ev.length);
+    this.box = [];
+    (duell.team || []).slice(0, 6).forEach(function (eintrag) {
+      var sp = dex.sp(eintrag && eintrag.sp);
+      if (!sp) return;
+      var mon = mons.create(sp, 100, rng, {
+        ivs: [31, 31, 31, 31, 31, 31],
+        hiddenChance: 0, shinyOdds: 0,
+        moves: duellAttacken(sp, eintrag.moves)
+      });
+      mons.addEVs(mon, mon.ivs[1] >= mon.ivs[3] ? 'atk' : 'spa', 252);
+      mons.addEVs(mon, 'spe', 252);
+      mons.heal(mon);
+      self.party.push(mon);
     });
-    var gewaehlt = {};
-    while (this.party.length < 6 && pool.length) {
-      var sp = rng.pick(pool);
-      if (gewaehlt[sp.id]) continue;
-      gewaehlt[sp.id] = true;
-      this.holeKaempfer(rng, sp, level);
-    }
 
-    // Ein Strang ohne Abzweigung heißt: keine Umwege zum Nachkaufen. Und
-    // keine Bälle: Legendäre Pokémon lassen sich hier nur mit einem
-    // Meisterball fangen, und den bringt man aus einem geschafften Run mit.
-    this.money = 9000;
+    // Ein Kampf, keine Reise: kein Geld, kein Laden, keine gewöhnlichen Bälle.
+    // Gefangen wird nur mit dem Meisterball, den genau dieses Pokémon beim
+    // ersten Sieg hergegeben hat.
+    this.money = 0;
     this.bag = {};
-    this.addItem('hyperpotion', 12);
-    this.addItem('fullrestore', 4);
-    this.addItem('revive', 6);
-    this.addItem('maxrevive', 2);
-    this.addItem('fullheal', 4);
-    this.addItem('ether', 6);
-    void self;
+    this.addItem('hyperpotion', 2);
+    this.addItem('fullrestore', 1);
+    this.addItem('revive', 1);
+    if (duell.meisterball) this.addItem('masterball', 1);
   };
 
-  /** Ein einzelnes Teammitglied für den Legendären Run. */
-  R.holeKaempfer = function (rng, sp, level) {
-    var mon = W.buildMon(rng, sp, level, {
-      quality: 1, ivFloor: 26, hiddenChance: 0.45,
-      shinyOdds: (1 / 400) * this.shinyMult()
+  /**
+   * Die vier gewählten Attacken. Unbekannte oder nicht erlernbare Indizes
+   * fallen still heraus; bleibt nichts übrig, stellt mons.create selbst ein
+   * Set zusammen, statt das Pokémon ohne Attacken antreten zu lassen.
+   */
+  function duellAttacken(sp, wahl) {
+    if (!wahl || !wahl.length) return null;
+    var erlaubt = {}, out = [];
+    dex.movepool(sp).forEach(function (i) { erlaubt[i] = 1; });
+    wahl.slice(0, 4).forEach(function (i) {
+      var mv = dex.move(i);
+      if (!mv || !erlaubt[i]) return;
+      for (var k = 0; k < out.length; k++) if (out[k].m === i) return;
+      out.push({ m: i, pp: mv.pp, ppUp: 0, used: 0 });
     });
-    mons.addEVs(mon, mon.ivs[1] >= mon.ivs[3] ? 'atk' : 'spa', 160);
-    mons.addEVs(mon, 'spe', 96);
-    mons.heal(mon);
-    this.party.push(mon);
-    return mon;
+    return out.length ? out : null;
+  }
+
+  /** Alle Arten einer Generation, die als Teamkameraden in Frage kommen. */
+  Run.duellPool = function (gen) {
+    return dex.species.filter(function (sp) {
+      return sp.g === gen && !sp.bo && !sp.f;
+    });
   };
 
   R.modeInfo = function () { return MODES[this.mode]; };
@@ -9991,14 +10320,9 @@ button.move-row:hover { border-color: var(--accent); }
 
   Object.defineProperty(R, 'levelCap', {
     get: function () {
-      // Der Legendäre Run beginnt nicht bei null: Man tritt mit einem
-      // vorbereiteten Team an, und die Grenze steigt Generation für
-      // Generation bis auf 100.
-      // Von 58 in Generation 1 gleichmäßig bis 100 in Generation 9 — die
-      // Grenze soll genau dann oben ankommen, wenn die letzte Legende steht.
-      if (this.mode === 'legenden') {
-        return Math.min(100, Math.round(58 + Math.min(8, this.region) * 42 / 8) + (this.levelBonus || 0));
-      }
+      // Im Duell gibt es nichts zu steigern: Beide Seiten stehen auf 100,
+      // damit allein Aufstellung und Attacken entscheiden.
+      if (this.mode === 'legenden') return 100;
       if (this.leagueStage >= 0) return 78 + this.leagueStage * 4 + this.ascension * 2;
       var step = this.mode === 'kurz' ? 17 : 8;
       return Math.min(100, 8 + (this.regionsCleared() + 1) * step + this.ascension * 2 +
@@ -10025,7 +10349,7 @@ button.move-row:hover { border-color: var(--accent); }
   };
 
   /** Die Stufe dieses Runs als Beschreibung. */
-  R.stufe = function () { return STUFEN[Math.min(this.ascension, LEGENDENSTUFE)] || STUFEN[0]; };
+  R.stufe = function () { return STUFEN[Math.min(this.ascension, HOECHSTE_STUFE)] || STUFEN[0]; };
 
   R.regionsCleared = function () { return this.region; };
   R.totalRegions = function () {
@@ -10096,7 +10420,7 @@ button.move-row:hover { border-color: var(--accent); }
    */
   R.buildMap = function () {
     if (this.leagueStage >= 0) return this.buildLeague();
-    if (this.mode === 'legenden') return this.buildLegendStrand();
+    if (this.mode === 'legenden') return this.buildDuell();
     var rng = this.rng.fork('map-' + this.region + '-' + this.seed);
     var rows = MODES[this.mode].rows;
     var map = [], r, i;
@@ -10196,48 +10520,20 @@ button.move-row:hover { border-color: var(--accent); }
     this.rowIndex = -1;
   };
 
-  /* ---------- Der Legendäre Run -----------------------------------------------
-   * Keine Karte, keine Abzweigung, keine Wahl: eine Generation ist eine Reihe
-   * von Kämpfen gegen ihre legendären Pokémon, in der Reihenfolge des
-   * Pokédex. Alle vier Kämpfe steht ein Rastplatz, alle acht ein Händler —
-   * sonst wäre der Strang kein Weg, sondern eine Wand.
+  /* ---------- Das Legenden-Duell ----------------------------------------------
+   * Keine Karte, kein Weg, keine Wahl unterwegs: ein einziger Knoten, und auf
+   * ihm steht das legendäre Pokémon, für das man sich entschieden hat. Alles,
+   * was dieses Duell entscheidet, ist vorher entschieden worden — im Team und
+   * in den Attacken.
    * -------------------------------------------------------------------------- */
 
-  R.buildLegendStrand = function () {
-    var gen = Math.min(9, this.region + 1);
-    var liste = Run.legendenDerGeneration(gen);
-    var rng = this.rng.fork('legenden-' + gen + '-' + this.seed);
-    var folge = [{ type: 'rest' }];
-    liste.forEach(function (sp, i) {
-      folge.push({ type: 'legendboss', sp: sp.id });
-      var letzter = i === liste.length - 1;
-      if (!letzter && (i + 1) % 4 === 0) folge.push({ type: (i + 1) % 8 === 0 ? 'shop' : 'rest' });
-    });
-    // Wer eine ganze Generation hinter sich gebracht hat, nimmt etwas mit.
-    folge.push({ type: 'relic' });
-
-    this.map = folge.map(function (stufe, i) {
-      return [{
-        row: i, col: 0, count: 1, type: stufe.type, sp: stufe.sp, done: false,
-        next: i < folge.length - 1 ? [0] : [], seed: rng.int(1e9)
-      }];
-    });
+  R.buildDuell = function () {
+    this.map = [[{
+      row: 0, col: 0, count: 1, type: 'legendboss', sp: this.duellArt,
+      done: false, next: [], seed: this.rng.int(1e9)
+    }]];
     this.pos = null;
     this.rowIndex = -1;
-  };
-
-  /** Wie viele legendäre Kämpfe in diesem Run schon geschafft sind. */
-  R.legendenBesiegt = function () {
-    var n = 0, g;
-    for (g = 1; g <= Math.min(9, this.region); g++) n += Run.legendenDerGeneration(g).length;
-    // Der laufende Strang zählt nur, solange er läuft: Nach dem Sieg steht die
-    // Karte der neunten Generation noch da und würde ein zweites Mal gezählt.
-    if (this.map && this.region < 9) {
-      this.map.forEach(function (reihe) {
-        if (reihe[0].type === 'legendboss' && reihe[0].done) n++;
-      });
-    }
-    return Math.min(Run.legendenGesamt(), n);
   };
 
   /** Welche Knoten darf der Spieler als Nächstes betreten? */
@@ -10389,12 +10685,15 @@ button.move-row:hover { border-color: var(--accent); }
       this.result = 'sieg';
       return;
     }
-    this.region++;
-    if (this.mode === 'legenden' && this.region >= 9) {
-      this.state = 'victory';
-      this.result = 'sieg';
+    // Das Duell ist mit seinem einen Kampf vorbei. Gewonnen hat, wer das
+    // Legendäre besiegt oder gefangen hat; wer flieht, hat es nicht.
+    if (this.mode === 'legenden') {
+      var gewonnen = this.duellErgebnis === 'sieg' || this.duellErgebnis === 'gefangen';
+      this.state = gewonnen ? 'victory' : 'gameover';
+      this.result = gewonnen ? 'sieg' : 'flucht';
       return;
     }
+    this.region++;
     if (this.region >= this.totalRegions()) {
       this.leagueStage = 0;
       this.buildLeague();
@@ -10687,18 +10986,23 @@ button.move-row:hover { border-color: var(--accent); }
     if (!sp) sp = rng.pick(Run.legendenDerGeneration(Math.min(9, this.region + 1)));
     var level = Math.min(100, this.levelCap);
     var mon = W.buildMon(rng, sp, level, {
-      quality: 1, ivFloor: 28, hiddenChance: 0.5,
+      quality: 1, ivFloor: 31, hiddenChance: 0.5,
       shinyOdds: (1 / 90) * this.shinyMult()
     });
-    mon.item = 'sitrusberry';
-    mons.addEVs(mon, mon.ivs[1] >= mon.ivs[3] ? 'atk' : 'spa', 160);
-    mons.addEVs(mon, 'spe', 96);
+    mon.item = 'leftovers';
+    mons.addEVs(mon, mon.ivs[1] >= mon.ivs[3] ? 'atk' : 'spa', 252);
+    mons.addEVs(mon, 'spe', 252);
+    // Sechs gegen eins: Der Aufschlag gleicht aus, dass die andere Seite
+    // sechsmal so oft am Zug ist. Vor allem KP, damit der Kampf lang wird
+    // und nicht die einzelnen Treffer unfair.
+    mon.buff = { hp: 3.2, stat: 1.15 };
+    mons.heal(mon);
     var bt = new PL.Battle(this.battleOpts({ team: [mon], wild: true }));
     bt.aiLevel = 3;
     bt.canCatch = this.catchAllowed();
     bt.legendary = true;
-    bt.biome = 'ruine';
-    bt.reward = { money: 2200 + this.region * 300, kind: 'trainer' };
+    bt.biome = PL.scenery && PL.scenery.fuerLegende ? PL.scenery.fuerLegende(sp) : 'ruine';
+    bt.reward = { money: 0, kind: 'trainer' };
     return bt;
   };
 
@@ -10798,14 +11102,7 @@ button.move-row:hover { border-color: var(--accent); }
       var benchShare = this.mod('benchExp') || 0.25;
       // 1,45 statt 1,08: gemessen lagen Teams beim Aus zwölf Level hinter der
       // Grenze zurück — sie kamen also nie dazu, sich zu entwickeln.
-      // Im Legendären Run gibt es nichts zu grinden: keine wilden Pokémon,
-      // keine Trainer, kein Umweg. Wer hier hinter der Levelgrenze
-      // zurückbleibt, bleibt es für immer — gemessen war das Team nach
-      // vierzehn Legenden acht Level im Rückstand und chancenlos. Also ist
-      // die Legende selbst die Erfahrung: Ein gewonnener Kampf bringt so
-      // viel, dass das Team der steigenden Grenze folgen kann.
-      var expMult = this.mod('expMult', 1) * 1.45 * (this.asc(7) ? 0.8 : 1) *
-        (this.mode === 'legenden' ? 5 : 1);
+      var expMult = this.mod('expMult', 1) * 1.45 * (this.asc(7) ? 0.8 : 1);
       var alive = this.party.filter(function (m) { return m.hp > 0; });
       var imKampf = (bt.sides[0] && bt.sides[0].used) || {};
       var summe = [];      // je Pokémon ein Eintrag, in Teamreihenfolge
@@ -10891,15 +11188,12 @@ button.move-row:hover { border-color: var(--accent); }
       this.healTeam(1, true);
       this.restorePP();
     }
-    // Der Legendäre Run besteht nur aus Bossen. Zwischen zwei Legenden gibt es
-    // kein Center, keinen Umweg und kein Zurück — also steht das Team nach
-    // jedem gewonnenen Kampf wieder vollständig da, gefallene Pokémon
-    // eingeschlossen. Gemessen: ohne das ist der Strang nach der dritten
-    // Legende zu Ende, und die anderen 122 sieht niemand.
-    // Im Nuzlocke bleibt es dabei, dass Gefallene fortbleiben — sie sind dann
-    // gar nicht mehr im Team, und was fort ist, holt auch das nicht zurück.
-    if (this.mode === 'legenden' && (bt.outcome === 'win' || bt.outcome === 'caught')) {
-      this.erholeVollstaendig();
+    // Das Duell merkt sich seinen Ausgang: Er entscheidet, ob ein Meisterball
+    // fällig wird und was am Ende auf dem Bildschirm steht.
+    if (this.mode === 'legenden') {
+      this.duellErgebnis = bt.outcome === 'caught' ? 'gefangen'
+        : bt.outcome === 'win' ? 'sieg'
+        : bt.outcome === 'flee' ? 'flucht' : 'niederlage';
     }
 
     if (bt.rival) {
@@ -11472,7 +11766,8 @@ button.move-row:hover { border-color: var(--accent); }
       graveyard: this.graveyard || [], rival: this.rival,
       levelBonus: this.levelBonus || 0, pendingBlessing: this.pendingBlessing || null,
       legendRegion: this.legendRegion, legendUsed: !!this.legendUsed,
-      stufenFassung: 2,
+      duellArt: this.duellArt || null, duellErgebnis: this.duellErgebnis || null,
+      stufenFassung: 3,
       sammelShiny: this.sammelShiny || 1, startRelikte: this.startRelikte || 0,
       bonusReroll: !!this.bonusReroll,
       bossHint: this.bossHint || null,
@@ -11491,10 +11786,16 @@ button.move-row:hover { border-color: var(--accent); }
     run.state = 'map';
     run.pendingLevelUps = [];
     run.history = run.history || [];
-    // Ein Run aus der Zeit der elf Aufstiege trägt noch die alte Zahl. Ohne
-    // Umrechnung stünde ein Run mit "Aufstieg 9" plötzlich auf der Stufe des
-    // Legendären Runs — mit dessen Regeln, aber ohne dessen Strang.
-    if (data.stufenFassung !== 2) run.ascension = Run.stufeAusAltem(run.ascension);
+    // Ein Run aus der Zeit der elf Aufstiege trägt noch die alte Zahl, einer
+    // aus der Zeit der sechsten Stufe eine Stufe zu viel. Beides wird beim
+    // Laden geradegezogen, statt still eine Stufe zu erfinden, die es nicht
+    // mehr gibt.
+    if (!data.stufenFassung || data.stufenFassung < 2) run.ascension = Run.stufeAusAltem(run.ascension);
+    run.ascension = Math.max(0, Math.min(HOECHSTE_STUFE, run.ascension || 0));
+    // Ein Legendärer Run aus der Zeit des Strangs lässt sich nicht fortsetzen:
+    // Seine Karte ist eine Reihe aus 125 Kämpfen, den Modus gibt es so nicht
+    // mehr. Lieber ehrlich verwerfen als halb geladen weiterlaufen.
+    if (run.mode === 'legenden' && (!data.stufenFassung || data.stufenFassung < 3)) return null;
     // Ein laufender Run kann noch eine legendäre Spur aus der alten Regel auf
     // der Karte tragen. Die gibt es nicht mehr — was noch nicht betreten
     // wurde, wird zu einer gewöhnlichen Begegnung.
@@ -12518,7 +12819,12 @@ button.move-row:hover { border-color: var(--accent); }
       stufenFassung: 1,
       legendenReset: false,
       meilensteine: {},          // welche Sammelmarken schon geholt sind
-      meisterbaelle: 0,          // die Kasse für den Legendären Run
+      meisterbaelle: 0,          // die alte Kasse; bleibt nur für alte Stände stehen
+      // Das Legenden-Duell: was schon besiegt ist und welcher Meisterball
+      // bereitliegt. »baelle« ist nach Art sortiert — ein Ball gehört dem
+      // Pokémon, das ihn beim ersten Sieg hergegeben hat. »frei« sind die
+      // wenigen, die auf jedes passen.
+      duell: { siege: {}, baelle: {}, frei: 0 },
       vorrat: {},                // erspielter Startvorteil für den nächsten Run
       wochen: {},                // die Aufträge dieser Woche und ihr Stand
       arten: {},                 // je Art der eigene Bestwert
@@ -12886,7 +13192,7 @@ button.move-row:hover { border-color: var(--accent); }
       lohn: { reroll: 1 }, lohnText: 'Einmal je Run eine Auswahl neu würfeln' },
     { id: 'gen9', name: 'Alle neun', bed: 'Alle neun Generationen vollständig',
       wert: function (st) { return [st.volleGen, 9]; },
-      lohn: {}, einmal: { meisterball: 1 }, lohnText: 'Ein Meisterball in die Kasse' }
+      lohn: {}, einmal: { meisterball: 1 }, lohnText: 'Ein Meisterball, der auf jede Legende passt' }
   ];
 
   /** Der Sammlungsstand, wie ihn die Meilensteine sehen. */
@@ -12922,7 +13228,7 @@ button.move-row:hover { border-color: var(--accent); }
       if (w[0] < w[1]) return;
       m.meilensteine[ms.id] = Date.now();
       // Manche Marken zahlen einmalig in die Kasse statt dauerhaft in den Beutel.
-      if (ms.einmal && ms.einmal.meisterball) gibMeisterball(ms.einmal.meisterball);
+      if (ms.einmal && ms.einmal.meisterball) gibFreienBall(ms.einmal.meisterball);
       neue.push({ id: ms.id, name: ms.name, lohnText: ms.lohnText });
     });
     if (neue.length) save();
@@ -12958,28 +13264,80 @@ button.move-row:hover { border-color: var(--accent); }
    * geworfen wurde. Wer drei Runs schafft und keinen wirft, hat drei.
    * -------------------------------------------------------------------------- */
 
-  function meisterbaelle() { return load().meisterbaelle || 0; }
+  /** Der Stand des Duells für eine Art: besiegt, Ball da, gefangen. */
+  function duellStand(spIndex) {
+    var m = load(), d = duellDaten(m);
+    return {
+      besiegt: !!d.siege[spIndex],
+      ball: !!d.baelle[spIndex],
+      frei: d.frei || 0,
+      gefangen: !!m.caught[spIndex]
+    };
+  }
 
-  /** Legt Meisterbälle in die Kasse — der Lohn für einen geschafften Run. */
-  function gibMeisterball(n) {
-    var m = load();
-    m.meisterbaelle = Math.max(0, (m.meisterbaelle || 0) + (n === undefined ? 1 : n));
-    save();
-    return m.meisterbaelle;
+  function duellDaten(m) {
+    if (!m.duell) m.duell = { siege: {}, baelle: {}, frei: 0 };
+    if (!m.duell.siege) m.duell.siege = {};
+    if (!m.duell.baelle) m.duell.baelle = {};
+    if (typeof m.duell.frei !== 'number') m.duell.frei = 0;
+    return m.duell;
   }
 
   /**
-   * Schreibt die Kasse auf den Stand fort, den der laufende Run übrig hat.
-   * Der Beutel des Runs ist während des Spielens die Wahrheit; geworfen ist
-   * geworfen, und das gilt auch für den nächsten Run.
+   * Ein gewonnenes Duell. Der erste Sieg über eine Art legt ihren Meisterball
+   * bereit — genau einen, und nur für sie. Wer sie fangen will, muss also ein
+   * zweites Mal antreten. Wiederholte Siege bringen nichts Neues: Sonst
+   * stünde am leichtesten Gegner eine Ballfabrik.
    */
-  function setzeMeisterbaelle(n) {
-    var m = load();
-    var wert = Math.max(0, n | 0);
-    if (m.meisterbaelle === wert) return wert;
-    m.meisterbaelle = wert;
+  function duellGewonnen(spIndex) {
+    var m = load(), d = duellDaten(m);
+    var erster = !d.siege[spIndex];
+    d.siege[spIndex] = (d.siege[spIndex] || 0) + 1;
+    if (erster && !m.caught[spIndex]) d.baelle[spIndex] = 1;
     save();
-    return wert;
+    return erster;
+  }
+
+  /** Verbraucht den Ball, mit dem gerade gefangen wurde. */
+  function duellBallWeg(spIndex) {
+    var m = load(), d = duellDaten(m);
+    if (d.baelle[spIndex]) delete d.baelle[spIndex];
+    else if (d.frei > 0) d.frei--;
+    save();
+  }
+
+  /** Liegt für diese Art ein Ball bereit — ihrer oder ein freier? */
+  function duellBallDa(spIndex) {
+    var d = duellDaten(load());
+    return !!d.baelle[spIndex] || d.frei > 0;
+  }
+
+  /** Ein Ball, der auf jede Legende passt. Den gibt es nur als Sammelmarke. */
+  function gibFreienBall(n) {
+    var d = duellDaten(load());
+    d.frei = Math.max(0, d.frei + (n === undefined ? 1 : n));
+    save();
+    return d.frei;
+  }
+
+  /** Wie viele Legenden schon besiegt und wie viele gefangen sind. */
+  function duellUebersicht() {
+    var m = load(), d = duellDaten(m), besiegt = 0, gefangen = 0, baelle = 0;
+    dex.species.forEach(function (sp) {
+      if (!dex.isLegendary(sp) || sp.bo || sp.f) return;
+      if (d.siege[sp.i]) besiegt++;
+      if (m.caught[sp.i]) gefangen++;
+      if (d.baelle[sp.i]) baelle++;
+    });
+    return { besiegt: besiegt, gefangen: gefangen, baelle: baelle, frei: d.frei || 0 };
+  }
+
+  /**
+   * Steht das Legenden-Duell offen? Erst wer die fünfte Schwierigkeitsstufe
+   * im gewöhnlichen Run gewonnen hat, darf antreten.
+   */
+  function legendenFrei() {
+    return load().bestAscension >= (PL.Run.STUFEN.length - 1);
   }
 
   /* ---------- 4c) Wochenaufträge -----------------------------------------------
@@ -13132,9 +13490,9 @@ button.move-row:hover { border-color: var(--accent); }
    */
   function startVorteil(modus) {
     if (modus === 'taeglich') return null;
-    // Der Legendäre Run bringt keinen Sammlungslohn mit — er hat seine eigene
-    // Währung. Was zählt, ist die Kasse.
-    if (modus === 'legenden') return { meisterbaelle: meisterbaelle() };
+    // Das Legenden-Duell bringt keinen Sammlungslohn mit: Es zählt allein,
+    // was man aufgestellt hat.
+    if (modus === 'legenden') return null;
     var lohn = sammelLohn(), v = hebeVorrat();
     ['geld', 'baelle', 'superbaelle', 'traenke', 'beleber', 'relikte',
      'reroll'].forEach(function (k) {
@@ -13200,13 +13558,25 @@ button.move-row:hover { border-color: var(--accent); }
   /** Trägt einen beendeten Run in die Dauerstatistik ein. */
   function recordRun(run, outcome) {
     var m = load();
+    // Ein Legenden-Duell ist kein Run: Es zählt nicht als gespielter Run, es
+    // hebt keinen Rang und es macht niemanden zum Champ. Gezählt wird nur,
+    // was wirklich passiert ist — Kämpfe, Runden, Fänge.
+    if (run.mode === 'legenden') {
+      m.totals.battles += run.stats.battles;
+      m.totals.kos += run.stats.kos;
+      m.totals.catches += run.stats.catches;
+      m.totals.faints += run.stats.faints;
+      m.totals.turns += run.stats.turns;
+      if (outcome === 'sieg') award('legendenrun');
+      save();
+      return refreshAchievements();
+    }
     m.runs++;
     if (outcome === 'sieg') {
       m.wins++;
       if (run.ascension > m.bestAscension) m.bestAscension = run.ascension;
       if (run.ascension >= 1) award('ascend1');
       if (run.ascension >= 4) award('ascend5');
-      if (run.mode === 'legenden') award('legendenrun');
       if (run.nuzlocke) award('nuzlocke');
       if (run.mode === 'taeglich') award('daily');
     }
@@ -13432,7 +13802,9 @@ button.move-row:hover { border-color: var(--accent); }
     wochenSchluessel: wochenSchluessel, wochenAuftraege: wochenAuftraege,
     wochenStand: wochenStand, zaehleWoche: zaehleWoche,
     vorrat: vorrat, legeInVorrat: legeInVorrat, hebeVorrat: hebeVorrat, startVorteil: startVorteil,
-    meisterbaelle: meisterbaelle, gibMeisterball: gibMeisterball, setzeMeisterbaelle: setzeMeisterbaelle,
+    duellStand: duellStand, duellGewonnen: duellGewonnen, duellBallWeg: duellBallWeg,
+    duellBallDa: duellBallDa, duellUebersicht: duellUebersicht, gibFreienBall: gibFreienBall,
+    legendenFrei: legendenFrei,
     merkeArten: merkeArten, artRekord: artRekord,
     recordRun: recordRun,
     saveRun: saveRun, loadRun: loadRun, clearRun: clearRun, hasRun: hasRun,
@@ -14267,6 +14639,240 @@ button.move-row:hover { border-color: var(--accent); }
     return kopie;
   }
 
+  /* ---------- 3b) Ein Motiv für jedes legendäre Pokémon ------------------------
+   * 125 Stücke von Hand zu schreiben wäre nicht ehrlich machbar — und neun
+   * Generationsthemen wären zu wenig: Mewtu darf nicht klingen wie Arktos.
+   * Also entsteht jedes Stück aus dem Pokémon selbst. Seine Pokédex-Nummer
+   * setzt den Würfel, sein erster Typ wählt die Tonleiter, seine Werte das
+   * Tempo. Dasselbe Pokémon klingt deshalb immer gleich und nie wie das
+   * nächste.
+   *
+   * Damit nichts Beliebiges herauskommt, würfelt der Bau nicht die Töne
+   * einzeln: Akkordfolge, Rhythmus und Bewegung stehen in kurzen Listen, und
+   * die Melodie läuft in Akkordtönen mit Durchgangsnoten. Die Titelträger —
+   * Mewtu, Lugia, Rayquaza und ihresgleichen — bringen darüber hinaus ein
+   * von Hand geschriebenes Motiv mit, das an dieselbe Begleitung geht.
+   * ------------------------------------------------------------------------ */
+
+  var SKALEN = {
+    moll:        [0, 2, 3, 5, 7, 8, 10],
+    harmonisch:  [0, 2, 3, 5, 7, 8, 11],
+    dorisch:     [0, 2, 3, 5, 7, 9, 10],
+    phrygisch:   [0, 1, 3, 5, 7, 8, 10],
+    lydisch:     [0, 2, 4, 6, 7, 9, 11],
+    dur:         [0, 2, 4, 5, 7, 9, 11]
+  };
+
+  // Welcher Typ klingt wonach. Unlicht und Geist dunkel, Psycho und Fee weit,
+  // Drache und Kampf feierlich-streng, Wasser und Eis schwebend.
+  var TYP_SKALA = {
+    Dark: 'phrygisch', Ghost: 'phrygisch', Poison: 'phrygisch',
+    Dragon: 'harmonisch', Fighting: 'harmonisch', Steel: 'harmonisch',
+    Psychic: 'lydisch', Fairy: 'lydisch',
+    Water: 'dorisch', Ice: 'dorisch', Flying: 'dorisch',
+    Fire: 'moll', Electric: 'moll', Rock: 'moll', Ground: 'moll',
+    Grass: 'dur', Bug: 'dur', Normal: 'dur'
+  };
+
+  // Vier Stufenfolgen, alle vier Takte lang. Stufe 0 ist der Grundton.
+  var FOLGEN = [
+    [0, 5, 3, 4],
+    [0, 3, 5, 4],
+    [0, 6, 5, 4],
+    [0, 4, 5, 3]
+  ];
+
+  // Rhythmen der Melodie: 1 = Ton, 0 = Pause. Sechzehn Schritte je Takt.
+  var RHYTHMEN = [
+    [1,0,1,0, 1,0,0,1, 0,1,0,0, 1,0,0,0],
+    [1,0,0,1, 0,1,0,0, 1,0,1,0, 1,0,0,0],
+    [1,1,0,1, 0,0,1,0, 1,0,0,1, 0,1,0,0],
+    [1,0,0,0, 1,0,1,0, 0,1,0,1, 0,0,1,0]
+  ];
+
+  var SCHLAG = [
+    pattern('k . h . s . h . k . h . s . h .'),
+    pattern('k . h k s . h . k . h k s . h s'),
+    pattern('k h . h s h . h k h . h s h k h')
+  ];
+
+  /**
+   * Von Hand geschriebene Motive für die Titelträger. »motiv« sind Stufen der
+   * gewählten Tonleiter über zwei Takte (32 Schritte), -1 ist eine Pause;
+   * die Zahl zählt Tonleiterstufen über dem Grundton, 7 ist die Oktave.
+   */
+  var HAND_MOTIVE = {
+    // Mewtu: ein enger, drohender Gedanke, der sich nach oben schraubt
+    mewtwo: { ton: 'D', skala: 'harmonisch', bpm: 152, folge: 0, motiv: [
+      0,-1,-1, 1, 2,-1, 1,-1, 4,-1,-1,-1, 3,-1, 2,-1,
+      0,-1, 2,-1, 4,-1, 6,-1, 7,-1,-1,-1,-1,-1,-1,-1] },
+    // Mew: leicht, spielerisch, immer eine Stufe weiter als erwartet
+    mew: { ton: 'A', skala: 'lydisch', bpm: 138, folge: 3, motiv: [
+      4,-1, 5,-1, 6,-1, 5,-1, 4,-1,-1, 2,-1,-1,-1,-1,
+      2,-1, 3,-1, 4,-1, 6,-1, 7,-1,-1,-1,-1,-1,-1,-1] },
+    // Lugia: weite, ruhige Bögen über dem Meer
+    lugia: { ton: 'G', skala: 'dorisch', bpm: 124, folge: 1, motiv: [
+      0,-1,-1,-1, 4,-1,-1,-1, 3,-1,-1, 2,-1,-1,-1,-1,
+      4,-1,-1,-1, 7,-1,-1,-1, 6,-1,-1,-1, 4,-1,-1,-1] },
+    // Ho-Oh: eine Fanfare, die aufsteigt und oben stehen bleibt
+    hooh: { ton: 'C', skala: 'dur', bpm: 146, folge: 0, motiv: [
+      0,-1, 2,-1, 4,-1,-1,-1, 7,-1,-1,-1,-1,-1, 6,-1,
+      4,-1, 6,-1, 7,-1,-1,-1, 9,-1,-1,-1,-1,-1,-1,-1] },
+    // Kyogre: schwer und tief, wie Wasser, das sich hebt
+    kyogre: { ton: 'E', skala: 'dorisch', bpm: 116, folge: 2, motiv: [
+      0,-1,-1,-1,-1,-1, 2,-1, 3,-1,-1,-1,-1,-1,-1,-1,
+      4,-1,-1,-1, 3,-1, 2,-1, 0,-1,-1,-1,-1,-1,-1,-1] },
+    // Groudon: stampfend, kurze harte Schritte
+    groudon: { ton: 'F', skala: 'moll', bpm: 132, folge: 2, motiv: [
+      0,-1, 0,-1, 2,-1,-1,-1, 0,-1, 0,-1, 3,-1,-1,-1,
+      4,-1, 4,-1, 3,-1, 2,-1, 0,-1,-1,-1,-1,-1,-1,-1] },
+    // Rayquaza: ein langer Sturzflug von oben nach unten
+    rayquaza: { ton: 'B', skala: 'harmonisch', bpm: 158, folge: 0, motiv: [
+      7,-1, 6,-1, 5,-1, 4,-1, 3,-1, 2,-1, 1,-1, 0,-1,
+      4,-1,-1,-1, 7,-1,-1,-1,-1,-1, 6,-1,-1,-1,-1,-1] },
+    // Dialga: ein Uhrwerk, gleichmäßig und unnachgiebig
+    dialga: { ton: 'D', skala: 'harmonisch', bpm: 140, folge: 1, motiv: [
+      0,-1,-1,-1, 0,-1,-1,-1, 4,-1,-1,-1, 4,-1,-1,-1,
+      3,-1,-1,-1, 3,-1,-1,-1, 2,-1, 1,-1, 0,-1,-1,-1] },
+    // Palkia: dasselbe Uhrwerk, aber gegen den Takt versetzt
+    palkia: { ton: 'C', skala: 'lydisch', bpm: 140, folge: 1, motiv: [
+      -1, 0,-1,-1,-1, 3,-1,-1,-1, 5,-1,-1,-1, 4,-1,-1,
+      -1, 2,-1,-1,-1, 5,-1,-1,-1, 7,-1,-1,-1,-1,-1,-1] },
+    // Giratina: kriechend, in engen Halbtönen
+    giratina: { ton: 'A', skala: 'phrygisch', bpm: 112, folge: 2, motiv: [
+      0,-1, 1,-1, 0,-1,-1,-1, 1,-1, 2,-1, 1,-1,-1,-1,
+      0,-1,-1, 1,-1,-1, 3,-1, 2,-1,-1,-1,-1,-1,-1,-1] },
+    // Arceus: feierlich, in großen Schritten, ohne Eile
+    arceus: { ton: 'C', skala: 'dur', bpm: 104, folge: 3, motiv: [
+      0,-1,-1,-1,-1,-1,-1,-1, 4,-1,-1,-1,-1,-1,-1,-1,
+      7,-1,-1,-1, 6,-1,-1,-1, 4,-1,-1,-1, 2,-1,-1,-1] },
+    // Zacian: ein schneller Hieb, zweimal geführt
+    zacian: { ton: 'E', skala: 'harmonisch', bpm: 168, folge: 0, motiv: [
+      0, 2, 4,-1, 7,-1,-1,-1, 0, 2, 4,-1, 7,-1,-1,-1,
+      6,-1, 5,-1, 4,-1, 2,-1, 0,-1,-1,-1,-1,-1,-1,-1] },
+    // Eternatus: bedrohlich, aus der Tiefe nach oben
+    eternatus: { ton: 'F', skala: 'phrygisch', bpm: 148, folge: 2, motiv: [
+      0,-1,-1, 1,-1,-1, 0,-1,-1, 3,-1,-1, 2,-1,-1,-1,
+      0,-1, 3,-1, 5,-1, 7,-1,-1,-1,-1,-1,-1,-1,-1,-1] }
+  };
+
+  /** Ein winziger, wiederholbarer Würfel — dieselbe Zahl, dasselbe Stück. */
+  function wuerfel(saat) {
+    var s = (saat | 0) || 1;
+    return function () {
+      s = (s * 1103515245 + 12345) & 0x7fffffff;
+      return s / 0x7fffffff;
+    };
+  }
+
+  /**
+   * Hält einen Ton in der Lage, in der ein Rechteckgenerator noch angenehm
+   * klingt: unter G4 säuft die Melodie im Bass ab, über G6 pfeift sie.
+   */
+  function inLage(midi) {
+    while (midi > 91) midi -= 12;
+    while (midi < 67) midi += 12;
+    return midi;
+  }
+
+  /** Stufe der Tonleiter (auch über die Oktave hinaus) in Halbtöne. */
+  function stufeZuHalb(skala, stufe) {
+    var okt = Math.floor(stufe / skala.length);
+    var rest = ((stufe % skala.length) + skala.length) % skala.length;
+    return skala[rest] + okt * 12;
+  }
+
+  /**
+   * Baut das Stück. Übergeben wird alles, was es unterscheidet: Grundton,
+   * Tonleiter, Tempo, Akkordfolge — und entweder ein Motiv von Hand oder ein
+   * Würfel, der eines erfindet.
+   */
+  function baueLegendenstueck(o) {
+    var skala = SKALEN[o.skala] || SKALEN.moll;
+    var folge = FOLGEN[o.folge % FOLGEN.length];
+    var grund = noteZuHalb(o.ton + '4');
+    var melody = [], chords = [], low = [], beat = [];
+    var rnd = o.rnd || wuerfel(1);
+    var rhythmus = RHYTHMEN[o.rhythmus % RHYTHMEN.length];
+    var schlag = SCHLAG[o.schlag % SCHLAG.length];
+    var takt, i;
+
+    for (takt = 0; takt < 4; takt++) {
+      var stufe = folge[takt];
+      var akkord = [stufe, stufe + 2, stufe + 4];
+      var wurzel = grund + stufeZuHalb(skala, stufe) - 24;      // zwei Oktaven tiefer
+      for (i = 0; i < 16; i++) {
+        // Begleitung: der Akkord als gebrochene Figur auf jeder Achtel
+        if (i % 2 === 0) {
+          var ton = akkord[(i / 2) % 3];
+          chords.push(halbZuNote(grund + stufeZuHalb(skala, ton) - 12));
+        } else chords.push('.');
+
+        // Bass: Grundton auf der Eins, Quinte in der Mitte
+        if (i === 0 || i === 8) low.push(halbZuNote(wurzel));
+        else if (i === 6 || i === 12) low.push(halbZuNote(wurzel + 7));
+        else low.push('.');
+
+        beat.push(schlag[i % schlag.length]);
+
+        // Melodie: entweder das Motiv von Hand, oder eine gewürfelte Linie
+        // in Akkordtönen mit Durchgangsnoten dazwischen.
+        if (o.motiv) {
+          var m = o.motiv[(takt % 2) * 16 + i];
+          melody.push(m === undefined || m < 0 ? '.' : halbZuNote(inLage(grund + stufeZuHalb(skala, m) + 12)));
+        } else if (!rhythmus[i]) {
+          melody.push('.');
+        } else {
+          var w = rnd();
+          var wahl = w < 0.62
+            ? akkord[Math.floor(rnd() * 3)]                     // Akkordton
+            : stufe + (rnd() < 0.5 ? 1 : 3);                    // Durchgang
+          if (rnd() < 0.22) wahl += 7;                          // Oktavsprung
+          melody.push(halbZuNote(inLage(grund + stufeZuHalb(skala, wahl) + 12)));
+        }
+      }
+    }
+    return {
+      bpm: o.bpm, lead: 'square', harm: 'triangle', bass: 'triangle',
+      melody: melody, chords: chords, low: low, beat: beat
+    };
+  }
+
+  var legendenCache = {};
+
+  /**
+   * Das Stück eines legendären Pokémon. Ohne Pokédex-Eintrag — etwa in einer
+   * Prüfung ohne Daten — bleibt es beim gemeinsamen Legendenstück.
+   */
+  function legendenStueck(sp) {
+    if (!sp || sp.i === undefined) return TRACKS.legenden;
+    if (legendenCache[sp.id]) return legendenCache[sp.id];
+    var hand = HAND_MOTIVE[sp.id];
+    var stueck;
+    if (hand) {
+      stueck = baueLegendenstueck({
+        ton: hand.ton, skala: hand.skala, bpm: hand.bpm, folge: hand.folge,
+        motiv: hand.motiv, rhythmus: 0, schlag: 1
+      });
+    } else {
+      var rnd = wuerfel(sp.i * 2654435761);
+      var typ = (sp.t && sp.t[0]) || 'Normal';
+      var bst = sp.bst || 600;
+      stueck = baueLegendenstueck({
+        ton: NAMEN[sp.i % 12].replace('#', '#'),
+        skala: TYP_SKALA[typ] || 'moll',
+        // Je stärker das Pokémon, desto drängender das Tempo: 118 bis 162.
+        bpm: Math.round(118 + Math.min(1, Math.max(0, (bst - 480) / 240)) * 44),
+        folge: sp.i % FOLGEN.length,
+        rhythmus: (sp.i >> 2) % RHYTHMEN.length,
+        schlag: (sp.i >> 1) % SCHLAG.length,
+        rnd: rnd
+      });
+    }
+    legendenCache[sp.id] = stueck;
+    return stueck;
+  }
+
   // Kurze Fanfare nach einem Sieg — läuft einmal, dann geht das Stück weiter.
   var JINGLE = {
     bpm: 150, lead: 'square', bass: 'triangle',
@@ -14329,6 +14935,12 @@ button.move-row:hover { border-color: var(--accent); }
    * bleiben, wie sie sind — ein Kampf soll überall wie ein Kampf klingen.
    */
   function resolve(name) {
+    // »legende:mewtwo« ist kein fester Name, sondern eine Bestellung: Das
+    // Stück dieses Pokémon wird beim ersten Mal gebaut und dann behalten.
+    if (typeof name === 'string' && name.slice(0, 8) === 'legende:') {
+      var sp = PL.dex && PL.dex.sp ? PL.dex.sp(name.slice(8)) : null;
+      return legendenStueck(sp);
+    }
     if (gen && REGION_TRACKS[gen]) {
       if (name === 'route') return REGION_TRACKS[gen];
       if (name === 'town' || name === 'cave') return fuerRegion(name, gen);
@@ -14392,8 +15004,10 @@ button.move-row:hover { border-color: var(--accent); }
   }
 
   /** Welches Stück gehört zu diesem Ort? */
-  function trackFor(kind, biome) {
-    if (kind === 'legend') return 'legenden';
+  function trackFor(kind, biome, art) {
+    // Jede Legende hat ihr eigenes Stück; ohne Angabe bleibt es beim
+    // gemeinsamen.
+    if (kind === 'legend') return art ? 'legende:' + art : 'legenden';
     if (kind === 'boss') return 'boss';
     if (kind === 'battle') return 'battle';
     if (biome === 'stadt' || biome === 'arena' || kind === 'shop') return 'town';
@@ -14405,7 +15019,7 @@ button.move-row:hover { border-color: var(--accent); }
     play: play, stop: stop, jingle: jingle,
     setEnabled: setEnabled, setVolume: setVolume, setRegion: setRegion,
     regionTracks: REGION_TRACKS, regionVariant: fuerRegion, tracks: TRACKS,
-    trackFor: trackFor, tracks: TRACKS,
+    trackFor: trackFor, legendenStueck: legendenStueck, handMotive: HAND_MOTIVE,
     isEnabled: function () { return enabled; },
     current: function () { return current; },
     freq: freq
@@ -15952,21 +16566,9 @@ button.move-row:hover { border-color: var(--accent); }
     T.setLang(settings().lang);
   }
 
-  /**
-   * Der Beutel des laufenden Legendären Runs ist die Wahrheit über die
-   * Meisterbälle: Geworfen ist geworfen, und das gilt auch für den nächsten
-   * Run. Ungeworfene bleiben liegen und warten.
-   */
-  function synchronisiereMeisterbaelle() {
-    var run = App.run;
-    if (!run || run.mode !== 'legenden') return;
-    meta.setzeMeisterbaelle(run.bag.masterball || 0);
-  }
-
   function autosave() {
     // Erst der Pokédex, dann der Run: Wer im Team oder in der Box liegt, steht
     // eingetragen — gleich, ob gefangen, entwickelt, geschenkt oder geschlüpft.
-    synchronisiereMeisterbaelle();
     if (App.run) meta.noteParty(App.run);
     if (App.run && App.run.state !== 'gameover' && App.run.state !== 'victory') meta.saveRun(App.run);
     // Der Browser vergisst eingebettete Seiten gern; die Wolke tut das nicht.
@@ -16110,6 +16712,13 @@ button.move-row:hover { border-color: var(--accent); }
   }
   App.show = show;
 
+  /** Die Art, die dem Spieler gegenübersteht — sie wählt das Stück. */
+  function gegnerArt(bt) {
+    var team = bt && bt.sides && bt.sides[1] && bt.sides[1].team;
+    var sp = team && team[0] ? dex.sp(team[0].sp) : null;
+    return sp ? sp.id : null;
+  }
+
   /** Wählt das Stück, das zum gerade gezeigten Bildschirm passt. */
   function updateMusic(screen) {
     if (!PL.audio) return;
@@ -16117,7 +16726,19 @@ button.move-row:hover { border-color: var(--accent); }
     var run = App.run, bt = App.battle;
     if (screen === 'battle' && bt) {
       PL.audio.play(PL.audio.trackFor(
-        bt.legendary ? 'legend' : bt.aiLevel >= 3 ? 'boss' : 'battle', bt.biome));
+        bt.legendary ? 'legend' : bt.aiLevel >= 3 ? 'boss' : 'battle',
+        bt.biome, gegnerArt(bt)));
+      return;
+    }
+    // Der Legendäre Run bringt seine eigene Musik mit: in der Übersicht das
+    // gemeinsame Legendenstück, beim Teambau schon das Stück dessen, gegen
+    // den es gleich geht.
+    if (screen === 'legendenTeam' && App.screenArg && App.screenArg.art) {
+      PL.audio.play('legende:' + App.screenArg.art);
+      return;
+    }
+    if (screen === 'legenden' || screen === 'legendenGen') {
+      PL.audio.play('legenden');
       return;
     }
     // Jede Region hat ihr eigenes Stück; in der Liga spielt keines von ihnen.
@@ -16144,7 +16765,13 @@ button.move-row:hover { border-color: var(--accent); }
   function faerbeRegion() {
     var run = App.run;
     var farbe = null;
-    if (run && App.screen !== 'title' && App.screen !== 'newrun') {
+    // Im Legendären Run färbt die Generation, auch ohne laufenden Run.
+    if (App.screen === 'legendenGen' || App.screen === 'legendenTeam') {
+      var gen = App.screenArg && App.screenArg.gen;
+      var reg = gen ? PL.world.REGIONS[gen - 1] : null;
+      if (reg) farbe = reg.color;
+    }
+    if (!farbe && run && App.screen !== 'title' && App.screen !== 'newrun') {
       farbe = run.leagueStage >= 0 ? '#c9a227' : (run.currentRegion() || {}).color;
     }
     var wurzel = doc.documentElement;
@@ -16168,24 +16795,25 @@ button.move-row:hover { border-color: var(--accent); }
     if (run && App.screen !== 'title' && App.screen !== 'newrun') {
       var region = run.leagueStage >= 0 ? { name: 'Pokémon-Liga', color: '#c9a227' } : run.currentRegion();
       mid.appendChild(el('span', { className: 'region-badge', style: { borderColor: region.color }, text: region.name }));
-      // Im Legendären Run zählt nicht die Region, sondern wie viele Legenden
-      // schon gefallen sind. Das ist der einzige Fortschritt, den es dort gibt.
-      mid.appendChild(run.mode === 'legenden'
-        ? el('span', { className: 'chip chip-region', title: 'Besiegte Legenden',
-            text: '🌟 ' + run.legendenBesiegt() + '/' + PL.Run.legendenGesamt() })
-        : el('span', { className: 'chip chip-region', text: '👑 ' + (run.leagueStage >= 0 ? 'Finale' : 'Region ' + (run.region + 1) + '/' + (run.mode === 'endlos' ? '∞' : run.totalRegions())) }));
-      mid.appendChild(el('span', { className: 'chip chip-money', text: '💰 ' + U.money(run.money) }));
+      // Im Duell zählt keine Region und kein Geld — dort steht, gegen wen es
+      // geht und ob ein Meisterball bereitliegt.
       if (run.mode === 'legenden') {
-        mid.appendChild(el('span', { className: 'chip chip-ball', title: 'Meisterbälle — nur damit lässt sich hier fangen',
+        var gegner = dex.sp(run.duellArt);
+        mid.appendChild(el('span', { className: 'chip chip-region', title: 'Dein Gegner',
+          text: '🌟 ' + (gegner ? T.species(gegner) : 'Legende') }));
+        mid.appendChild(el('span', { className: 'chip chip-ball', title: 'Meisterball — nur damit lässt sich hier fangen',
           text: '🟣 ' + (run.bag.masterball || 0) }));
+      } else {
+        mid.appendChild(el('span', { className: 'chip chip-region', text: '👑 ' + (run.leagueStage >= 0 ? 'Finale' : 'Region ' + (run.region + 1) + '/' + (run.mode === 'endlos' ? '∞' : run.totalRegions())) }));
+        mid.appendChild(el('span', { className: 'chip chip-money', text: '💰 ' + U.money(run.money) }));
       }
       mid.appendChild(el('span', { className: 'chip chip-cap', title: 'Höchstes erreichbares Level' }, [
         el('span', { text: '⬆\u00a0' }),
         el('span', { className: 'cap-word', text: 'Lv ' }),
         el('span', { text: String(run.levelCap) })
       ]));
-      if (run.ascension) mid.appendChild(el('span', { className: 'chip warn',
-        text: (run.mode === 'legenden' ? '🌟 ' : '🔥 ') + meta.stufenName(run.ascension) }));
+      if (run.ascension && run.mode !== 'legenden') mid.appendChild(el('span', { className: 'chip warn',
+        text: '🔥 ' + meta.stufenName(run.ascension) }));
       if (run.nuzlocke) mid.appendChild(el('span', { className: 'chip warn', text: '💀 Nuzlocke' }));
     }
 
@@ -16344,11 +16972,16 @@ button.move-row:hover { border-color: var(--accent); }
   function menueZeile(text, aktion, opts) {
     opts = opts || {};
     return el('button', {
-      className: 'menue-zeile' + (opts.stark ? ' stark' : ''),
+      className: 'menue-zeile' + (opts.stark ? ' stark' : '') + (opts.gold ? ' gold' : ''),
       type: 'button', onclick: aktion
     }, [
       el('span', { className: 'menue-zeiger', text: '\u25b8' }),
-      el('span', { className: 'menue-text', text: text }),
+      el('span', { className: 'menue-text' }, [
+        el('span', { text: text }),
+        // Die Zeile darf zwei Zeilen hoch sein, wenn sie etwas zu erklären
+        // hat — mehr als einen kurzen Satz bekommt sie aber nicht.
+        opts.unter ? el('span', { className: 'menue-unter', text: opts.unter }) : null
+      ]),
       opts.notiz ? el('span', { className: 'menue-notiz', text: opts.notiz }) : null
     ]);
   }
@@ -16388,6 +17021,18 @@ button.move-row:hover { border-color: var(--accent); }
           function () { show('newrun'); }, { danger: true });
       } else show('newrun');
     }, { stark: !meta.hasRun() }));
+    // Der Legendäre Run steht zwischen den gewöhnlichen Wegen und dem
+    // Pokédex — golden, damit man sieht, dass er etwas anderes ist. Anklicken
+    // darf man ihn immer; antreten erst nach Stufe 5.
+    var legFrei = meta.legendenFrei();
+    var legStand = meta.duellUebersicht();
+    eintraege.push(menueZeile('Legendärer Run', function () { show('legenden'); }, {
+      gold: true,
+      notiz: legFrei ? legStand.gefangen + '/' + PL.Run.legendenGesamt() : '🔒',
+      unter: legFrei
+        ? 'Ein Duell gegen ein legendäres Pok\u00e9mon.'
+        : 'Erst Stufe 5 im normalen Run gewinnen.'
+    }));
     eintraege.push(menueZeile('Pok\u00e9dex', function () { show('dex'); },
       { notiz: d.caught + '/' + d.total }));
     eintraege.push(menueZeile('Sammlung', function () { show('sammlung'); },
@@ -16839,14 +17484,13 @@ button.move-row:hover { border-color: var(--accent); }
     var modeBox = el('div', { className: 'choice-row' });
     Object.keys(PL.Run.MODES).forEach(function (key) {
       var mode = PL.Run.MODES[key];
-      // Der Legendäre Run ist kein Modus zum Anklicken, sondern die letzte
-      // Stufe. Er steht weiter unten.
+      // Der Legendäre Run steht nicht hier: Er ist ein eigener Weg mit
+      // eigenem Bildschirm, kein Modus für einen gewöhnlichen Run.
       if (mode.versteckt) return;
       var btn = el('button', {
         className: 'choice' + (key === chosen.mode ? ' selected' : ''), type: 'button',
         'data-modus': key,
         onclick: function () {
-          if (PL.Run.STUFEN[chosen.ascension].legenden) return;   // die Stufe bestimmt den Weg
           chosen.mode = key;
           Array.prototype.forEach.call(modeBox.children, function (c) { c.classList.remove('selected'); });
           btn.classList.add('selected');
@@ -16856,35 +17500,18 @@ button.move-row:hover { border-color: var(--accent); }
       modeBox.appendChild(btn);
     });
 
-    // Der Regler, wie er war — nur dass daneben jetzt der Name der Stufe
-    // steht und nicht mehr eine Zahl. Die letzte Raste ist keine
-    // Schwierigkeit mehr, sondern der Legendäre Run; sie stellt den Modus
-    // gleich mit um.
+    // Der Regler, wie er war — nur dass daneben der Name der Stufe steht und
+    // nicht mehr eine Zahl. Fünf Rasten, fünf Schwierigkeiten, sonst nichts:
+    // Der Legendäre Run war einmal die sechste und steht jetzt für sich.
     var ascLabel = el('span', { className: 'asc-value', text: meta.stufenName(chosen.ascension) });
     var ascInput = el('input', {
       type: 'range', min: 0, max: Math.max(0, maxAsc), value: chosen.ascension, className: 'slider',
       oninput: function () { setzeStufe(+ascInput.value); }
     });
 
-    var kasse = meta.meisterbaelle();
-    var modusNotiz = el('p', { className: 'muted small', hidden: true, text:
-      'Der Legendäre Run bringt seinen eigenen Weg mit — die Moduswahl darüber ruht so lange. ' +
-      (kasse
-        ? 'Du nimmst ' + (kasse === 1 ? 'einen Meisterball' : kasse + ' Meisterbälle') +
-          ' mit; nur damit lassen sich Legenden fangen.'
-        : 'Du hast keinen Meisterball — fangen kannst du diesmal nichts. Wer den Run schafft, bekommt einen.') });
-
     function setzeStufe(n) {
       chosen.ascension = n;
       ascLabel.textContent = meta.stufenName(n);
-      var legenden = !!PL.Run.STUFEN[n].legenden;
-      if (legenden) chosen.mode = 'legenden';
-      else if (chosen.mode === 'legenden') chosen.mode = 'standard';
-      Array.prototype.forEach.call(modeBox.children, function (c) {
-        c.classList.toggle('selected', !legenden && c.getAttribute('data-modus') === chosen.mode);
-      });
-      modeBox.classList.toggle('stillgelegt', legenden);
-      modusNotiz.hidden = !legenden;
     }
     setzeStufe(Math.min(chosen.ascension, maxAsc));
 
@@ -16940,7 +17567,6 @@ button.move-row:hover { border-color: var(--accent); }
           maxAsc === 0 ? el('span', { className: 'muted', text:
             'Höhere Stufen schaltest du frei, indem du Runs gewinnst.' }) : null
         ]),
-        modusNotiz,
         nuzBtn
       ]),
       el('section', {}, [
@@ -16954,6 +17580,283 @@ button.move-row:hover { border-color: var(--accent); }
       ])
     ]);
   };
+
+  /* ---------- 2b) Der Legendäre Run ---------------------------------------------
+   * Kein Weg und kein Run im gewöhnlichen Sinn, sondern eine Vitrine: neun
+   * Generationen, in jeder ihre legendären Pokémon, und hinter jedem von
+   * ihnen genau ein Kampf. Der erste Sieg legt seinen Meisterball bereit; wer
+   * es fangen will, tritt ein zweites Mal an.
+   *
+   * Das Team baut man vorher selbst — aus Arten derselben Generation, die im
+   * eigenen Pokédex stehen. Wer nichts gesammelt hat, tritt zu zweit an: Der
+   * Kader ist der Lohn fürs Sammeln.
+   * -------------------------------------------------------------------------- */
+
+  /** Die Region zu einer Generation — sie gibt Namen und Farbe. */
+  function generationRegion(gen) {
+    return PL.world.REGIONS[gen - 1] || PL.world.REGIONS[0];
+  }
+
+  /** Alle legendären Pokémon einer Generation, in Pokédex-Reihenfolge. */
+  function legendenDerGen(gen) { return PL.Run.legendenDerGeneration(gen); }
+
+  SCREENS.legenden = function () {
+    var frei = meta.legendenFrei();
+    var uebersicht = meta.duellUebersicht();
+
+    var karten = el('div', { className: 'gen-grid' }, [1, 2, 3, 4, 5, 6, 7, 8, 9].map(function (gen) {
+      var region = generationRegion(gen);
+      var liste = legendenDerGen(gen);
+      var besiegt = 0, gefangen = 0, baelle = 0;
+      liste.forEach(function (sp) {
+        var st = meta.duellStand(sp.i);
+        if (st.besiegt) besiegt++;
+        if (st.gefangen) gefangen++;
+        if (st.ball) baelle++;
+      });
+      return el('button', {
+        className: 'gen-karte' + (gefangen === liste.length ? ' voll' : ''),
+        type: 'button', style: { '--gen-farbe': region.color },
+        onclick: function () { show('legendenGen', { gen: gen }); }
+      }, [
+        el('span', { className: 'gen-nummer', text: 'Generation ' + gen }),
+        el('strong', { className: 'gen-name', text: region.name }),
+        el('span', { className: 'gen-zahl', text: gefangen + ' / ' + liste.length + ' gefangen' }),
+        el('span', { className: 'muted small', text: besiegt + ' besiegt' + (baelle ? ' · ' + baelle + ' Ball bereit' : '') })
+      ]);
+    }));
+
+    return el('div', { className: 'legenden-screen' }, [
+      el('div', { className: 'legenden-kopf' }, [
+        el('h2', { text: '🌟 Legendärer Run' }),
+        el('p', { className: 'muted', text:
+          'Ein Duell gegen ein einzelnes legendäres Pokémon — der schwerste Kampf, den das Spiel zu bieten hat. ' +
+          'Dein Team stellst du vorher zusammen, und zwar nur aus Arten derselben Generation, die in deinem ' +
+          'Pokédex stehen. Der erste Sieg legt den Meisterball dieses Pokémon bereit; fangen kannst du es beim ' +
+          'zweiten Antreten.' }),
+        frei ? null : el('p', { className: 'legenden-sperre', text:
+          'Noch gesperrt: Gewinne zuerst Stufe 5 im normalen Run.' }),
+        el('p', { className: 'muted small', text:
+          uebersicht.gefangen + ' von ' + PL.Run.legendenGesamt() + ' gefangen · ' +
+          uebersicht.besiegt + ' besiegt · ' + uebersicht.baelle + ' ' +
+          (uebersicht.baelle === 1 ? 'Meisterball' : 'Meisterbälle') + ' bereit' })
+      ]),
+      karten,
+      el('div', { className: 'newrun-actions' }, [
+        el('button', { className: 'btn', type: 'button', onclick: function () { show('title'); } }, 'Zurück')
+      ])
+    ]);
+  };
+
+  SCREENS.legendenGen = function (arg) {
+    var gen = (arg && arg.gen) || 1;
+    var region = generationRegion(gen);
+    var frei = meta.legendenFrei();
+    var liste = legendenDerGen(gen);
+
+    var gitter = el('div', { className: 'legenden-grid' }, liste.map(function (sp) {
+      var st = meta.duellStand(sp.i);
+      var marke = st.gefangen ? '✓ gefangen' : st.ball ? '🟣 Ball bereit' : st.besiegt ? '⚔ besiegt' : null;
+      return el('button', {
+        className: 'legende-karte' + (st.gefangen ? ' gefangen' : '') + (st.ball ? ' bereit' : ''),
+        type: 'button', style: { '--gen-farbe': region.color },
+        onclick: function () { show('legendenTeam', { gen: gen, art: sp.id }); }
+      }, [
+        el('div', { className: 'legende-bild' }, [U.sprite(sp, { className: 'legende-sprite' })]),
+        el('strong', { className: 'legende-name', text: T.species(sp) }),
+        el('div', { className: 'legende-typen' }, sp.t.map(function (t) { return U.typeChip(t, true); })),
+        marke ? el('span', { className: 'legende-marke', text: marke }) : null
+      ]);
+    }));
+
+    return el('div', { className: 'legenden-screen' }, [
+      el('div', { className: 'legenden-kopf', style: { '--gen-farbe': region.color } }, [
+        el('h2', { text: 'Generation ' + gen + ' — ' + region.name }),
+        el('p', { className: 'muted', text:
+          liste.length + ' legendäre Pokémon. Wähle eines aus, stelle dein Team zusammen und tritt an.' }),
+        frei ? null : el('p', { className: 'legenden-sperre', text:
+          'Noch gesperrt: Gewinne zuerst Stufe 5 im normalen Run.' })
+      ]),
+      gitter,
+      el('div', { className: 'newrun-actions' }, [
+        el('button', { className: 'btn', type: 'button', onclick: function () { show('legenden'); } }, 'Zurück')
+      ])
+    ]);
+  };
+
+  /* --- Der Teambau --------------------------------------------------------------
+   * Sechs Plätze, gefüllt aus dem eigenen Pokédex. Wer eine Art anklickt,
+   * bekommt ihre Attacken zur Auswahl — vier davon dürfen mit. Ohne eigene
+   * Wahl stellt das Spiel das beste Set zusammen, damit niemand ohne
+   * Attacken dasteht.
+   * ---------------------------------------------------------------------------- */
+
+  var duellWahl = null;      // überlebt einen Wechsel zwischen den Bildschirmen
+
+  SCREENS.legendenTeam = function (arg) {
+    arg = arg || {};
+    var gen = arg.gen || 1;
+    var ziel = dex.sp(arg.art);
+    if (!ziel) return el('p', { text: 'Unbekanntes Pokémon.' });
+    var region = generationRegion(gen);
+    var frei = meta.legendenFrei();
+    var stand = meta.duellStand(ziel.i);
+
+    // Ein neuer Gegner heißt: neue Aufstellung. Dieselbe behält man.
+    if (!duellWahl || duellWahl.art !== ziel.id) duellWahl = { art: ziel.id, team: [] };
+
+    var gefangen = meta.load().caught;
+    var pool = PL.Run.duellPool(gen).filter(function (sp) { return gefangen[sp.i]; });
+    pool.sort(function (a, b) { return b.bst - a.bst; });
+
+    var teamBox = el('div', { className: 'duell-team' });
+    var poolBox = el('div', { className: 'duell-pool' });
+    var startBtn = el('button', { className: 'btn big primary', type: 'button',
+      disabled: true, onclick: function () { starteDuell(ziel, duellWahl.team, stand.ball || stand.frei > 0); } },
+      stand.ball || stand.frei > 0 ? 'Antreten — mit Meisterball' : 'Antreten');
+    var hinweis = el('p', { className: 'muted small' });
+
+    function attackenWahl(eintrag) {
+      var sp = dex.sp(eintrag.sp);
+      var moves = dex.movepool(sp).filter(function (i, k, alle) { return alle.indexOf(i) === k; })
+        .map(function (i) { return dex.move(i); })
+        .filter(function (mv) { return mv && !mv.np; });
+      moves.sort(function (a, b) { return (b.p || 0) - (a.p || 0) || a.n.localeCompare(b.n); });
+      var box = el('div', { className: 'move-wahl' });
+      function zeichne() {
+        clear(box);
+        moves.forEach(function (mv) {
+          var drin = eintrag.moves.indexOf(mv.i) >= 0;
+          box.appendChild(el('button', {
+            className: 'move-pick' + (drin ? ' gewaehlt' : ''), type: 'button',
+            style: { '--typ-farbe': U.TYPE_COLOR[mv.t] || '#888' },
+            onclick: function () {
+              var pos = eintrag.moves.indexOf(mv.i);
+              if (pos >= 0) eintrag.moves.splice(pos, 1);
+              else if (eintrag.moves.length < 4) eintrag.moves.push(mv.i);
+              else { U.toast('Vier Attacken sind das Höchste.', 'bad'); return; }
+              zeichne();
+              zeichneTeam();
+            }
+          }, [
+            el('strong', { text: T.move(mv) }),
+            el('span', { className: 'muted small', text: T.type(mv.t) + ' · ' + (mv.p ? mv.p + ' Stärke' : 'Status') + ' · ' + mv.pp + ' AP' })
+          ]));
+        });
+      }
+      zeichne();
+      U.modal({
+        title: T.species(sp) + ' — Attacken',
+        wide: true,
+        content: el('div', {}, [
+          el('p', { className: 'muted small', text:
+            'Bis zu vier. Wählst du keine, stellt das Spiel selbst das beste Set zusammen.' }),
+          box
+        ]),
+        actions: [{ label: 'Fertig', primary: true }]
+      });
+    }
+
+    function zeichneTeam() {
+      clear(teamBox);
+      duellWahl.team.forEach(function (eintrag, i) {
+        var sp = dex.sp(eintrag.sp);
+        var namen = eintrag.moves.map(function (mi) { return T.move(dex.move(mi)); });
+        teamBox.appendChild(el('div', { className: 'duell-platz' }, [
+          el('button', { className: 'duell-weg', type: 'button', title: 'Aus dem Team nehmen',
+            onclick: function () { duellWahl.team.splice(i, 1); zeichneTeam(); zeichnePool(); } }, '✕'),
+          el('div', { className: 'duell-bild' }, [U.sprite(sp, { className: 'duell-sprite' })]),
+          el('strong', { text: T.species(sp) }),
+          el('div', { className: 'duell-typen' }, sp.t.map(function (t) { return U.typeChip(t, true); })),
+          el('button', { className: 'btn small', type: 'button',
+            onclick: function () { attackenWahl(eintrag); } },
+            namen.length ? namen.join(' · ') : 'Attacken wählen')
+        ]));
+      });
+      for (var k = duellWahl.team.length; k < 6; k++) {
+        teamBox.appendChild(el('div', { className: 'duell-platz leer', text: 'Platz frei' }));
+      }
+      startBtn.disabled = !frei || duellWahl.team.length === 0;
+      hinweis.textContent = !frei
+        ? 'Gewinne zuerst Stufe 5 im normalen Run, dann steht dir das Duell offen.'
+        : duellWahl.team.length === 0
+          ? (pool.length ? 'Wähle mindestens ein Pokémon aus.'
+            : 'Du hast aus dieser Generation noch nichts gefangen — spiel einen normalen Run und komm wieder.')
+          : 'Alle treten auf Stufe 100 an. ' + ziel.n + ' steht allein gegen euch, ist dafür aber deutlich zäher.';
+    }
+
+    function zeichnePool() {
+      clear(poolBox);
+      pool.forEach(function (sp) {
+        var drin = duellWahl.team.some(function (e) { return e.sp === sp.id; });
+        poolBox.appendChild(el('button', {
+          className: 'pool-karte' + (drin ? ' drin' : ''), type: 'button',
+          style: { '--typ-farbe': U.TYPE_COLOR[sp.t[0]] || '#888' },
+          disabled: !drin && duellWahl.team.length >= 6,
+          onclick: function () {
+            if (drin) {
+              duellWahl.team = duellWahl.team.filter(function (e) { return e.sp !== sp.id; });
+            } else {
+              if (duellWahl.team.length >= 6) return;
+              duellWahl.team.push({ sp: sp.id, moves: [] });
+            }
+            zeichneTeam(); zeichnePool();
+          }
+        }, [
+          el('div', { className: 'pool-bild' }, [U.sprite(sp, { className: 'pool-sprite' })]),
+          el('span', { className: 'pool-name', text: T.species(sp) }),
+          el('span', { className: 'muted small', text: 'BWS ' + sp.bst })
+        ]));
+      });
+      if (!pool.length) {
+        poolBox.appendChild(el('p', { className: 'muted', text:
+          'Aus Generation ' + gen + ' steht noch keine Art in deinem Pokédex.' }));
+      }
+    }
+
+    zeichneTeam();
+    zeichnePool();
+
+    return el('div', { className: 'legenden-screen', style: { '--gen-farbe': region.color } }, [
+      el('div', { className: 'duell-kopf' }, [
+        el('div', { className: 'duell-gegner' }, [
+          U.sprite(ziel, { className: 'duell-gegner-sprite' }),
+          el('div', {}, [
+            el('h2', { text: T.species(ziel) }),
+            el('div', { className: 'duell-typen' }, ziel.t.map(function (t) { return U.typeChip(t, true); })),
+            el('p', { className: 'muted small', text: 'Generation ' + gen + ' · ' + region.name + ' · BWS ' + ziel.bst }),
+            el('p', { className: 'muted small', text: stand.gefangen
+              ? 'Schon gefangen — du kannst trotzdem noch einmal antreten.'
+              : stand.ball ? 'Sein Meisterball liegt bereit: Wer diesmal gewinnt, kann ihn werfen.'
+              : stand.besiegt ? 'Schon besiegt — sein Ball ist verbraucht.'
+              : 'Noch nie besiegt. Der erste Sieg legt seinen Meisterball bereit.' })
+          ])
+        ])
+      ]),
+      el('section', {}, [el('h3', { text: 'Dein Team' }), teamBox, hinweis]),
+      el('section', {}, [
+        el('h3', { text: 'Aus deinem Pokédex — Generation ' + gen }),
+        el('p', { className: 'muted small', text:
+          'Nur Arten dieser Generation, und nur die, die du gefangen hast. Gefangene Legendäre dürfen mit.' }),
+        poolBox
+      ]),
+      el('div', { className: 'newrun-actions' }, [
+        el('button', { className: 'btn', type: 'button', onclick: function () { show('legendenGen', { gen: gen }); } }, 'Zurück'),
+        startBtn
+      ])
+    ]);
+  };
+
+  /** Startet das Duell: ein Run, ein Knoten, ein Kampf. */
+  function starteDuell(ziel, team, mitBall) {
+    App.run = new PL.Run({
+      mode: 'legenden',
+      ascension: Math.max(0, meta.load().bestAscension),
+      duell: { art: ziel.id, team: team, meisterball: !!mitBall }
+    });
+    meta.save();
+    enterNode(0, 0);
+  }
 
   function startRun(chosen) {
     // Ein geschickter Run bringt seinen Startwert mit; der Tages-Run holt sich
@@ -17195,7 +18098,8 @@ button.move-row:hover { border-color: var(--accent); }
     meta.save();
     if (bt.banter) bt.log.splice(1, 0, { k: 'banter', s: '»' + bt.banter.before + '«' });
     if (PL.audio) PL.audio.play(PL.audio.trackFor(
-      bt.legendary ? 'legend' : bt.aiLevel >= 3 || bt.rival ? 'boss' : 'battle', bt.biome));
+      bt.legendary ? 'legend' : bt.aiLevel >= 3 || bt.rival ? 'boss' : 'battle',
+      bt.biome, gegnerArt(bt)));
     sfx('encounter');
     if (PL.fx) {
       App.transitioning = true;
@@ -17774,7 +18678,7 @@ button.move-row:hover { border-color: var(--accent); }
     }
     if (!balls.length) {
       U.toast(run.mode === 'legenden'
-        ? 'Keine Meisterbälle mehr. Legendäre Pokémon lassen sich nur damit fangen — der nächste geschaffte Run bringt einen.'
+        ? 'Du hast keinen Meisterball für dieses Pokémon. Besiege es erst — dann liegt seiner bereit.'
         : 'Du hast keine Bälle mehr.', 'bad');
       return;
     }
@@ -19171,7 +20075,7 @@ button.move-row:hover { border-color: var(--accent); }
     var woche = meta.wochenStand();
     var lohn = meta.sammelLohn();
     var v = meta.vorrat();
-    var kasse = meta.meisterbaelle();
+    var duell = meta.duellUebersicht();
     var offen = marken.filter(function (m) { return !m.geschafft; });
     var geholt = marken.length - offen.length;
 
@@ -19223,15 +20127,16 @@ button.move-row:hover { border-color: var(--accent); }
           'Im Vorrat für den nächsten Run: ' + vorratZeilen.join(' · ') }) : null
       ]),
 
-      /* --- Die Meisterball-Kasse --- */
+      /* --- Der Stand im Legendären Run --- */
       el('div', { className: 'sammlung-karte' }, [
-        el('h3', { text: '🟣 Meisterball-Kasse' }),
-        el('p', { className: 'daily-gross', text: kasse === 1
-          ? 'Ein Meisterball' : kasse + ' Meisterbälle' }),
+        el('h3', { text: '🌟 Legendärer Run' }),
+        el('p', { className: 'daily-gross', text: duell.gefangen + ' von ' + PL.Run.legendenGesamt() + ' gefangen' }),
         el('p', { className: 'muted small', text:
-          'Legendäre Pokémon lassen sich nur mit einem Meisterball fangen, und nur im Legendären Run. ' +
-          'Jeder geschaffte Legendäre Run bringt einen. Ungeworfen bleiben sie liegen und wandern in den ' +
-          'nächsten Run — weg ist nur, was du wirklich wirfst.' })
+          duell.besiegt + ' besiegt · ' + duell.baelle + ' ' +
+          (duell.baelle === 1 ? 'Meisterball' : 'Meisterbälle') + ' bereit' + (duell.frei ? ' · ' + duell.frei + ' davon für jede Legende' : '') }),
+        el('p', { className: 'muted small', text:
+          'Der erste Sieg über ein legendäres Pokémon legt seinen Meisterball bereit — fangen kannst du es ' +
+          'erst, wenn du ein zweites Mal antrittst. Jeder Ball gehört dem Pokémon, das ihn hergegeben hat.' })
       ]),
 
       /* --- Die Wochenaufträge --- */
@@ -19561,14 +20466,15 @@ button.move-row:hover { border-color: var(--accent); }
     }
     var fresh = meta.recordRun(run, outcome);
     meta.merkeArten(run);
-    // Der Legendäre Run zahlt in die Kasse: Wer alle 125 Legenden hinter sich
-    // gebracht hat, nimmt einen Meisterball mit in den nächsten.
+    // Das Duell: Der erste Sieg über eine Legende legt ihren Meisterball
+    // bereit. Wer sie fangen will, tritt ein zweites Mal an. Ein geworfener
+    // Ball ist weg — auch wenn der Fang die einzige Beute des Abends war.
     App.neuerMeisterball = false;
     if (run.mode === 'legenden') {
-      synchronisiereMeisterbaelle();
-      if (outcome === 'sieg') {
-        meta.gibMeisterball(1);
-        App.neuerMeisterball = true;
+      var ziel = dex.sp(run.duellArt);
+      if (ziel && run.duellErgebnis === 'gefangen') meta.duellBallWeg(ziel.i);
+      if (ziel && (run.duellErgebnis === 'sieg' || run.duellErgebnis === 'gefangen')) {
+        App.neuerMeisterball = meta.duellGewonnen(ziel.i) && run.duellErgebnis !== 'gefangen';
       }
     }
 
@@ -19581,10 +20487,10 @@ button.move-row:hover { border-color: var(--accent); }
       faenge: run.stats.catches,
       arten: neueArten,
       entwicklungen: run.stats.evolutions,
-      regionen: run.region,
-      runs: 1,
+      regionen: run.mode === 'legenden' ? 0 : run.region,
+      runs: run.mode === 'legenden' ? 0 : 1,
       bosse: run.bossesBeaten || 0,
-      legenden: run.mode === 'legenden' ? run.legendenBesiegt() : (run.legendUsed ? 1 : 0)
+      legenden: run.mode === 'legenden' && outcome === 'sieg' ? 1 : 0
     });
     App.neueMarken = meta.pruefeMeilensteine();
 
@@ -19592,16 +20498,64 @@ button.move-row:hover { border-color: var(--accent); }
     fresh.forEach(function (a) { U.toast('Erfolg freigeschaltet: ' + a.name, 'good'); });
     App.neueMarken.forEach(function (ms) { U.toast('Sammelmarke: ' + ms.name + ' — ' + ms.lohnText, 'good'); });
     if (App.neuerMeisterball) {
-      U.toast('Ein Meisterball wandert in deine Kasse — du hast jetzt ' +
-        meta.meisterbaelle() + '.', 'good');
+      U.toast('Ein Meisterball liegt jetzt für ' + T.species(dex.sp(run.duellArt)) +
+        ' bereit — tritt noch einmal an, um es zu fangen.', 'good');
     }
     App.wochenLohn.forEach(function (a) { U.toast('Wochenauftrag geschafft: ' + a.text, 'good'); });
     show('end');
   }
 
+  /**
+   * Das Ende eines Duells ist kein Rundenbericht, sondern ein Ergebnis: Ist
+   * es gefallen, ist es gefangen, oder steht es noch? Von hier geht es
+   * zurück zu seiner Generation — meist tritt man gleich noch einmal an.
+   */
+  function duellEnde(run) {
+    var ziel = dex.sp(run.duellArt);
+    var ergebnis = run.duellErgebnis;
+    var gewonnen = ergebnis === 'sieg' || ergebnis === 'gefangen';
+    var stand = ziel ? meta.duellStand(ziel.i) : {};
+    var gen = ziel ? ziel.g : 1;
+    var kopf = ergebnis === 'gefangen' ? 'Gefangen!'
+      : ergebnis === 'sieg' ? 'Besiegt!'
+      : ergebnis === 'flucht' ? 'Du bist geflohen.'
+      : 'Dein Team ist am Ende.';
+    var text = ergebnis === 'gefangen'
+      ? T.species(ziel) + ' gehört jetzt zu deinem Pokédex — und darf in kommenden Duellen dieser Generation mitkämpfen.'
+      : ergebnis === 'sieg'
+        ? (stand.ball
+          ? 'Sein Meisterball liegt bereit. Tritt noch einmal an, um ' + T.species(ziel) + ' zu fangen.'
+          : 'Der Sieg zählt. Ein zweiter Ball fällt dafür aber nicht ab.')
+        : ergebnis === 'flucht'
+          ? 'Ein Duell, das man verlässt, gilt als verloren. ' + T.species(ziel) + ' wartet weiter.'
+          : T.species(ziel) + ' war stärker. Stell dein Team anders zusammen und komm wieder.';
+
+    return el('div', { className: 'end-screen duell-ende ' + (gewonnen ? 'won' : 'lost') }, [
+      el('h2', { text: kopf }),
+      ziel ? el('div', { className: 'duell-ende-bild' }, [U.sprite(ziel, { className: 'duell-gegner-sprite' })]) : null,
+      el('p', { className: 'muted', text: text }),
+      el('div', { className: 'stat-grid' }, [
+        stat('Runden', run.stats.turns),
+        stat('Gefallen', run.stats.faints),
+        stat('Team', run.party.length)
+      ]),
+      el('div', { className: 'party-strip' }, run.party.map(function (mon) { return U.monCard(mon, {}); })),
+      el('div', { className: 'scene-actions' }, [
+        el('button', { className: 'btn big primary', type: 'button',
+          onclick: function () { App.run = null; show('legendenTeam', { gen: gen, art: run.duellArt }); } },
+          'Noch einmal'),
+        el('button', { className: 'btn big', type: 'button',
+          onclick: function () { App.run = null; show('legendenGen', { gen: gen }); } }, 'Zur Generation'),
+        el('button', { className: 'btn big', type: 'button',
+          onclick: function () { App.run = null; show('title'); } }, 'Zum Titel')
+      ])
+    ]);
+  }
+
   SCREENS.end = function () {
     var run = App.run;
     var won = run.state === 'victory';
+    if (run.mode === 'legenden') return duellEnde(run);
     return el('div', { className: 'end-screen ' + (won ? 'won' : 'lost') }, [
       el('h2', { text: won ? 'Champ!' : 'Der Run endet hier.' }),
       el('p', { className: 'muted', text: won

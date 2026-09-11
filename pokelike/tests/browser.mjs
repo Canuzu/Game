@@ -396,14 +396,15 @@ await page.waitForSelector('.sammlung-screen');
   check('Der Run startet mit den erspielten Bällen', beutel.baelle === 2, String(beutel.baelle));
   check('Der Tages-Run bekommt keinen Vorteil', beutel.taeglich === null);
 
-  // Die Meisterball-Kasse steht in der Sammlung
+  // Der Stand des Legendären Runs steht in der Sammlung
   const kasseText = await page.evaluate(() => {
-    PL.meta.gibMeisterball(2);
+    PL.meta.duellGewonnen(PL.dex.sp('mewtwo').i);
     globalThis.PokelikeApp.show('sammlung');
     return document.querySelector('.sammlung-screen').innerText;
   });
-  check('Die Sammlung zeigt die Meisterball-Kasse', /2 Meisterbälle/.test(kasseText),
-    (kasseText.match(/Meisterball[^\n]*/g) || []).join(' | '));
+  check('Die Sammlung zeigt den Stand im Legendären Run',
+    /1 besiegt/.test(kasseText) && /1 Meisterball bereit/.test(kasseText),
+    (kasseText.match(/besiegt[^\n]*/g) || []).join(' | '));
 
   // Der Bestwert steht im Pokédex unter der Art
   await page.evaluate(() => {
@@ -427,7 +428,7 @@ await page.waitForSelector('.sammlung-screen');
   await page.waitForSelector('.title-screen');
 }
 
-// Die fünf Stufen — und die sechste, die den Weg mitbringt
+// Die fünf Stufen — der Regler ist wieder nur Schwierigkeit
 await page.evaluate(() => {
   globalThis.PokelikeApp.run = null;
   PL.meta.reset();
@@ -444,7 +445,6 @@ await page.waitForSelector('.asc-box');
   const modi = await page.locator('.choice-row .choice').count();
   check('Der Legendäre Run steht nicht in der Modusliste', modi === 5, String(modi));
 
-  // Mit Siegen wandert der Regler weiter — und die letzte Raste ist der Weg
   await page.evaluate(() => {
     const m = PL.meta.load();
     m.bestAscension = 4;
@@ -453,53 +453,98 @@ await page.waitForSelector('.asc-box');
   });
   await page.waitForSelector('.asc-box');
   const regler2 = page.locator('.newrun .slider');
-  check('Nach Stufe 5 steht der Legendäre Run offen',
-    (await regler2.getAttribute('max')) === '5', await regler2.getAttribute('max'));
+  check('Der Regler endet bei der fünften Stufe',
+    (await regler2.getAttribute('max')) === '4', await regler2.getAttribute('max'));
   await regler2.fill('2');
   await regler2.dispatchEvent('input');
   check('Der Regler nennt die Stufe beim Namen',
     (await page.locator('.asc-value').innerText()).trim() === 'Stufe 3 — Prüfung',
     await page.locator('.asc-value').innerText());
-  await regler2.fill('5');
+  await regler2.fill('4');
   await regler2.dispatchEvent('input');
-  await page.waitForSelector('.choice-row.stillgelegt');
-  check('Die letzte Raste legt die Moduswahl still', true);
-  check('… und heißt nach dem Weg, den sie öffnet',
-    (await page.locator('.asc-value').innerText()).indexOf('Legendärer Run') > 0,
+  check('Die letzte Raste ist die Meisterschaft, kein eigener Weg',
+    (await page.locator('.asc-value').innerText()).indexOf('Meisterschaft') > 0,
     await page.locator('.asc-value').innerText());
+}
 
-  await page.locator('.starter:not(.locked)').first().click();
-  await page.getByRole('button', { name: 'Los geht’s' }).click();
-  await page.waitForSelector('.map-screen', { timeout: 15000 });
-  const lauf = await page.evaluate(() => ({
-    modus: globalThis.PokelikeApp.run.mode,
-    team: globalThis.PokelikeApp.run.party.length,
-    level: globalThis.PokelikeApp.run.party[0].lvl,
-    knoten: globalThis.PokelikeApp.run.map.map((r) => r[0].type)
-  }));
-  check('Der Legendäre Run läuft', lauf.modus === 'legenden', lauf.modus);
-  check('… mit einem vorbereiteten Sechserteam', lauf.team === 6 && lauf.level >= 55,
-    lauf.team + ' auf Lv' + lauf.level);
-  check('… und einem Strang aus Legendenkämpfen',
-    lauf.knoten.filter((t) => t === 'legendboss').length === 5, lauf.knoten.join(','));
-  const kopf = await page.locator('.chip-region').innerText();
-  check('Die Kopfzeile zählt die Legenden', /0\/125/.test(kopf), kopf);
-  const kasse = await page.locator('.chip-ball').innerText();
-  check('Ohne geschafften Run steht die Kasse auf null', /0/.test(kasse), kasse);
+// Der Legendäre Run: eigener Modus, eigene Bildschirme
+{
+  await page.evaluate(() => {
+    globalThis.PokelikeApp.run = null;
+    PL.meta.reset();
+    globalThis.PokelikeApp.show('title');
+  });
+  await page.waitForSelector('.title-screen');
+  const gesperrt = await page.locator('.menue-zeile.gold').innerText();
+  check('Im Titelmenü steht der Legendäre Run golden da', gesperrt.indexOf('Legendärer Run') >= 0, gesperrt);
+  check('… und sagt kurz, warum er noch zu ist',
+    /Stufe 5/.test(gesperrt), gesperrt);
 
-  // Ohne Meisterball lässt sich nichts fangen — und kein anderer Ball hilft
-  const fangbar = await page.evaluate(() => {
-    const run = globalThis.PokelikeApp.run;
-    run.addItem('ultraball', 5);
+  await page.locator('.menue-zeile.gold').click();
+  await page.waitForSelector('.gen-grid');
+  check('Anklicken geht trotzdem — nur antreten nicht',
+    (await page.locator('.legenden-sperre').count()) === 1);
+  check('Neun Generationen stehen zur Wahl',
+    (await page.locator('.gen-karte').count()) === 9);
+
+  // Mit Stufe 5 im Rücken und ein paar Kanto-Arten im Pokédex
+  await page.evaluate(() => {
+    const m = PL.meta.load();
+    m.bestAscension = 4;
+    PL.dex.species.filter((s) => s.g === 1 && !s.bo && !s.f).slice(0, 20)
+      .forEach((s) => { m.seen[s.i] = 1; m.caught[s.i] = 1; });
+    PL.meta.save();
+    globalThis.PokelikeApp.show('legenden');
+  });
+  await page.waitForSelector('.gen-grid');
+  check('Nach Stufe 5 fällt die Sperre',
+    (await page.locator('.legenden-sperre').count()) === 0);
+
+  await page.locator('.gen-karte').first().click();
+  await page.waitForSelector('.legenden-grid');
+  check('Generation 1 zeigt ihre fünf Legenden',
+    (await page.locator('.legende-karte').count()) === 5,
+    String(await page.locator('.legende-karte').count()));
+
+  await page.locator('.legende-karte').first().click();
+  await page.waitForSelector('.duell-pool');
+  const antreten = page.getByRole('button', { name: /^Antreten/ });
+  check('Ohne Team lässt sich nicht antreten', await antreten.isDisabled());
+  const poolNurGen1 = await page.evaluate(() =>
+    [...document.querySelectorAll('.pool-karte .pool-name')].length);
+  check('Der Pool zeigt nur, was im Pokédex steht', poolNurGen1 === 20, String(poolNurGen1));
+
+  await page.locator('.pool-karte').first().click();
+  await page.locator('.pool-karte').nth(1).click();
+  check('Zwei Pokémon stehen im Team',
+    (await page.locator('.duell-platz:not(.leer)').count()) === 2);
+  check('Jetzt darf angetreten werden', !(await antreten.isDisabled()));
+
+  await antreten.click();
+  await page.waitForSelector('.battle', { timeout: 15000 });
+  const duell = await page.evaluate(() => {
+    const run = globalThis.PokelikeApp.run, bt = globalThis.PokelikeApp.battle;
+    const gegner = bt.sides[1].team[0];
+    const ohne = JSON.parse(JSON.stringify(gegner));
+    delete ohne.buff;
     return {
-      erlaubt: run.ballErlaubt('ultraball'),
-      fangen: run.catchAllowed(),
-      mitBall: (function () { run.addItem('masterball', 1); return run.catchAllowed(); })()
+      modus: run.mode, team: run.party.length, level: run.party[0].lvl,
+      gegnerzahl: bt.sides[1].team.length, legendaer: !!bt.legendary,
+      kp: PL.mon.maxHP(gegner), kpOhne: PL.mon.maxHP(ohne),
+      fangbar: bt.canCatch
     };
   });
-  check('Ein Hyperball ist im Legendären Run gesperrt', fangbar.erlaubt === false);
-  check('Ohne Meisterball ist kein Fang erlaubt', fangbar.fangen === false);
-  check('Mit Meisterball schon', fangbar.mitBall === true);
+  check('Das Duell läuft', duell.modus === 'legenden', duell.modus);
+  check('… mit dem selbst gebauten Team auf Stufe 100',
+    duell.team === 2 && duell.level === 100, duell.team + ' auf Lv' + duell.level);
+  check('… gegen genau ein legendäres Pokémon',
+    duell.gegnerzahl === 1 && duell.legendaer, String(duell.gegnerzahl));
+  check('… das einen Bossaufschlag auf die KP trägt',
+    duell.kp > duell.kpOhne * 2.5, duell.kp + ' statt ' + duell.kpOhne);
+  check('Ohne Meisterball lässt sich nichts fangen', duell.fangbar === false);
+
+  const kopf = await page.locator('.chip-region').innerText();
+  check('Die Kopfzeile nennt den Gegner', /Arktos|Articuno/.test(kopf), kopf);
 
   await page.evaluate(() => {
     globalThis.PokelikeApp.run = null;

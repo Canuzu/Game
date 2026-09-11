@@ -459,6 +459,96 @@
     }
   });
 
+  /* --- Drei Kulissen nur für die Legenden ------------------------------------
+   * Manche legendäre Pokémon stehen nirgendwo im Spiel richtig: Ein Wesen aus
+   * dem All gehört nicht auf eine Wiese, und ein Donnervogel nicht in eine
+   * Höhle. Diese drei Schauplätze gibt es deshalb nur im Duell.
+   * -------------------------------------------------------------------------- */
+
+  biome('weltraum', {
+    tile: 'fels',
+    sky: '#080614',
+    name: 'Zwischen den Sternen', ground: '#2a2440', platform: '#403868', edge: '#151030',
+    light: 'rgba(180,150,255,.18)',
+    particles: 'sparks',
+    draw: function (ctx) {
+      bands(ctx, 0, 58, ['#080614', '#120c26', '#1c1238', '#281a4c']);
+      speckle(ctx, 0, 0, W, 58, '#ffffff', 120, 5);
+      speckle(ctx, 0, 0, W, 40, '#a890ff', 50, 61);
+      speckle(ctx, 0, 0, W, 30, '#ffe0a0', 20, 13);
+      // Ein Planet am Rand, halb im Schatten
+      var i;
+      for (i = 0; i < 13; i++) {
+        var b = Math.round(Math.sqrt(169 - (i - 6) * (i - 6)) * 2);
+        px(ctx, 200 - b / 2 + 6, 8 + i, b, 1, '#6a58b0');
+        px(ctx, 200 - b / 2 + 6, 8 + i, Math.max(1, b / 3), 1, '#9c86e0');
+      }
+      px(ctx, 188, 12, 34, 1, '#c8b4ff');             // Ring
+      px(ctx, 186, 15, 38, 1, '#8c74d0');
+      silhouette(ctx, wave(4, 0.03, 1.1, 8), 60, '#2a2440', '#403868');
+      px(ctx, 0, 60, W, H - 60, '#2a2440');
+      px(ctx, 0, 60, W, 2, '#403868');
+      speckle(ctx, 0, 62, W, 18, '#544a80', 40, 29);
+    }
+  });
+
+  biome('gewitter', {
+    tile: 'gras',
+    sky: '#2c3446',
+    name: 'Gewitterhimmel', ground: '#4a5460', platform: '#5e6a78', edge: '#2a3038',
+    light: 'rgba(200,220,255,.16)',
+    particles: 'drops',
+    draw: function (ctx) {
+      bands(ctx, 0, 44, ['#2c3446', '#3a4458', '#4c5668', '#606a7c']);
+      var i;
+      for (i = 0; i < 5; i++) {                        // schwere Wolkenbänke
+        var x = i * 52 - 10, y = 4 + ((i * 7) % 12);
+        px(ctx, x, y, 46, 7, '#242c3c');
+        px(ctx, x + 6, y - 3, 30, 5, '#2e3648');
+        px(ctx, x + 4, y + 7, 38, 2, '#1c2230');
+      }
+      // Ein Blitz, in Stufen gezeichnet
+      px(ctx, 118, 16, 3, 8, '#ffe98a');
+      px(ctx, 114, 24, 4, 3, '#ffe98a');
+      px(ctx, 116, 27, 3, 9, '#fff4c0');
+      px(ctx, 112, 36, 4, 3, '#ffe98a');
+      px(ctx, 114, 39, 2, 8, '#fff4c0');
+      px(ctx, 100, 18, 44, 30, 'rgba(255,240,160,.07)');
+      silhouette(ctx, wave(6, 0.028, 2.2, 10), 56, '#39414e', '#4a5460');
+      px(ctx, 0, 56, W, H - 56, '#4a5460');
+      px(ctx, 0, 56, W, 2, '#5e6a78');
+      speckle(ctx, 0, 58, W, 20, '#38404c', 60, 43);
+    }
+  });
+
+  biome('tempel', {
+    tile: 'fels',
+    sky: '#f0d8a8',
+    name: 'Alter Tempel', ground: '#9c8460', platform: '#b8a078', edge: '#6c5a3c',
+    light: 'rgba(255,230,170,.20)',
+    particles: 'dust',
+    draw: function (ctx) {
+      bands(ctx, 0, 40, ['#f0d8a8', '#f8e8c0', '#fff4dc']);
+      var i;
+      // Eine Sonnenscheibe hinter dem Bauwerk
+      for (i = 0; i < 15; i++) {
+        var b = Math.round(Math.sqrt(225 - (i - 7) * (i - 7)) * 2);
+        px(ctx, 120 - b / 2, 6 + i, b, 1, '#ffd87c');
+      }
+      // Stufenpyramide
+      for (i = 0; i < 5; i++) {
+        px(ctx, 76 - i * 4, 56 - i * 7, 88 + i * 8, 7, i % 2 ? '#a88c64' : '#b89870');
+        px(ctx, 76 - i * 4, 56 - i * 7, 88 + i * 8, 1, '#d0b48c');
+      }
+      px(ctx, 110, 40, 20, 16, '#7c6448');            // Tor
+      px(ctx, 113, 43, 14, 13, '#4c3c28');
+      px(ctx, 0, 60, W, H - 60, '#9c8460');
+      px(ctx, 0, 60, W, 2, '#b8a078');
+      for (i = 0; i < 7; i++) px(ctx, i * 34 + 3, 66, 28, 1, '#8c7454');
+      speckle(ctx, 0, 62, W, 18, '#b09068', 40, 53);
+    }
+  });
+
   /* ---------- 3) Auswahl -------------------------------------------------------- */
 
   var REGION_BIOMES = {
@@ -477,6 +567,66 @@
     boss: 'arena', e4: 'liga', champ: 'liga',
     shop: 'stadt', rest: 'nacht', item: 'hoehle'
   };
+
+  /* --- Welcher Schauplatz gehört zu welcher Legende? -------------------------
+   * Zuerst die mit Namen: Wer irgendwo herkommt, kämpft dort. Alles andere
+   * entscheidet der erste Typ — Feuer im Vulkan, Eis im Schnee, Geist in der
+   * Nacht. So hat jedes der 125 seinen Ort, ohne dass 125 Kulissen nötig
+   * wären.
+   * -------------------------------------------------------------------------- */
+
+  var LEGENDEN_ORT = {
+    // Raum, Zeit, Gestirne
+    deoxys: 'weltraum', rayquaza: 'weltraum', dialga: 'weltraum', palkia: 'weltraum',
+    arceus: 'weltraum', solgaleo: 'weltraum', lunala: 'weltraum', necrozma: 'weltraum',
+    cosmog: 'weltraum', cosmoem: 'weltraum', eternatus: 'weltraum', celesteela: 'weltraum',
+    nihilego: 'weltraum', kartana: 'weltraum', guzzlord: 'weltraum', poipole: 'weltraum',
+    naganadel: 'weltraum', stakataka: 'weltraum', blacephalon: 'weltraum', pheromosa: 'weltraum',
+    buzzwole: 'weltraum', xurkitree: 'weltraum', jirachi: 'weltraum',
+    // Donner und Sturm
+    zapdos: 'gewitter', raikou: 'gewitter', thundurus: 'gewitter', tornadus: 'gewitter',
+    zekrom: 'gewitter', kyurem: 'schnee', reshiram: 'vulkan', lugia: 'wasser',
+    // Tempel, Schreine, alte Mächte
+    mew: 'tempel', mewtwo: 'hoehle', celebi: 'wald', jirachi_: 'tempel',
+    regirock: 'tempel', regice: 'schnee', registeel: 'tempel', regigigas: 'tempel',
+    regieleki: 'tempel', regidrago: 'tempel', xerneas: 'wald', yveltal: 'gewitter',
+    zygarde: 'hoehle', diancie: 'hoehle', hoopa: 'tempel', volcanion: 'vulkan',
+    magearna: 'tempel', marshadow: 'nacht', zeraora: 'stadt', meltan: 'stadt',
+    melmetal: 'stadt', zacian: 'tempel', zamazenta: 'tempel', calyrex: 'wald',
+    glastrier: 'schnee', spectrier: 'nacht', koraidon: 'dschungel', miraidon: 'stadt',
+    terapagos: 'hoehle', pecharunt: 'ruine', ogerpon: 'wald', okidogi: 'ruine',
+    munkidori: 'ruine', fezandipiti: 'ruine',
+    // Meer und Land
+    kyogre: 'wasser', groudon: 'vulkan', manaphy: 'wasser', phione: 'wasser',
+    keldeo: 'wasser', suicune: 'wasser', entei: 'vulkan', hooh: 'berg',
+    heatran: 'vulkan', giratina: 'ruine', darkrai: 'nacht', cresselia: 'nacht',
+    shaymin: 'wiese', latias: 'berg', latios: 'berg', uxie: 'hoehle',
+    mesprit: 'hoehle', azelf: 'hoehle', victini: 'stadt', virizion: 'wald',
+    cobalion: 'berg', terrakion: 'wueste', landorus: 'wueste', enamorus: 'wiese',
+    meloetta: 'stadt', genesect: 'stadt', silvally: 'stadt', typenull: 'stadt',
+    tapukoko: 'dschungel', tapulele: 'dschungel', tapubulu: 'dschungel', tapufini: 'strand',
+    kubfu: 'berg', urshifu: 'berg', glastrier_: 'schnee'
+  };
+
+  var TYP_ORT = {
+    Fire: 'vulkan', Water: 'wasser', Ice: 'schnee', Grass: 'dschungel',
+    Electric: 'gewitter', Ground: 'wueste', Rock: 'berg', Steel: 'tempel',
+    Flying: 'berg', Dragon: 'berg', Psychic: 'tempel', Fairy: 'wald',
+    Ghost: 'nacht', Dark: 'nacht', Bug: 'wald', Fighting: 'arena',
+    Poison: 'ruine', Normal: 'wiese'
+  };
+
+  /** Der Schauplatz, an dem ein legendäres Pokémon im Duell steht. */
+  function fuerLegende(sp) {
+    if (!sp) return 'ruine';
+    var ort = LEGENDEN_ORT[sp.id];
+    if (ort && B[ort]) return ort;
+    // Formen erben den Ort ihrer Grundgestalt (»Zygarde-10%« steht wie Zygarde).
+    var basis = String(sp.id).split('-')[0];
+    if (LEGENDEN_ORT[basis] && B[LEGENDEN_ORT[basis]]) return LEGENDEN_ORT[basis];
+    var typ = (sp.t && sp.t[0]) || 'Normal';
+    return B[TYP_ORT[typ]] ? TYP_ORT[typ] : 'ruine';
+  }
 
   function pick(regionId, nodeType, seed) {
     if (NODE_BIOMES[nodeType]) return NODE_BIOMES[nodeType];
@@ -942,7 +1092,7 @@
 
   PL.scenery = {
     biomes: B, regionBiomes: REGION_BIOMES, nodeBiomes: NODE_BIOMES,
-    pick: pick, render: render, platform: platform, tile: tile, trainer: trainer,
+    pick: pick, fuerLegende: fuerLegende, render: render, platform: platform, tile: tile, trainer: trainer,
     realTrainer: realTrainer,
     trainerStyles: TRAINER_STYLE, size: { w: W, h: H },
     get: function (id) { return B[id] || B.wiese; },

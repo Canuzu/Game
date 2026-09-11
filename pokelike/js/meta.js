@@ -179,7 +179,12 @@
       stufenFassung: 1,
       legendenReset: false,
       meilensteine: {},          // welche Sammelmarken schon geholt sind
-      meisterbaelle: 0,          // die Kasse für den Legendären Run
+      meisterbaelle: 0,          // die alte Kasse; bleibt nur für alte Stände stehen
+      // Das Legenden-Duell: was schon besiegt ist und welcher Meisterball
+      // bereitliegt. »baelle« ist nach Art sortiert — ein Ball gehört dem
+      // Pokémon, das ihn beim ersten Sieg hergegeben hat. »frei« sind die
+      // wenigen, die auf jedes passen.
+      duell: { siege: {}, baelle: {}, frei: 0 },
       vorrat: {},                // erspielter Startvorteil für den nächsten Run
       wochen: {},                // die Aufträge dieser Woche und ihr Stand
       arten: {},                 // je Art der eigene Bestwert
@@ -547,7 +552,7 @@
       lohn: { reroll: 1 }, lohnText: 'Einmal je Run eine Auswahl neu würfeln' },
     { id: 'gen9', name: 'Alle neun', bed: 'Alle neun Generationen vollständig',
       wert: function (st) { return [st.volleGen, 9]; },
-      lohn: {}, einmal: { meisterball: 1 }, lohnText: 'Ein Meisterball in die Kasse' }
+      lohn: {}, einmal: { meisterball: 1 }, lohnText: 'Ein Meisterball, der auf jede Legende passt' }
   ];
 
   /** Der Sammlungsstand, wie ihn die Meilensteine sehen. */
@@ -583,7 +588,7 @@
       if (w[0] < w[1]) return;
       m.meilensteine[ms.id] = Date.now();
       // Manche Marken zahlen einmalig in die Kasse statt dauerhaft in den Beutel.
-      if (ms.einmal && ms.einmal.meisterball) gibMeisterball(ms.einmal.meisterball);
+      if (ms.einmal && ms.einmal.meisterball) gibFreienBall(ms.einmal.meisterball);
       neue.push({ id: ms.id, name: ms.name, lohnText: ms.lohnText });
     });
     if (neue.length) save();
@@ -619,28 +624,80 @@
    * geworfen wurde. Wer drei Runs schafft und keinen wirft, hat drei.
    * -------------------------------------------------------------------------- */
 
-  function meisterbaelle() { return load().meisterbaelle || 0; }
+  /** Der Stand des Duells für eine Art: besiegt, Ball da, gefangen. */
+  function duellStand(spIndex) {
+    var m = load(), d = duellDaten(m);
+    return {
+      besiegt: !!d.siege[spIndex],
+      ball: !!d.baelle[spIndex],
+      frei: d.frei || 0,
+      gefangen: !!m.caught[spIndex]
+    };
+  }
 
-  /** Legt Meisterbälle in die Kasse — der Lohn für einen geschafften Run. */
-  function gibMeisterball(n) {
-    var m = load();
-    m.meisterbaelle = Math.max(0, (m.meisterbaelle || 0) + (n === undefined ? 1 : n));
-    save();
-    return m.meisterbaelle;
+  function duellDaten(m) {
+    if (!m.duell) m.duell = { siege: {}, baelle: {}, frei: 0 };
+    if (!m.duell.siege) m.duell.siege = {};
+    if (!m.duell.baelle) m.duell.baelle = {};
+    if (typeof m.duell.frei !== 'number') m.duell.frei = 0;
+    return m.duell;
   }
 
   /**
-   * Schreibt die Kasse auf den Stand fort, den der laufende Run übrig hat.
-   * Der Beutel des Runs ist während des Spielens die Wahrheit; geworfen ist
-   * geworfen, und das gilt auch für den nächsten Run.
+   * Ein gewonnenes Duell. Der erste Sieg über eine Art legt ihren Meisterball
+   * bereit — genau einen, und nur für sie. Wer sie fangen will, muss also ein
+   * zweites Mal antreten. Wiederholte Siege bringen nichts Neues: Sonst
+   * stünde am leichtesten Gegner eine Ballfabrik.
    */
-  function setzeMeisterbaelle(n) {
-    var m = load();
-    var wert = Math.max(0, n | 0);
-    if (m.meisterbaelle === wert) return wert;
-    m.meisterbaelle = wert;
+  function duellGewonnen(spIndex) {
+    var m = load(), d = duellDaten(m);
+    var erster = !d.siege[spIndex];
+    d.siege[spIndex] = (d.siege[spIndex] || 0) + 1;
+    if (erster && !m.caught[spIndex]) d.baelle[spIndex] = 1;
     save();
-    return wert;
+    return erster;
+  }
+
+  /** Verbraucht den Ball, mit dem gerade gefangen wurde. */
+  function duellBallWeg(spIndex) {
+    var m = load(), d = duellDaten(m);
+    if (d.baelle[spIndex]) delete d.baelle[spIndex];
+    else if (d.frei > 0) d.frei--;
+    save();
+  }
+
+  /** Liegt für diese Art ein Ball bereit — ihrer oder ein freier? */
+  function duellBallDa(spIndex) {
+    var d = duellDaten(load());
+    return !!d.baelle[spIndex] || d.frei > 0;
+  }
+
+  /** Ein Ball, der auf jede Legende passt. Den gibt es nur als Sammelmarke. */
+  function gibFreienBall(n) {
+    var d = duellDaten(load());
+    d.frei = Math.max(0, d.frei + (n === undefined ? 1 : n));
+    save();
+    return d.frei;
+  }
+
+  /** Wie viele Legenden schon besiegt und wie viele gefangen sind. */
+  function duellUebersicht() {
+    var m = load(), d = duellDaten(m), besiegt = 0, gefangen = 0, baelle = 0;
+    dex.species.forEach(function (sp) {
+      if (!dex.isLegendary(sp) || sp.bo || sp.f) return;
+      if (d.siege[sp.i]) besiegt++;
+      if (m.caught[sp.i]) gefangen++;
+      if (d.baelle[sp.i]) baelle++;
+    });
+    return { besiegt: besiegt, gefangen: gefangen, baelle: baelle, frei: d.frei || 0 };
+  }
+
+  /**
+   * Steht das Legenden-Duell offen? Erst wer die fünfte Schwierigkeitsstufe
+   * im gewöhnlichen Run gewonnen hat, darf antreten.
+   */
+  function legendenFrei() {
+    return load().bestAscension >= (PL.Run.STUFEN.length - 1);
   }
 
   /* ---------- 4c) Wochenaufträge -----------------------------------------------
@@ -793,9 +850,9 @@
    */
   function startVorteil(modus) {
     if (modus === 'taeglich') return null;
-    // Der Legendäre Run bringt keinen Sammlungslohn mit — er hat seine eigene
-    // Währung. Was zählt, ist die Kasse.
-    if (modus === 'legenden') return { meisterbaelle: meisterbaelle() };
+    // Das Legenden-Duell bringt keinen Sammlungslohn mit: Es zählt allein,
+    // was man aufgestellt hat.
+    if (modus === 'legenden') return null;
     var lohn = sammelLohn(), v = hebeVorrat();
     ['geld', 'baelle', 'superbaelle', 'traenke', 'beleber', 'relikte',
      'reroll'].forEach(function (k) {
@@ -861,13 +918,25 @@
   /** Trägt einen beendeten Run in die Dauerstatistik ein. */
   function recordRun(run, outcome) {
     var m = load();
+    // Ein Legenden-Duell ist kein Run: Es zählt nicht als gespielter Run, es
+    // hebt keinen Rang und es macht niemanden zum Champ. Gezählt wird nur,
+    // was wirklich passiert ist — Kämpfe, Runden, Fänge.
+    if (run.mode === 'legenden') {
+      m.totals.battles += run.stats.battles;
+      m.totals.kos += run.stats.kos;
+      m.totals.catches += run.stats.catches;
+      m.totals.faints += run.stats.faints;
+      m.totals.turns += run.stats.turns;
+      if (outcome === 'sieg') award('legendenrun');
+      save();
+      return refreshAchievements();
+    }
     m.runs++;
     if (outcome === 'sieg') {
       m.wins++;
       if (run.ascension > m.bestAscension) m.bestAscension = run.ascension;
       if (run.ascension >= 1) award('ascend1');
       if (run.ascension >= 4) award('ascend5');
-      if (run.mode === 'legenden') award('legendenrun');
       if (run.nuzlocke) award('nuzlocke');
       if (run.mode === 'taeglich') award('daily');
     }
@@ -1093,7 +1162,9 @@
     wochenSchluessel: wochenSchluessel, wochenAuftraege: wochenAuftraege,
     wochenStand: wochenStand, zaehleWoche: zaehleWoche,
     vorrat: vorrat, legeInVorrat: legeInVorrat, hebeVorrat: hebeVorrat, startVorteil: startVorteil,
-    meisterbaelle: meisterbaelle, gibMeisterball: gibMeisterball, setzeMeisterbaelle: setzeMeisterbaelle,
+    duellStand: duellStand, duellGewonnen: duellGewonnen, duellBallWeg: duellBallWeg,
+    duellBallDa: duellBallDa, duellUebersicht: duellUebersicht, gibFreienBall: gibFreienBall,
+    legendenFrei: legendenFrei,
     merkeArten: merkeArten, artRekord: artRekord,
     recordRun: recordRun,
     saveRun: saveRun, loadRun: loadRun, clearRun: clearRun, hasRun: hasRun,

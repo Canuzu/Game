@@ -24,7 +24,6 @@ Top Vier und Champ.
 | Knoten | Was passiert |
 |---|---|
 | 🌿 **Wildes Pokémon** | Kampf mit Fangmöglichkeit |
-| ✨ **Legendäre Spur** | Ein legendäres Pokémon der Region — fangen erlaubt |
 | 🎽 **Trainerkampf** | Bringt Geld und Erfahrung |
 | ⚔️ **Starker Trainer** | Volles Team, doppelte Belohnung |
 | 🫱 **Begegnung** | Drei Pokémon zur Auswahl, eines darf mit |
@@ -52,10 +51,8 @@ Team wächst von zwei auf sechs Pokémon, sein Starter entwickelt sich mit und
 trägt ab der dritten Begegnung einen Gegenstand. Vor und nach jedem Kampf hat
 er etwas zu sagen.
 
-**Der Schrein der Legenden** taucht ab der sechsten Region auf: hinter dem
-Siegel wartet ein legendäres Pokémon auf deinem Levelniveau, mit besten
-Werten und Fleißpunkten. Du darfst kämpfen und fangen — oder ehrfürchtig
-zurücktreten und ein Relikt mitnehmen.
+**Legendäre Pokémon** kommen im gewöhnlichen Run nicht mehr vor. Sie gehören
+ganz dem **Legendären Run** — einem eigenen Modus, der weiter unten steht.
 
 ## Was drin ist
 
@@ -147,13 +144,32 @@ derselben Art ist unwahrscheinlich, die dritte praktisch ausgeschlossen. Über
 zwölf Begegnungsknoten hinweg kommen so 32 verschiedene Arten in 36 Angeboten
 zusammen — vorher waren es 26.
 
-**Legendäre Spuren** — ab der zweiten Region liegt auf jeder Karte genau ein
-Knoten, an dem sich etwas Legendäres aufhält, passend zur Generation der
-Region. Es ist ein echter Kampf, kein Geschenk: ein einzelnes Pokémon auf
-Augenhöhe mit dem Team, das sich fangen lässt, wenn man es vorher schwächt und
-möglichst einschläfert. Der Fangwert ist gegenüber der Vorlage fünffach
-angehoben — mit dem Original läge die Aussicht bei unter einem Prozent je Ball,
-und die Spur wäre bloß eine Schikane.
+**Der Legendäre Run** — ein eigener Weg neben dem Run, kein Schwierigkeitsgrad.
+Neun Generationen, in jeder ihre legendären Pokémon, und hinter jedem von ihnen
+genau ein Duell: dein selbst gebautes Team gegen dieses eine Pokémon. Offen
+steht er, sobald du Stufe 5 im gewöhnlichen Run gewonnen hast.
+
+Das Team stellst du vorher zusammen — bis zu sechs Arten **derselben
+Generation**, und nur solche, die in deinem Pokédex stehen. Gefangene Legendäre
+dürfen in ihrer eigenen Generation mitkämpfen. Alle treten auf Stufe 100 an,
+vier Attacken wählst du je Pokémon selbst.
+
+Der Gegner steht allein gegen dein ganzes Team und bekommt dafür einen
+Bossaufschlag: dreifache KP und 15 % auf alle übrigen Werte, beste
+Fleißpunkte, perfekte Werte, höchste KI-Stufe. Der Aufschlag liegt bewusst auf
+den KP — das macht den Kampf lang, nicht die einzelnen Treffer unfair.
+
+**Fangen geht nur mit dem Meisterball, und jeder Ball gehört einem Pokémon.**
+Der erste Sieg über eine Legende legt ihren Ball bereit; fangen kannst du sie
+also erst, wenn du ein zweites Mal antrittst. Wiederholte Siege bringen keinen
+zweiten Ball.
+
+Jedes der 125 hat sein **eigenes Stück Musik** — Tonleiter aus dem ersten Typ,
+Tempo aus den Basiswerten, der Rest aus der Pokédex-Nummer, sodass dasselbe
+Pokémon immer gleich klingt. Dreizehn Titelträger (Mewtu, Lugia, Rayquaza,
+Arceus, Zacian und andere) bringen ein von Hand geschriebenes Motiv mit. Und
+jedes kämpft an seinem Ort: Kyogre im Meer, Groudon im Vulkan, Arceus zwischen
+den Sternen.
 
 **Lebensräume statt Zufallsliste** — jeder Knoten weiß, in welcher Kulisse er
 liegt, und die Begegnungen richten sich danach: im Wald Käfer und Pflanzen, in
@@ -276,9 +292,9 @@ zweite Run starb.
 **Wie schwer es zugeht** — der Grundlauf ist freundlich eingestellt: Gegner
 bleiben sechs Level hinter dem eigenen Team, bieten zwei Pokémon weniger auf
 und tragen schwächere Werte; nach jedem gewonnenen Kampf erholt sich das Team
-um ein Drittel. Härter wird es über die elf **Aufstiege**, und die schaltet
-man frei, indem man Runs gewinnt — es gibt also keine Schwierigkeitsauswahl
-zu Beginn, sondern eine, die man sich erspielt.
+um ein Drittel. Härter wird es über die fünf **Stufen** am Schieberegler, und die schaltet
+man frei, indem man Runs gewinnt — man wählt also nur aus, was man sich
+vorher erspielt hat.
 
 Gemessen mit `tools/balance.mjs`: Siegquote gegen die harten Kämpfe 89 %,
 durchschnittlich erreichte Region 4 von 9.
@@ -374,6 +390,7 @@ Fähigkeits-Kapsel und -Pflaster und Silberkronkorken.
 | Endlos | Die Regionen wiederholen sich und werden härter — jede volle Runde bringt einen Segen zur Wahl |
 | Boss-Rush | Fast nur Arenaleiter |
 | Tages-Run | Fester Startwert aus dem Datum — heute für alle gleich |
+| Legendärer Run | Eigener Weg: ein Duell gegen ein einzelnes legendäres Pokémon |
 
 Dazu **Nuzlocke** als Zusatzregel — besiegte Pokémon verlassen das Team für
 immer, und pro Region darfst du nur ein einziges Pokémon aufnehmen. Wer fällt,
@@ -385,20 +402,16 @@ Segen ausgeschüttet — drei zur Wahl aus sieben: volle Heilung, ein Relikt,
 fünf Level mehr Obergrenze, Fleißpunkte fürs ganze Team, ein legendärer
 Begleiter, 10 000 ₽ oder eine Feldapotheke.
 
-**Elf Aufstiegsstufen** schalten sich nacheinander frei und stapeln sich:
+**Fünf Stufen** schalten sich nacheinander frei und stapeln sich — jede erbt
+alles von den Stufen darunter:
 
-| Stufe | Erschwernis |
-|---|---|
-| 1 | Gegner starten zwei Level höher |
-| 2 | Läden verlangen 25 % mehr |
-| 3 | Arenaleiter und Top Vier führen ein Pokémon mehr |
-| 4 | Rastplätze heilen nur noch zur Hälfte |
-| 5 | Fangchancen sinken deutlich |
-| 6 | Gegner tragen häufiger Gegenstände |
-| 7 | 20 % weniger Erfahrung |
-| 8 | Kein Vollheilen nach Arenaleitern |
-| 9 | Gegner verwandeln sich, sobald sie können |
-| 10 | Alles zusammen und noch zwei Level obendrauf |
+| Stufe | Name | Was dazukommt |
+|---|---|---|
+| 1 | Reise | Das Spiel, wie es gedacht ist |
+| 2 | Herausforderung | Gegner zwei Level höher, Läden 25 % teurer |
+| 3 | Prüfung | Arenaleiter mit einem Pokémon mehr, geringere Fangchancen, 20 % weniger Erfahrung |
+| 4 | Härte | Rastplätze heilen halb, Gegner tragen öfter Gegenstände, kein Vollheilen nach Arenaleitern |
+| 5 | Meisterschaft | Gegner verwandeln sich, und noch zwei Level obendrauf |
 
 **Meta-Fortschritt** — der Pokédex sammelt über alle Runs hinweg, was du gesehen
 und gefangen hast (inklusive Schillernder). 40 Startpokémon schalten sich nach

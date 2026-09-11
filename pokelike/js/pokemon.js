@@ -30,9 +30,19 @@
     return 1;
   }
 
-  /** Endwerte [KP, Ang, Ver, SpA, SpV, Ini] eines Pokémon. */
+  /**
+   * Endwerte [KP, Ang, Ver, SpA, SpV, Ini] eines Pokémon.
+   *
+   * mon.buff ist der Aufschlag für einen Bosskampf: { hp, stat }. Ein
+   * legendäres Pokémon steht im Duell allein gegen ein ganzes Team — ohne
+   * Aufschlag wäre das keine Frage des Könnens, sondern der Geduld, weil
+   * sechs Pokémon sechsmal so oft angreifen dürfen wie eines. Der Aufschlag
+   * liegt bewusst vor allem auf den KP: Das verlängert den Kampf, statt
+   * einzelne Treffer unfair hart zu machen.
+   */
   function stats(mon) {
     var sp = dex.sp(mon.sp), out = [0, 0, 0, 0, 0, 0], i, base, iv, ev, v;
+    var buff = mon.buff || null;
     for (i = 0; i < 6; i++) {
       base = sp.bs[i];
       iv = mon.ivs[i];
@@ -44,6 +54,7 @@
         v = Math.floor((Math.floor((2 * base + iv + ev) * mon.lvl / 100) + 5) *
                        natureMod(mon.nat, PL.STATS[i]));
       }
+      if (buff) v = Math.max(1, Math.round(v * (i === 0 ? (buff.hp || 1) : (buff.stat || 1))));
       out[i] = v;
     }
     return out;

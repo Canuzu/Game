@@ -1815,34 +1815,33 @@ section('Legendäre Pokémon gehören dem Legendären Run');
     eq('… und die Region als keine', geputzt.legendRegion, -1);
   }
 
-  /* --- Der Meisterball ist die einzige Währung --- */
-  const leg = new PL.Run({ seed: 77, mode: 'legenden', ascension: 5, starter: 'charmander' });
-  eq('Der Legendäre Run beginnt ohne gewöhnliche Bälle', leg.bag.pokeball || 0, 0);
+  /* --- Der Meisterball ist die einzige Währung, und er gehört einem --- */
+  const leg = new PL.Run({ seed: 77, mode: 'legenden',
+    duell: { art: 'mewtwo', team: [{ sp: 'venusaur' }] } });
+  eq('Das Duell beginnt ohne gewöhnliche Bälle', leg.bag.pokeball || 0, 0);
   eq('… auch ohne Hyperbälle', leg.bag.ultraball || 0, 0);
   eq('Ohne Meisterball ist kein Fang möglich', leg.catchAllowed(), false);
   eq('Nur der Meisterball darf geworfen werden', leg.ballErlaubt('masterball'), true);
   eq('Ein Pokéball nicht', leg.ballErlaubt('pokeball'), false);
   eq('Ein Hyperball auch nicht', leg.ballErlaubt('ultraball'), false);
 
-  const mitBall = new PL.Run({ seed: 77, mode: 'legenden', ascension: 5, starter: 'charmander',
-    vorteil: { meisterbaelle: 3 } });
-  eq('Die Kasse landet im Beutel', mitBall.bag.masterball, 3);
+  const mitBall = new PL.Run({ seed: 77, mode: 'legenden',
+    duell: { art: 'mewtwo', team: [{ sp: 'venusaur' }], meisterball: true } });
+  eq('Der Ball liegt im Beutel', mitBall.bag.masterball, 1);
   eq('Mit Meisterball darf gefangen werden', mitBall.catchAllowed(), true);
-  mitBall.removeItem('masterball', 3);
-  eq('Ist der letzte geworfen, ist Schluss', mitBall.catchAllowed(), false);
+  mitBall.removeItem('masterball', 1);
+  eq('Ist er geworfen, ist Schluss', mitBall.catchAllowed(), false);
 
   // Im gewöhnlichen Run gilt die Sperre nicht.
   const normal = new PL.Run({ seed: 77, starter: 'charmander' });
   eq('Im gewöhnlichen Run sind alle Bälle erlaubt', normal.ballErlaubt('pokeball'), true);
 
-  // Der Kampf gegen eine Legende erlaubt das Fangen nur mit Ball in der Kasse.
+  // Der Kampf selbst erlaubt das Fangen nur mit Ball im Beutel.
   mitBall.addItem('masterball', 1);
-  mitBall.enterNode(0, 0); mitBall.closeScene();
-  const kampf = mitBall.enterNode(1, 0);
-  eq('Mit Ball ist der Kampf fangbar', kampf.battle.canCatch, true);
-  const ohne = new PL.Run({ seed: 77, mode: 'legenden', ascension: 5, starter: 'charmander' });
-  ohne.enterNode(0, 0); ohne.closeScene();
-  eq('Ohne Ball nicht', ohne.enterNode(1, 0).battle.canCatch, false);
+  eq('Mit Ball ist der Kampf fangbar', mitBall.enterNode(0, 0).battle.canCatch, true);
+  const ohne = new PL.Run({ seed: 77, mode: 'legenden',
+    duell: { art: 'mewtwo', team: [{ sp: 'venusaur' }] } });
+  eq('Ohne Ball nicht', ohne.enterNode(0, 0).battle.canCatch, false);
 }
 
 section('Auto-Kampf');
@@ -2210,9 +2209,9 @@ section('Tages-Run: ein Startwert für alle');
 section('Fünf Stufen statt elf Aufstiege');
 {
   const S = PL.Run.STUFEN;
-  eq('Es sind sechs Einträge: fünf Stufen und der Legendäre Run', S.length, 6);
+  eq('Es sind fünf Stufen — und sonst nichts', S.length, 5);
   eq('Die erste Stufe ist die Grundschwierigkeit', S[0].regeln.length, 0);
-  eq('Die letzte ist der Legendäre Run', !!S[5].legenden, true);
+  check('Keine Stufe ist heimlich der Legendäre Run', S.every((st) => !st.legenden));
   check('Jede Stufe sagt, was sie ändert', S.every((st) => st.name && st.kurz && st.punkte.length));
 
   // Keine Regel darf verschwinden und keine doppelt vergeben sein.
@@ -2227,15 +2226,14 @@ section('Fünf Stufen statt elf Aufstiege');
   eq('Stufe 3 senkt die Fangchancen', auf(2).asc(5), true);
   eq('… und erbt die Regeln von Stufe 2', auf(2).asc(1), true);
   eq('Stufe 5 schaltet alles an', [1,2,3,4,5,6,7,8,9,10].every((r) => auf(4).asc(r)), true);
-  eq('Der Legendäre Run behält alle Regeln', [1,2,3,4,5,6,7,8,9,10].every((r) => auf(5).asc(r)), true);
-  eq('Eine Regel, die es nicht gibt, gilt nie', auf(5).asc(99), false);
+  eq('Eine Regel, die es nicht gibt, gilt nie', auf(4).asc(99), false);
 
   // Elf alte Aufstiege werden zu fünf Stufen — ohne die letzte zu verschenken.
   eq('Aufstieg 0 bleibt Stufe 1', PL.Run.stufeAusAltem(0), 0);
   eq('Aufstieg 7 wird Stufe 4', PL.Run.stufeAusAltem(7), 3);
   eq('Aufstieg 10 wird Stufe 5', PL.Run.stufeAusAltem(10), 4);
-  check('Der Legendäre Run wird nie verschenkt',
-    [0,1,2,3,4,5,6,7,8,9,10,99].every((n) => PL.Run.stufeAusAltem(n) < 5));
+  check('Keine Umrechnung führt über die fünfte Stufe hinaus',
+    [0,1,2,3,4,5,6,7,8,9,10,99].every((n) => PL.Run.stufeAusAltem(n) <= 4));
   check('Die Umrechnung steigt monoton', (() => {
     let letzte = -1;
     for (let n = 0; n <= 10; n++) {
@@ -2249,7 +2247,7 @@ section('Fünf Stufen statt elf Aufstiege');
   // Ein laufender Run aus der alten Zeit wird beim Laden umgerechnet.
   const alt = new PL.Run({ seed: 9, ascension: 2, starter: 'squirtle' });
   const roh = JSON.parse(JSON.stringify(alt.toJSON()));
-  eq('Neue Runs tragen die Fassung mit sich', roh.stufenFassung, 2);
+  eq('Neue Runs tragen die Fassung mit sich', roh.stufenFassung, 3);
   delete roh.stufenFassung;
   roh.ascension = 9;
   eq('Ein alter Spielstand landet auf Stufe 5', PL.Run.fromJSON(roh).ascension, 4);
@@ -2258,7 +2256,7 @@ section('Fünf Stufen statt elf Aufstiege');
   eq('Ein neuer wird nicht noch einmal umgerechnet', PL.Run.fromJSON(neu2).ascension, 2);
 }
 
-section('Der Legendäre Run');
+section('Der Legendäre Run ist ein Duell');
 {
   eq('Alle Legenden der neun Generationen', PL.Run.legendenGesamt(), 125);
   check('Jede Generation bringt welche mit',
@@ -2269,65 +2267,169 @@ section('Der Legendäre Run');
     PL.Run.legendenDerGeneration(1).map((sp) => sp.n).join(','),
     'Articuno,Zapdos,Moltres,Mewtwo,Mew');
 
-  const run = new PL.Run({ seed: 77, mode: 'legenden', ascension: 5, starter: 'charmander' });
-  eq('Man tritt mit sechs Pokémon an', run.party.length, 6);
-  check('… alle auf der Levelgrenze', run.party.every((m) => m.lvl === run.levelCap), run.levelCap);
-  check('… und keines davon ist selbst legendär',
-    run.party.every((m) => !PL.dex.isLegendary(PL.dex.sp(m.sp))));
-  eq('Der Starter steht vorn und ist ausgewachsen',
-    PL.dex.sp(run.party[0].sp).id, 'charizard');
-  check('Der Beutel trägt genug für einen langen Weg', (run.bag.hyperpotion || 0) >= 10);
+  /* --- Es ist keine Schwierigkeitsstufe mehr --- */
+  eq('Der Regler hat wieder fünf Stufen', PL.Run.STUFEN.length, 5);
+  check('Keine davon schaltet den Legendären Run an',
+    PL.Run.STUFEN.every((st) => !st.legenden));
+  eq('Die höchste Stufe heißt Meisterschaft', PL.Run.STUFEN[4].name, 'Meisterschaft');
+  eq('Ein alter Aufstieg 10 landet auf der höchsten Stufe', PL.Run.stufeAusAltem(10), 4);
 
-  const arten = run.map.map((r) => r[0].type);
-  eq('Der Strang beginnt mit einer Verschnaufpause', arten[0], 'rest');
-  eq('Er endet mit einem Relikt', arten[arten.length - 1], 'relic');
-  eq('Generation 1 bringt fünf Legenden', arten.filter((t) => t === 'legendboss').length, 5);
-  check('Der Weg hat keine Abzweigung', run.map.every((r) => r.length === 1));
-  check('Jeder Knoten führt genau zum nächsten',
-    run.map.every((r, i) => r[0].next.length === (i < run.map.length - 1 ? 1 : 0)));
+  /* --- Ein Duell: ein Knoten, ein Gegner --- */
+  const duell = new PL.Run({ seed: 77, mode: 'legenden', duell: {
+    art: 'zapdos',
+    team: [{ sp: 'venusaur' }, { sp: 'charizard' }, { sp: 'blastoise' }]
+  } });
+  eq('Die Karte hat genau einen Knoten', duell.map.length, 1);
+  eq('… und auf ihm steht die Legende', duell.map[0][0].type, 'legendboss');
+  eq('Der Gegner ist der gewählte', duell.map[0][0].sp, 'zapdos');
+  eq('Die Region ist die Generation des Gegners', duell.region, 0);
+  eq('Das Team ist das gewählte', duell.party.length, 3);
+  check('… und steht auf Stufe 100', duell.party.every((m) => m.lvl === 100), duell.party.map((m) => m.lvl).join(','));
+  eq('Die Levelgrenze ist 100', duell.levelCap, 100);
+  eq('Der erste im Team ist der erste gewählte', PL.dex.sp(duell.party[0].sp).id, 'venusaur');
+  eq('Kein Geld — es gibt nichts zu kaufen', duell.money, 0);
 
-  // Derselbe Startwert stellt dasselbe Team.
-  const zwilling = new PL.Run({ seed: 77, mode: 'legenden', ascension: 5, starter: 'charmander' });
-  eq('Derselbe Startwert stellt dasselbe Team',
-    run.party.map((m) => m.sp).join(','), zwilling.party.map((m) => m.sp).join(','));
+  /* --- Gewählte Attacken kommen mit --- */
+  const donner = PL.dex.moves.find((m) => m.id === 'thunderbolt');
+  const mitAttacken = new PL.Run({ seed: 3, mode: 'legenden', duell: {
+    art: 'zapdos', team: [{ sp: 'raichu', moves: [donner.i] }]
+  } });
+  eq('Eine gewählte Attacke steht im Set', mitAttacken.party[0].moves.length, 1);
+  eq('… und zwar die gewählte', mitAttacken.party[0].moves[0].m, donner.i);
+  const ohneWahl = new PL.Run({ seed: 3, mode: 'legenden', duell: {
+    art: 'zapdos', team: [{ sp: 'raichu' }]
+  } });
+  check('Ohne eigene Wahl stellt das Spiel selbst eines zusammen',
+    ohneWahl.party[0].moves.length === 4, String(ohneWahl.party[0].moves.length));
+  const fremd = new PL.Run({ seed: 3, mode: 'legenden', duell: {
+    art: 'zapdos', team: [{ sp: 'raichu', moves: [999999] }]
+  } });
+  check('Eine Attacke, die die Art nicht lernen kann, fällt heraus',
+    fremd.party[0].moves.length === 4);
 
-  // Der erste Kampf steht fest — und es ist der erste des Pokédex.
-  run.enterNode(0, 0); run.closeScene();
-  const szene = run.enterNode(1, 0);
-  eq('Der erste Gegner ist Arktos', PL.dex.sp(szene.battle.sides[1].team[0].sp).n, 'Articuno');
-  eq('… auf der Levelgrenze', szene.battle.sides[1].team[0].lvl, run.levelCap);
+  /* --- Der Gegner steht allein, ist dafür aber zäh --- */
+  const szene = duell.enterNode(0, 0);
+  const gegner = szene.battle.sides[1].team[0];
+  eq('Es ist wirklich Zapdos', PL.dex.sp(gegner.sp).id, 'zapdos');
+  eq('… auf Stufe 100', gegner.lvl, 100);
   eq('… und als Legende gekennzeichnet', szene.battle.legendary, true);
+  eq('Es steht allein', szene.battle.sides[1].team.length, 1);
+  const ohneBuff = JSON.parse(JSON.stringify(gegner));
+  delete ohneBuff.buff;
+  check('Der Bossaufschlag verdreifacht seine KP',
+    PL.mon.maxHP(gegner) > PL.mon.maxHP(ohneBuff) * 2.5,
+    PL.mon.maxHP(gegner) + ' statt ' + PL.mon.maxHP(ohneBuff));
+  check('Die anderen Werte steigen nur leicht',
+    PL.mon.stats(gegner)[1] < PL.mon.stats(ohneBuff)[1] * 1.3);
 
-  // Zwischen den Legenden steht das Team wieder auf den Beinen.
-  run.party.forEach((m) => { m.hp = 0; });
-  run.finishBattle({ outcome: 'win', sides: [{ used: [] }, { team: [] }], reward: null, turns: 1 });
-  check('Nach einem gewonnenen Kampf ist das Team vollständig zurück',
-    run.party.every((m) => m.hp === PL.mon.maxHP(m)), run.party.map((m) => m.hp).join('/'));
+  /* --- Nach dem Kampf ist Schluss --- */
+  const gewonnen = new PL.Run({ seed: 9, mode: 'legenden', duell: {
+    art: 'mew', team: [{ sp: 'venusaur' }]
+  } });
+  gewonnen.enterNode(0, 0);
+  gewonnen.finishBattle({ outcome: 'win', sides: [{ used: [] }, { team: [] }], reward: null, turns: 3 });
+  eq('Der Ausgang wird gemerkt', gewonnen.duellErgebnis, 'sieg');
+  gewonnen.closeScene();
+  eq('Das Duell ist danach gewonnen', gewonnen.state, 'victory');
+  eq('… und keine Liga kommt hinterher', gewonnen.leagueStage, -1);
 
-  eq('Zwei Fänge je Generation sind erlaubt', (() => {
-    const r = new PL.Run({ seed: 3, mode: 'legenden', ascension: 5, starter: 'squirtle' });
-    r.regionCatches = 2;
-    return r.catchAllowed();
-  })(), false);
+  const geflohen = new PL.Run({ seed: 9, mode: 'legenden', duell: {
+    art: 'mew', team: [{ sp: 'venusaur' }]
+  } });
+  geflohen.enterNode(0, 0);
+  geflohen.finishBattle({ outcome: 'flee', sides: [{ used: [] }, { team: [] }], reward: null, turns: 1 });
+  geflohen.closeScene();
+  eq('Wer flieht, hat nicht gewonnen', geflohen.state, 'gameover');
 
-  // Die Levelgrenze wächst mit den Generationen bis auf 100.
-  const grenzen = [];
-  for (let g = 0; g < 9; g++) {
-    const r = new PL.Run({ seed: 3, mode: 'legenden', ascension: 5, starter: 'squirtle' });
-    r.region = g;
-    grenzen.push(r.levelCap);
+  /* --- Der Teampool hängt an der Generation --- */
+  const pool1 = PL.Run.duellPool(1);
+  check('Der Pool einer Generation enthält nur ihre Arten',
+    pool1.every((sp) => sp.g === 1) && pool1.length > 100, String(pool1.length));
+  check('Formen und Kampfgestalten stehen nicht darin',
+    pool1.every((sp) => !sp.f && !sp.bo));
+  check('Legendäre der Generation stehen zur Wahl',
+    pool1.some((sp) => sp.id === 'mewtwo'));
+
+  /* --- Ein Legendärer Run aus der alten Fassung lässt sich nicht laden --- */
+  const altesDuell = { version: PL.Run.VERSION, mode: 'legenden', seed: 1, ascension: 5,
+    party: [], box: [], bag: {}, map: [[{ row: 0, col: 0, type: 'rest', next: [0] }]],
+    stats: {}, history: [], rival: {}, stufenFassung: 2 };
+  eq('Der alte Strang wird beim Laden verworfen', PL.Run.fromJSON(altesDuell), null);
+}
+
+section('Jede Legende hat ihren Schauplatz');
+{
+  const scenery = PL.scenery;
+  check('Die drei neuen Kulissen gibt es',
+    !!scenery.biomes.weltraum && !!scenery.biomes.gewitter && !!scenery.biomes.tempel);
+
+  eq('Zapdos kämpft im Gewitter', scenery.fuerLegende(PL.dex.sp('zapdos')), 'gewitter');
+  eq('Kyogre im Wasser', scenery.fuerLegende(PL.dex.sp('kyogre')), 'wasser');
+  eq('Groudon im Vulkan', scenery.fuerLegende(PL.dex.sp('groudon')), 'vulkan');
+  eq('Arceus zwischen den Sternen', scenery.fuerLegende(PL.dex.sp('arceus')), 'weltraum');
+  eq('Giratina in der Ruine', scenery.fuerLegende(PL.dex.sp('giratina')), 'ruine');
+
+  // Jede der 125 bekommt einen Ort, und es ist immer ein echter.
+  const orte = {};
+  let fehlt = 0;
+  for (let g = 1; g <= 9; g++) {
+    for (const sp of PL.Run.legendenDerGeneration(g)) {
+      const ort = scenery.fuerLegende(sp);
+      if (!scenery.biomes[ort]) fehlt++;
+      orte[ort] = (orte[ort] || 0) + 1;
+    }
   }
-  check('Die Levelgrenze steigt Generation für Generation',
-    grenzen.every((v, i) => i === 0 || v > grenzen[i - 1]), grenzen.join(','));
-  eq('Am Ende steht Level 100', grenzen[8], 100);
+  eq('Keine Legende steht ohne Kulisse da', fehlt, 0);
+  check('Und es ist nicht überall dieselbe', Object.keys(orte).length >= 10,
+    Object.keys(orte).join(','));
 
-  // Nach der neunten Generation ist Schluss — keine Liga hinterher.
-  const ende = new PL.Run({ seed: 3, mode: 'legenden', ascension: 5, starter: 'squirtle' });
-  ende.region = 8;
-  ende.advanceRegion();
-  eq('Nach Generation 9 ist der Run gewonnen', ende.state, 'victory');
-  eq('… und die Liga kommt nicht mehr', ende.leagueStage, -1);
-  eq('Alle 125 zählen als besiegt', ende.legendenBesiegt(), 125);
+  // Der Kampf im Duell holt sich den Ort selbst.
+  const duell = new PL.Run({ seed: 4, mode: 'legenden',
+    duell: { art: 'kyogre', team: [{ sp: 'swampert' }] } });
+  eq('Das Duell stellt Kyogre ins Wasser', duell.enterNode(0, 0).battle.biome, 'wasser');
+}
+
+section('Jede Legende hat ihr eigenes Stück');
+{
+  await import('../js/audio.js');
+  const mewtu = PL.audio.legendenStueck(PL.dex.sp('mewtwo'));
+  const arktos = PL.audio.legendenStueck(PL.dex.sp('articuno'));
+  const zapdos = PL.audio.legendenStueck(PL.dex.sp('zapdos'));
+
+  check('Ein Stück ist vier Takte lang',
+    mewtu.melody.length === 64 && mewtu.chords.length === 64 &&
+    mewtu.low.length === 64 && mewtu.beat.length === 64,
+    [mewtu.melody.length, mewtu.chords.length, mewtu.low.length, mewtu.beat.length].join('/'));
+  check('Zwei Legenden klingen nicht gleich',
+    JSON.stringify(arktos.melody) !== JSON.stringify(zapdos.melody));
+  check('Dasselbe Pokémon klingt immer gleich',
+    JSON.stringify(PL.audio.legendenStueck(PL.dex.sp('zapdos')).melody) === JSON.stringify(zapdos.melody));
+  check('Mewtu bekommt sein Motiv von Hand', !!PL.audio.handMotive.mewtwo);
+  eq('Die Titelträger sind ein Dutzend', Object.keys(PL.audio.handMotive).length, 13);
+
+  // Alle 125 lassen sich bauen, und keines pfeift oder brummt.
+  let tiefste = Infinity, hoechste = 0, leer = 0;
+  for (let g = 1; g <= 9; g++) {
+    for (const sp of PL.Run.legendenDerGeneration(g)) {
+      const t = PL.audio.legendenStueck(sp);
+      const toene = t.melody.filter((n) => n !== '.');
+      if (!toene.length) leer++;
+      for (const n of toene) {
+        const f = PL.audio.freq(n);
+        if (f < tiefste) tiefste = f;
+        if (f > hoechste) hoechste = f;
+      }
+      if (!(t.bpm >= 100 && t.bpm <= 170)) leer++;
+    }
+  }
+  eq('Keines der 125 bleibt stumm oder aus dem Takt', leer, 0);
+  check('Keine Melodie säuft im Bass ab', tiefste >= 390, String(Math.round(tiefste)));
+  check('Und keine pfeift', hoechste <= 1600, String(Math.round(hoechste)));
+
+  eq('Der Kampf gegen eine Legende bestellt ihr Stück',
+    PL.audio.trackFor('legend', 'ruine', 'mewtwo'), 'legende:mewtwo');
+  eq('Ohne Angabe bleibt es beim gemeinsamen',
+    PL.audio.trackFor('legend', 'ruine'), 'legenden');
 }
 
 section('Musik: das Stück für die Legenden');
@@ -2495,35 +2597,63 @@ section('Sammlung: Marken, Aufträge, Bestwerte');
     };
     meta.reload();
     meta.reset();
-    eq('Die Kasse fängt bei null an', meta.meisterbaelle(), 0);
-    eq('Ein geschaffter Run zahlt einen ein', meta.gibMeisterball(1), 1);
-    eq('Drei Runs, drei Bälle', meta.gibMeisterball(2), 3);
-    eq('Der Legendäre Run bekommt sie mit',
-      meta.startVorteil('legenden').meisterbaelle, 3);
-    eq('… und sonst nichts aus der Sammlung',
-      Object.keys(meta.startVorteil('legenden')).join(','), 'meisterbaelle');
+    const mewtwo = PL.dex.sp('mewtwo');
+    const mew = PL.dex.sp('mew');
+    eq('Am Anfang ist nichts besiegt', meta.duellStand(mewtwo.i).besiegt, false);
+    eq('… und kein Ball da', meta.duellBallDa(mewtwo.i), false);
 
-    // Ungeworfene bleiben liegen, geworfene sind weg.
-    const run = new PL.Run({ seed: 5, mode: 'legenden', ascension: 5, starter: 'squirtle',
-      vorteil: meta.startVorteil('legenden') });
-    eq('Sie liegen im Beutel', run.bag.masterball, 3);
-    eq('Die Kasse ist dadurch nicht leer', meta.meisterbaelle(), 3);
-    run.removeItem('masterball', 1);
-    meta.setzeMeisterbaelle(run.bag.masterball || 0);
-    eq('Ein geworfener Ball fehlt danach auch in der Kasse', meta.meisterbaelle(), 2);
-    eq('Ein neuer Run bekommt nur noch zwei',
-      new PL.Run({ seed: 6, mode: 'legenden', ascension: 5, starter: 'squirtle',
-        vorteil: meta.startVorteil('legenden') }).bag.masterball, 2);
+    eq('Der erste Sieg ist der erste', meta.duellGewonnen(mewtwo.i), true);
+    eq('Danach gilt es als besiegt', meta.duellStand(mewtwo.i).besiegt, true);
+    eq('… und sein Ball liegt bereit', meta.duellStand(mewtwo.i).ball, true);
+    eq('Ein zweiter Sieg bringt keinen zweiten Ball', meta.duellGewonnen(mewtwo.i), false);
+    eq('Der Ball gilt nur für dieses Pokémon', meta.duellBallDa(mew.i), false);
 
-    // Die Marke für alle neun Generationen zahlt einmalig ein.
+    meta.duellBallWeg(mewtwo.i);
+    eq('Ein geworfener Ball ist weg', meta.duellStand(mewtwo.i).ball, false);
+    eq('Ein weiterer Sieg legt keinen neuen hin', meta.duellGewonnen(mewtwo.i), false);
+
+    // Der freie Ball aus der Sammelmarke passt auf jede Legende.
+    meta.gibFreienBall(1);
+    eq('Ein freier Ball passt auch auf Mew', meta.duellBallDa(mew.i), true);
+    meta.duellBallWeg(mew.i);
+    eq('… und ist danach verbraucht', meta.duellBallDa(mew.i), false);
+
+    eq('Das Duell bekommt keinen Sammlungslohn', meta.startVorteil('legenden'), null);
+
+    // Die Übersicht zählt, was zusammengehört.
+    const u = meta.duellUebersicht();
+    check('Die Übersicht zählt die Siege', u.besiegt >= 1, String(u.besiegt));
+
+    // Die Marke für alle neun Generationen zahlt einmalig einen freien Ball ein.
     const stand = meta.load();
     delete stand.meilensteine.gen9;
     meta.save();
     PL.dex.species.forEach((sp) => { if (!PL.dex.isLegendary(sp)) meta.noteCaught({ sp: sp.i, lvl: 5 }); });
-    const vorher = meta.meisterbaelle();
+    const vorher = meta.duellUebersicht().frei;
     meta.pruefeMeilensteine();
     check('Die Marke zahlt höchstens einmal ein',
-      meta.meisterbaelle() - vorher <= 1, String(meta.meisterbaelle() - vorher));
+      meta.duellUebersicht().frei - vorher <= 1, String(meta.duellUebersicht().frei - vorher));
+
+    /* --- Ein Duell ist kein Run --- */
+    {
+      const vorher = { runs: meta.load().runs, wins: meta.load().wins,
+        rang: meta.load().bestAscension };
+      const duell = new PL.Run({ seed: 2, mode: 'legenden', ascension: 4,
+        duell: { art: 'mew', team: [{ sp: 'venusaur' }] } });
+      duell.stats.battles = 1;
+      meta.recordRun(duell, 'sieg');
+      eq('Ein gewonnenes Duell zählt nicht als gespielter Run', meta.load().runs, vorher.runs);
+      eq('… und nicht als gewonnener', meta.load().wins, vorher.wins);
+      eq('… und hebt keinen Rang', meta.load().bestAscension, vorher.rang);
+      eq('… macht aber niemanden zum Champ', !!meta.load().achievements.champ, false);
+      check('Die Kämpfe zählen trotzdem', meta.load().totals.battles >= 1);
+    }
+
+    /* --- Das Duell steht erst nach Stufe 5 offen --- */
+    meta.load().bestAscension = 2;
+    eq('Mit Stufe 3 im Rücken bleibt es zu', meta.legendenFrei(), false);
+    meta.load().bestAscension = 4;
+    eq('Nach Stufe 5 steht es offen', meta.legendenFrei(), true);
   }
 
   /* --- Legendäre sind aus dem Pokédex verschwunden --- */
