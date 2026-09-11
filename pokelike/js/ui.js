@@ -21,7 +21,7 @@
       if (k === 'text') node.textContent = props[k];
       else if (k === 'html') node.innerHTML = props[k];
       else if (k === 'className') node.className = props[k];
-      else if (k === 'style' && typeof props[k] === 'object') Object.assign(node.style, props[k]);
+      else if (k === 'style' && typeof props[k] === 'object') setzeStil(node, props[k]);
       else if (k.slice(0, 2) === 'on' && typeof props[k] === 'function') {
         node.addEventListener(k.slice(2).toLowerCase(), props[k]);
       } else if (props[k] !== null && props[k] !== undefined && props[k] !== false) {
@@ -30,6 +30,17 @@
     }
     append(node, kids);
     return node;
+  }
+
+  /**
+   * Eigene Eigenschaften (»--farbe«) lassen sich nicht über style.xyz setzen —
+   * Object.assign geht dafür still ins Leere. Sie brauchen setProperty.
+   */
+  function setzeStil(node, stil) {
+    Object.keys(stil).forEach(function (k) {
+      if (k.slice(0, 2) === '--') node.style.setProperty(k, stil[k]);
+      else node.style[k] = stil[k];
+    });
   }
 
   function append(node, kids) {
@@ -188,6 +199,10 @@
       className: 'mon-card' + (opts.selected ? ' selected' : '') + (mon.hp <= 0 ? ' fainted' : '') +
         (opts.className ? ' ' + opts.className : ''),
       type: 'button',
+      // Die Karte trägt die Farbe ihres ersten Typs als Band. Das ist Farbe,
+      // die etwas bedeutet: Man sieht ein Feuerteam von einem Wasserteam, ohne
+      // zu lesen.
+      style: { '--typ-farbe': TYPE_COLOR[sp.t[0]] || '#888' },
       onclick: opts.onClick || null,
       disabled: opts.disabled || false
     }, [

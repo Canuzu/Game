@@ -221,9 +221,30 @@
     PL.audio.play(PL.audio.trackFor('map', biome));
   }
 
+  /**
+   * Setzt die Farbe der Region als Eigenschaft an die Seite. Von dort holen
+   * sie Kopfleiste, Fensterinnenlinien, Kartengrund und Knotenplaketten.
+   *
+   * Die neun Farben liegen seit jeher in world.js — Kanto warmrot, Sinnoh
+   * kaltblau, Alola orange, Kalos pink. Benutzt wurden sie bisher für genau
+   * einen Rahmen. Damit sah jede Region gleich aus, obwohl neun verschiedene
+   * Anmutungen längst in den Daten standen.
+   */
+  function faerbeRegion() {
+    var run = App.run;
+    var farbe = null;
+    if (run && App.screen !== 'title' && App.screen !== 'newrun') {
+      farbe = run.leagueStage >= 0 ? '#c9a227' : (run.currentRegion() || {}).color;
+    }
+    var wurzel = doc.documentElement;
+    if (farbe) wurzel.style.setProperty('--region', farbe);
+    else wurzel.style.removeProperty('--region');
+  }
+
   function renderHeader() {
     var head = $('#topbar');
     clear(head);
+    faerbeRegion();
     var run = App.run;
     var left = el('div', { className: 'topbar-left' }, [
       el('button', {
@@ -1305,11 +1326,15 @@
       busy: false
     };
 
+    // Die Bühne in Ebenen: Boden hinter den Pokémon, Gras davor. Erst dadurch
+    // steht jemand *in* einer Landschaft statt davor.
+    stage.appendChild(el('div', { className: 'stage-boden' }));
     stage.appendChild(slots[1]);
     stage.appendChild(slots[0]);
     stage.appendChild(frames[1]);
     stage.appendChild(frames[0]);
     stage.appendChild(BV.field);
+    stage.appendChild(el('div', { className: 'stage-vorn' }));
     if (PL.scenery) PL.scenery.render(stage, bt.biome || 'wiese');
 
     wrap.appendChild(stage);

@@ -235,6 +235,26 @@ button { font: inherit; color: inherit; }
 .btn.danger { border-color: var(--bad); color: var(--bad); }
 .btn.big { padding: .8rem 1.4rem; font-size: 20px; }
 
+/* ---------- 2b) Die Farbe der Region -----------------------------------------
+ * Neun Regionen, neun Farben — sie stehen in world.js und werden von
+ * faerbeRegion() als --region an die Seite gehängt. Alles, was hier davon
+ * Gebrauch macht, wechselt damit die Anmutung, sobald man weiterzieht.
+ * -------------------------------------------------------------------------- */
+
+/* Die Kopfleiste bekommt die Region als Streifen unter sich */
+#topbar { border-bottom-color: var(--region); }
+
+/* Der Spielgrund nimmt einen Hauch davon an — gerade so viel, dass sich
+   Kanto und Sinnoh unterscheiden, ohne dass der Text leidet. */
+/* Ein Hauch der Regionsfarbe auf hellem Grund. Erster Versuch mischte sie in
+   das blaugraue --bg — aus Rot und Blaugrau wurde Lila. Gegen Weiß gemischt
+   bleibt warm warm und kalt kalt. */
+#screen { background: color-mix(in srgb, var(--region) 7%, #ffffff); }
+
+/* Regionsplakette und Kartengrund tragen sie offen */
+.region-badge { border-color: var(--region); }
+.map-stage { border-color: var(--region); }
+
 /* ---------- 3) Kopfzeile -------------------------------------------------- */
 
 #topbar {
@@ -507,19 +527,38 @@ button { font: inherit; color: inherit; }
 .map-node.t-legend .node-badge { border-color: #e8c860; box-shadow: 0 0 0 3px rgba(232,200,96,.18), var(--versatz) var(--versatz) 0 var(--relief); }
 .map-node:focus-visible .node-badge { outline: 2px solid var(--accent); outline-offset: 3px; }
 
-.party-strip { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: .5rem; }
+.party-strip { display: grid; grid-template-columns: repeat(auto-fill, minmax(232px, 1fr)); gap: .5rem; }
 .mon-card {
+  position: relative;
   display: flex; gap: .5rem; align-items: center; text-align: left;
-  padding: .45rem .55rem; border-radius: var(--radius);
+  padding: .45rem .55rem .45rem .95rem; border-radius: var(--radius);
   background: var(--panel); border: 1px solid var(--line); cursor: pointer;
 }
-.mon-card:hover:not(:disabled) { border-color: var(--accent); }
+/* Das Typband am linken Rand der Karte */
+.mon-card::before {
+  content: ''; position: absolute; left: 4px; top: 4px; bottom: 4px; width: 6px;
+  background: var(--typ-farbe, var(--line));
+}
+.mon-card.empty::before { display: none; }
+.mon-card:hover:not(:disabled):not(.empty) { border-color: var(--accent); }
 .mon-card.selected { border-color: var(--accent); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent); }
 .mon-card.fainted { opacity: .5; filter: grayscale(.7); }
 .mon-card:disabled { cursor: not-allowed; }
-.mon-card.empty { color: var(--muted); justify-content: center; border-style: dashed; cursor: default; }
-.mon-card-art { position: relative; width: 56px; height: 56px; flex: none; display: grid; place-items: center; }
-.mon-card-sprite { width: 56px; height: 56px; object-fit: contain; }
+.mon-card.empty {
+  color: var(--muted); justify-content: center; cursor: default;
+  border-style: dashed; border-color: var(--line);
+  box-shadow: none; background: transparent;
+}
+.mon-card-art { position: relative; width: 64px; height: 64px; flex: none; display: grid; place-items: center; }
+/* Etwas größer als vorher, und mit einem Schatten auf dem Boden: Erst der
+   Schatten hebt ein Sprite von der Fläche ab. */
+.mon-card-sprite { width: 64px; height: 64px; object-fit: contain; }
+.mon-card-art::after {
+  content: ''; position: absolute; left: 50%; bottom: 2px;
+  width: 34px; height: 6px; transform: translateX(-50%);
+  background: var(--schatten); border-radius: 50%;
+}
+.mon-card.empty .mon-card-art::after { display: none; }
 .mon-card-body { flex: 1; min-width: 0; }
 .mon-card-head { display: flex; align-items: baseline; gap: .3rem; }
 .mon-card-head strong { font-size: 20px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -593,6 +632,49 @@ button { font: inherit; color: inherit; }
   background: radial-gradient(120% 80% at 50% 0%, var(--scene-light, transparent), transparent 70%);
 }
 
+/* --- Die Bühne in Ebenen -----------------------------------------------------
+ * Vorher war die Kulisse ein einziges Bild und der Rest Fläche. Tiefe entsteht
+ * aber dadurch, dass etwas vor und etwas hinter etwas anderem liegt.
+ *
+ * Also drei Ebenen über dem Kulissenbild: ein Himmelsstreifen oben, der die
+ * Farbe der Region aufnimmt, ein dunklerer Boden unten, und ganz vorn ein
+ * Grasstreifen, der über die untere Kante läuft. Der Spieler steht damit
+ * zwischen Vordergrund und Hintergrund statt davor.
+ * -------------------------------------------------------------------------- */
+
+.battle-stage::before {
+  content: ''; position: absolute; left: 0; right: 0; top: 0; height: 34%;
+  z-index: 1; pointer-events: none;
+  background: linear-gradient(180deg,
+    color-mix(in srgb, var(--region) 30%, transparent),
+    transparent);
+}
+/* Der Boden: eine dunklere Zone, die nach unten zunimmt */
+.stage-boden {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 30%;
+  z-index: 1; pointer-events: none;
+  background: linear-gradient(180deg, transparent, rgba(16, 22, 30, .3));
+}
+/* Der Vordergrund: Grasbüschel über der Unterkante, hart gezeichnet */
+.stage-vorn {
+  position: absolute; left: 0; right: 0; bottom: 0; height: 18px;
+  z-index: 3; pointer-events: none;
+  background:
+    repeating-linear-gradient(90deg,
+      transparent 0 14px,
+      color-mix(in srgb, var(--scene-edge, #4d8a3a) 85%, #000) 14px 18px,
+      transparent 18px 40px),
+    repeating-linear-gradient(90deg,
+      transparent 0 30px,
+      color-mix(in srgb, var(--scene-edge, #4d8a3a) 70%, #000) 30px 33px,
+      transparent 33px 58px),
+    linear-gradient(180deg, transparent 0 6px,
+      color-mix(in srgb, var(--scene-edge, #4d8a3a) 80%, #000) 6px 100%);
+  background-size: 100% 12px, 100% 9px, 100% 100%;
+  background-position: 0 0, 0 4px, 0 0;
+  background-repeat: repeat-x, repeat-x, no-repeat;
+}
+
 .stage-slot { position: absolute; z-index: 2; display: grid; place-items: center; }
 .slot-enemy { top: 4%; right: 7%; }
 .slot-mine { bottom: 2%; left: 7%; }
@@ -601,7 +683,10 @@ button { font: inherit; color: inherit; }
   width: 196px; height: 44px; border-radius: 50%;
   background: radial-gradient(closest-side, var(--scene-platform, #7cc25c), color-mix(in srgb, var(--scene-platform, #7cc25c) 70%, transparent));
   border: 2px solid var(--scene-edge, #4d8a3a);
-  box-shadow: var(--versatz) var(--versatz) 0 var(--relief);
+  box-shadow:
+    inset 0 3px 0 rgba(255,255,255,.3),
+    inset 0 -4px 0 color-mix(in srgb, var(--scene-edge, #4d8a3a) 60%, #000),
+    var(--versatz) var(--versatz) 0 var(--relief);
 }
 .slot-enemy .platform { width: 164px; height: 36px; }
 .mon-art { position: relative; width: 224px; height: 224px; display: grid; place-items: center; z-index: 1; }
@@ -611,7 +696,9 @@ button { font: inherit; color: inherit; }
 .battle-sprite {
   position: relative; top: var(--drop, 8%);
   width: 216px; height: 216px; object-fit: contain;
-  filter: drop-shadow(0 8px 8px rgba(0,0,0,.35));
+  /* Ein weicher Schleier sah nach Web aus. Der Schatten liegt jetzt hart und
+     versetzt, wie ein Sprite, das auf einem Boden steht. */
+  filter: drop-shadow(3px 4px 0 rgba(16, 22, 30, .38));
 }
 .slot-enemy .battle-sprite { width: 182px; height: 182px; }
 .battle-sprite.fainted { opacity: .2; filter: grayscale(1); }
@@ -721,7 +808,12 @@ button { font: inherit; color: inherit; }
 .move-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 14px color-mix(in srgb, var(--move-color) 30%, transparent); }
 .move-btn:disabled { opacity: .4; cursor: not-allowed; }
 .move-btn-name { font-weight: 650; }
-.move-btn-meta { display: flex; gap: .5rem; font-size: 20px; color: var(--muted); align-items: center; }
+/* Die Zeile nimmt die ganze Knopfbreite ein. Sonst schob die Wirksamkeit
+   (»×½«) rechts aus dem Knopf heraus und lag über dem nächsten. */
+.move-btn-meta {
+  display: flex; gap: .5rem; font-size: 20px; color: var(--muted);
+  align-items: center; width: 100%; flex-wrap: wrap;
+}
 .move-btn-type { color: color-mix(in srgb, var(--move-color) 80%, var(--text)); font-weight: 600; }
 .action-row { display: flex; gap: .4rem; flex-wrap: wrap; align-items: center; }
 .action-btn {
@@ -1043,7 +1135,7 @@ button.move-row:hover { border-color: var(--accent); }
      bleiben sonst nach dem Tippen kleben. */
   .move-btn:hover:not(:disabled), .choice:hover, .option:hover:not(:disabled),
   .offer:hover, .relic-card:hover, .starter:hover:not(:disabled),
-  .mon-card:hover:not(:disabled), .item-row:hover:not(:disabled), .filter:hover {
+  .mon-card:hover:not(:disabled):not(.empty), .item-row:hover:not(:disabled), .filter:hover {
     transform: none;
   }
 }
@@ -1123,13 +1215,18 @@ button.move-row:hover { border-color: var(--accent); }
   .node-badge { width: 46px; height: 46px; }
   .node-icon { font-size: 20px; }
   .node-name { font-size: 20px; }
-  .map-row { gap: 1.1rem; }
+  /* Mehr Luft zwischen den Spalten: Die Beschriftungen sind breiter als ihr
+     Knopf, und »Trainerkampf« stieß sonst an »Trainerkampf«. */
+  .map-row { gap: 2.6rem; }
   .map-stage { padding: 1.1rem .5rem; }
   /* minmax(0, 1fr) statt 1fr: sonst rechnet das Raster mit der Mindestbreite
      des Inhalts und wird breiter als der Bildschirm. */
   .party-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .4rem; }
   .mon-card { padding: .35rem .4rem; gap: .35rem; }
-  .mon-card-art, .mon-card-sprite { width: 44px; height: 44px; }
+  .mon-card-art, .mon-card-sprite { width: 50px; height: 50px; }
+  /* Auf dem Telefon stehen zwei Karten nebeneinander. Darf die Zeile
+     umbrechen, rutscht die Stufe unter den Namen, statt ihn abzuschneiden. */
+  .mon-card-head { flex-wrap: wrap; }
   .mon-card-head strong { font-size: 20px; }
   .mon-card-types { flex-wrap: wrap; }
   .mon-card-hp { font-size: 20px; }
@@ -1291,12 +1388,49 @@ button.move-row:hover { border-color: var(--accent); }
    Quelle, keine zweite Farbliste, die man beim Umfärben vergisst. */
 :root {
   --frame-edge: var(--rahmen);
-  --frame-inner: var(--innen);
+  /* Die Innenlinie bleibt neutral. Erster Versuch war, ihr die Regionsfarbe
+     zu geben — dann trug jede Karte, jeder Knopf und jede Marke einen dicken
+     roten Ring, und der Bildschirm war ein Gitter aus roten Kästen. In den
+     Vorbildern ist der farbige Rahmen den großen Fenstern vorbehalten, nicht
+     jedem Kleinteil. Die tragen ihn über --fenster-innen. */
+  --frame-inner: color-mix(in srgb, var(--innen) 45%, var(--panel));
+  --fenster-innen: var(--region);
   --frame-fill: var(--panel);
   --frame-text: var(--text);
 }
 
-/* Der Rahmen, den fast alles trägt */
+/* Der Rahmen, den fast alles trägt ---------------------------------------------
+ * Vorher war das eine dunkle Außenlinie und eine farbige Innenlinie: zwei
+ * gleich helle Striche, also eine aufgemalte Fläche ohne Körper.
+ *
+ * Die Vorbilder machen es anders. Ihr Fenster ist gefast: Innen liegt oben
+ * und links eine Lichtkante, unten und rechts eine Schattenkante. Dadurch
+ * steht der Kasten auf der Fläche, statt daraufzuliegen — und zwar ohne
+ * jeden weichen Verlauf, nur mit zwei Farbwerten.
+ *
+ * Die vier inset-Schatten sind genau das: heller Strich oben, heller Strich
+ * links, dunkler Strich unten, dunkler Strich rechts. Darunter dann die
+ * farbige Innenlinie und außen der harte Versatz.
+ * -------------------------------------------------------------------------- */
+
+:root {
+  --licht: rgba(255, 255, 255, .85);
+  --schatten: rgba(24, 32, 40, .22);
+  /* Solange kein Run läuft, ist die Regionsfarbe das Blau des Spiels. */
+  --region: var(--innen);
+}
+:root[data-app-theme="dark"],
+:root[data-theme="dark"]:not([data-app-theme="light"]) {
+  --licht: rgba(255, 255, 255, .13);
+  --schatten: rgba(0, 0, 0, .45);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-app-theme="light"]):not([data-theme="light"]) {
+    --licht: rgba(255, 255, 255, .13);
+    --schatten: rgba(0, 0, 0, .45);
+  }
+}
+
 .gba, .mon-frame, .modal, .btn, .action-btn, .move-btn, .mon-card, .item-row,
 .move-row, .choice, .option, .offer, .relic-card, .starter, .stat-tile,
 .battle-log, .team-detail, .aftermath, .event-text, .region-header, .chip,
@@ -1304,9 +1438,32 @@ button.move-row:hover { border-color: var(--accent); }
 .nature-pick, .type-pick, .map-stage, .battle-stage, .dex-cell, .toggle {
   border-radius: 0;
   border: 2px solid var(--frame-edge);
-  box-shadow: inset 0 0 0 2px var(--frame-inner),
-              var(--versatz) var(--versatz) 0 var(--relief);
+  box-shadow:
+    inset 0 2px 0 0 var(--licht),            /* Lichtkante oben */
+    inset 2px 0 0 0 var(--licht),            /* Lichtkante links */
+    inset 0 -2px 0 0 var(--schatten),        /* Schattenkante unten */
+    inset -2px 0 0 0 var(--schatten),        /* Schattenkante rechts */
+    inset 0 0 0 4px var(--frame-inner),      /* die farbige Innenlinie */
+    var(--versatz) var(--versatz) 0 var(--relief);
   background-image: none;
+}
+
+/* Die großen Fenster tragen die Farbe der Region — die Kopfzeile einer
+   Region, die Bühne, die Karte, ein Dialog, das Menü. Alles, was für sich
+   steht und nicht in einer Reihe von zwanzig gleichen Kästen liegt. */
+.region-header, .modal, .map-stage, .battle-stage, .menue-fenster,
+.titel-bild, .sammlung-karte, .daily-karte, .tages-banner, .title-fuss {
+  box-shadow:
+    inset 0 2px 0 0 var(--licht), inset 2px 0 0 0 var(--licht),
+    inset 0 -2px 0 0 var(--schatten), inset -2px 0 0 0 var(--schatten),
+    inset 0 0 0 4px var(--fenster-innen),
+    var(--versatz) var(--versatz) 0 var(--relief);
+}
+
+/* Kleine Marken tragen die Fasung nicht — bei zwanzig Pixeln Höhe bliebe vom
+   Inhalt nichts übrig. Sie bekommen nur die Lichtkante oben. */
+.chip, .region-badge, .type-chip, .status-chip {
+  box-shadow: inset 0 2px 0 0 var(--licht), 2px 2px 0 var(--relief);
 }
 
 .btn, .action-btn, .icon-btn, .filter, .move-btn, .choice, .option, .offer,
@@ -1316,16 +1473,27 @@ button.move-row:hover { border-color: var(--accent); }
 .btn:hover:not(:disabled), .action-btn:hover:not(:disabled), .icon-btn:hover,
 .move-btn:hover:not(:disabled), .choice:hover, .option:hover:not(:disabled),
 .offer:hover, .relic-card:hover, .starter:hover:not(:disabled),
-.mon-card:hover:not(:disabled), .item-row:hover:not(:disabled), .filter:hover {
+.mon-card:hover:not(:disabled):not(.empty), .item-row:hover:not(:disabled), .filter:hover {
   transform: translate(-1px, -1px);
-  box-shadow: inset 0 0 0 2px var(--accent),
-              6px 6px 0 var(--relief);
+  box-shadow:
+    inset 0 2px 0 0 var(--licht), inset 2px 0 0 0 var(--licht),
+    inset 0 -2px 0 0 var(--schatten), inset -2px 0 0 0 var(--schatten),
+    inset 0 0 0 4px var(--accent),
+    6px 6px 0 var(--relief);
   border-color: var(--accent);
 }
-.btn:active:not(:disabled), .action-btn:active:not(:disabled), .move-btn:active:not(:disabled) {
-  transform: translate(2px, 2px);
-  box-shadow: inset 0 0 0 2px var(--frame-inner),
-              0 0 0 var(--relief);
+
+/* Beim Drücken kehrt sich die Fasung um: Licht unten, Schatten oben — der
+   Knopf sinkt ein. Dazu rückt er auf den Platz seines eigenen Schattens. */
+.btn:active:not(:disabled), .action-btn:active:not(:disabled),
+.move-btn:active:not(:disabled), .choice:active, .option:active:not(:disabled),
+.starter:active:not(:disabled), .item-row:active:not(:disabled) {
+  transform: translate(var(--versatz), var(--versatz));
+  box-shadow:
+    inset 0 2px 0 0 var(--schatten), inset 2px 0 0 0 var(--schatten),
+    inset 0 -2px 0 0 var(--licht), inset -2px 0 0 0 var(--licht),
+    inset 0 0 0 4px var(--frame-inner),
+    0 0 0 var(--relief);
 }
 .btn.primary { background: var(--accent); color: #1a1508; border-color: var(--frame-edge); }
 .btn.big { padding: .7rem 1.2rem; }
@@ -1358,8 +1526,9 @@ button.move-row:hover { border-color: var(--accent); }
 
 /* Bühne und Karte: Rahmen statt Rundung, Kulisse randlos darunter */
 .battle-stage, .map-stage { box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--frame-inner) 35%, transparent); }
-.map-stage::after { background: linear-gradient(180deg,
-  color-mix(in srgb, var(--bg) 52%, transparent), color-mix(in srgb, var(--bg) 72%, transparent)); }
+.map-stage::after { background:
+  linear-gradient(180deg, rgba(255,255,255,.16) 0%, transparent 28%,
+                          transparent 72%, rgba(16,22,30,.22) 100%); }
 .battle-stage::after { background: none; }
 
 /* Plattformen sind gezeichnete Pixelbilder */
@@ -1783,7 +1952,7 @@ button.move-row:hover { border-color: var(--accent); }
   var PL = root.PL || (root.PL = {});
 
   // Diese Zeile ersetzt tools/build-single.mjs beim Bauen.
-  var BUILD = '20260911T065006Z-d734c8b';
+  var BUILD = '20260911T082518Z-483197d';
 
   var TRIED_KEY = 'pokelike.plus.update.versucht';
   var state = { build: BUILD, latest: null, checking: false, stuck: false };
@@ -14270,7 +14439,7 @@ button.move-row:hover { border-color: var(--accent); }
       if (k === 'text') node.textContent = props[k];
       else if (k === 'html') node.innerHTML = props[k];
       else if (k === 'className') node.className = props[k];
-      else if (k === 'style' && typeof props[k] === 'object') Object.assign(node.style, props[k]);
+      else if (k === 'style' && typeof props[k] === 'object') setzeStil(node, props[k]);
       else if (k.slice(0, 2) === 'on' && typeof props[k] === 'function') {
         node.addEventListener(k.slice(2).toLowerCase(), props[k]);
       } else if (props[k] !== null && props[k] !== undefined && props[k] !== false) {
@@ -14279,6 +14448,17 @@ button.move-row:hover { border-color: var(--accent); }
     }
     append(node, kids);
     return node;
+  }
+
+  /**
+   * Eigene Eigenschaften (»--farbe«) lassen sich nicht über style.xyz setzen —
+   * Object.assign geht dafür still ins Leere. Sie brauchen setProperty.
+   */
+  function setzeStil(node, stil) {
+    Object.keys(stil).forEach(function (k) {
+      if (k.slice(0, 2) === '--') node.style.setProperty(k, stil[k]);
+      else node.style[k] = stil[k];
+    });
   }
 
   function append(node, kids) {
@@ -14437,6 +14617,10 @@ button.move-row:hover { border-color: var(--accent); }
       className: 'mon-card' + (opts.selected ? ' selected' : '') + (mon.hp <= 0 ? ' fainted' : '') +
         (opts.className ? ' ' + opts.className : ''),
       type: 'button',
+      // Die Karte trägt die Farbe ihres ersten Typs als Band. Das ist Farbe,
+      // die etwas bedeutet: Man sieht ein Feuerteam von einem Wasserteam, ohne
+      // zu lesen.
+      style: { '--typ-farbe': TYPE_COLOR[sp.t[0]] || '#888' },
       onclick: opts.onClick || null,
       disabled: opts.disabled || false
     }, [
@@ -15948,9 +16132,30 @@ button.move-row:hover { border-color: var(--accent); }
     PL.audio.play(PL.audio.trackFor('map', biome));
   }
 
+  /**
+   * Setzt die Farbe der Region als Eigenschaft an die Seite. Von dort holen
+   * sie Kopfleiste, Fensterinnenlinien, Kartengrund und Knotenplaketten.
+   *
+   * Die neun Farben liegen seit jeher in world.js — Kanto warmrot, Sinnoh
+   * kaltblau, Alola orange, Kalos pink. Benutzt wurden sie bisher für genau
+   * einen Rahmen. Damit sah jede Region gleich aus, obwohl neun verschiedene
+   * Anmutungen längst in den Daten standen.
+   */
+  function faerbeRegion() {
+    var run = App.run;
+    var farbe = null;
+    if (run && App.screen !== 'title' && App.screen !== 'newrun') {
+      farbe = run.leagueStage >= 0 ? '#c9a227' : (run.currentRegion() || {}).color;
+    }
+    var wurzel = doc.documentElement;
+    if (farbe) wurzel.style.setProperty('--region', farbe);
+    else wurzel.style.removeProperty('--region');
+  }
+
   function renderHeader() {
     var head = $('#topbar');
     clear(head);
+    faerbeRegion();
     var run = App.run;
     var left = el('div', { className: 'topbar-left' }, [
       el('button', {
@@ -17032,11 +17237,15 @@ button.move-row:hover { border-color: var(--accent); }
       busy: false
     };
 
+    // Die Bühne in Ebenen: Boden hinter den Pokémon, Gras davor. Erst dadurch
+    // steht jemand *in* einer Landschaft statt davor.
+    stage.appendChild(el('div', { className: 'stage-boden' }));
     stage.appendChild(slots[1]);
     stage.appendChild(slots[0]);
     stage.appendChild(frames[1]);
     stage.appendChild(frames[0]);
     stage.appendChild(BV.field);
+    stage.appendChild(el('div', { className: 'stage-vorn' }));
     if (PL.scenery) PL.scenery.render(stage, bt.biome || 'wiese');
 
     wrap.appendChild(stage);
