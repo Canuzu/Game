@@ -18,7 +18,7 @@ import { writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import opentype from 'opentype.js';
-import { GLYPHEN, SYMBOLE, GLEICH } from './schrift.mjs';
+import { GLYPHEN, GLEICH } from './schrift.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -92,34 +92,10 @@ function ergaenze(zeichen, bild) {
 }
 
 Object.keys(GLYPHEN).forEach((z) => ergaenze(String(z), GLYPHEN[z]));
-
-/* ---------- Die Symbole bekommen eigene Plätze -------------------------------
- * Nicht die Emoji-Plätze: Chromium sucht für Emoji immer zuerst in seiner
- * eigenen bunten Schrift, auch wenn unsere das Zeichen hätte. Gemessen — auch
- * mit font-variant-emoji: text gewann die Systemschrift.
- *
- * Also liegen sie im privaten Bereich ab U+E000, und js/symbole.js tauscht
- * sie beim Anzeigen ein. Die Reihenfolge ist die der Tabelle; wer eine
- * Zeichnung einfügt, verschiebt damit die Plätze der folgenden — deshalb wird
- * die Zuordnung bei jedem Bau neu geschrieben und nie von Hand gepflegt.
- * -------------------------------------------------------------------------- */
-
-const PRIVAT_START = 0xE000;
-const zuordnung = {};
-let naechster = PRIVAT_START;
-
-Object.keys(SYMBOLE).forEach((z) => {
-  const platz = String.fromCodePoint(naechster++);
-  zuordnung[z] = platz;
-  ergaenze(platz, SYMBOLE[z]);
-});
-
 Object.keys(GLEICH).forEach((z) => {
-  const ziel = GLEICH[z];
-  if (zuordnung[ziel]) { zuordnung[z] = zuordnung[ziel]; return; }   // Symbol
-  const vorlage = GLYPHEN[ziel];
+  const vorlage = GLYPHEN[GLEICH[z]];
   if (!vorlage) throw new Error('Vorlage fehlt für ' + z);
-  ergaenze(z, vorlage);                                              // Buchstabe
+  ergaenze(z, vorlage);
 });
 
 const font = new opentype.Font({
@@ -155,52 +131,5 @@ const css = `/* ================================================================
 `;
 
 writeFileSync(join(ROOT, 'css', 'schrift.css'), css);
-
-/* ---------- Die Zuordnung für das Spiel -------------------------------------- */
-
-const paare = Object.keys(zuordnung)
-  .map((z) => '    ' + JSON.stringify(z) + ': ' + JSON.stringify(zuordnung[z]))
-  .join(',\n');
-
-const js = `/* =============================================================================
- * symbole.js — Emoji werden zu gezeichneten Zeichen
- * -----------------------------------------------------------------------------
- * Erzeugt von tools/build-font.mjs. Nicht von Hand ändern.
- *
- * Im Spielcode steht weiter das Emoji — dort liest es sich am besten. Beim
- * Anzeigen wird es gegen das Zeichen aus unserer Schrift getauscht. Getauscht
- * wird nur, was auf den Bildschirm geht: Was das Spiel verschickt oder
- * speichert, behält das echte Emoji.
- * ========================================================================== */
-(function (root) {
-  'use strict';
-  var PL = root.PL || (root.PL = {});
-
-  var TABELLE = {
-${paare}
-  };
-
-  // Ein Ausdruck über alle Schlüssel, längste zuerst — damit ein Zeichen mit
-  // Variantenwähler nicht halb stehen bleibt.
-  var schluessel = Object.keys(TABELLE).sort(function (a, b) { return b.length - a.length; });
-  var muster = new RegExp(schluessel.map(function (z) {
-    return z.replace(/[.*+?^\${}()|[\]\\]/g, '\\$&');
-  }).join('|'), 'g');
-
-  /** Tauscht jedes bekannte Emoji gegen das gezeichnete Zeichen. */
-  function ersetze(text) {
-    if (text === null || text === undefined) return text;
-    var s = String(text);
-    // Variantenwähler mitnehmen: '🏛️' ist '🏛' plus U+FE0F.
-    return s.replace(muster, function (t) { return TABELLE[t]; }).replace(/\uFE0F/g, '');
-  }
-
-  PL.symbole = { tabelle: TABELLE, ersetze: ersetze };
-  if (typeof module !== 'undefined' && module.exports) module.exports = PL.symbole;
-})(typeof globalThis !== 'undefined' ? globalThis : this);
-`;
-
-writeFileSync(join(ROOT, 'js', 'symbole.js'), js);
-console.log('js/symbole.js · ' + Object.keys(zuordnung).length + ' Zuordnungen');
 console.log('css/schrift.css · ' + glyphen.length + ' Zeichen · ' +
   (roh.length / 1024).toFixed(1) + ' KB roh, ' + (daten.length / 1024).toFixed(1) + ' KB als Text');

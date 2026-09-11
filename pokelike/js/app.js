@@ -3478,7 +3478,7 @@
       knopf.textContent = 'Wird geprüft …';
       PL.update.check({ reload: false }).then(function (res) {
         knopf.disabled = false;
-        knopf.textContent = U.symbole('🔄 Nach Aktualisierung sehen');
+        knopf.textContent = '🔄 Nach Aktualisierung sehen';
         if (res.state === 'aktuell') { U.toast('Das ist die neueste Fassung.', 'good'); return; }
         if (res.state === 'unbekannt' || res.state === 'entwicklung') {
           U.toast('Von hier aus lässt sich das nicht prüfen.', 'bad');
