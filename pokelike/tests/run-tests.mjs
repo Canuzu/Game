@@ -2370,6 +2370,95 @@ section('Der Pokédex hört nicht bei Generation sieben auf');
     PL.dex.species.length > 900, String(PL.dex.species.length));
 }
 
+section('Die Wirksamkeit stimmt — auch die angezeigte');
+{
+  const rng = PL.rng(7);
+  const bau = (id, ab) => { const m = PL.mon.create(PL.dex.sp(id), 50, rng, {}); if (ab) m.ab = ab; return m; };
+  const kampf = (a, b) => { const bt = new PL.Battle({ teams: [[a], [b]], wild: true }); bt.start(); return bt; };
+  const zug = (id) => PL.dex.moves.find((m) => m.id === id);
+
+  /* --- Wer in der Luft steht, den trifft kein Bodenangriff --- */
+  {
+    const bt = kampf(bau('golem'), bau('gengar', 'levitate'));
+    const r = bt.calcDamage(bt.sides[0].active, bt.sides[1].active, zug('earthquake'), { noCrit: true });
+    eq('Erdbeben prallt an Schwebe ab', r.dmg, 0);
+    eq('… und gilt als wirkungslos', r.eff, 0);
+  }
+  {
+    const bt = kampf(bau('golem'), bau('snorlax'));
+    bt.sides[1].active.item = 'airballoon';
+    const r = bt.calcDamage(bt.sides[0].active, bt.sides[1].active, zug('earthquake'), { noCrit: true });
+    eq('Auch der Luftballon hält Erdbeben ab', r.dmg, 0);
+    bt.sides[1].active.vol.smackdown = true;
+    const r2 = bt.calcDamage(bt.sides[0].active, bt.sides[1].active, zug('earthquake'), { noCrit: true });
+    check('Bodenwurf holt es wieder herunter', r2.dmg > 0, String(r2.dmg));
+  }
+  {
+    // Tausend Pfeile durchdringt — sonst wäre die Attacke sinnlos.
+    const pfeile = zug('thousandarrows');
+    if (pfeile) {
+      const bt = kampf(bau('zygarde'), bau('gengar', 'levitate'));
+      const r = bt.calcDamage(bt.sides[0].active, bt.sides[1].active, pfeile, { noCrit: true });
+      check('Tausend Pfeile trifft trotz Schwebe', r.dmg > 0, String(r.dmg));
+    }
+  }
+
+  /* --- Die Vorschau rechnet mit dem Typ, den die Attacke wirklich hat --- */
+  {
+    const bt = kampf(bau('sylveon', 'pixilate'), bau('dragonite'));
+    const v = bt.vorschau(zug('tackle'), bt.sides[0].active, bt.sides[1].active);
+    eq('Feenschicht macht aus Tackle eine Feenattacke', v.typ, 'Fairy');
+    eq('… und die trifft einen Drachen doppelt', v.eff, 2);
+    const r = bt.calcDamage(bt.sides[0].active, bt.sides[1].active, zug('tackle'), { noCrit: true });
+    eq('Vorschau und Schaden sagen dasselbe', r.eff, v.eff);
+  }
+  {
+    const bt = kampf(bau('pikachu'), bau('lanturn', 'voltabsorb'));
+    const v = bt.vorschau(zug('thunderbolt'), bt.sides[0].active, bt.sides[1].active);
+    eq('Voltabsorber schluckt den Donnerblitz', v.eff, 0);
+    eq('… und die Vorschau nennt es geblockt', v.geblockt, true);
+  }
+  {
+    // Die Vorschau darf nichts auslösen: Voltabsorber heilt sonst beim Hinsehen.
+    const ziel = bau('lanturn', 'voltabsorb');
+    ziel.hp = 10;
+    const bt = kampf(bau('pikachu'), ziel);
+    const vorher = bt.sides[1].active.mon.hp;
+    bt.vorschau(zug('thunderbolt'), bt.sides[0].active, bt.sides[1].active);
+    bt.vorschau(zug('thunderbolt'), bt.sides[0].active, bt.sides[1].active);
+    eq('Hinsehen heilt niemanden', bt.sides[1].active.mon.hp, vorher);
+    eq('… und schreibt auch nichts ins Protokoll', bt.log.filter((e) => /saugt/.test(e.s || '')).length, 0);
+  }
+  {
+    // Nebelball ist gegen Käfer/Geist weder stark noch schwach, Flammenwurf
+    // dagegen vierfach — die beiden Seiten der Wunderwache.
+    const bt = kampf(bau('chandelure'), bau('shedinja', 'wonderguard'));
+    const schwach = bt.vorschau(zug('watergun'), bt.sides[0].active, bt.sides[1].active);
+    check('Wunderwache blockt, was nicht sehr effektiv ist', schwach.eff === 0, String(schwach.eff));
+    const stark = bt.vorschau(zug('flamethrower'), bt.sides[0].active, bt.sides[1].active);
+    check('Sehr Effektives kommt durch', stark.eff > 1, String(stark.eff));
+  }
+  {
+    // Statusattacken bekommen keine Wirksamkeit — sie richten keinen Schaden an.
+    const bt = kampf(bau('alakazam'), bau('snorlax'));
+    eq('Eine Statusattacke hat keine Vorschau',
+      bt.vorschau(zug('calmmind'), bt.sides[0].active, bt.sides[1].active), null);
+  }
+
+  /* --- Die vier Stufen, die angezeigt werden --- */
+  {
+    const bt = kampf(bau('pikachu'), bau('gyarados'));
+    const v = bt.vorschau(zug('thunderbolt'), bt.sides[0].active, bt.sides[1].active);
+    eq('Wasser und Flug zusammen ergeben vierfach', v.eff, 4);
+  }
+  {
+    // Pflanze gegen Feuer und Flug: zweimal halbiert.
+    const bt = kampf(bau('venusaur'), bau('charizard'));
+    const v = bt.vorschau(zug('razorleaf'), bt.sides[0].active, bt.sides[1].active);
+    eq('Feuer und Flug zusammen ergeben ein Viertel', v.eff, 0.25);
+  }
+}
+
 section('Paradoxformen: die gewöhnlichen gehören ins gewöhnliche Spiel');
 {
   const GEWOEHNLICH = ['greattusk', 'screamtail', 'brutebonnet', 'fluttermane', 'slitherwing',

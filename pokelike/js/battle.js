@@ -419,9 +419,48 @@
       }
       m *= e;
     }
+    // Flugtypen nimmt schon die Typentabelle aus. Schwebe, der Luftballon und
+    // alles andere, was ein Pokémon in der Luft hält, steht dort aber nicht —
+    // ohne diese Zeile traf Erdbeben ein Gengar mit Schwebe für doppelten
+    // Schaden. Durchdringende Attacken (Tausend Pfeile) treffen trotzdem,
+    // ebenso wenn Schwerkraft oder Bodenwurf das Ziel heruntergeholt haben.
+    if (m > 0 && moveType === 'Ground' && !(move && move.ii) && !this.grounded(target)) m = 0;
     m *= tarshot;
-    if (m > 1 && this.abilityId(target) === 'wonderguard') return m;
     return m;
+  };
+
+  /**
+   * Welchen Typ hat diese Attacke wirklich? Manche Attacken richten sich nach
+   * Wetter, Item oder Träger (Wetterball, Urteilskraft), und manche
+   * Fähigkeiten stellen den Typ um (Feenschicht, Aero-Schicht, Frostschicht,
+   * Elektro-Schicht, Regulierung). Wer den Grundtyp nimmt, rechnet falsch.
+   */
+  B.zugTyp = function (move, atk, def) {
+    var typ = move.t;
+    var ov = this.effects.moves[move.id] || {};
+    if (ov.type) typ = ov.type(this, atk, def, move) || typ;
+    return this.hook(atk, 'modMoveType', [move, typ]) || typ;
+  };
+
+  /**
+   * Die Wirksamkeit, wie sie vor dem Zug angezeigt werden soll: mit dem Typ,
+   * den die Attacke wirklich haben wird, und mit den Fähigkeiten, die sie
+   * ganz schlucken. Diese Vorschau hat bewusst keine Nebenwirkungen — sie
+   * fragt die Fähigkeiten nur, *was* sie blocken, statt sie blocken zu
+   * lassen, sonst würde eine Anzeige heilen und Meldungen schreiben.
+   */
+  B.vorschau = function (move, atk, def) {
+    if (!move || !def || move.c === 'T') return null;
+    var typ = this.zugTyp(move, atk, def);
+    var ab = this.effects.abilities[this.abilityId(def)] || {};
+    if (ab.blocktTyp === typ) return { typ: typ, eff: 0, geblockt: true };
+    if (ab.blocktFlagge && move.fl && move.fl.indexOf(ab.blocktFlagge) >= 0) {
+      return { typ: typ, eff: 0, geblockt: true };
+    }
+    var eff = this.effectiveness(typ, def, move, atk);
+    // Wunderwache lässt nur durch, was sehr effektiv ist.
+    if (ab.nurSuper && eff <= 1 && move.bp) return { typ: typ, eff: 0, geblockt: true };
+    return { typ: typ, eff: eff, geblockt: false };
   };
 
   B.critStage = function (act, move) {
@@ -444,10 +483,8 @@
   B.calcDamage = function (atk, def, move, opts) {
     opts = opts || {};
     var self = this;
-    var moveType = opts.type || move.t;
     var ov = this.effects.moves[move.id] || {};
-    if (ov.type) moveType = ov.type(this, atk, def, move) || moveType;
-    moveType = this.hook(atk, 'modMoveType', [move, moveType]) || moveType;
+    var moveType = opts.type || this.zugTyp(move, atk, def);
 
     var eff = this.effectiveness(moveType, def, move, atk);
     if (eff === 0) return { dmg: 0, eff: 0, crit: false, immune: true, type: moveType };

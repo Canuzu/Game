@@ -798,6 +798,7 @@ button { font: inherit; color: inherit; }
 .battle-controls { display: flex; flex-direction: column; gap: .5rem; min-height: 120px; }
 .move-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: .5rem; }
 .move-btn {
+  position: relative;
   --move-color: #777;
   display: flex; flex-direction: column; gap: .2rem; align-items: flex-start;
   padding: .5rem .7rem; border-radius: var(--radius); cursor: pointer;
@@ -808,12 +809,15 @@ button { font: inherit; color: inherit; }
 .move-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 14px color-mix(in srgb, var(--move-color) 30%, transparent); }
 .move-btn:disabled { opacity: .4; cursor: not-allowed; }
 .move-btn-name { font-weight: 650; }
-/* Die Zeile nimmt die ganze Knopfbreite ein. Sonst schob die Wirksamkeit
-   (»×½«) rechts aus dem Knopf heraus und lag über dem nächsten. */
+/* Eine Zeile, die nicht umbricht: Typ, Art und AP stehen nebeneinander, und
+   wenn es eng wird, schrumpft die AP-Angabe statt zu springen. Die
+   Wirksamkeit steht als Marke in der Ecke und nicht mehr hier drin. */
 .move-btn-meta {
-  display: flex; gap: .5rem; font-size: 20px; color: var(--muted);
-  align-items: center; width: 100%; flex-wrap: wrap;
+  display: flex; gap: .4rem; font-size: 20px; color: var(--muted);
+  align-items: center; width: 100%; flex-wrap: nowrap; min-width: 0;
 }
+.move-btn-pp { margin-left: auto; white-space: nowrap; }
+.move-btn-type { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .move-btn-type { color: color-mix(in srgb, var(--move-color) 80%, var(--text)); font-weight: 600; }
 .action-row { display: flex; gap: .4rem; flex-wrap: wrap; align-items: center; }
 .action-btn {
@@ -907,9 +911,12 @@ button.move-row:hover { border-color: var(--accent); }
 .move-row.disabled { opacity: .4; }
 .move-row.highlight { border-color: var(--accent); }
 .move-type { padding: .05rem .45rem; border-radius: 0; color: #fff; font-size: 20px; text-shadow: 0 1px 1px rgba(0,0,0,.35); }
-.move-name { flex: 1; font-weight: 600; }
-.move-power { color: var(--muted); width: 2.5rem; text-align: right; }
-.move-pp { color: var(--muted); font-size: 20px; width: 3.2rem; text-align: right; }
+/* Der Name gibt nach, wenn es eng wird — Stärke und AP nicht. Vorher war die
+   AP-Angabe am rechten Rand abgeschnitten: »25/2«. */
+.move-name { flex: 1 1 auto; min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.move-type { flex: none; }
+.move-power { flex: none; color: var(--muted); width: 2.5rem; text-align: right; }
+.move-pp { flex: none; color: var(--muted); font-size: 20px; min-width: 3.6rem; text-align: right; white-space: nowrap; }
 .move-pp.empty { color: var(--bad); }
 
 .team-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
@@ -964,7 +971,12 @@ button.move-row:hover { border-color: var(--accent); }
 .dex-cell.caught { border-color: color-mix(in srgb, var(--good) 45%, var(--line)); }
 .dex-silhouette { width: 62px; height: 62px; border-radius: 50%; background: var(--panel-2); }
 .dex-num { font-size: 20px; color: var(--muted); }
-.dex-name { font-size: 20px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+/* Zwei Zeilen statt drei Punkte: »Bisaknosp« und »Rattikarl« passen in kein
+   Kästchen dieser Breite, und ein abgeschnittener Name hilft niemandem. */
+.dex-name {
+  font-size: 20px; text-align: center; max-width: 100%;
+  line-height: 1.1; overflow-wrap: anywhere; hyphens: auto;
+}
 .dex-entry { display: grid; grid-template-columns: auto 1fr; gap: 1rem; }
 .dex-entry-art { display: flex; flex-direction: column; gap: .4rem; }
 .dex-entry-art .big { width: 140px; height: 140px; object-fit: contain; }
@@ -1164,12 +1176,15 @@ button.move-row:hover { border-color: var(--accent); }
   body[data-screen="battle"] .battle-stage {
     flex: 0 0 auto; height: auto; aspect-ratio: 3 / 2; max-height: 40dvh;
   }
-  /* Was an Höhe übrig bleibt, bekommt das Protokoll und zeigt mehr Verlauf. */
+  /* Was an Höhe übrig bleibt, teilen sich Bühne und Protokoll. Das Protokoll
+     bekommt eine Obergrenze: Vorher schluckte es allen freien Platz und stand
+     halb leer da, während die Bühne klein blieb. */
+  body[data-screen="battle"] .battle-stage { flex: 1 1 auto; }
   body[data-screen="battle"] .battle-log {
-    flex: 1 1 auto; height: auto; min-height: 3.4rem; font-size: 20px;
+    flex: 0 1 auto; height: auto; min-height: 3.4rem; max-height: 24dvh; font-size: 20px;
   }
   body[data-screen="battle"] .battle-controls { flex: 0 0 auto; min-height: 0; gap: .4rem; }
-  body[data-screen="battle"] .move-grid { grid-auto-rows: minmax(56px, 76px); }
+  body[data-screen="battle"] .move-grid { grid-auto-rows: minmax(52px, 68px); }
   /* Die Mindesthöhe hält auf dem Rechner die Kacheln ruhig, während das
      Protokoll läuft. Auf dem Handy zählt jeder Pixel — hier reicht der
      Inhalt. */
@@ -1235,11 +1250,24 @@ button.move-row:hover { border-color: var(--accent); }
   .move-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .4rem; }
   .move-btn { padding: .4rem .5rem; gap: .1rem; }
   .move-btn-name { font-size: 20px; }
+  /* Der Typ steht ausgeschrieben — dafür weicht das Sinnbild der Angriffsart.
+     »Pflan…« sagt weniger als »Pflanze«, und das Sinnbild sagt am wenigsten. */
   .move-btn-meta { font-size: 20px; gap: .3rem; }
-  .action-row { gap: .35rem; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
-  .action-row::-webkit-scrollbar { display: none; }
-  .action-row > * { flex: 0 0 auto; }
-  .action-btn { padding: .4rem .6rem; font-size: 20px; }
+  .move-btn-meta > span:nth-child(2) { display: none; }
+  .move-btn-type { flex: 0 1 auto; }
+  /* Fünf Aktionen, ein schmaler Schirm: Sie brechen um, statt in einem
+     schiebbaren Kasten zu verschwinden. »Fliehen« und »Auto« lagen dort
+     rechts außerhalb, ohne dass etwas darauf hinwies. */
+  .action-row { gap: .3rem; flex-wrap: wrap; }
+  .action-row > * { flex: 1 1 auto; justify-content: center; }
+  .action-btn { padding: .35rem .5rem; font-size: 20px; }
+  /* Der Reise-Automat deckte auf dem Handy die Aktionszeile zu. Im Kampf
+     rückt er nach oben an den Rand der Bühne. */
+  body[data-screen="battle"] .autopilot-btn {
+    bottom: auto; top: calc(3.4rem + env(safe-area-inset-top));
+    padding: .35rem .45rem;
+  }
+  body[data-screen="battle"] .autopilot-label { display: none; }
 
   .mon-art { width: 152px; height: 152px; }
   .slot-enemy .mon-art { width: 132px; height: 132px; }
@@ -1357,7 +1385,13 @@ button.move-row:hover { border-color: var(--accent); }
 
 /* ---------- Nachtrag: Wirksamkeit am Attackenknopf -------------------------- */
 
-.move-eff { font-weight: 700; font-size: 20px; padding: 0 .3rem; border-radius: 0; }
+/* Die Marke der Wirksamkeit: oben rechts in der Kachel, aus dem Textfluss
+   heraus. So kann sie nie umbrechen und nie über die nächste Kachel rutschen. */
+.move-eff {
+  position: absolute; top: 3px; right: 3px; z-index: 2;
+  font-weight: 700; font-size: 20px; padding: 0 .25rem; border-radius: 0;
+  border: 1px solid currentColor; line-height: 1.15;
+}
 .move-eff.super { background: color-mix(in srgb, var(--good) 30%, transparent); color: var(--good); }
 .move-eff.weak { background: color-mix(in srgb, var(--warn) 25%, transparent); color: var(--warn); }
 .move-eff.none { background: var(--panel-2); color: var(--muted); }
@@ -1569,7 +1603,7 @@ button.move-row:hover { border-color: var(--accent); }
   background: var(--good); color: #04220f; border-color: var(--frame-edge); font-weight: 700;
 }
 .action-btn.mega.on { background: #b07ae0; color: #1b1030; border-color: var(--frame-edge); }
-.move-btn-meta .move-eff { margin-left: auto; }
+
 
 /* ---------- 14) Bewegung: Atmen, Effekte, Übergang --------------------------
  * Die Sprites heben und senken sich leicht, Attacken werfen Pixel über die
@@ -2315,7 +2349,7 @@ button.move-row:hover { border-color: var(--accent); }
   var PL = root.PL || (root.PL = {});
 
   // Diese Zeile ersetzt tools/build-single.mjs beim Bauen.
-  var BUILD = '20260911T145606Z-ea09599';
+  var BUILD = '20260911T184845Z-7f6b335';
 
   var TRIED_KEY = 'pokelike.plus.update.versucht';
   var state = { build: BUILD, latest: null, checking: false, stuck: false };
@@ -4656,9 +4690,10 @@ button.move-row:hover { border-color: var(--accent); }
   A.marvelscale = { modStat: function (bt, act, stat) { return (stat === 'def' && act.mon.status) ? 1.5 : 1; } };
   A.grasspelt = { modStat: function (bt, act, stat) { return (stat === 'def' && bt.field.terrain === 'grassyterrain') ? 1.5 : 1; } };
   A.wonderguard = {
+    nurSuper: true,
     blockMove: function (bt, act, move, atk) {
       if (move.c === 'T' || move.bp === 0) return false;
-      if (bt.effectiveness(move.t, act, move, atk) > 1) return false;
+      if (bt.effectiveness(bt.zugTyp(move, atk, act), act, move, atk) > 1) return false;
       bt.say(bt.name(act) + ': Wunderwache wehrt alles ab!', 'ability', { side: act.side.id });
       return true;
     }
@@ -4674,11 +4709,14 @@ button.move-row:hover { border-color: var(--accent); }
     modDamageTaken: function (bt, act, move) { return move.t === 'Ghost' ? 0.5 : 1; }
   };
 
-  /* --- Absorbierende Fähigkeiten --- */
+  /* --- Absorbierende Fähigkeiten ---
+   * »blocktTyp« ist die Auskunft für die Vorschau: Sie darf die Fähigkeit
+   * nicht wirklich auslösen, muss aber wissen, was diese schluckt. */
   function absorb(type, effect) {
     return {
+      blocktTyp: type,
       blockMove: function (bt, act, move, atk) {
-        if (move.t !== type || move.c === 'T') return false;
+        if (bt.zugTyp(move, atk, act) !== type || move.c === 'T') return false;
         bt.say(bt.name(act) + ' saugt die Attacke auf!', 'ability', { side: act.side.id });
         effect(bt, act);
         return true;
@@ -4688,6 +4726,7 @@ button.move-row:hover { border-color: var(--accent); }
   A.voltabsorb = absorb('Electric', function (bt, act) { bt.healAct(act, frac(bt, act, 4), false, 'Voltabsorber'); });
   A.waterabsorb = absorb('Water', function (bt, act) { bt.healAct(act, frac(bt, act, 4), false, 'H2O-Absorber'); });
   A.dryskin = {
+    blocktTyp: 'Water',
     blockMove: A.waterabsorb ? A.waterabsorb.blockMove : null,
     modDamageTaken: function (bt, act, move) { return move.t === 'Fire' ? 1.25 : 1; },
     onResidual: function (bt, act) {
@@ -4707,8 +4746,12 @@ button.move-row:hover { border-color: var(--accent); }
   A.stormdrain = absorb('Water', function (bt, act) { bt.boost(act, { spa: 1 }, act); });
   A.motordrive = absorb('Electric', function (bt, act) { bt.boost(act, { spe: 1 }, act); });
   A.windrider = absorb('Flying', function (bt, act) { bt.boost(act, { atk: 1 }, act); });
+  // Schwebe hält kein eigenes Verhalten: Die Bodenimmunität hängt an
+  // grounded() und wirkt damit in der Typenrechnung selbst — zusammen mit
+  // Luftballon, Schwerkraft und Bodenwurf, statt dreimal getrennt.
   A.levitate = {};
   A.bulletproof = {
+    blocktFlagge: 'bullet',
     blockMove: function (bt, act, move) {
       if (!move.fl || move.fl.indexOf('bullet') < 0) return false;
       bt.say(bt.name(act) + ' blockt das Geschoss!', 'ability', { side: act.side.id });
@@ -4716,6 +4759,7 @@ button.move-row:hover { border-color: var(--accent); }
     }
   };
   A.soundproof = {
+    blocktFlagge: 'sound',
     blockMove: function (bt, act, move) {
       if (!move.fl || move.fl.indexOf('sound') < 0) return false;
       bt.say(bt.name(act) + ' ist gegen Lärm immun!', 'ability', { side: act.side.id });
@@ -6188,9 +6232,48 @@ button.move-row:hover { border-color: var(--accent); }
       }
       m *= e;
     }
+    // Flugtypen nimmt schon die Typentabelle aus. Schwebe, der Luftballon und
+    // alles andere, was ein Pokémon in der Luft hält, steht dort aber nicht —
+    // ohne diese Zeile traf Erdbeben ein Gengar mit Schwebe für doppelten
+    // Schaden. Durchdringende Attacken (Tausend Pfeile) treffen trotzdem,
+    // ebenso wenn Schwerkraft oder Bodenwurf das Ziel heruntergeholt haben.
+    if (m > 0 && moveType === 'Ground' && !(move && move.ii) && !this.grounded(target)) m = 0;
     m *= tarshot;
-    if (m > 1 && this.abilityId(target) === 'wonderguard') return m;
     return m;
+  };
+
+  /**
+   * Welchen Typ hat diese Attacke wirklich? Manche Attacken richten sich nach
+   * Wetter, Item oder Träger (Wetterball, Urteilskraft), und manche
+   * Fähigkeiten stellen den Typ um (Feenschicht, Aero-Schicht, Frostschicht,
+   * Elektro-Schicht, Regulierung). Wer den Grundtyp nimmt, rechnet falsch.
+   */
+  B.zugTyp = function (move, atk, def) {
+    var typ = move.t;
+    var ov = this.effects.moves[move.id] || {};
+    if (ov.type) typ = ov.type(this, atk, def, move) || typ;
+    return this.hook(atk, 'modMoveType', [move, typ]) || typ;
+  };
+
+  /**
+   * Die Wirksamkeit, wie sie vor dem Zug angezeigt werden soll: mit dem Typ,
+   * den die Attacke wirklich haben wird, und mit den Fähigkeiten, die sie
+   * ganz schlucken. Diese Vorschau hat bewusst keine Nebenwirkungen — sie
+   * fragt die Fähigkeiten nur, *was* sie blocken, statt sie blocken zu
+   * lassen, sonst würde eine Anzeige heilen und Meldungen schreiben.
+   */
+  B.vorschau = function (move, atk, def) {
+    if (!move || !def || move.c === 'T') return null;
+    var typ = this.zugTyp(move, atk, def);
+    var ab = this.effects.abilities[this.abilityId(def)] || {};
+    if (ab.blocktTyp === typ) return { typ: typ, eff: 0, geblockt: true };
+    if (ab.blocktFlagge && move.fl && move.fl.indexOf(ab.blocktFlagge) >= 0) {
+      return { typ: typ, eff: 0, geblockt: true };
+    }
+    var eff = this.effectiveness(typ, def, move, atk);
+    // Wunderwache lässt nur durch, was sehr effektiv ist.
+    if (ab.nurSuper && eff <= 1 && move.bp) return { typ: typ, eff: 0, geblockt: true };
+    return { typ: typ, eff: eff, geblockt: false };
   };
 
   B.critStage = function (act, move) {
@@ -6213,10 +6296,8 @@ button.move-row:hover { border-color: var(--accent); }
   B.calcDamage = function (atk, def, move, opts) {
     opts = opts || {};
     var self = this;
-    var moveType = opts.type || move.t;
     var ov = this.effects.moves[move.id] || {};
-    if (ov.type) moveType = ov.type(this, atk, def, move) || moveType;
-    moveType = this.hook(atk, 'modMoveType', [move, moveType]) || moveType;
+    var moveType = opts.type || this.zugTyp(move, atk, def);
 
     var eff = this.effectiveness(moveType, def, move, atk);
     if (eff === 0) return { dmg: 0, eff: 0, crit: false, immune: true, type: moveType };
@@ -18802,26 +18883,36 @@ button.move-row:hover { border-color: var(--accent); }
     var grid = el('div', { className: 'move-grid' });
 
     moves.forEach(function (mv) {
-      var m = mv.move, effTag = null;
+      var m = mv.move, effTag = null, zeigeTyp = m.t;
       if (m.c !== 'T' && foe && foe.mon.hp > 0) {
-        var eff = bt.effectiveness(m.t, foe, m, me);
+        // Die Vorschau rechnet mit dem Typ, den die Attacke wirklich haben
+        // wird, und kennt die Fähigkeiten, die sie ganz schlucken.
+        var v = bt.vorschau(m, me, foe);
+        var eff = v ? v.eff : 1;
+        if (v) zeigeTyp = v.typ;
         if (eff === 0) effTag = { c: 'none', t: 'wirkungslos' };
-        else if (eff > 1) effTag = { c: 'super', t: eff >= 4 ? '×4' : '×2' };
-        else if (eff < 1) effTag = { c: 'weak', t: eff <= 0.25 ? '×¼' : '×½' };
+        else if (eff >= 4) effTag = { c: 'super', t: '×4' };
+        else if (eff > 1) effTag = { c: 'super', t: '×2' };
+        else if (eff <= 0.25) effTag = { c: 'weak', t: '×¼' };
+        else if (eff < 1) effTag = { c: 'weak', t: '×½' };
       }
       grid.appendChild(el('button', {
         className: 'move-btn' + (mv.disabled ? ' disabled' : ''),
         type: 'button', disabled: mv.disabled,
-        style: { '--move-color': U.TYPE_COLOR[m.t] || '#777' },
+        // Auch die Farbe folgt dem wirklichen Typ: Ein Feenschicht-Tackle ist rosa.
+        style: { '--move-color': U.TYPE_COLOR[zeigeTyp] || '#777' },
         title: (mv.why ? mv.why + ' — ' : '') + T.moveDesc(m),
         onclick: function () { submitAction({ type: 'move', index: mv.index }); }
       }, [
+        // Die Wirksamkeit sitzt als Marke in der Ecke der Kachel. In der
+        // Zeile darunter brach sie auf schmalen Bildschirmen um, wurde aus
+        // dem Knopf herausgeschoben und lag über der nächsten Kachel.
+        effTag ? el('span', { className: 'move-eff ' + effTag.c, text: effTag.t }) : null,
         el('span', { className: 'move-btn-name', text: T.move(m) }),
         el('span', { className: 'move-btn-meta' }, [
-          el('span', { className: 'move-btn-type', text: T.type(m.t) }),
+          el('span', { className: 'move-btn-type', text: T.type(zeigeTyp) }),
           el('span', { text: U.CAT_ICON[m.c] }),
-          el('span', { text: mv.pp + '/' + mv.maxPP }),
-          effTag ? el('span', { className: 'move-eff ' + effTag.c, text: effTag.t }) : null
+          el('span', { className: 'move-btn-pp', text: mv.pp + '/' + mv.maxPP })
         ])
       ]));
     });

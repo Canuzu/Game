@@ -752,6 +752,7 @@ button { font: inherit; color: inherit; }
 .battle-controls { display: flex; flex-direction: column; gap: .5rem; min-height: 120px; }
 .move-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: .5rem; }
 .move-btn {
+  position: relative;
   --move-color: #777;
   display: flex; flex-direction: column; gap: .2rem; align-items: flex-start;
   padding: .5rem .7rem; border-radius: var(--radius); cursor: pointer;
@@ -762,12 +763,15 @@ button { font: inherit; color: inherit; }
 .move-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 14px color-mix(in srgb, var(--move-color) 30%, transparent); }
 .move-btn:disabled { opacity: .4; cursor: not-allowed; }
 .move-btn-name { font-weight: 650; }
-/* Die Zeile nimmt die ganze Knopfbreite ein. Sonst schob die Wirksamkeit
-   (»×½«) rechts aus dem Knopf heraus und lag über dem nächsten. */
+/* Eine Zeile, die nicht umbricht: Typ, Art und AP stehen nebeneinander, und
+   wenn es eng wird, schrumpft die AP-Angabe statt zu springen. Die
+   Wirksamkeit steht als Marke in der Ecke und nicht mehr hier drin. */
 .move-btn-meta {
-  display: flex; gap: .5rem; font-size: 20px; color: var(--muted);
-  align-items: center; width: 100%; flex-wrap: wrap;
+  display: flex; gap: .4rem; font-size: 20px; color: var(--muted);
+  align-items: center; width: 100%; flex-wrap: nowrap; min-width: 0;
 }
+.move-btn-pp { margin-left: auto; white-space: nowrap; }
+.move-btn-type { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .move-btn-type { color: color-mix(in srgb, var(--move-color) 80%, var(--text)); font-weight: 600; }
 .action-row { display: flex; gap: .4rem; flex-wrap: wrap; align-items: center; }
 .action-btn {
@@ -861,9 +865,12 @@ button.move-row:hover { border-color: var(--accent); }
 .move-row.disabled { opacity: .4; }
 .move-row.highlight { border-color: var(--accent); }
 .move-type { padding: .05rem .45rem; border-radius: 0; color: #fff; font-size: 20px; text-shadow: 0 1px 1px rgba(0,0,0,.35); }
-.move-name { flex: 1; font-weight: 600; }
-.move-power { color: var(--muted); width: 2.5rem; text-align: right; }
-.move-pp { color: var(--muted); font-size: 20px; width: 3.2rem; text-align: right; }
+/* Der Name gibt nach, wenn es eng wird — Stärke und AP nicht. Vorher war die
+   AP-Angabe am rechten Rand abgeschnitten: »25/2«. */
+.move-name { flex: 1 1 auto; min-width: 0; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.move-type { flex: none; }
+.move-power { flex: none; color: var(--muted); width: 2.5rem; text-align: right; }
+.move-pp { flex: none; color: var(--muted); font-size: 20px; min-width: 3.6rem; text-align: right; white-space: nowrap; }
 .move-pp.empty { color: var(--bad); }
 
 .team-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1rem; }
@@ -918,7 +925,12 @@ button.move-row:hover { border-color: var(--accent); }
 .dex-cell.caught { border-color: color-mix(in srgb, var(--good) 45%, var(--line)); }
 .dex-silhouette { width: 62px; height: 62px; border-radius: 50%; background: var(--panel-2); }
 .dex-num { font-size: 20px; color: var(--muted); }
-.dex-name { font-size: 20px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+/* Zwei Zeilen statt drei Punkte: »Bisaknosp« und »Rattikarl« passen in kein
+   Kästchen dieser Breite, und ein abgeschnittener Name hilft niemandem. */
+.dex-name {
+  font-size: 20px; text-align: center; max-width: 100%;
+  line-height: 1.1; overflow-wrap: anywhere; hyphens: auto;
+}
 .dex-entry { display: grid; grid-template-columns: auto 1fr; gap: 1rem; }
 .dex-entry-art { display: flex; flex-direction: column; gap: .4rem; }
 .dex-entry-art .big { width: 140px; height: 140px; object-fit: contain; }
@@ -1118,12 +1130,15 @@ button.move-row:hover { border-color: var(--accent); }
   body[data-screen="battle"] .battle-stage {
     flex: 0 0 auto; height: auto; aspect-ratio: 3 / 2; max-height: 40dvh;
   }
-  /* Was an Höhe übrig bleibt, bekommt das Protokoll und zeigt mehr Verlauf. */
+  /* Was an Höhe übrig bleibt, teilen sich Bühne und Protokoll. Das Protokoll
+     bekommt eine Obergrenze: Vorher schluckte es allen freien Platz und stand
+     halb leer da, während die Bühne klein blieb. */
+  body[data-screen="battle"] .battle-stage { flex: 1 1 auto; }
   body[data-screen="battle"] .battle-log {
-    flex: 1 1 auto; height: auto; min-height: 3.4rem; font-size: 20px;
+    flex: 0 1 auto; height: auto; min-height: 3.4rem; max-height: 24dvh; font-size: 20px;
   }
   body[data-screen="battle"] .battle-controls { flex: 0 0 auto; min-height: 0; gap: .4rem; }
-  body[data-screen="battle"] .move-grid { grid-auto-rows: minmax(56px, 76px); }
+  body[data-screen="battle"] .move-grid { grid-auto-rows: minmax(52px, 68px); }
   /* Die Mindesthöhe hält auf dem Rechner die Kacheln ruhig, während das
      Protokoll läuft. Auf dem Handy zählt jeder Pixel — hier reicht der
      Inhalt. */
@@ -1189,11 +1204,24 @@ button.move-row:hover { border-color: var(--accent); }
   .move-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .4rem; }
   .move-btn { padding: .4rem .5rem; gap: .1rem; }
   .move-btn-name { font-size: 20px; }
+  /* Der Typ steht ausgeschrieben — dafür weicht das Sinnbild der Angriffsart.
+     »Pflan…« sagt weniger als »Pflanze«, und das Sinnbild sagt am wenigsten. */
   .move-btn-meta { font-size: 20px; gap: .3rem; }
-  .action-row { gap: .35rem; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
-  .action-row::-webkit-scrollbar { display: none; }
-  .action-row > * { flex: 0 0 auto; }
-  .action-btn { padding: .4rem .6rem; font-size: 20px; }
+  .move-btn-meta > span:nth-child(2) { display: none; }
+  .move-btn-type { flex: 0 1 auto; }
+  /* Fünf Aktionen, ein schmaler Schirm: Sie brechen um, statt in einem
+     schiebbaren Kasten zu verschwinden. »Fliehen« und »Auto« lagen dort
+     rechts außerhalb, ohne dass etwas darauf hinwies. */
+  .action-row { gap: .3rem; flex-wrap: wrap; }
+  .action-row > * { flex: 1 1 auto; justify-content: center; }
+  .action-btn { padding: .35rem .5rem; font-size: 20px; }
+  /* Der Reise-Automat deckte auf dem Handy die Aktionszeile zu. Im Kampf
+     rückt er nach oben an den Rand der Bühne. */
+  body[data-screen="battle"] .autopilot-btn {
+    bottom: auto; top: calc(3.4rem + env(safe-area-inset-top));
+    padding: .35rem .45rem;
+  }
+  body[data-screen="battle"] .autopilot-label { display: none; }
 
   .mon-art { width: 152px; height: 152px; }
   .slot-enemy .mon-art { width: 132px; height: 132px; }
@@ -1311,7 +1339,13 @@ button.move-row:hover { border-color: var(--accent); }
 
 /* ---------- Nachtrag: Wirksamkeit am Attackenknopf -------------------------- */
 
-.move-eff { font-weight: 700; font-size: 20px; padding: 0 .3rem; border-radius: 0; }
+/* Die Marke der Wirksamkeit: oben rechts in der Kachel, aus dem Textfluss
+   heraus. So kann sie nie umbrechen und nie über die nächste Kachel rutschen. */
+.move-eff {
+  position: absolute; top: 3px; right: 3px; z-index: 2;
+  font-weight: 700; font-size: 20px; padding: 0 .25rem; border-radius: 0;
+  border: 1px solid currentColor; line-height: 1.15;
+}
 .move-eff.super { background: color-mix(in srgb, var(--good) 30%, transparent); color: var(--good); }
 .move-eff.weak { background: color-mix(in srgb, var(--warn) 25%, transparent); color: var(--warn); }
 .move-eff.none { background: var(--panel-2); color: var(--muted); }
@@ -1523,7 +1557,7 @@ button.move-row:hover { border-color: var(--accent); }
   background: var(--good); color: #04220f; border-color: var(--frame-edge); font-weight: 700;
 }
 .action-btn.mega.on { background: #b07ae0; color: #1b1030; border-color: var(--frame-edge); }
-.move-btn-meta .move-eff { margin-left: auto; }
+
 
 /* ---------- 14) Bewegung: Atmen, Effekte, Übergang --------------------------
  * Die Sprites heben und senken sich leicht, Attacken werfen Pixel über die

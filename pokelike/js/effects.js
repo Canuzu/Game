@@ -225,9 +225,10 @@
   A.marvelscale = { modStat: function (bt, act, stat) { return (stat === 'def' && act.mon.status) ? 1.5 : 1; } };
   A.grasspelt = { modStat: function (bt, act, stat) { return (stat === 'def' && bt.field.terrain === 'grassyterrain') ? 1.5 : 1; } };
   A.wonderguard = {
+    nurSuper: true,
     blockMove: function (bt, act, move, atk) {
       if (move.c === 'T' || move.bp === 0) return false;
-      if (bt.effectiveness(move.t, act, move, atk) > 1) return false;
+      if (bt.effectiveness(bt.zugTyp(move, atk, act), act, move, atk) > 1) return false;
       bt.say(bt.name(act) + ': Wunderwache wehrt alles ab!', 'ability', { side: act.side.id });
       return true;
     }
@@ -243,11 +244,14 @@
     modDamageTaken: function (bt, act, move) { return move.t === 'Ghost' ? 0.5 : 1; }
   };
 
-  /* --- Absorbierende Fähigkeiten --- */
+  /* --- Absorbierende Fähigkeiten ---
+   * »blocktTyp« ist die Auskunft für die Vorschau: Sie darf die Fähigkeit
+   * nicht wirklich auslösen, muss aber wissen, was diese schluckt. */
   function absorb(type, effect) {
     return {
+      blocktTyp: type,
       blockMove: function (bt, act, move, atk) {
-        if (move.t !== type || move.c === 'T') return false;
+        if (bt.zugTyp(move, atk, act) !== type || move.c === 'T') return false;
         bt.say(bt.name(act) + ' saugt die Attacke auf!', 'ability', { side: act.side.id });
         effect(bt, act);
         return true;
@@ -257,6 +261,7 @@
   A.voltabsorb = absorb('Electric', function (bt, act) { bt.healAct(act, frac(bt, act, 4), false, 'Voltabsorber'); });
   A.waterabsorb = absorb('Water', function (bt, act) { bt.healAct(act, frac(bt, act, 4), false, 'H2O-Absorber'); });
   A.dryskin = {
+    blocktTyp: 'Water',
     blockMove: A.waterabsorb ? A.waterabsorb.blockMove : null,
     modDamageTaken: function (bt, act, move) { return move.t === 'Fire' ? 1.25 : 1; },
     onResidual: function (bt, act) {
@@ -276,8 +281,12 @@
   A.stormdrain = absorb('Water', function (bt, act) { bt.boost(act, { spa: 1 }, act); });
   A.motordrive = absorb('Electric', function (bt, act) { bt.boost(act, { spe: 1 }, act); });
   A.windrider = absorb('Flying', function (bt, act) { bt.boost(act, { atk: 1 }, act); });
+  // Schwebe hält kein eigenes Verhalten: Die Bodenimmunität hängt an
+  // grounded() und wirkt damit in der Typenrechnung selbst — zusammen mit
+  // Luftballon, Schwerkraft und Bodenwurf, statt dreimal getrennt.
   A.levitate = {};
   A.bulletproof = {
+    blocktFlagge: 'bullet',
     blockMove: function (bt, act, move) {
       if (!move.fl || move.fl.indexOf('bullet') < 0) return false;
       bt.say(bt.name(act) + ' blockt das Geschoss!', 'ability', { side: act.side.id });
@@ -285,6 +294,7 @@
     }
   };
   A.soundproof = {
+    blocktFlagge: 'sound',
     blockMove: function (bt, act, move) {
       if (!move.fl || move.fl.indexOf('sound') < 0) return false;
       bt.say(bt.name(act) + ' ist gegen Lärm immun!', 'ability', { side: act.side.id });

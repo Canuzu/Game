@@ -467,6 +467,55 @@ await page.waitForSelector('.asc-box');
     await page.locator('.asc-value').innerText());
 }
 
+// Der Kampf muss auf ein Handy passen — ohne Scrollen, mit allen Aktionen
+{
+  const handy = await browser.newPage({ viewport: { width: 390, height: 844 }, hasTouch: true });
+  await handy.goto(PAGE);
+  await handy.waitForSelector('.title-screen', { timeout: 20000 });
+  await handy.evaluate(() => {
+    const run = new PL.Run({ seed: 9, starter: 'bulbasaur' });
+    globalThis.PokelikeApp.run = run;
+    const bt = run.makeWild(run.rng, {});
+    run.setScene({ kind: 'battle', battle: bt, node: { row: 0, col: 0, type: 'wild' } });
+    globalThis.PokelikeApp.battle = bt;
+    bt.start();
+    globalThis.PokelikeApp.show('battle');
+  });
+  await handy.waitForSelector('.move-grid .move-btn', { timeout: 20000 });
+  await handy.waitForTimeout(600);
+  const mass = await handy.evaluate(() => {
+    const u = (s) => { const e = document.querySelector(s); return e ? Math.round(e.getBoundingClientRect().bottom) : null; };
+    const r = (s) => { const e = document.querySelector(s); return e ? Math.round(e.getBoundingClientRect().right) : null; };
+    return {
+      fenster: innerHeight, breite: innerWidth,
+      untenAktionen: u('.action-row'),
+      aktionen: document.querySelectorAll('.action-row .action-btn').length,
+      kacheln: document.querySelectorAll('.move-grid .move-btn').length,
+      rechtsAktion: Math.max(...[...document.querySelectorAll('.action-row .action-btn')].map((e) => Math.round(e.getBoundingClientRect().right))),
+      quer: document.documentElement.scrollWidth > innerWidth + 1,
+      grob: matchMedia('(pointer: coarse)').matches
+    };
+  });
+  check('Das Handy zählt als Gerät mit grobem Zeiger', mass.grob === true);
+  check('Vier Attackenkacheln stehen bereit', mass.kacheln === 4, String(mass.kacheln));
+  check('Alle fünf Aktionen sind da', mass.aktionen === 5, String(mass.aktionen));
+  check('Der Kampf passt in die Höhe des Schirms',
+    mass.untenAktionen <= mass.fenster, mass.untenAktionen + ' von ' + mass.fenster);
+  check('… und keine Aktion steht außerhalb der Breite',
+    mass.rechtsAktion <= mass.breite, mass.rechtsAktion + ' von ' + mass.breite);
+  check('Nichts läuft quer über den Rand', mass.quer === false);
+
+  // Die Wirksamkeit steht als Marke in der Ecke und bricht nichts um
+  const marke = await handy.evaluate(() => {
+    const m = document.querySelector('.move-eff');
+    if (!m) return null;
+    const k = m.closest('.move-btn').getBoundingClientRect(), r = m.getBoundingClientRect();
+    return { drin: r.top >= k.top - 1 && r.bottom <= k.bottom + 1 && r.right <= k.right + 1, text: m.textContent };
+  });
+  if (marke) check('Die Wirksamkeitsmarke bleibt in ihrer Kachel', marke.drin, marke.text);
+  await handy.close();
+}
+
 // Einen Ball werfen — der Weg, auf dem gefangen wird
 {
   await page.evaluate(() => {

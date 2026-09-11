@@ -2012,26 +2012,36 @@
     var grid = el('div', { className: 'move-grid' });
 
     moves.forEach(function (mv) {
-      var m = mv.move, effTag = null;
+      var m = mv.move, effTag = null, zeigeTyp = m.t;
       if (m.c !== 'T' && foe && foe.mon.hp > 0) {
-        var eff = bt.effectiveness(m.t, foe, m, me);
+        // Die Vorschau rechnet mit dem Typ, den die Attacke wirklich haben
+        // wird, und kennt die Fähigkeiten, die sie ganz schlucken.
+        var v = bt.vorschau(m, me, foe);
+        var eff = v ? v.eff : 1;
+        if (v) zeigeTyp = v.typ;
         if (eff === 0) effTag = { c: 'none', t: 'wirkungslos' };
-        else if (eff > 1) effTag = { c: 'super', t: eff >= 4 ? '×4' : '×2' };
-        else if (eff < 1) effTag = { c: 'weak', t: eff <= 0.25 ? '×¼' : '×½' };
+        else if (eff >= 4) effTag = { c: 'super', t: '×4' };
+        else if (eff > 1) effTag = { c: 'super', t: '×2' };
+        else if (eff <= 0.25) effTag = { c: 'weak', t: '×¼' };
+        else if (eff < 1) effTag = { c: 'weak', t: '×½' };
       }
       grid.appendChild(el('button', {
         className: 'move-btn' + (mv.disabled ? ' disabled' : ''),
         type: 'button', disabled: mv.disabled,
-        style: { '--move-color': U.TYPE_COLOR[m.t] || '#777' },
+        // Auch die Farbe folgt dem wirklichen Typ: Ein Feenschicht-Tackle ist rosa.
+        style: { '--move-color': U.TYPE_COLOR[zeigeTyp] || '#777' },
         title: (mv.why ? mv.why + ' — ' : '') + T.moveDesc(m),
         onclick: function () { submitAction({ type: 'move', index: mv.index }); }
       }, [
+        // Die Wirksamkeit sitzt als Marke in der Ecke der Kachel. In der
+        // Zeile darunter brach sie auf schmalen Bildschirmen um, wurde aus
+        // dem Knopf herausgeschoben und lag über der nächsten Kachel.
+        effTag ? el('span', { className: 'move-eff ' + effTag.c, text: effTag.t }) : null,
         el('span', { className: 'move-btn-name', text: T.move(m) }),
         el('span', { className: 'move-btn-meta' }, [
-          el('span', { className: 'move-btn-type', text: T.type(m.t) }),
+          el('span', { className: 'move-btn-type', text: T.type(zeigeTyp) }),
           el('span', { text: U.CAT_ICON[m.c] }),
-          el('span', { text: mv.pp + '/' + mv.maxPP }),
-          effTag ? el('span', { className: 'move-eff ' + effTag.c, text: effTag.t }) : null
+          el('span', { className: 'move-btn-pp', text: mv.pp + '/' + mv.maxPP })
         ])
       ]));
     });
