@@ -3371,7 +3371,7 @@
         if (filter.only === 'gefangen' && !caught) return;
         if (filter.only === 'fehlend' && caught) return;
         if (q && (T.species(sp) + ' ' + sp.n).toLowerCase().indexOf(q) < 0) return;
-        if (shown++ > 900) return;
+        shown++;
         grid.appendChild(el('button', {
           className: 'dex-cell' + (caught ? ' caught' : seen ? ' seen' : ' unknown'),
           type: 'button',

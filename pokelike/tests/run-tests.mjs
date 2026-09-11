@@ -2258,7 +2258,7 @@ section('Fünf Stufen statt elf Aufstiege');
 
 section('Der Legendäre Run ist ein Duell');
 {
-  eq('Alle Legenden der neun Generationen', PL.Run.legendenGesamt(), 125);
+  eq('Alle Legenden der neun Generationen', PL.Run.legendenGesamt(), 111);
   check('Jede Generation bringt welche mit',
     [1,2,3,4,5,6,7,8,9].every((g) => PL.Run.legendenDerGeneration(g).length > 0));
   check('Es sind wirklich nur legendäre Arten',
@@ -2355,6 +2355,58 @@ section('Der Legendäre Run ist ein Duell');
     party: [], box: [], bag: {}, map: [[{ row: 0, col: 0, type: 'rest', next: [0] }]],
     stats: {}, history: [], rival: {}, stufenFassung: 2 };
   eq('Der alte Strang wird beim Laden verworfen', PL.Run.fromJSON(altesDuell), null);
+}
+
+section('Der Pokédex hört nicht bei Generation sieben auf');
+{
+  const nachGen = {};
+  PL.dex.species.forEach((sp) => { nachGen[sp.g] = (nachGen[sp.g] || 0) + 1; });
+  for (let g = 1; g <= 9; g++) {
+    check('Generation ' + g + ' steht im Pokédex', nachGen[g] > 0, String(nachGen[g] || 0));
+  }
+  const hoechste = PL.dex.species.reduce((a, sp) => Math.max(a, sp.num), 0);
+  eq('Bis zur letzten Nummer der neunten Generation', hoechste, 1025);
+  check('Und es sind mehr als neunhundert Einträge — die alte Grenze',
+    PL.dex.species.length > 900, String(PL.dex.species.length));
+}
+
+section('Paradoxformen: die gewöhnlichen gehören ins gewöhnliche Spiel');
+{
+  const GEWOEHNLICH = ['greattusk', 'screamtail', 'brutebonnet', 'fluttermane', 'slitherwing',
+    'sandyshocks', 'irontreads', 'ironbundle', 'ironhands', 'ironjugulis', 'ironmoth',
+    'ironthorns', 'roaringmoon', 'ironvaliant'];
+  const LEGENDAER = ['walkingwake', 'ironleaves', 'gougingfire', 'ragingbolt',
+    'ironboulder', 'ironcrown'];
+
+  GEWOEHNLICH.forEach((id) => {
+    eq(PL.t.species(PL.dex.sp(id)) + ' ist keine Legende mehr',
+      PL.dex.isLegendary(PL.dex.sp(id)), false);
+  });
+  LEGENDAER.forEach((id) => {
+    eq(PL.t.species(PL.dex.sp(id)) + ' bleibt eine Legende',
+      PL.dex.isLegendary(PL.dex.sp(id)), true);
+  });
+
+  const gen9 = PL.Run.legendenDerGeneration(9).map((sp) => sp.id);
+  check('Keine gewöhnliche Paradoxform steht im Legendären Run',
+    GEWOEHNLICH.every((id) => gen9.indexOf(id) < 0));
+  check('Die legendären Paradoxformen stehen dort',
+    LEGENDAER.every((id) => gen9.indexOf(id) >= 0));
+
+  // In Paldea trifft man sie — aber erst, wenn das Level dazu passt.
+  const spaet = PL.world.encounterPool({ gen: 9, level: 60 }).map((sp) => sp.id);
+  check('Bei Level 60 sind alle vierzehn im Begegnungstopf',
+    GEWOEHNLICH.every((id) => spaet.indexOf(id) >= 0),
+    GEWOEHNLICH.filter((id) => spaet.indexOf(id) < 0).join(','));
+  const frueh = PL.world.encounterPool({ gen: 9, level: 25 }).map((sp) => sp.id);
+  check('Bei Level 25 noch keine — sie sind zu stark',
+    GEWOEHNLICH.every((id) => frueh.indexOf(id) < 0));
+  check('Keine legendäre Paradoxform läuft einem gewöhnlich über den Weg',
+    LEGENDAER.every((id) => spaet.indexOf(id) < 0));
+
+  // Gefangen werden dürfen sie wie jedes andere Pokémon.
+  const run = new PL.Run({ seed: 12, starter: 'bulbasaur' });
+  eq('Im gewöhnlichen Run ist Fangen erlaubt', run.catchAllowed(), true);
 }
 
 section('Jede Legende hat ihren eigenen Ball');

@@ -98,6 +98,14 @@
 
   var STATS = ['hp', 'atk', 'def', 'spa', 'spd', 'spe'];
 
+  /* Die sechs Paradoxformen, die von legendären Pokémon abstammen: die
+     Vergangenheits- und Zukunftsgestalten der Johto-Hunde und der Schwerter
+     der Gerechtigkeit. Alle übrigen Paradoxformen sind gewöhnliche Pokémon. */
+  var PARADOX_LEGENDE = {
+    walkingwake: 1, ironleaves: 1, gougingfire: 1,
+    ragingbolt: 1, ironboulder: 1, ironcrown: 1
+  };
+
   var dex = {
     raw: DEX,
     types: DEX.types,
@@ -162,8 +170,21 @@
       return n;
     },
 
+    /**
+     * Gilt diese Art als legendär? Entscheidend sind die Markierungen aus den
+     * Quelldaten — mit einer Ausnahme.
+     *
+     * Die Paradoxformen der neunten Generation tragen alle dieselbe
+     * Markierung, sind aber zweierlei: Riesenzahn ist ein Donphan aus einer
+     * anderen Zeit und Eisenhand ein Hariyama aus einer anderen — gewöhnliche
+     * Pokémon, die man in Paldea antrifft und fängt. Windewoge, Eisenblatt,
+     * Keilflamme, Furienblitz, Eisenfels und Eisenhaupt dagegen sind die
+     * Paradoxformen legendärer Pokémon und bleiben Legenden.
+     */
     isLegendary: function (sp) {
-      return !!(sp.tag && sp.tag.some(function (t) { return /Legendary|Mythical|Paradox|Ultra Beast/.test(t); }));
+      if (!sp.tag) return false;
+      if (sp.tag.some(function (t) { return /Legendary|Mythical|Ultra Beast/.test(t); })) return true;
+      return sp.tag.some(function (t) { return /Paradox/.test(t); }) && !!PARADOX_LEGENDE[sp.id];
     },
     isRestricted: function (sp) {
       return !!(sp.tag && sp.tag.some(function (t) { return /Restricted|Mythical/.test(t); }));

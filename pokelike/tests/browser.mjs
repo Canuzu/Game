@@ -467,6 +467,25 @@ await page.waitForSelector('.asc-box');
     await page.locator('.asc-value').innerText());
 }
 
+// Der Pokédex zeigt alle neun Generationen, nicht nur die ersten sieben
+{
+  const dexStand = await page.evaluate(() => {
+    globalThis.PokelikeApp.show('dex');
+    const zellen = [...document.querySelectorAll('.dex-cell .dex-num')].map((e) => e.textContent);
+    return {
+      zellen: zellen.length,
+      arten: PL.dex.species.length,
+      letzte: zellen[zellen.length - 1] || '',
+      hatGen9: zellen.some((t) => Number(t.replace('#', '')) > 1000)
+    };
+  });
+  check('Der Reiter »Alle« zeigt jede Art', dexStand.zellen === dexStand.arten,
+    dexStand.zellen + ' von ' + dexStand.arten);
+  check('… bis in die neunte Generation hinein', dexStand.hatGen9, dexStand.letzte);
+  await page.evaluate(() => globalThis.PokelikeApp.show('title'));
+  await page.waitForSelector('.title-screen');
+}
+
 // Der Legendäre Run: eigener Modus, eigene Bildschirme
 {
   await page.evaluate(() => {

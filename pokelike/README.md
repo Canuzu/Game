@@ -144,6 +144,16 @@ derselben Art ist unwahrscheinlich, die dritte praktisch ausgeschlossen. Über
 zwölf Begegnungsknoten hinweg kommen so 32 verschiedene Arten in 36 Angeboten
 zusammen — vorher waren es 26.
 
+**Paradoxformen** — die zwanzig Paradoxformen der neunten Generation tragen in
+den Quelldaten alle dieselbe Markierung, sind aber zweierlei. Riesenzahn ist
+ein Donphan aus einer anderen Zeit und Eisenhand ein Hariyama aus einer
+anderen: gewöhnliche Pokémon, die man in Paldea antrifft und fängt wie jedes
+andere — allerdings erst ab etwa Level 53, weil ihre Basiswerte sie vorher
+aus dem Begegnungstopf halten. Nur die sechs Paradoxformen **legendärer**
+Pokémon — Windewoge, Eisenblatt, Keilflamme, Furienblitz, Eisenfels und
+Eisenhaupt, die Gestalten der Johto-Hunde und der Schwerter der Gerechtigkeit —
+bleiben Legenden und stehen im Legendären Run.
+
 **Der Legendäre Run** — ein eigener Weg neben dem Run, kein Schwierigkeitsgrad.
 Neun Generationen, in jeder ihre legendären Pokémon, und hinter jedem von ihnen
 genau ein Duell: dein selbst gebautes Team gegen dieses eine Pokémon. Offen
@@ -164,18 +174,18 @@ fangen kannst du sie also erst, wenn du ein zweites Mal antrittst, und der
 Ball fängt nur sie. Wiederholte Siege bringen keinen zweiten.
 
 Diese Bälle sind nicht gezeichnet, sondern gerechnet: `tools/build-baelle.mjs`
-öffnet jedes der 125 eingebetteten Sprites, sucht im oberen Drittel den
+öffnet jedes der 111 eingebetteten Sprites, sucht im oberen Drittel den
 größten zusammenhängenden Klumpen — das ist der Kopf und nicht der Flügel —,
 zählt die Farben des Sprites, rechnet den Kopf auf 14 × 10 Punkte herunter,
 reduziert ihn auf drei Töne mit Kontur und setzt ihn in die obere Hälfte eines
-32 × 32 großen Balls. Herauskommt `data/baelle.js`: 125 winzige PNG, zusammen
-rund 140 KB. Der Arktos-Ball ist blau mit Arktos' Kopf, der Ho-Oh-Ball rot mit
+32 × 32 großen Balls. Herauskommt `data/baelle.js`: 111 winzige PNG, zusammen
+rund 117 KB. Der Arktos-Ball ist blau mit Arktos' Kopf, der Ho-Oh-Ball rot mit
 seinem — und beide fliegen im Kampf auch wirklich so.
 
 Aus denselben Sprites kommen die neun Umrisse hinter den Generationskarten:
 Mewtu für Kanto, Lugia für Johto, Rayquaza für Hoenn, bis Koraidon für Paldea.
 
-Jedes der 125 hat sein **eigenes Stück Musik** — Tonleiter aus dem ersten Typ,
+Jedes der 111 hat sein **eigenes Stück Musik** — Tonleiter aus dem ersten Typ,
 Tempo aus den Basiswerten, der Rest aus der Pokédex-Nummer, sodass dasselbe
 Pokémon immer gleich klingt. Dreizehn Titelträger (Mewtu, Lugia, Rayquaza,
 Arceus, Zacian und andere) bringen ein von Hand geschriebenes Motiv mit. Und
@@ -307,8 +317,9 @@ um ein Drittel. Härter wird es über die fünf **Stufen** am Schieberegler, und
 man frei, indem man Runs gewinnt — man wählt also nur aus, was man sich
 vorher erspielt hat.
 
-Gemessen mit `tools/balance.mjs`: Siegquote gegen die harten Kämpfe 89 %,
-durchschnittlich erreichte Region 4 von 9.
+Gemessen mit `node tools/balance.mjs 40`: Siegquote gegen die harten Kämpfe
+94,8 % (Ass-Trainer 91 %, Arenaleiter 99 %, Top Vier 95 %, Champ 50 %),
+durchschnittlich erreichte Region 7,8 von 9, 11 von 40 Runs gewonnen.
 
 Vor Arenaleiter, Top Vier und Champ erholt sich das Team immer vollständig —
 in den Spielen steht vor jeder Arena ein Center. Das war der gemessene Grund
