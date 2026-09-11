@@ -552,7 +552,7 @@
       lohn: { reroll: 1 }, lohnText: 'Einmal je Run eine Auswahl neu würfeln' },
     { id: 'gen9', name: 'Alle neun', bed: 'Alle neun Generationen vollständig',
       wert: function (st) { return [st.volleGen, 9]; },
-      lohn: {}, einmal: { meisterball: 1 }, lohnText: 'Ein Meisterball, der auf jede Legende passt' }
+      lohn: {}, einmal: { meisterball: 1 }, lohnText: 'Ein Ball, der auf jede Legende passt' }
   ];
 
   /** Der Sammlungsstand, wie ihn die Meilensteine sehen. */

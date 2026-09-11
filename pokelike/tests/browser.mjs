@@ -403,7 +403,7 @@ await page.waitForSelector('.sammlung-screen');
     return document.querySelector('.sammlung-screen').innerText;
   });
   check('Die Sammlung zeigt den Stand im Legendären Run',
-    /1 besiegt/.test(kasseText) && /1 Meisterball bereit/.test(kasseText),
+    /1 besiegt/.test(kasseText) && /ein eigener Ball bereit/.test(kasseText),
     (kasseText.match(/besiegt[^\n]*/g) || []).join(' | '));
 
   // Der Bestwert steht im Pokédex unter der Art
@@ -506,6 +506,24 @@ await page.waitForSelector('.asc-box');
     (await page.locator('.legende-karte').count()) === 5,
     String(await page.locator('.legende-karte').count()));
 
+  // Der eigene Ball taucht auf, sobald er verdient ist
+  await page.evaluate(() => {
+    PL.meta.duellGewonnen(PL.dex.sp('articuno').i);
+    globalThis.PokelikeApp.show('legendenGen', { gen: 1 });
+  });
+  await page.waitForSelector('.legenden-grid');
+  const ballAufKarte = await page.locator('.legende-karte .karten-ball').count();
+  check('Der verdiente Ball steht auf der Karte der Legende', ballAufKarte === 1, String(ballAufKarte));
+  const ballQuelle = await page.locator('.legende-karte .karten-ball').first().getAttribute('src');
+  check('… und es ist ein gezeichneter Ball', /^data:image\/png/.test(ballQuelle || ''));
+  const umrisse = await page.evaluate(() => {
+    globalThis.PokelikeApp.show('legenden');
+    return document.querySelectorAll('.gen-umriss').length;
+  });
+  check('Jede Generationskarte trägt den Umriss ihres Wahrzeichens', umrisse === 9, String(umrisse));
+  await page.evaluate(() => globalThis.PokelikeApp.show('legendenGen', { gen: 1 }));
+  await page.waitForSelector('.legenden-grid');
+
   await page.locator('.legende-karte').first().click();
   await page.waitForSelector('.duell-pool');
   const antreten = page.getByRole('button', { name: /^Antreten/ });
@@ -541,7 +559,7 @@ await page.waitForSelector('.asc-box');
     duell.gegnerzahl === 1 && duell.legendaer, String(duell.gegnerzahl));
   check('… das einen Bossaufschlag auf die KP trägt',
     duell.kp > duell.kpOhne * 2.5, duell.kp + ' statt ' + duell.kpOhne);
-  check('Ohne Meisterball lässt sich nichts fangen', duell.fangbar === false);
+  check('Mit dem verdienten Ball ist der Kampf fangbar', duell.fangbar === true);
 
   const kopf = await page.locator('.chip-region').innerText();
   check('Die Kopfzeile nennt den Gegner', /Arktos|Articuno/.test(kopf), kopf);

@@ -2006,3 +2006,51 @@ button.move-row:hover { border-color: var(--accent); }
 }
 /* Der Automat versteckt sich per hidden — ohne das gewinnt display:flex. */
 .autopilot-btn[hidden] { display: none !important; }
+
+/* --- Die eigenen Bälle der Legenden --- */
+.eigenball {
+  width: 32px; height: 32px; flex: none;
+  image-rendering: pixelated; image-rendering: crisp-edges;
+}
+.eigenball.gross { width: 64px; height: 64px; }
+.legende-karte { position: relative; }
+.karten-ball {
+  position: absolute; top: 4px; right: 4px; width: 28px; height: 28px;
+}
+.karten-ball.verbraucht { opacity: .45; filter: grayscale(.5); }
+.duell-ball { display: flex; align-items: center; gap: .5rem; margin: .3rem 0; }
+.dex-ball { display: flex; align-items: center; gap: .5rem; }
+.duell-ende-bild { display: flex; align-items: center; justify-content: center; gap: 1rem; }
+
+/* Die Vitrine: alles, was man sich verdient hat, nebeneinander. */
+.ball-vitrine {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(44px, 1fr));
+  gap: .35rem; margin-top: .5rem;
+}
+.vitrine-platz {
+  position: relative; display: grid; place-items: center;
+  aspect-ratio: 1; background: color-mix(in srgb, var(--innen) 14%, var(--panel));
+  border: var(--kante) solid var(--line);
+}
+.vitrine-platz.leer { opacity: .35; }
+.vitrine-platz .eigenball { width: 34px; height: 34px; }
+.vitrine-platz.gefangen { background: color-mix(in srgb, var(--good) 18%, var(--panel)); border-color: var(--good); }
+
+/* Der Umriss des Wahrzeichens hinter der Generationskarte */
+.gen-karte { position: relative; overflow: hidden; }
+.gen-umriss {
+  position: absolute; right: -6px; bottom: -8px; width: 84px; height: 84px;
+  background: var(--gen-farbe, var(--innen));
+  -webkit-mask-image: var(--umriss); mask-image: var(--umriss);
+  -webkit-mask-size: contain; mask-size: contain;
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  opacity: .22; pointer-events: none;
+}
+.gen-karte > *:not(.gen-umriss) { position: relative; z-index: 1; }
+
+@media (max-width: 560px) {
+  .gen-umriss { width: 60px; height: 60px; }
+  .eigenball.gross { width: 48px; height: 48px; }
+}
+.chip-ball { display: inline-flex; align-items: center; gap: .15rem; }
+.chip-ballbild { width: 22px; height: 22px; }

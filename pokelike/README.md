@@ -159,10 +159,21 @@ Bossaufschlag: dreifache KP und 15 % auf alle übrigen Werte, beste
 Fleißpunkte, perfekte Werte, höchste KI-Stufe. Der Aufschlag liegt bewusst auf
 den KP — das macht den Kampf lang, nicht die einzelnen Treffer unfair.
 
-**Fangen geht nur mit dem Meisterball, und jeder Ball gehört einem Pokémon.**
-Der erste Sieg über eine Legende legt ihren Ball bereit; fangen kannst du sie
-also erst, wenn du ein zweites Mal antrittst. Wiederholte Siege bringen keinen
-zweiten Ball.
+**Jede Legende hat ihren eigenen Ball.** Der erste Sieg legt ihn bereit;
+fangen kannst du sie also erst, wenn du ein zweites Mal antrittst, und der
+Ball fängt nur sie. Wiederholte Siege bringen keinen zweiten.
+
+Diese Bälle sind nicht gezeichnet, sondern gerechnet: `tools/build-baelle.mjs`
+öffnet jedes der 125 eingebetteten Sprites, sucht im oberen Drittel den
+größten zusammenhängenden Klumpen — das ist der Kopf und nicht der Flügel —,
+zählt die Farben des Sprites, rechnet den Kopf auf 14 × 10 Punkte herunter,
+reduziert ihn auf drei Töne mit Kontur und setzt ihn in die obere Hälfte eines
+32 × 32 großen Balls. Herauskommt `data/baelle.js`: 125 winzige PNG, zusammen
+rund 140 KB. Der Arktos-Ball ist blau mit Arktos' Kopf, der Ho-Oh-Ball rot mit
+seinem — und beide fliegen im Kampf auch wirklich so.
+
+Aus denselben Sprites kommen die neun Umrisse hinter den Generationskarten:
+Mewtu für Kanto, Lugia für Johto, Rayquaza für Hoenn, bis Koraidon für Paldea.
 
 Jedes der 125 hat sein **eigenes Stück Musik** — Tonleiter aus dem ersten Typ,
 Tempo aus den Basiswerten, der Rest aus der Pokédex-Nummer, sodass dasselbe

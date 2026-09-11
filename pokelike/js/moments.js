@@ -131,11 +131,15 @@
     return 'rgb(' + up((n >> 16) & 255) + ',' + up((n >> 8) & 255) + ',' + up(n & 255) + ')';
   }
 
-  /** Der Ball als Bildelement — rund, hart skaliert. */
-  function ballNode(kind) {
+  /**
+   * Der Ball als Bildelement — rund, hart skaliert. »bild« überschreibt die
+   * gezeichnete Kugel: Im Legenden-Duell fliegt der eigene Ball des Pokémon.
+   */
+  function ballNode(kind, bild) {
     var ball = doc.createElement('div');
     ball.className = 'moment-ball ball-' + (kind || 'poke');
-    if (doc.createElement('canvas').getContext) {
+    if (bild) ball.style.backgroundImage = 'url(' + bild + ')';
+    else if (doc.createElement('canvas').getContext) {
       ball.style.backgroundImage = 'url(' + ballImage(kind || 'poke') + ')';
     }
     return ball;
@@ -166,7 +170,7 @@
     var to = centre(target, stage);
     var from = { x: to.x - stage.clientWidth * 0.42, y: to.y + stage.clientHeight * 0.30 };
     var shakes = Math.max(0, Math.min(3, opts.shakes === undefined ? 3 : opts.shakes));
-    var node = ballNode(kindOf(opts.item));
+    var node = ballNode(kindOf(opts.item), opts.bild);
     node.style.left = (from.x - 8) + 'px';
     node.style.top = (from.y - 8) + 'px';
     layer.appendChild(node);

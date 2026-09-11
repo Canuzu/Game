@@ -192,6 +192,37 @@
    * Kompakte Karte für Team-Leisten und Auswahllisten.
    * opts: { onClick, selected, showStats, faintable, badge }
    */
+  /* ---------- Die eigenen Bälle der Legenden --------------------------------
+   * Jedes legendäre Pokémon hat seinen eigenen Ball, gerechnet aus seinem
+   * Sprite (tools/build-baelle.mjs). Fehlt data/baelle.js — etwa in der
+   * Mehrdatei-Fassung ohne eingebettete Bilder —, bleibt es beim gewöhnlichen
+   * Meisterball, und niemand merkt etwas davon.
+   * ------------------------------------------------------------------------ */
+
+  function ballDaten(id) {
+    return PL.baelle ? PL.baelle.fuer(id) : null;
+  }
+
+  /** Der Ball einer Art als Bild. Ohne eigenen Ball kommt nichts zurück. */
+  function ballBild(id, opts) {
+    opts = opts || {};
+    var daten = ballDaten(id);
+    if (!daten) return null;
+    var sp = dex.sp(id);
+    return el('img', {
+      className: 'eigenball' + (opts.className ? ' ' + opts.className : ''),
+      src: daten.b, alt: opts.alt || (sp ? T.species(sp) + '-Ball' : 'Ball'),
+      title: opts.title || (sp ? T.species(sp) + '-Ball' : null),
+      loading: 'lazy', draggable: 'false'
+    });
+  }
+
+  /** »Mewtu-Ball« — der Name, unter dem er im Beutel steht. */
+  function ballName(id) {
+    var sp = dex.sp(id);
+    return sp ? T.species(sp) + '-Ball' : 'Meisterball';
+  }
+
   function monCard(mon, opts) {
     opts = opts || {};
     var sp = dex.sp(mon.sp), max = mons.maxHP(mon);
@@ -442,7 +473,11 @@
       onclick: opts.onClick || null,
       disabled: opts.disabled || false
     }, [
-      el('span', { className: 'item-icon', text: opts.icon || itemIcon(item) }),
+      // Hat ein Gegenstand ein eigenes Bild — der Ball einer Legende —, steht
+      // es anstelle des Sinnbilds.
+      item.bild
+        ? el('img', { className: 'item-icon eigenball', src: item.bild, alt: '' })
+        : el('span', { className: 'item-icon', text: opts.icon || itemIcon(item) }),
       el('div', { className: 'item-text' }, [
         el('strong', { text: item.name + (opts.count > 1 ? ' ×' + opts.count : '') }),
         el('span', { className: 'muted', text: item.desc || '' })
@@ -467,6 +502,7 @@
     monCard: monCard, monDetail: monDetail, moveRow: moveRow, megaNote: megaNote,
     modal: modal, confirm: confirm, toast: toast,
     money: money, itemRow: itemRow, itemIcon: itemIcon,
+    ballBild: ballBild, ballName: ballName, ballDaten: ballDaten,
     TYPE_COLOR: TYPE_COLOR, CAT_ICON: CAT_ICON, CAT_NAME: CAT_NAME
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

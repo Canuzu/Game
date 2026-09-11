@@ -2357,6 +2357,37 @@ section('Der Legendäre Run ist ein Duell');
   eq('Der alte Strang wird beim Laden verworfen', PL.Run.fromJSON(altesDuell), null);
 }
 
+section('Jede Legende hat ihren eigenen Ball');
+{
+  await import('../data/baelle.js');
+  const baelle = PL.baelle;
+
+  let ohne = 0, doppelt = 0;
+  const gesehen = new Map();
+  for (let g = 1; g <= 9; g++) {
+    for (const sp of PL.Run.legendenDerGeneration(g)) {
+      const b = baelle.fuer(sp.id);
+      if (!b || !/^data:image\/png;base64,/.test(b.b)) { ohne++; continue; }
+      if (gesehen.has(b.b)) doppelt++;
+      gesehen.set(b.b, sp.id);
+    }
+  }
+  eq('Alle 125 haben einen', ohne, 0);
+  eq('… und keine zwei denselben', doppelt, 0);
+  eq('So viele Bälle wie Legenden', gesehen.size, PL.Run.legendenGesamt());
+
+  const mewtu = baelle.fuer('mewtwo');
+  check('Ein Ball bringt seine Farben mit',
+    /^#[0-9a-f]{6}$/.test(mewtu.h) && /^#[0-9a-f]{6}$/.test(mewtu.z), mewtu.h + ' / ' + mewtu.z);
+  check('Ein Ball bleibt klein genug zum Einbetten', mewtu.b.length < 4000, String(mewtu.b.length));
+  eq('Wer keinen hat, bekommt auch keinen', baelle.fuer('pikachu'), null);
+
+  for (let g = 1; g <= 9; g++) {
+    check('Generation ' + g + ' hat den Umriss ihres Wahrzeichens',
+      /^data:image\/png;base64,/.test(baelle.umriss(g) || ''));
+  }
+}
+
 section('Jede Legende hat ihren Schauplatz');
 {
   const scenery = PL.scenery;

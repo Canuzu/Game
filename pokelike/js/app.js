@@ -276,8 +276,12 @@
         var gegner = dex.sp(run.duellArt);
         mid.appendChild(el('span', { className: 'chip chip-region', title: 'Dein Gegner',
           text: '🌟 ' + (gegner ? T.species(gegner) : 'Legende') }));
-        mid.appendChild(el('span', { className: 'chip chip-ball', title: 'Meisterball — nur damit lässt sich hier fangen',
-          text: '🟣 ' + (run.bag.masterball || 0) }));
+        var ballBild = U.ballBild(run.duellArt, { className: 'chip-ballbild' });
+        mid.appendChild(el('span', { className: 'chip chip-ball',
+          title: U.ballName(run.duellArt) + ' — nur damit lässt sich hier fangen' }, [
+          ballBild || el('span', { text: '🟣' }),
+          el('span', { text: ' ' + (run.bag.masterball || 0) })
+        ]));
       } else {
         mid.appendChild(el('span', { className: 'chip chip-region', text: '👑 ' + (run.leagueStage >= 0 ? 'Finale' : 'Region ' + (run.region + 1) + '/' + (run.mode === 'endlos' ? '∞' : run.totalRegions())) }));
         mid.appendChild(el('span', { className: 'chip chip-money', text: '💰 ' + U.money(run.money) }));
@@ -1089,15 +1093,20 @@
         if (st.gefangen) gefangen++;
         if (st.ball) baelle++;
       });
+      var umriss = PL.baelle ? PL.baelle.umriss(gen) : null;
       return el('button', {
         className: 'gen-karte' + (gefangen === liste.length ? ' voll' : ''),
         type: 'button', style: { '--gen-farbe': region.color },
         onclick: function () { show('legendenGen', { gen: gen }); }
       }, [
+        // Der Umriss des Wahrzeichens steht als Schatten hinter dem Text:
+        // Man sieht Lugia, bevor man »Johto« liest.
+        umriss ? el('i', { className: 'gen-umriss', style: { '--umriss': 'url(' + umriss + ')' } }) : null,
         el('span', { className: 'gen-nummer', text: 'Generation ' + gen }),
         el('strong', { className: 'gen-name', text: region.name }),
         el('span', { className: 'gen-zahl', text: gefangen + ' / ' + liste.length + ' gefangen' }),
-        el('span', { className: 'muted small', text: besiegt + ' besiegt' + (baelle ? ' · ' + baelle + ' Ball bereit' : '') })
+        el('span', { className: 'muted small', text: besiegt + ' besiegt' +
+          (baelle ? ' · ' + baelle + (baelle === 1 ? ' Ball' : ' Bälle') + ' bereit' : '') })
       ]);
     }));
 
@@ -1107,14 +1116,15 @@
         el('p', { className: 'muted', text:
           'Ein Duell gegen ein einzelnes legendäres Pokémon — der schwerste Kampf, den das Spiel zu bieten hat. ' +
           'Dein Team stellst du vorher zusammen, und zwar nur aus Arten derselben Generation, die in deinem ' +
-          'Pokédex stehen. Der erste Sieg legt den Meisterball dieses Pokémon bereit; fangen kannst du es beim ' +
-          'zweiten Antreten.' }),
+          'Pokédex stehen. Der erste Sieg legt seinen eigenen Ball bereit — jede Legende hat einen, und er ' +
+          'fängt nur sie. Fangen kannst du sie also beim zweiten Antreten.' }),
         frei ? null : el('p', { className: 'legenden-sperre', text:
           'Noch gesperrt: Gewinne zuerst Stufe 5 im normalen Run.' }),
         el('p', { className: 'muted small', text:
           uebersicht.gefangen + ' von ' + PL.Run.legendenGesamt() + ' gefangen · ' +
-          uebersicht.besiegt + ' besiegt · ' + uebersicht.baelle + ' ' +
-          (uebersicht.baelle === 1 ? 'Meisterball' : 'Meisterbälle') + ' bereit' })
+          uebersicht.besiegt + ' besiegt · ' +
+          (uebersicht.baelle === 1 ? 'ein eigener Ball' : uebersicht.baelle + ' eigene Bälle') +
+          ' bereit' })
       ]),
       karten,
       el('div', { className: 'newrun-actions' }, [
@@ -1131,12 +1141,18 @@
 
     var gitter = el('div', { className: 'legenden-grid' }, liste.map(function (sp) {
       var st = meta.duellStand(sp.i);
-      var marke = st.gefangen ? '✓ gefangen' : st.ball ? '🟣 Ball bereit' : st.besiegt ? '⚔ besiegt' : null;
+      var marke = st.gefangen ? '✓ gefangen' : st.ball ? 'Ball bereit' : st.besiegt ? '⚔ besiegt' : null;
+      // Der eigene Ball steht in der Ecke, sobald er verdient ist — bei einem
+      // gefangenen Pokémon blass, denn der ist geworfen.
+      var ball = (st.ball || st.gefangen)
+        ? U.ballBild(sp.id, { className: 'karten-ball' + (st.gefangen ? ' verbraucht' : '') })
+        : null;
       return el('button', {
         className: 'legende-karte' + (st.gefangen ? ' gefangen' : '') + (st.ball ? ' bereit' : ''),
         type: 'button', style: { '--gen-farbe': region.color },
         onclick: function () { show('legendenTeam', { gen: gen, art: sp.id }); }
       }, [
+        ball,
         el('div', { className: 'legende-bild' }, [U.sprite(sp, { className: 'legende-sprite' })]),
         el('strong', { className: 'legende-name', text: T.species(sp) }),
         el('div', { className: 'legende-typen' }, sp.t.map(function (t) { return U.typeChip(t, true); })),
@@ -1300,9 +1316,13 @@
             el('h2', { text: T.species(ziel) }),
             el('div', { className: 'duell-typen' }, ziel.t.map(function (t) { return U.typeChip(t, true); })),
             el('p', { className: 'muted small', text: 'Generation ' + gen + ' · ' + region.name + ' · BWS ' + ziel.bst }),
+            stand.ball ? el('div', { className: 'duell-ball' }, [
+              U.ballBild(ziel.id, { className: 'gross' }),
+              el('span', { text: U.ballName(ziel.id) })
+            ]) : null,
             el('p', { className: 'muted small', text: stand.gefangen
               ? 'Schon gefangen — du kannst trotzdem noch einmal antreten.'
-              : stand.ball ? 'Sein Meisterball liegt bereit: Wer diesmal gewinnt, kann ihn werfen.'
+              : stand.ball ? 'Sein eigener Ball liegt bereit: Wer diesmal gewinnt, kann ihn werfen.'
               : stand.besiegt ? 'Schon besiegt — sein Ball ist verbraucht.'
               : 'Noch nie besiegt. Der erste Sieg legt seinen Meisterball bereit.' })
           ])
@@ -1854,8 +1874,11 @@
       for (j = next; j < (entries || []).length && j < next + 4; j++) {
         if (entries[j].k === 'caught' || entries[j].k === 'ballfail') { verdict = entries[j]; break; }
       }
+      // Im Duell fliegt der eigene Ball der Legende, nicht der Meisterball.
+      var eigen = App.run && App.run.mode === 'legenden' && e.item === 'masterball'
+        ? U.ballDaten(App.run.duellArt) : null;
       return PL.moments.ball({
-        stage: BV.stage, target: BV.art1, item: e.item,
+        stage: BV.stage, target: BV.art1, item: e.item, bild: eigen ? eigen.b : null,
         caught: !!(verdict && verdict.k === 'caught'),
         shakes: verdict && verdict.k === 'caught' ? 3 : (verdict ? verdict.shakes : 1)
       });
@@ -2153,9 +2176,20 @@
     }
     if (!balls.length) {
       U.toast(run.mode === 'legenden'
-        ? 'Du hast keinen Meisterball für dieses Pokémon. Besiege es erst — dann liegt seiner bereit.'
+        ? 'Du hast seinen Ball nicht. Besiege es erst — dann liegt er bereit.'
         : 'Du hast keine Bälle mehr.', 'bad');
       return;
+    }
+    // Im Duell heißt der Meisterball nach dem Pokémon, das ihn hergegeben hat.
+    if (run.mode === 'legenden' && U.ballDaten(run.duellArt)) {
+      balls = balls.map(function (it) {
+        if (it.id !== 'masterball') return it;
+        return {
+          id: it.id, kind: it.kind, name: U.ballName(run.duellArt),
+          desc: 'Von ' + T.species(dex.sp(run.duellArt)) + ' selbst erkämpft. Fängt sicher — und nur es.',
+          bild: U.ballDaten(run.duellArt).b
+        };
+      });
     }
     var box = U.modal({
       title: 'Welchen Ball?',
@@ -3466,6 +3500,11 @@
         // Eine Körpergröße führen die Daten nicht — sie stand hier als
         // »undefined m«, seit es diesen Bildschirm gibt.
         el('p', { className: 'muted', text: 'Generation ' + sp.g + ' · ' + sp.wt + ' kg' }),
+        // Wer eine Legende gefangen hat, hat es mit ihrem eigenen Ball getan.
+        (m.caught[sp.i] && U.ballDaten(sp.id)) ? el('p', { className: 'dex-ball' }, [
+          U.ballBild(sp.id, {}),
+          el('span', { text: 'Gefangen mit dem ' + U.ballName(sp.id) })
+        ]) : null,
         artRekordZeile(sp),
         el('p', { className: 'muted', text: 'Fähigkeiten: ' +
           mons.abilityOptions(sp).map(function (a) { return T.ability(a); }).join(', ') }),
@@ -3545,6 +3584,33 @@
       lohn.relikte || lohn.reroll || lohn.meisterball || lohn.shiny > 1);
   }
 
+  /**
+   * Die Vitrine: für jedes legendäre Pokémon ein Platz. Wer besiegt ist,
+   * steht mit seinem Ball darin; wer gefangen ist, grün hinterlegt. Die
+   * leeren Plätze sind der eigentliche Punkt — sie zeigen, was noch fehlt.
+   */
+  function ballVitrine() {
+    return el('div', {}, [1, 2, 3, 4, 5, 6, 7, 8, 9].map(function (gen) {
+      var liste = PL.Run.legendenDerGeneration(gen);
+      var region = PL.world.REGIONS[gen - 1];
+      return el('div', {}, [
+        el('p', { className: 'muted small', style: { marginBottom: '0' },
+          text: 'Generation ' + gen + ' · ' + region.name }),
+        el('div', { className: 'ball-vitrine' }, liste.map(function (sp) {
+          var st = meta.duellStand(sp.i);
+          var da = st.besiegt || st.gefangen;
+          return el('div', {
+            className: 'vitrine-platz' + (da ? '' : ' leer') + (st.gefangen ? ' gefangen' : ''),
+            title: T.species(sp) + (st.gefangen ? ' — gefangen' : st.ball ? ' — Ball bereit'
+              : st.besiegt ? ' — besiegt, Ball verbraucht' : ' — noch nicht besiegt')
+          }, [
+            da ? U.ballBild(sp.id, {}) : el('span', { className: 'muted', text: '·' })
+          ]);
+        }))
+      ]);
+    }));
+  }
+
   SCREENS.sammlung = function () {
     var marken = meta.meilensteine();
     var woche = meta.wochenStand();
@@ -3607,11 +3673,12 @@
         el('h3', { text: '🌟 Legendärer Run' }),
         el('p', { className: 'daily-gross', text: duell.gefangen + ' von ' + PL.Run.legendenGesamt() + ' gefangen' }),
         el('p', { className: 'muted small', text:
-          duell.besiegt + ' besiegt · ' + duell.baelle + ' ' +
-          (duell.baelle === 1 ? 'Meisterball' : 'Meisterbälle') + ' bereit' + (duell.frei ? ' · ' + duell.frei + ' davon für jede Legende' : '') }),
+          duell.besiegt + ' besiegt · ' +
+          (duell.baelle === 1 ? 'ein eigener Ball' : duell.baelle + ' eigene Bälle') + ' bereit' + (duell.frei ? ' · ' + duell.frei + ' davon für jede Legende' : '') }),
         el('p', { className: 'muted small', text:
-          'Der erste Sieg über ein legendäres Pokémon legt seinen Meisterball bereit — fangen kannst du es ' +
-          'erst, wenn du ein zweites Mal antrittst. Jeder Ball gehört dem Pokémon, das ihn hergegeben hat.' })
+          'Der erste Sieg über ein legendäres Pokémon legt seinen eigenen Ball bereit — fangen kannst du es ' +
+          'erst, wenn du ein zweites Mal antrittst. Jeder Ball gehört dem Pokémon, das ihn hergegeben hat.' }),
+        ballVitrine()
       ]),
 
       /* --- Die Wochenaufträge --- */
@@ -3973,8 +4040,8 @@
     fresh.forEach(function (a) { U.toast('Erfolg freigeschaltet: ' + a.name, 'good'); });
     App.neueMarken.forEach(function (ms) { U.toast('Sammelmarke: ' + ms.name + ' — ' + ms.lohnText, 'good'); });
     if (App.neuerMeisterball) {
-      U.toast('Ein Meisterball liegt jetzt für ' + T.species(dex.sp(run.duellArt)) +
-        ' bereit — tritt noch einmal an, um es zu fangen.', 'good');
+      U.toast('Der ' + U.ballName(run.duellArt) + ' liegt jetzt bereit — tritt noch einmal an, ' +
+        'um es zu fangen.', 'good');
     }
     App.wochenLohn.forEach(function (a) { U.toast('Wochenauftrag geschafft: ' + a.text, 'good'); });
     show('end');
@@ -3999,7 +4066,7 @@
       ? T.species(ziel) + ' gehört jetzt zu deinem Pokédex — und darf in kommenden Duellen dieser Generation mitkämpfen.'
       : ergebnis === 'sieg'
         ? (stand.ball
-          ? 'Sein Meisterball liegt bereit. Tritt noch einmal an, um ' + T.species(ziel) + ' zu fangen.'
+          ? 'Sein eigener Ball liegt bereit. Tritt noch einmal an, um ' + T.species(ziel) + ' zu fangen.'
           : 'Der Sieg zählt. Ein zweiter Ball fällt dafür aber nicht ab.')
         : ergebnis === 'flucht'
           ? 'Ein Duell, das man verlässt, gilt als verloren. ' + T.species(ziel) + ' wartet weiter.'
@@ -4007,7 +4074,10 @@
 
     return el('div', { className: 'end-screen duell-ende ' + (gewonnen ? 'won' : 'lost') }, [
       el('h2', { text: kopf }),
-      ziel ? el('div', { className: 'duell-ende-bild' }, [U.sprite(ziel, { className: 'duell-gegner-sprite' })]) : null,
+      ziel ? el('div', { className: 'duell-ende-bild' }, [
+        U.sprite(ziel, { className: 'duell-gegner-sprite' }),
+        stand.ball ? U.ballBild(ziel.id, { className: 'gross' }) : null
+      ]) : null,
       el('p', { className: 'muted', text: text }),
       el('div', { className: 'stat-grid' }, [
         stat('Runden', run.stats.turns),
