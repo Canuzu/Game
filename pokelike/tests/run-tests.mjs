@@ -2883,6 +2883,32 @@ section('Sammlung: Marken, Aufträge, Bestwerte');
   delete globalThis.localStorage;
 }
 
+section('Gezeichnete Zeichen');
+{
+  // Jedes Zeichen wird über seinen Namen geholt: U.sym('beutel'). Steht der
+  // Name nicht in css/symbole.css, zeichnet der Browser nichts — und zwar
+  // stumm, ohne Fehler. Diese Prüfung fängt den Tippfehler ab.
+  const css = readFileSync(join(SRC_DIR, '..', 'css', 'symbole.css'), 'utf8');
+  const vorhanden = new Set([...css.matchAll(/\.sym-([a-z]+)\s*\{/g)].map((m) => m[1]));
+  check('Die Zeichendatei ist gebaut', vorhanden.size > 20, vorhanden.size + ' Zeichen');
+
+  const quellen = ['app', 'ui', 'run'];
+  const text = quellen.map((f) => readFileSync(join(SRC_DIR, f + '.js'), 'utf8')).join('\n');
+  const benutzt = new Set([...text.matchAll(/\bsymText?\(\s*'([a-z]+)'/g)].map((m) => m[1]));
+  Object.keys(PL.Run.NODE_INFO).forEach((k) => benutzt.add(PL.Run.NODE_INFO[k].icon));
+  PL.Run.BLESSINGS.forEach((b) => benutzt.add(b.icon));
+  // Die Zeichen der Gegenstandsarten stehen in einer Tabelle in ui.js.
+  const ui = readFileSync(join(SRC_DIR, 'ui.js'), 'utf8');
+  const tafel = /var KIND_ICON = \{([\s\S]*?)\};/.exec(ui);
+  check('Die Tabelle der Gegenstandszeichen steht in ui.js', !!tafel);
+  [...(tafel ? tafel[1] : '').matchAll(/'([a-z]+)'/g)].forEach((m) => benutzt.add(m[1]));
+  const wahl = /function itemIcon\(item\) \{([\s\S]*?)\n  \}/.exec(ui);
+  [...(wahl ? wahl[1] : '').matchAll(/return '([a-z]+)'/g)].forEach((m) => benutzt.add(m[1]));
+  const fehlend = [...benutzt].filter((n) => !vorhanden.has(n));
+  check('Jedes benutzte Zeichen ist gezeichnet', fehlend.length === 0, fehlend.join(', '));
+  check('Mehr als ein Dutzend Stellen benutzen Zeichen', benutzt.size >= 20, benutzt.size + ' Namen');
+}
+
 /* ------------------------------------------------------------- Ergebnis -- */
 
 console.log('\n' + '─'.repeat(60));

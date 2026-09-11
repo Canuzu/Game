@@ -223,6 +223,24 @@
     return sp ? T.species(sp) + '-Ball' : 'Meisterball';
   }
 
+  /**
+   * Ein gezeichnetes Zeichen. »sym('beutel')« gibt ein Feld zurück, das sein
+   * Bild aus css/symbole.css holt und mit der Schrift mitwächst.
+   */
+  function sym(name, opts) {
+    opts = opts || {};
+    return el('span', {
+      className: 'sym sym-' + name + (opts.className ? ' ' + opts.className : ''),
+      title: opts.title || null,
+      'aria-hidden': opts.title ? null : 'true'
+    });
+  }
+
+  /** Zeichen und Beschriftung nebeneinander — der Regelfall für Knöpfe. */
+  function symText(name, text, opts) {
+    return [sym(name, opts), el('span', { text: text })];
+  }
+
   function monCard(mon, opts) {
     opts = opts || {};
     var sp = dex.sp(mon.sp), max = mons.maxHP(mon);
@@ -344,6 +362,8 @@
   }
 
   var CAT_ICON = { P: '💥', S: '✨', T: '🌀' };
+  /* Dieselben drei Angriffsarten, aber gezeichnet: Stoß, Wirbel, Spirale. */
+  var CAT_SYM = { P: 'faust', S: 'welle', T: 'spirale' };
   var CAT_NAME = { P: 'Physisch', S: 'Spezial', T: 'Status' };
 
   function moveRow(slot, opts) {
@@ -359,7 +379,7 @@
     }, [
       el('span', { className: 'move-type', style: { background: TYPE_COLOR[m.t] }, text: T.type(m.t) }),
       el('span', { className: 'move-name', text: T.move(m) }),
-      el('span', { className: 'move-cat', text: CAT_ICON[m.c], title: CAT_NAME[m.c] }),
+      sym(CAT_SYM[m.c] || 'spirale', { className: 'move-cat', title: CAT_NAME[m.c] }),
       el('span', { className: 'move-power', text: m.c === 'T' ? '—' : m.bp }),
       pp !== null ? el('span', { className: 'move-pp' + (pp === 0 ? ' empty' : ''), text: pp + '/' + maxPP }) : null
     ]);
@@ -477,7 +497,7 @@
       // es anstelle des Sinnbilds.
       item.bild
         ? el('img', { className: 'item-icon eigenball', src: item.bild, alt: '' })
-        : el('span', { className: 'item-icon', text: opts.icon || itemIcon(item) }),
+        : el('span', { className: 'item-icon' }, sym(opts.icon || itemIcon(item), { className: 'gross' })),
       el('div', { className: 'item-text' }, [
         el('strong', { text: item.name + (opts.count > 1 ? ' ×' + opts.count : '') }),
         el('span', { className: 'muted', text: item.desc || '' })
@@ -487,11 +507,15 @@
     ]);
   }
 
-  var KIND_ICON = { ball: '🔴', heal: '🧪', status: '💊', boost: '📈', hold: '🎒', evo: '💠', tm: '💿', special: '⭐' };
+  /* Welches gezeichnete Zeichen zu welcher Art Gegenstand gehört. Wie in den
+     Vorbildern steht das Zeichen für die Art, nicht für das einzelne Stück:
+     Alle Tränke sehen gleich aus, alle Bälle auch. */
+  var KIND_ICON = { ball: 'ball', heal: 'traenkchen', status: 'pille', boost: 'pfeilhoch',
+    hold: 'beutel', evo: 'stein', tm: 'scheibe', special: 'stern' };
   function itemIcon(item) {
-    if (item.berry) return '🍒';
-    if (item.mega) return '💎';
-    return KIND_ICON[item.kind] || '📦';
+    if (item.berry) return 'beere';
+    if (item.mega) return 'kristall';
+    return KIND_ICON[item.kind] || 'kiste';
   }
 
   PL.ui = {
@@ -503,6 +527,7 @@
     modal: modal, confirm: confirm, toast: toast,
     money: money, itemRow: itemRow, itemIcon: itemIcon,
     ballBild: ballBild, ballName: ballName, ballDaten: ballDaten,
-    TYPE_COLOR: TYPE_COLOR, CAT_ICON: CAT_ICON, CAT_NAME: CAT_NAME
+    sym: sym, symText: symText,
+    TYPE_COLOR: TYPE_COLOR, CAT_ICON: CAT_ICON, CAT_SYM: CAT_SYM, CAT_NAME: CAT_NAME
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

@@ -156,14 +156,19 @@
       });
       doc.body.appendChild(btn);
     }
-    var hidden = !imRun() || App.screen === 'end';
+    // Im Kampf gibt es den Automaten schon in der Aktionsreihe — ein zweiter
+    // Knopf über der Bühne wäre nur eine Abdeckung.
+    var hidden = !imRun() || App.screen === 'end' || App.screen === 'battle';
     btn.hidden = hidden;
+    doc.body.classList.toggle('automat-da', !hidden);
     btn.className = 'autopilot-btn' + (AUTO.on ? ' on' : '');
     btn.title = AUTO.on
       ? 'Reise-Automat läuft — hier ausschalten und wieder selbst spielen'
       : 'Reise-Automat: sucht den Weg, kämpft, kauft und entscheidet von allein';
     clear(btn);
-    btn.appendChild(el('span', { className: 'autopilot-icon', text: AUTO.on ? '⏸' : '🤖' }));
+    btn.appendChild(AUTO.on
+      ? U.sym('pause', { className: 'autopilot-icon' })
+      : U.sym('roboter', { className: 'autopilot-icon' }));
     btn.appendChild(el('span', { className: 'autopilot-label', text: AUTO.on ? 'Automat läuft' : 'Automat' }));
   }
 
@@ -276,6 +281,10 @@
     clear(head);
     faerbeRegion();
     var run = App.run;
+    // Zwei Schalter für das Aussehen: Läuft ein Run, trägt die Leiste Angaben
+    // und braucht den Platz; steht der Automat in der Ecke, hält der Inhalt
+    // darunter Abstand, damit der Knopf nichts zudeckt.
+    doc.body.classList.toggle('im-run', imRun());
     var left = el('div', { className: 'topbar-left' }, [
       el('button', {
         className: 'logo', type: 'button', title: 'Zum Hauptmenü',
@@ -291,46 +300,53 @@
       // geht und ob ein Meisterball bereitliegt.
       if (run.mode === 'legenden') {
         var gegner = dex.sp(run.duellArt);
-        mid.appendChild(el('span', { className: 'chip chip-region', title: 'Dein Gegner',
-          text: '🌟 ' + (gegner ? T.species(gegner) : 'Legende') }));
+        mid.appendChild(el('span', { className: 'chip chip-region', title: 'Dein Gegner' },
+          U.symText('stern', gegner ? T.species(gegner) : 'Legende')));
         var ballBild = U.ballBild(run.duellArt, { className: 'chip-ballbild' });
         mid.appendChild(el('span', { className: 'chip chip-ball',
           title: U.ballName(run.duellArt) + ' — nur damit lässt sich hier fangen' }, [
-          ballBild || el('span', { text: '🟣' }),
+          ballBild || U.sym('ball'),
           el('span', { text: ' ' + (run.bag.masterball || 0) })
         ]));
       } else {
-        mid.appendChild(el('span', { className: 'chip chip-region', text: '👑 ' + (run.leagueStage >= 0 ? 'Finale' : 'Region ' + (run.region + 1) + '/' + (run.mode === 'endlos' ? '∞' : run.totalRegions())) }));
-        mid.appendChild(el('span', { className: 'chip chip-money', text: '💰 ' + U.money(run.money) }));
+        mid.appendChild(el('span', { className: 'chip chip-region' },
+          U.symText('krone', run.leagueStage >= 0 ? 'Finale'
+            : 'Region ' + (run.region + 1) + '/' + (run.mode === 'endlos' ? '∞' : run.totalRegions()))));
+        mid.appendChild(el('span', { className: 'chip chip-money' }, U.symText('muenze', U.money(run.money))));
       }
       mid.appendChild(el('span', { className: 'chip chip-cap', title: 'Höchstes erreichbares Level' }, [
-        el('span', { text: '⬆\u00a0' }),
+        U.sym('pfeilhoch'),
         el('span', { className: 'cap-word', text: 'Lv ' }),
         el('span', { text: String(run.levelCap) })
       ]));
-      if (run.ascension && run.mode !== 'legenden') mid.appendChild(el('span', { className: 'chip warn',
-        text: '🔥 ' + meta.stufenName(run.ascension) }));
-      if (run.nuzlocke) mid.appendChild(el('span', { className: 'chip warn', text: '💀 Nuzlocke' }));
+      // Auf dem Handy bleibt von diesen beiden nur das Zeichen stehen —
+      // darum trägt jedes seinen Namen als Hinweis.
+      if (run.ascension && run.mode !== 'legenden') mid.appendChild(el('span', {
+        className: 'chip warn', title: meta.stufenName(run.ascension)
+      }, U.symText('lagerfeuer', meta.stufenName(run.ascension))));
+      if (run.nuzlocke) mid.appendChild(el('span', {
+        className: 'chip warn', title: 'Nuzlocke: Wer fällt, bleibt gefallen'
+      }, U.symText('totenkopf', 'Nuzlocke')));
     }
 
     var right = el('div', { className: 'topbar-right' });
     var mark = saveMark();
     if (mark) right.appendChild(mark);
     if (imRun()) {
-      right.appendChild(iconBtn('👥', 'Team', function () { show('team'); }));
-      right.appendChild(iconBtn('🎒', 'Beutel', function () { openBag(); }));
-      right.appendChild(iconBtn('🏛️', 'Relikte', function () { openRelics(); }));
+      right.appendChild(iconBtn('team', 'Team', function () { show('team'); }));
+      right.appendChild(iconBtn('beutel', 'Beutel', function () { openBag(); }));
+      right.appendChild(iconBtn('saeule', 'Relikte', function () { openRelics(); }));
     }
-    right.appendChild(iconBtn('☰', 'Menü', function () { openMenu(); }));
+    right.appendChild(iconBtn('menue', 'Menü', function () { openMenu(); }));
 
     head.appendChild(left);
     head.appendChild(mid);
     head.appendChild(right);
   }
 
-  function iconBtn(icon, title, onClick) {
+  function iconBtn(zeichen, title, onClick) {
     return el('button', { className: 'icon-btn', type: 'button', title: title, onclick: onClick }, [
-      el('span', { text: icon }), el('span', { className: 'icon-label', text: title })
+      U.sym(zeichen), el('span', { className: 'icon-label', text: title })
     ]);
   }
 
@@ -352,7 +368,7 @@
         autosave();
         show(App.screen === 'team' ? 'team' : 'map');
       }
-    }, '🧪 Schnellheilung');
+    }, U.symText('traenkchen', 'Schnellheilung'));
     return btn;
   }
 
@@ -1129,7 +1145,7 @@
 
     return el('div', { className: 'legenden-screen' }, [
       el('div', { className: 'legenden-kopf' }, [
-        el('h2', { text: '🌟 Legendärer Run' }),
+        el('h2', {}, U.symText('stern', 'Legendärer Run')),
         el('p', { className: 'muted', text:
           'Ein Duell gegen ein einzelnes legendäres Pokémon — der schwerste Kampf, den das Spiel zu bieten hat. ' +
           'Dein Team stellst du vorher zusammen, und zwar nur aus Arten derselben Generation, die in deinem ' +
@@ -1158,7 +1174,7 @@
 
     var gitter = el('div', { className: 'legenden-grid' }, liste.map(function (sp) {
       var st = meta.duellStand(sp.i);
-      var marke = st.gefangen ? '✓ gefangen' : st.ball ? 'Ball bereit' : st.besiegt ? '⚔ besiegt' : null;
+      var marke = st.gefangen ? '✓ gefangen' : st.ball ? 'Ball bereit' : st.besiegt ? 'besiegt' : null;
       // Der eigene Ball steht in der Ecke, sobald er verdient ist — bei einem
       // gefangenen Pokémon blass, denn der ist geworfen.
       var ball = (st.ball || st.gefangen)
@@ -1452,7 +1468,7 @@
       var row = run.map[r];
       var rowEl = el('div', { className: 'map-row' + (r === run.rowIndex ? ' current' : '') });
       row.forEach(function (node) {
-        var info = PL.Run.NODE_INFO[node.type] || { name: node.type, icon: '?' };
+        var info = PL.Run.NODE_INFO[node.type] || { name: node.type, icon: 'frage' };
         var isOpen = openSet[node.row + ':' + node.col];
         var isHere = run.pos && run.pos.row === node.row && run.pos.col === node.col;
         var btn = el('button', {
@@ -1462,7 +1478,7 @@
           title: info.name + ' — ' + info.desc,
           onclick: function () { enterNode(node.row, node.col); }
         }, [
-          el('span', { className: 'node-badge' }, el('span', { className: 'node-icon', text: info.icon })),
+          el('span', { className: 'node-badge' }, U.sym(info.icon, { className: 'node-icon' })),
           el('span', { className: 'node-name', text: info.name })
         ]);
         nodeEls[node.row + ':' + node.col] = btn;
@@ -1493,7 +1509,7 @@
         el('div', { className: 'region-progress' }, [
           el('span', { text: 'Route ' + Math.max(0, run.rowIndex + 1) + ' / ' + run.map.length }),
           run.bossHint
-            ? el('span', { className: 'hint', text: '🔎 ' + run.bossHint[0] + ' setzt auf ' + T.type(run.bossHint[1]) })
+            ? el('span', { className: 'hint' }, U.symText('lupe', run.bossHint[0] + ' setzt auf ' + T.type(run.bossHint[1])))
             : (run.leagueStage < 0 ? el('span', { text: 'Nur ein Weg führt zum Arenaleiter.' }) : null)
         ])
       ]),
@@ -1503,7 +1519,7 @@
         quickHealButton(),
         run.nuzlocke && run.graveyard && run.graveyard.length
           ? el('button', { className: 'btn small', type: 'button', onclick: openGraveyard },
-              '🪦 Friedhof (' + run.graveyard.length + ')')
+              U.symText('grab', 'Friedhof (' + run.graveyard.length + ')'))
           : null
       ]),
       partyStrip()
@@ -1722,7 +1738,7 @@
   /** Typenkompass: zeigt vor dem Kampf, was der Gegner im Ärmel hat. */
   function scoutPanel(bt) {
     return el('div', { className: 'scout' }, [
-      el('strong', { text: '🧭 Gegnerisches Team:' })
+      el('strong', {}, U.symText('kompass', 'Gegnerisches Team:'))
     ].concat(bt.sides[1].team.map(function (m) {
       var sp = dex.sp(m.sp);
       return el('span', { className: 'scout-mon' + (m.hp <= 0 ? ' out' : '') }, [
@@ -1773,7 +1789,9 @@
         }) : null
       ]),
       el('div', { className: 'frame-types' }, act.types.map(function (t) { return U.typeChip(t, true); })),
-      bar,
+      // »KP« vor dem Balken, wie in den Vorbildern — die Beschriftung kommt
+      // aus dem Stylesheet, damit sie nicht übersetzt werden muss.
+      el('div', { className: 'hp-wrap' }, bar),
       el('div', { className: 'frame-sub' }, [
         el('span', { className: 'hp-num', text: isMine ? mon.hp + ' / ' + max : Math.round(mon.hp / max * 100) + ' %' }),
         U.statusChip(mon.status),
@@ -1809,9 +1827,12 @@
     var bt = App.battle, f = bt.field;
     clear(BV.field);
     var chips = [];
-    if (f.weather) chips.push(el('span', { className: 'field-chip weather', text: '🌤 ' + T.weather(f.weather) + ' (' + f.weatherTurns + ')' }));
-    if (f.terrain) chips.push(el('span', { className: 'field-chip terrain', text: '🌐 ' + T.terrain(f.terrain) + ' (' + f.terrainTurns + ')' }));
-    if (f.trickroom) chips.push(el('span', { className: 'field-chip', text: '🔄 Bizarroraum (' + f.trickroom + ')' }));
+    if (f.weather) chips.push(el('span', { className: 'field-chip weather' },
+      U.symText('wetter', T.weather(f.weather) + ' (' + f.weatherTurns + ')', { className: 'klein' })));
+    if (f.terrain) chips.push(el('span', { className: 'field-chip terrain' },
+      U.symText('feld', T.terrain(f.terrain) + ' (' + f.terrainTurns + ')', { className: 'klein' })));
+    if (f.trickroom) chips.push(el('span', { className: 'field-chip' },
+      U.symText('wechseln', 'Bizarroraum (' + f.trickroom + ')', { className: 'klein' })));
     [0, 1].forEach(function (i) {
       var side = bt.sides[i], label = i === 0 ? 'Du' : 'Gegner', h = side.hazards, s = side.screens;
       if (h.stealthrock) chips.push(hazardChip(label, 'Tarnsteine'));
@@ -1827,7 +1848,8 @@
   }
 
   function hazardChip(who, what) {
-    return el('span', { className: 'field-chip hazard', text: (who === 'Du' ? '⬇ ' : '⬆ ') + what });
+    return el('span', { className: 'field-chip hazard' },
+      U.symText(who === 'Du' ? 'pfeilrunter' : 'pfeilhoch', what, { className: 'klein' }));
   }
 
   /* --- Protokoll abspielen ------------------------------------------------------- */
@@ -2040,7 +2062,7 @@
         el('span', { className: 'move-btn-name', text: T.move(m) }),
         el('span', { className: 'move-btn-meta' }, [
           el('span', { className: 'move-btn-type', text: T.type(zeigeTyp) }),
-          el('span', { text: U.CAT_ICON[m.c] }),
+          U.sym(U.CAT_SYM[m.c] || 'spirale', { title: U.CAT_NAME[m.c] }),
           el('span', { className: 'move-btn-pp', text: mv.pp + '/' + mv.maxPP })
         ])
       ]));
@@ -2075,11 +2097,11 @@
     clear(BV.actionRow);
     var busy = BV.busy;
 
-    BV.actionRow.appendChild(actionBtn('🔄 Wechseln', !busy && bt.canSwitch(0), function () { openSwitchDialog(); }));
-    BV.actionRow.appendChild(actionBtn('🎒 Beutel', !busy, function () { openBattleBag(); }));
+    BV.actionRow.appendChild(actionBtn(U.symText('wechseln', 'Wechseln'), !busy && bt.canSwitch(0), function () { openSwitchDialog(); }));
+    BV.actionRow.appendChild(actionBtn(U.symText('beutel', 'Beutel'), !busy, function () { openBattleBag(); }));
     if (bt.wild) {
-      BV.actionRow.appendChild(actionBtn('🔴 Ball', !busy, function () { openBallDialog(); }));
-      BV.actionRow.appendChild(actionBtn('🏃 Fliehen', !busy, function () { submitAction({ type: 'run' }); }));
+      BV.actionRow.appendChild(actionBtn(U.symText('ball', 'Ball'), !busy, function () { openBallDialog(); }));
+      BV.actionRow.appendChild(actionBtn(U.symText('fliehen', 'Fliehen'), !busy, function () { submitAction({ type: 'run' }); }));
     }
     // Verwandlung: Mega und Gigadynamax stehen nebeneinander, solange das
     // Pokémon sich noch nicht entschieden hat. Danach bleibt nur die Wahl.
@@ -2109,7 +2131,7 @@
         renderActions();
         if (App.autoPlay && !BV.busy) awaitInput();
       }
-    }, App.autoPlay ? '⚡ Auto AN' : '⚡ Auto'));
+    }, U.symText('blitz', App.autoPlay ? 'Auto AN' : 'Auto')));
   }
 
   function submitAction(action) {
@@ -2330,7 +2352,7 @@
         var fresh = run.reroll();
         if (fresh) { sfx('select'); openScene(fresh); }
       }
-    }, '🔁 Neu würfeln');
+    }, U.symText('wechseln', 'Neu würfeln'));
   }
 
   function sceneFrame(title, subtitle, body, actions) {
@@ -2530,7 +2552,7 @@
     var grid = el('div', { className: 'relic-grid' }, scene.offers.map(function (b) {
       return el('button', { className: 'relic-card r-episch', type: 'button',
         onclick: function () { take(b); } }, [
-        el('span', { className: 'relic-icon', text: b.icon }),
+        U.sym(b.icon, { className: 'relic-icon' }),
         el('strong', { text: b.name }),
         el('span', { className: 'relic-rarity', text: 'Segen' }),
         el('span', { className: 'muted', text: b.desc })
@@ -2666,7 +2688,8 @@
       backToMap();
     };
 
-    var sellBtn = el('button', { className: 'btn', type: 'button', onclick: function () { openSellDialog(draw); } }, '💱 Verkaufen');
+    var sellBtn = el('button', { className: 'btn', type: 'button', onclick: function () { openSellDialog(draw); } },
+      U.symText('muenze', 'Verkaufen'));
 
     return sceneFrame('Händler', scene.text, [
       el('p', { className: 'muted', text: 'Dein Geld: ' + U.money(run.money) }),
@@ -2994,9 +3017,9 @@
   /** Steht bei diesem Pokémon gerade eine Entwicklung an? */
   function evolveHint(mon) {
     var list = mons.evolutions(mon, { items: App.run.bag });
-    if (!list.length) return { label: '💠 Entwickeln', bereit: false, moeglich: false };
+    if (!list.length) return { label: 'Entwickeln', zeichen: 'stein', bereit: false, moeglich: false };
     var bereit = list.some(function (e) { return e.ready; });
-    return { label: bereit ? '✨ Entwickeln!' : '💠 Entwickeln', bereit: bereit, moeglich: true };
+    return { label: bereit ? 'Entwickeln!' : 'Entwickeln', zeichen: bereit ? 'funken' : 'stein', bereit: bereit, moeglich: true };
   }
 
   /* ---------- 6) Team ---------------------------------------------------------------- */
@@ -3054,9 +3077,11 @@
       detail.appendChild(U.monDetail(mon));
       detail.appendChild(el('div', { className: 'team-tools' }, [
         el('button', { className: 'btn', type: 'button', onclick: function () { openHoldItem(mon, drawDetail); } },
-          mon.item ? '🎒 ' + PL.items.label(mon.item) + ' abnehmen/tauschen' : '🎒 Gegenstand geben'),
-        el('button', { className: 'btn', type: 'button', onclick: function () { openUseItem(mon, drawDetail); } }, '🧪 Gegenstand benutzen'),
-        el('button', { className: 'btn', type: 'button', onclick: function () { openTeachTM(mon, drawDetail); } }, '💿 TM beibringen'),
+          U.symText('beutel', mon.item ? PL.items.label(mon.item) + ' abnehmen/tauschen' : 'Gegenstand geben')),
+        el('button', { className: 'btn', type: 'button', onclick: function () { openUseItem(mon, drawDetail); } },
+          U.symText('traenkchen', 'Gegenstand benutzen')),
+        el('button', { className: 'btn', type: 'button', onclick: function () { openTeachTM(mon, drawDetail); } },
+          U.symText('scheibe', 'TM beibringen')),
         (function () {
           var hint = evolveHint(mon);
           return el('button', {
@@ -3064,7 +3089,7 @@
             disabled: !hint.moeglich,
             title: hint.moeglich ? '' : 'Diese Art entwickelt sich nicht weiter',
             onclick: function () { openEvolveDialog(function () { drawList(); drawDetail(); }, mon); }
-          }, hint.label);
+          }, U.symText(hint.zeichen, hint.label));
         })(),
         sel.index > 0 ? el('button', {
           className: 'btn', type: 'button', title: 'Alternative zum Ziehen',
@@ -3074,7 +3099,7 @@
             sel.index--;
             drawList(); drawDetail(); autosave();
           }
-        }, '⬆ Nach vorn') : null,
+        }, U.symText('pfeilhoch', 'Nach vorn')) : null,
         run.party.length > 1 ? el('button', {
           className: 'btn danger', type: 'button',
           onclick: function () {
@@ -3084,7 +3109,7 @@
               drawList(); drawDetail(); autosave();
             });
           }
-        }, '📦 In die Box') : null
+        }, U.symText('kiste', 'In die Box')) : null
       ]));
     }
 

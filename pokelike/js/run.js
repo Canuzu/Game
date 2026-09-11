@@ -89,21 +89,21 @@
   };
 
   var NODE_INFO = {
-    wild: { name: 'Wildes Pokémon', icon: '🌿', desc: 'Ein wildes Pokémon — fangen oder besiegen.' },
-    trainer: { name: 'Trainerkampf', icon: '🎽', desc: 'Ein Trainer will kämpfen. Bringt Geld.' },
-    elite: { name: 'Starker Trainer', icon: '⚔️', desc: 'Ein Ass-Trainer mit vollem Team. Gute Belohnung.' },
-    catch: { name: 'Begegnung', icon: '🫱', desc: 'Ein Pokémon steht zur Wahl.' },
-    item: { name: 'Fundstück', icon: '🎁', desc: 'Ein Gegenstand liegt bereit.' },
-    shop: { name: 'Händler', icon: '🛒', desc: 'Kaufen und verkaufen.' },
-    rest: { name: 'Rastplatz', icon: '🔥', desc: 'Heilen, entwickeln oder trainieren.' },
-    rival: { name: 'Rivale', icon: '🧢', desc: 'Dein Rivale stellt sich dir wieder in den Weg.' },
-    legend: { name: 'Legendäre Spur', icon: '✨', desc: 'Etwas Seltenes hält sich hier auf. Fangen erlaubt.' },
-    legendboss: { name: 'Legende', icon: '🌟', desc: 'Eine Legende stellt sich dir. Es gibt keinen Weg daran vorbei.' },
-    event: { name: 'Ereignis', icon: '❓', desc: 'Etwas Ungewöhnliches.' },
-    relic: { name: 'Schrein', icon: '🏛️', desc: 'Ein Relikt zur Auswahl.' },
-    boss: { name: 'Arenaleiter', icon: '🏅', desc: 'Der Weg aus der Region führt nur hier hindurch.' },
-    e4: { name: 'Top Vier', icon: '👑', desc: 'Ein Mitglied der Top Vier.' },
-    champ: { name: 'Champ', icon: '🏆', desc: 'Das letzte Duell.' }
+    wild: { name: 'Wildes Pokémon', icon: 'gras', desc: 'Ein wildes Pokémon — fangen oder besiegen.' },
+    trainer: { name: 'Trainerkampf', icon: 'trikot', desc: 'Ein Trainer will kämpfen. Bringt Geld.' },
+    elite: { name: 'Starker Trainer', icon: 'schwerter', desc: 'Ein Ass-Trainer mit vollem Team. Gute Belohnung.' },
+    catch: { name: 'Begegnung', icon: 'pfote', desc: 'Ein Pokémon steht zur Wahl.' },
+    item: { name: 'Fundstück', icon: 'geschenk', desc: 'Ein Gegenstand liegt bereit.' },
+    shop: { name: 'Händler', icon: 'korb', desc: 'Kaufen und verkaufen.' },
+    rest: { name: 'Rastplatz', icon: 'lagerfeuer', desc: 'Heilen, entwickeln oder trainieren.' },
+    rival: { name: 'Rivale', icon: 'kappe', desc: 'Dein Rivale stellt sich dir wieder in den Weg.' },
+    legend: { name: 'Legendäre Spur', icon: 'funken', desc: 'Etwas Seltenes hält sich hier auf. Fangen erlaubt.' },
+    legendboss: { name: 'Legende', icon: 'stern', desc: 'Eine Legende stellt sich dir. Es gibt keinen Weg daran vorbei.' },
+    event: { name: 'Ereignis', icon: 'frage', desc: 'Etwas Ungewöhnliches.' },
+    relic: { name: 'Schrein', icon: 'saeule', desc: 'Ein Relikt zur Auswahl.' },
+    boss: { name: 'Arenaleiter', icon: 'orden', desc: 'Der Weg aus der Region führt nur hier hindurch.' },
+    e4: { name: 'Top Vier', icon: 'krone', desc: 'Ein Mitglied der Top Vier.' },
+    champ: { name: 'Champ', icon: 'pokal', desc: 'Das letzte Duell.' }
   };
 
   /* ---------- 1) Anlegen ------------------------------------------------------ */
@@ -609,19 +609,19 @@
    * -------------------------------------------------------------------------- */
 
   var BLESSINGS = [
-    { id: 'vollheilung', name: 'Atempause', icon: '💚',
+    { id: 'vollheilung', name: 'Atempause', icon: 'herz',
       desc: 'Das ganze Team wird geheilt, wiederbelebt und bekommt volle AP.' },
-    { id: 'relikt', name: 'Fund der Runde', icon: '🏛️',
+    { id: 'relikt', name: 'Fund der Runde', icon: 'saeule',
       desc: 'Ein Relikt aus dreien zur Wahl.' },
-    { id: 'levelschub', name: 'Höheres Ziel', icon: '⬆️',
+    { id: 'levelschub', name: 'Höheres Ziel', icon: 'pfeilhoch',
       desc: 'Die Levelgrenze steigt dauerhaft um fünf.' },
-    { id: 'fleiss', name: 'Hartes Training', icon: '💪',
+    { id: 'fleiss', name: 'Hartes Training', icon: 'faust',
       desc: '+60 Fleißpunkte auf den besten Wert jedes Teammitglieds.' },
-    { id: 'legende', name: 'Ruf der Legende', icon: '✨',
+    { id: 'legende', name: 'Ruf der Legende', icon: 'funken',
       desc: 'Ein legendäres Pokémon schließt sich dir an.' },
-    { id: 'reichtum', name: 'Schatzkammer', icon: '💰',
+    { id: 'reichtum', name: 'Schatzkammer', icon: 'muenze',
       desc: '10 000 ₽ auf die Hand.' },
-    { id: 'apotheke', name: 'Feldapotheke', icon: '🧰',
+    { id: 'apotheke', name: 'Feldapotheke', icon: 'traenkchen',
       desc: 'Fünf Hypertränke, drei Beleber, zwei Top-Genesungen.' }
   ];
 

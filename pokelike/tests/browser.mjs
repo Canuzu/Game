@@ -1054,6 +1054,39 @@ console.log('\nHandy');
   });
   await fits('Karte mit vollem Team');
 
+  /* Die Kopfleiste war die engste Stelle des Handybildes: Geld, Levelgrenze,
+     Stufe, Nuzlocke und vier Knöpfe standen in einer Zeile, und die letzte
+     Angabe wurde mittendurch abgeschnitten. Jetzt stehen die Knöpfe oben und
+     die Angaben darunter — nichts darf mehr überstehen. */
+  const leiste = await phone.evaluate(() => {
+    const App = globalThis.PokelikeApp;
+    App.run.ascension = 3; App.run.nuzlocke = true; App.run.money = 1234567;
+    App.show('map');
+    const bar = document.querySelector('#topbar');
+    const mid = document.querySelector('.topbar-mid');
+    return {
+      leisteScroll: bar.scrollWidth, leisteSicht: bar.clientWidth,
+      midScroll: mid.scrollWidth, midSicht: mid.clientWidth
+    };
+  });
+  check('In der Kopfleiste wird nichts abgeschnitten',
+    leiste.midScroll <= leiste.midSicht + 1 && leiste.leisteScroll <= leiste.leisteSicht + 1,
+    leiste.midScroll + ' > ' + leiste.midSicht);
+
+  /* Der schwebende Automat deckte im Laden die Verkaufen-Zeile zu. Jetzt
+     hält der Inhalt darunter Platz frei. */
+  const automat = await phone.evaluate(() => {
+    const App = globalThis.PokelikeApp, run = App.run;
+    App.show('scene', { type: 'shop', scene: run.makeShop(run.rng) });
+    const knopf = document.querySelector('#autopilot');
+    const schirm = document.querySelector('#screen');
+    const luft = parseFloat(getComputedStyle(schirm).paddingBottom);
+    return { da: !knopf.hidden, hoch: Math.round(knopf.getBoundingClientRect().height), luft: Math.round(luft) };
+  });
+  check('Unter dem Automaten bleibt Platz frei',
+    automat.da && automat.luft >= automat.hoch, automat.luft + ' Punkte für ' + automat.hoch);
+  await phone.evaluate(() => globalThis.PokelikeApp.show('map'));
+
   await phone.evaluate(() => {
     const App = globalThis.PokelikeApp;
     App.battle = App.run.makeTrainer(App.run.rng, {});
@@ -1074,6 +1107,8 @@ console.log('\nHandy');
   check('Der Kampf passt auf einen Bildschirm ohne Scrollen',
     battle.scrollH <= battle.innerH + 2, battle.scrollH + ' > ' + battle.innerH);
   check('Attackenkacheln sind groß genug zum Tippen', battle.move >= 44, battle.move + ' px');
+  check('Im Kampf schwebt kein zweiter Automat über der Bühne',
+    await phone.evaluate(() => document.querySelector('#autopilot').hidden));
   check('Die Aktionsknöpfe auch', battle.action >= 44, battle.action + ' px');
 
   // Dialoge steigen von unten auf und lassen sich mit einem Griff schließen

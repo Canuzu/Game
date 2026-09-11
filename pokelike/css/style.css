@@ -461,6 +461,9 @@ button { font: inherit; color: inherit; }
 .node-name {
   font-size: 20px; text-align: center; line-height: 1.2;
   color: var(--text); text-shadow: 0 1px 3px var(--bg);
+  /* Der Name bleibt im Feld des Knotens. Vorher lief »Trainerkampf« über
+     den Rand hinaus und stieß auf der Karte an den Namen daneben. */
+  max-width: 100%; overflow-wrap: anywhere; hyphens: auto;
 }
 .map-node.open { opacity: 1; cursor: pointer; }
 .map-node.open .node-badge {
@@ -1148,9 +1151,30 @@ button.move-row:hover { border-color: var(--accent); }
 
 @media (max-width: 560px) {
 
-  /* --- Kopfzeile: eine Zeile, die Angaben in der Mitte schiebbar --- */
+  /* --- Satz: enger, damit mehr aufs Bild passt ---
+     Die Pixelschrift zeichnet ihre Buchstaben in der oberen Hälfte der
+     Zeile. Mit 1,6 Zeilen Abstand stand deshalb zwischen zwei Zeilen mehr
+     Luft als Buchstabe, und eine dreizeilige Beschreibung wurde so hoch wie
+     eine ganze Karte. 1,4 × 20 px = 28 px bleibt ein glattes Maß. */
+  body { line-height: 1.4; }
+  p { margin: .5rem 0; }
+  h1 { font-size: 40px; }
+  h2 { font-size: 30px; }
+  .region-header { padding: .6rem .7rem; margin-bottom: .6rem; }
+  .region-header h2 { margin-bottom: .15em; }
+  .region-header p { margin: 0 0 .3rem; }
+  .region-progress { gap: .2rem .8rem; }
+  .map-stage { padding: 1rem .6rem; }
+
+  /* Listenzeilen: Bild, Name, Beschreibung, Preis — enger gesetzt, damit
+     vier Angebote auf den Schirm passen statt zweieinhalb. */
+  .item-row { padding: .35rem .45rem; gap: .45rem; }
+  .item-text span { line-height: 1.25; }
+  .item-row .muted { line-height: 1.25; }
+
+  /* --- Kopfzeile: oben die Knöpfe, darunter die Angaben --- */
   #topbar {
-    gap: .4rem;
+    gap: .3rem;
     padding: .4rem max(.5rem, env(safe-area-inset-right)) .4rem max(.5rem, env(safe-area-inset-left));
     /* Deckend statt durchscheinend: auf dem Handy scrollt der Inhalt direkt
        darunter durch und wäre sonst durch die Leiste hindurch zu lesen. */
@@ -1158,21 +1182,45 @@ button.move-row:hover { border-color: var(--accent); }
   }
   .topbar-left, .topbar-right { flex: 0 0 auto; }
   .topbar-left .logo > span:last-child { display: none; }   /* nur der Ball */
+  /* Im Run steht die Leiste auf zwei Zeilen: oben die vier Knöpfe über die
+     ganze Breite, darunter Geld und Levelgrenze. Alles in eine Zeile zu
+     zwingen ging auf 390 Punkten gerade so auf und auf schmaleren Geräten
+     gar nicht — dann wurde die letzte Angabe mittendurch abgeschnitten. */
+  #topbar { flex-wrap: wrap; row-gap: .3rem; }
+  body.im-run .topbar-right { flex: 1 1 100%; }
+  body.im-run .topbar-right .icon-btn { flex: 1 1 0; }
+  body.im-run .topbar-mid { order: 2; flex: 1 1 100%; }
+  /* Läuft ein Run, braucht die Leiste jeden Punkt für Geld, Levelgrenze und
+     die vier Knöpfe. Der Ball links führt ins Hauptmenü — das tut der
+     Menüknopf rechts auch, also weicht er. */
+  body.im-run .topbar-left { display: none; }
   .topbar-mid {
     flex: 1 1 auto; min-width: 0;
     flex-wrap: nowrap; justify-content: flex-start;
-    overflow-x: auto; overscroll-behavior-x: contain;
-    scrollbar-width: none;
+    overflow: hidden;
+    gap: .35rem;
   }
-  .topbar-mid::-webkit-scrollbar { display: none; }
   .topbar-mid > * { flex: 0 0 auto; }
   /* In die Kopfzeile passen auf dem Handy zwei Angaben. Es werden die
      beiden, die man ständig braucht: Geld und Levelgrenze. Region und Route
      stehen ohnehin groß über der Karte. */
   .topbar-mid .region-badge, .topbar-mid .chip-region { display: none; }
+  /* Vorher trug jede Angabe ihren eigenen Rahmen. Zusammen mit den vier
+     Knöpfen war die Leiste damit breiter als das Gerät, und die letzte
+     Angabe wurde mittendurch abgeschnitten. Auf dem Handy stehen die
+     Angaben deshalb frei in der Leiste: Zeichen, Zahl, fertig. */
+  #topbar .chip {
+    background: none; border: 0; padding: 0; gap: .25rem;
+    font-size: 20px; color: var(--text);
+  }
   .chip { font-size: 20px; padding: .16rem .42rem; }
   .chip-cap .cap-word { display: none; }          /* „⬆ 16“ genügt */
-  .icon-btn { padding: .4rem .55rem; min-width: 44px; justify-content: center; }
+  /* Stufe und Nuzlocke stehen den ganzen Run über fest. Auf dem Handy
+     genügt dafür das Zeichen — die Worte »Stufe 3 — Prüfung« waren allein
+     breiter als Geld und Levelgrenze zusammen. */
+  #topbar .chip.warn > *:not(.sym) { display: none; }
+  .icon-btn { padding: .35rem .3rem; min-width: 38px; justify-content: center; }
+  #topbar .icon-btn .sym { width: 1.2em; height: 1.2em; }
 
   #screen {
     padding: .7rem max(.6rem, env(safe-area-inset-left)) calc(2.2rem + env(safe-area-inset-bottom))
@@ -1180,7 +1228,7 @@ button.move-row:hover { border-color: var(--accent); }
   }
 
   /* --- Karte --- */
-  .map-node { width: 74px; }
+  .map-node { width: 84px; }
   .node-badge { width: 46px; height: 46px; }
   .node-icon { font-size: 20px; }
   .node-name { font-size: 20px; }
@@ -1215,13 +1263,6 @@ button.move-row:hover { border-color: var(--accent); }
   .action-row { gap: .3rem; flex-wrap: wrap; }
   .action-row > * { flex: 1 1 auto; justify-content: center; }
   .action-btn { padding: .35rem .5rem; font-size: 20px; }
-  /* Der Reise-Automat deckte auf dem Handy die Aktionszeile zu. Im Kampf
-     rückt er nach oben an den Rand der Bühne. */
-  body[data-screen="battle"] .autopilot-btn {
-    bottom: auto; top: calc(3.4rem + env(safe-area-inset-top));
-    padding: .35rem .45rem;
-  }
-  body[data-screen="battle"] .autopilot-label { display: none; }
 
   .mon-art { width: 152px; height: 152px; }
   .slot-enemy .mon-art { width: 132px; height: 132px; }
@@ -1270,6 +1311,12 @@ button.move-row:hover { border-color: var(--accent); }
   .autopilot-label { display: none; }
 
   /* --- Listen und Raster --- */
+  /* Zwei Fortschrittszeilen nebeneinander: Der Balken gibt nach, damit
+     »Gen 1« und »0/151« nicht in die Nachbarspalte laufen. */
+  .dex-gens { grid-template-columns: 1fr 1fr; gap: .2rem .5rem; }
+  .dex-gen { gap: .3rem; }
+  .dex-gen .mini-bar { flex: 1 1 0; min-width: 20px; width: auto; }
+
   .dex-grid { grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); }
   .dex-cell img, .dex-silhouette { width: 48px; height: 48px; }
   .switch-row, .switch-grid { grid-template-columns: minmax(0, 1fr); }
@@ -1296,7 +1343,9 @@ button.move-row:hover { border-color: var(--accent); }
     position: sticky; bottom: 0; z-index: 5;
     margin: .8rem -.6rem calc(-2.2rem - env(safe-area-inset-bottom));
     padding: .6rem .6rem calc(.6rem + env(safe-area-inset-bottom));
-    background: color-mix(in srgb, var(--bg) 94%, transparent);
+    /* Deckend: Die Leiste steht über der Liste, und durchscheinender Text
+       darunter sah nach Fehler aus. */
+    background: var(--bg);
     border-top: 2px solid var(--frame-edge);
   }
   .newrun-actions .btn { flex: 1; justify-content: center; }
@@ -2040,6 +2089,17 @@ button.move-row:hover { border-color: var(--accent); }
 }
 /* Der Automat versteckt sich per hidden — ohne das gewinnt display:flex. */
 .autopilot-btn[hidden] { display: none !important; }
+/* Der Knopf schwebt über allem. Damit er nicht die letzte Zeile eines
+   Bildschirms zudeckt — die Verkaufen-Zeile im Laden, die unterste Reihe der
+   Karte —, hält der Inhalt so viel Abstand nach unten frei, wie der Knopf
+   hoch ist. */
+body.automat-da #screen { padding-bottom: calc(4.6rem + env(safe-area-inset-bottom)); }
+
+/* Ein Zeichen in einer Knopfreihe bekommt seinen Abstand vom Zwischenraum der
+   Reihe. Steht es dagegen mitten im Text — in einer Überschrift, in einer
+   Zeile Fließtext —, gibt es keinen Zwischenraum, und Zeichen und Wort
+   kleben aneinander. Dort bringt es den Abstand selbst mit. */
+:where(h1, h2, h3, h4, p, strong, li, .hint, .marke-lohn) > .sym { margin-right: .3em; }
 
 /* --- Die eigenen Bälle der Legenden --- */
 .eigenball {
@@ -2088,3 +2148,103 @@ button.move-row:hover { border-color: var(--accent); }
 }
 .chip-ball { display: inline-flex; align-items: center; gap: .15rem; }
 .chip-ballbild { width: 22px; height: 22px; }
+
+/* =============================================================================
+ * Der Kampf in der Fassung der Vorbilder
+ * -----------------------------------------------------------------------------
+ * Drei Dinge sind hier neu, und alle drei kommen aus derselben Beobachtung:
+ * Es sah alles gleich wichtig aus, die Flächen waren leeres Weiß, und die
+ * Zeichen waren Emoji aus dem Betriebssystem.
+ *
+ *  1) Rangfolge. Die vier Attackenkacheln sind die Hauptsache und tragen
+ *     jetzt ihre Typfarbe als Platte mit dunklem Rand. Die Aktionszeile ist
+ *     Nebensache: schmaler, ohne Füllung. AP, Art und Typ sind Beiwerk.
+ *  2) Textur. Fenster bekommen die doppelte Fassung der Vorbilder — außen
+ *     dunkel, innen hell — und einen feinen Streifen statt reinem Weiß.
+ *  3) Gezeichnete Zeichen statt Emoji (css/symbole.css).
+ * ========================================================================== */
+
+/* --- Die gezeichneten Zeichen in Knöpfen --- */
+.action-btn, .icon-btn, .btn { display: inline-flex; align-items: center; gap: .35rem; }
+.icon-btn .sym { width: 1.2em; height: 1.2em; vertical-align: -0.22em; }
+.autopilot-icon.sym { width: 1.3em; height: 1.3em; }
+.move-cat.sym, .move-btn-meta .sym { width: 1.05em; height: 1.05em; }
+.chip .sym { width: 1.05em; height: 1.05em; }
+
+/* --- 1) Rangfolge: die Attacken sind die Hauptsache --- */
+.move-btn {
+  /* Die Typfarbe trägt die Kachel, nicht nur einen Hauch davon. Der Rand ist
+     dunkel wie im Vorbild, die Fläche darunter hell genug für schwarze
+     Schrift. */
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--move-color) 34%, var(--panel)) 0 42%,
+      color-mix(in srgb, var(--move-color) 18%, var(--panel)) 42% 100%);
+  border: 2px solid color-mix(in srgb, var(--move-color) 70%, #101418);
+  min-height: 62px;
+}
+.move-btn-name { font-size: 20px; font-weight: 700; color: var(--text); }
+.move-btn-type { color: color-mix(in srgb, var(--move-color) 65%, var(--text)); font-weight: 650; }
+.move-btn-pp { color: var(--muted); }
+.move-btn:disabled { filter: grayscale(.75); }
+
+/* Die Aktionszeile ist Nebensache: kleiner, heller, ohne Farbe. */
+.action-btn {
+  background: var(--panel);
+  border: 2px solid var(--line);
+  font-size: 20px;
+  padding: .38rem .7rem;
+}
+.action-btn.mega { font-weight: 650; }
+
+/* --- 2) Textur: Fenster wie in den Vorbildern --- */
+.battle-log, .mon-frame {
+  background:
+    repeating-linear-gradient(180deg,
+      rgba(255, 255, 255, .55) 0 2px,
+      color-mix(in srgb, var(--innen) 8%, transparent) 2px 4px),
+    var(--panel);
+}
+[data-app-theme="dark"] .battle-log, [data-app-theme="dark"] .mon-frame,
+[data-theme="dark"] .battle-log, [data-theme="dark"] .mon-frame {
+  background:
+    repeating-linear-gradient(180deg,
+      rgba(255, 255, 255, .05) 0 2px,
+      rgba(0, 0, 0, .12) 2px 4px),
+    var(--panel);
+}
+/* Das Textfenster trägt die doppelte Fassung: außen dunkel, innen hell. */
+.battle-log {
+  border: 2px solid var(--rahmen);
+  box-shadow:
+    inset 0 0 0 2px var(--panel),
+    inset 0 0 0 4px color-mix(in srgb, var(--innen) 55%, var(--panel)),
+    var(--versatz) var(--versatz) 0 var(--relief);
+  padding: .7rem .9rem;
+}
+
+/* --- 3) Die Anzeige über dem Pokémon, in der Fassung der Vorbilder --- */
+.mon-frame {
+  border: 2px solid var(--rahmen);
+  box-shadow:
+    inset 0 0 0 2px var(--panel),
+    2px 2px 0 rgba(0, 0, 0, .35);
+  padding: .3rem .5rem;
+}
+/* Der Lebensbalken bekommt seine Rille: dunkler Grund, heller Rand darüber. */
+.mon-frame .hp-bar, .mon-card .hp-bar {
+  height: 8px;
+  background: #3c4450;
+  border: 1px solid #171c24;
+  box-shadow: inset 0 1px 0 rgba(0, 0, 0, .45);
+}
+.hp-fill.good { background: linear-gradient(180deg, #7ee08a 0 45%, #40b455 45% 100%); }
+.hp-fill.warn { background: linear-gradient(180deg, #f4d271 0 45%, #d2a318 45% 100%); }
+.hp-fill.bad  { background: linear-gradient(180deg, #f08a84 0 45%, #d23c30 45% 100%); }
+/* »KP« vor dem Balken — so steht es in den Spielen. */
+.hp-wrap { display: flex; align-items: center; gap: .3rem; }
+.hp-wrap::before {
+  content: 'KP'; font-size: 20px; font-weight: 700;
+  color: var(--gold-tief, #7a5a10); letter-spacing: .04em;
+}
+.hp-wrap .hp-bar { flex: 1 1 auto; }
