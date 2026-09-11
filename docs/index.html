@@ -2315,7 +2315,7 @@ button.move-row:hover { border-color: var(--accent); }
   var PL = root.PL || (root.PL = {});
 
   // Diese Zeile ersetzt tools/build-single.mjs beim Bauen.
-  var BUILD = '20260911T143519Z-ddbd220';
+  var BUILD = '20260911T145606Z-ea09599';
 
   var TRIED_KEY = 'pokelike.plus.update.versucht';
   var state = { build: BUILD, latest: null, checking: false, stuck: false };
@@ -19010,9 +19010,6 @@ button.move-row:hover { border-color: var(--accent); }
               submitAction({ type: 'ball', item: 'masterball' });
             } else {
               run.removeItem(it.id, 1);
-              // Ein geworfener Meisterball ist sofort weg — auch dann, wenn
-              // der Kampf noch läuft oder das Fenster gleich zugeht.
-              synchronisiereMeisterbaelle();
               submitAction({ type: 'ball', item: it.id });
             }
           }

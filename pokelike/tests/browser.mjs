@@ -467,6 +467,68 @@ await page.waitForSelector('.asc-box');
     await page.locator('.asc-value').innerText());
 }
 
+// Einen Ball werfen — der Weg, auf dem gefangen wird
+{
+  await page.evaluate(() => {
+    PL.meta.reset();
+    const run = new PL.Run({ seed: 42, starter: 'bulbasaur' });
+    run.addItem('masterball', 3);
+    globalThis.PokelikeApp.run = run;
+    const bt = run.makeWild(run.rng, {});
+    run.setScene({ kind: 'battle', battle: bt, node: { row: 0, col: 0, type: 'wild' } });
+    globalThis.PokelikeApp.battle = bt;
+    bt.start();
+    globalThis.PokelikeApp.show('battle');
+  });
+  await page.waitForSelector('.battle');
+  check('Im wilden Kampf lässt sich fangen',
+    await page.evaluate(() => globalThis.PokelikeApp.battle.canCatch === true));
+
+  await page.getByRole('button', { name: /Ball/ }).first().click();
+  await page.waitForSelector('.modal .item-row');
+  const ballReihen = await page.locator('.modal .item-row').count();
+  check('Die Ballauswahl zeigt die Bälle aus dem Beutel', ballReihen >= 2, String(ballReihen));
+
+  // Den Meisterball werfen: Er fängt sicher, also ist der Ausgang eindeutig.
+  const balleVorher = await page.evaluate(() => globalThis.PokelikeApp.run.bag.masterball);
+  await page.locator('.modal .item-row').filter({ hasText: 'Meisterball' }).first().click();
+  // Der Wurf wird ausgespielt — gewartet wird auf das Ergebnis, nicht auf die Uhr.
+  await page.waitForFunction(() => {
+    const bt = globalThis.PokelikeApp.battle;
+    return bt && (bt.ended || bt.outcome);
+  }, null, { timeout: 15000 }).catch(() => {});
+  const nachWurf = await page.evaluate(() => {
+    const bt = globalThis.PokelikeApp.battle, run = globalThis.PokelikeApp.run;
+    return {
+      geworfen: bt.log.some((e) => e.k === 'ball'),
+      ausgang: bt.outcome,
+      baelle: run.bag.masterball || 0,
+      art: bt.caught ? PL.dex.sp(bt.caught.sp).id : null
+    };
+  });
+  check('Der Wurf landet wirklich im Kampf', nachWurf.geworfen === true);
+  check('Der Meisterball fängt', nachWurf.ausgang === 'caught', String(nachWurf.ausgang));
+  check('… der Ball ist danach verbraucht', nachWurf.baelle === balleVorher - 1,
+    balleVorher + ' → ' + nachWurf.baelle);
+  // Ins Team wandert es erst, wenn der Kampf geschlossen wird — hier zählt,
+  // dass der Kampf wirklich ein gefangenes Pokémon führt.
+  check('… und der Kampf führt das gefangene Pokémon', !!nachWurf.art, String(nachWurf.art));
+
+  // Den Kampf ordentlich schließen, bevor aufgeräumt wird — ein Run, der
+  // mitten im Nachspiel verschwindet, zieht die Oberfläche mit sich.
+  await page.waitForTimeout(1200);
+  await page.evaluate(() => { try { globalThis.PokelikeApp.backToMap(); } catch (e) { /* schon zu */ } });
+  await page.waitForTimeout(600);
+  await closeModals();
+  await page.evaluate(() => {
+    globalThis.PokelikeApp.battle = null;
+    globalThis.PokelikeApp.run = null;
+    PL.meta.reset();
+    globalThis.PokelikeApp.show('title');
+  });
+  await page.waitForSelector('.title-screen');
+}
+
 // Die Kopfleiste gehört dem Run — und jeder Wechsel beginnt oben
 {
   await page.evaluate(() => {

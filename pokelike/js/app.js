@@ -2220,9 +2220,6 @@
               submitAction({ type: 'ball', item: 'masterball' });
             } else {
               run.removeItem(it.id, 1);
-              // Ein geworfener Meisterball ist sofort weg — auch dann, wenn
-              // der Kampf noch läuft oder das Fenster gleich zugeht.
-              synchronisiereMeisterbaelle();
               submitAction({ type: 'ball', item: it.id });
             }
           }
