@@ -18,7 +18,7 @@
     var node = doc.createElement(tag), k;
     if (typeof props === 'string') { props = { className: props }; }
     for (k in props || {}) {
-      if (k === 'text') node.textContent = props[k];
+      if (k === 'text') node.textContent = symbole(props[k]);
       else if (k === 'html') node.innerHTML = props[k];
       else if (k === 'className') node.className = props[k];
       else if (k === 'style' && typeof props[k] === 'object') Object.assign(node.style, props[k]);
@@ -32,11 +32,22 @@
     return node;
   }
 
+  /**
+   * Emoji werden beim Anzeigen gegen die gezeichneten Zeichen getauscht. Hier
+   * und in el() ist die einzige Stelle, die das braucht: Fast alles im Spiel
+   * entsteht über diese beiden. Getauscht wird nur, was auf den Bildschirm
+   * geht — was das Spiel verschickt oder speichert, behält das echte Emoji.
+   */
+  function symbole(text) {
+    return (PL.symbole && PL.symbole.ersetze) ? PL.symbole.ersetze(text) : text;
+  }
+
   function append(node, kids) {
     if (kids === null || kids === undefined || kids === false) return node;
     if (Array.isArray(kids)) { kids.forEach(function (c) { append(node, c); }); return node; }
+    // Auch Text, der als Kind übergeben wird, bekommt die gezeichneten Symbole.
     node.appendChild(typeof kids === 'string' || typeof kids === 'number'
-      ? doc.createTextNode(String(kids)) : kids);
+      ? doc.createTextNode(symbole(String(kids))) : kids);
     return node;
   }
 
@@ -450,7 +461,7 @@
     sprite: sprite, placeholder: placeholder,
     typeChip: typeChip, hpBar: hpBar, expBar: expBar, statusChip: statusChip, genderMark: genderMark,
     monCard: monCard, monDetail: monDetail, moveRow: moveRow, megaNote: megaNote,
-    modal: modal, confirm: confirm, toast: toast,
+    modal: modal, confirm: confirm, toast: toast, symbole: symbole,
     money: money, itemRow: itemRow, itemIcon: itemIcon,
     TYPE_COLOR: TYPE_COLOR, CAT_ICON: CAT_ICON, CAT_NAME: CAT_NAME
   };
