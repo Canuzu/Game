@@ -2429,7 +2429,8 @@ body.automat-da #screen { padding-bottom: calc(4.6rem + env(safe-area-inset-bott
 
 /* --- Gemeinsam: der Streifen, den schon Protokoll und Anzeige tragen --- */
 .region-header, .item-row, .mon-card, .relic-card, .offer, .stat-tile,
-.menue-fenster, .modal, .team-detail, .gen-karte, .legende-karte {
+.menue-fenster, .modal, .team-detail, .gen-karte, .legende-karte,
+.choice, .option, .starter {
   background-image:
     repeating-linear-gradient(180deg,
       rgba(255, 255, 255, .5) 0 2px,
@@ -2441,12 +2442,14 @@ body.automat-da #screen { padding-bottom: calc(4.6rem + env(safe-area-inset-bott
 [data-app-theme="dark"] .menue-fenster, [data-app-theme="dark"] .modal,
 [data-app-theme="dark"] .team-detail,
 [data-app-theme="dark"] .gen-karte, [data-app-theme="dark"] .legende-karte,
+[data-app-theme="dark"] .choice, [data-app-theme="dark"] .option, [data-app-theme="dark"] .starter,
 [data-theme="dark"] .region-header, [data-theme="dark"] .item-row,
 [data-theme="dark"] .mon-card, [data-theme="dark"] .relic-card,
 [data-theme="dark"] .offer, [data-theme="dark"] .stat-tile,
 [data-theme="dark"] .menue-fenster, [data-theme="dark"] .modal,
 [data-theme="dark"] .team-detail,
-[data-theme="dark"] .gen-karte, [data-theme="dark"] .legende-karte {
+[data-theme="dark"] .gen-karte, [data-theme="dark"] .legende-karte,
+[data-theme="dark"] .choice, [data-theme="dark"] .option, [data-theme="dark"] .starter {
   background-image:
     repeating-linear-gradient(180deg,
       rgba(255, 255, 255, .05) 0 2px,
@@ -2556,6 +2559,23 @@ body.automat-da #screen { padding-bottom: calc(4.6rem + env(safe-area-inset-bott
     inset 0 0 0 2px var(--panel),
     inset 0 0 0 4px color-mix(in srgb, var(--innen) 50%, var(--panel)),
     var(--versatz) var(--versatz) 0 var(--relief);
+}
+
+/* --- Die Wahl vor dem Run --------------------------------------------------
+   Drei Modi stehen zur Wahl, und welcher davon gewählt ist, soll man von
+   weitem sehen: Die gewählte Karte trägt die Farbe als Platte, so wie die
+   Attackenkachel im Kampf und die Teamkarte im Team. Ein dünner Rahmen
+   allein war zu leise. */
+.choice.selected, .option.selected, .starter.selected {
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--accent) 30%, var(--panel)) 0 45%,
+      color-mix(in srgb, var(--accent) 15%, var(--panel)) 45% 100%);
+  border: 2px solid color-mix(in srgb, var(--accent) 70%, #101418);
+  box-shadow: var(--versatz) var(--versatz) 0 var(--relief);
+}
+.choice.selected strong, .option.selected strong, .starter.selected .starter-name {
+  font-weight: 700;
 }
 </style>
 <!-- symbol:anfang -->
@@ -2772,7 +2792,7 @@ body.automat-da #screen { padding-bottom: calc(4.6rem + env(safe-area-inset-bott
   var PL = root.PL || (root.PL = {});
 
   // Diese Zeile ersetzt tools/build-single.mjs beim Bauen.
-  var BUILD = '20260911T200608Z-3dc1317';
+  var BUILD = '20260911T201417Z-c71ce5e';
 
   var TRIED_KEY = 'pokelike.plus.update.versucht';
   var state = { build: BUILD, latest: null, checking: false, stuck: false };
@@ -10764,9 +10784,7 @@ body.automat-da #screen { padding-bottom: calc(4.6rem + env(safe-area-inset-bott
 
   var MODES = {
     standard: { name: 'Standard', regions: 9, rows: 9, desc: 'Alle neun Regionen und danach die Liga.' },
-    kurz: { name: 'Kurzrun', regions: 4, rows: 10, desc: 'Vier Regionen, dann direkt zur Liga.' },
     endlos: { name: 'Endlos', regions: 99, rows: 9, desc: 'Die Regionen wiederholen sich und werden härter.' },
-    bossrush: { name: 'Boss-Rush', regions: 9, rows: 3, desc: 'Fast nur Arenaleiter. Kurz und brutal.' },
     taeglich: { name: 'Tages-Run', regions: 6, rows: 8, desc: 'Fester Startwert für alle: heute für jeden gleich.' },
     // Der Legendäre Run ist kein Weg mehr, sondern ein Duell: ein Kampf
     // gegen genau ein legendäres Pokémon, mit einem Team, das man vorher
@@ -10775,6 +10793,12 @@ body.automat-da #screen { padding-bottom: calc(4.6rem + env(safe-area-inset-bott
     legenden: { name: 'Legendärer Run', regions: 1, rows: 0, versteckt: true,
       desc: 'Ein Duell gegen ein einzelnes legendäres Pokémon.' }
   };
+
+  /* Kurzrun und Boss-Rush gibt es nicht mehr. Ihre Namen bleiben hier stehen,
+     damit ein Run, der damals gespielt wurde, in der Liste der vergangenen
+     Läufe weiter seinen Namen trägt statt seines Schlüssels. Starten lässt
+     sich keiner von beiden. */
+  var ALTE_MODI = { kurz: 'Kurzrun', bossrush: 'Boss-Rush' };
 
   /* ---------- Schwierigkeitsstufen -------------------------------------------
    * Vorher waren es elf Aufstiege, von denen jeder genau eine Schraube drehte.
@@ -11053,7 +11077,7 @@ body.automat-da #screen { padding-bottom: calc(4.6rem + env(safe-area-inset-bott
       // damit allein Aufstellung und Attacken entscheiden.
       if (this.mode === 'legenden') return 100;
       if (this.leagueStage >= 0) return 78 + this.leagueStage * 4 + this.ascension * 2;
-      var step = this.mode === 'kurz' ? 17 : 8;
+      var step = 8;
       return Math.min(100, 8 + (this.regionsCleared() + 1) * step + this.ascension * 2 +
         (this.levelBonus || 0));
     }
@@ -11203,7 +11227,6 @@ body.automat-da #screen { padding-bottom: calc(4.6rem + env(safe-area-inset-bott
     for (i = 0; i < middleSlots.length; i++) {
       var n = middleSlots[i];
       if (n.fixed || n.type === 'rest') continue;
-      if (this.mode === 'bossrush') { n.type = rng.chance(0.6) ? 'elite' : 'trainer'; continue; }
       n.type = rng.weighted(pool).k;
     }
 
@@ -12525,6 +12548,12 @@ body.automat-da #screen { padding-bottom: calc(4.6rem + env(safe-area-inset-bott
     // Seine Karte ist eine Reihe aus 125 Kämpfen, den Modus gibt es so nicht
     // mehr. Lieber ehrlich verwerfen als halb geladen weiterlaufen.
     if (run.mode === 'legenden' && (!data.stufenFassung || data.stufenFassung < 3)) return null;
+    // Kurzrun und Boss-Rush sind abgeschafft. Ein Spielstand aus einem der
+    // beiden läuft als gewöhnlicher Run weiter: Die Karte, auf der man steht,
+    // bleibt stehen, für alles Weitere gelten die Regeln des Standardmodus.
+    // Das ist ehrlicher als ein Absturz und freundlicher, als den Fortschritt
+    // wegzuwerfen.
+    if (!MODES[run.mode]) run.mode = 'standard';
     // Ein laufender Run kann noch eine legendäre Spur aus der alten Regel auf
     // der Karte tragen. Die gibt es nicht mehr — was noch nicht betreten
     // wurde, wird zu einer gewöhnlichen Begegnung.
@@ -12546,6 +12575,7 @@ body.automat-da #screen { padding-bottom: calc(4.6rem + env(safe-area-inset-bott
   Run.VERSION = RUN_VERSION;
   Run.BLESSINGS = BLESSINGS;
   Run.MODES = MODES;
+  Run.ALTE_MODI = ALTE_MODI;
   Run.NODE_INFO = NODE_INFO;
   PL.Run = Run;
 
@@ -16522,9 +16552,12 @@ body.automat-da #screen { padding-bottom: calc(4.6rem + env(safe-area-inset-bott
 
   /* ---------- 1) Das Ergebnis ----------------------------------------------- */
 
+  /* Kurzrun und Boss-Rush lassen sich nicht mehr starten; wer einen alten
+     Lauf teilt, soll ihn trotzdem beim Namen nennen können. */
   var MODUS_NAME = {
-    standard: 'Standard', kurz: 'Kurzrun', endlos: 'Endlos',
-    bossrush: 'Boss-Rush', taeglich: 'Tages-Run', legenden: 'Legendärer Run'
+    standard: 'Standard', endlos: 'Endlos',
+    taeglich: 'Tages-Run', legenden: 'Legendärer Run',
+    kurz: 'Kurzrun', bossrush: 'Boss-Rush'
   };
 
   /** "Stufe 3 — Prüfung", auch ohne geladenes Fortschrittsmodul. */
@@ -18305,7 +18338,10 @@ body.automat-da #screen { padding-bottom: calc(4.6rem + env(safe-area-inset-bott
     // Stufen öffnen, die man sich nicht erspielt hat.
     var einladung = arg && arg.einladung;
     if (einladung) {
-      chosen.mode = einladung.modus;
+      // Eine alte Einladung kann einen Modus mitbringen, den es nicht mehr
+      // gibt — dann wird daraus ein gewöhnlicher Run.
+      chosen.mode = PL.Run.MODES[einladung.modus] && !PL.Run.MODES[einladung.modus].versteckt
+        ? einladung.modus : 'standard';
       chosen.ascension = Math.min(einladung.aufstieg, maxAsc);
       chosen.nuzlocke = einladung.nuzlocke;
       chosen.seed = einladung.startwert;
@@ -20906,7 +20942,8 @@ body.automat-da #screen { padding-bottom: calc(4.6rem + env(safe-area-inset-bott
       ? m.history.map(function (h) {
         return el('div', { className: 'history-row ' + (h.outcome === 'sieg' ? 'won' : 'lost') }, [
           el('span', { className: 'history-date', text: h.date }),
-          el('span', { text: PL.Run.MODES[h.mode] ? PL.Run.MODES[h.mode].name : h.mode }),
+          el('span', { text: (PL.Run.MODES[h.mode] && PL.Run.MODES[h.mode].name) ||
+            PL.Run.ALTE_MODI[h.mode] || h.mode }),
           el('span', { text: meta.stufenName(h.ascension) + (h.nuzlocke ? ' · Nuzlocke' : '') }),
           el('span', { text: 'Region ' + (h.region + 1) }),
           el('span', { text: h.battles + ' Kämpfe' }),

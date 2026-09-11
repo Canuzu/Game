@@ -435,7 +435,7 @@ section('Durchgespielter Run');
   let errors = 0, victories = 0, defeats = 0, totalBattles = 0;
   for (let i = 0; i < 6; i++) {
     try {
-      const { run, notes, guard } = autoRun(1000 + i, i === 5 ? 'kurz' : 'standard');
+      const { run, notes, guard } = autoRun(1000 + i, i === 5 ? 'endlos' : 'standard');
       totalBattles += notes.battles;
       if (run.state === 'victory') victories++;
       if (run.state === 'gameover') defeats++;
@@ -1595,8 +1595,12 @@ section('Teilen: was von einem Run übrig bleibt');
   eq('… Aufstieg', zurueck.aufstieg, 2);
   eq('… Startwert', zurueck.startwert, 12345);
   eq('Nuzlocke wird mitgenommen', S.ausCode(S.startwertCode({
-    modus: 'kurz', aufstieg: 0, startwert: 7, nuzlocke: true
+    modus: 'endlos', aufstieg: 0, startwert: 7, nuzlocke: true
   })).nuzlocke, true);
+  // Kurzrun und Boss-Rush gibt es nicht mehr: Eine Einladung, die einen von
+  // beiden mitbringt, wird nicht angenommen.
+  check('Eine Einladung in einen abgeschafften Modus wird abgelehnt',
+    S.ausCode('kurz-0-7') === null && S.ausCode('bossrush-0-7') === null);
 
   check('Unsinn wird abgelehnt', S.ausCode('quatsch') === null);
   check('Ein erfundener Modus auch', S.ausCode('gibtsnicht-0-5') === null);
@@ -1783,7 +1787,7 @@ section('Entwicklungen: Level und Stein');
 section('Legendäre Pokémon gehören dem Legendären Run');
 {
   // Im gewöhnlichen Run kommt keines mehr vor — in keiner Region, in keinem Modus.
-  ['standard', 'kurz', 'endlos', 'bossrush', 'taeglich'].forEach((modus) => {
+  ['standard', 'endlos', 'taeglich'].forEach((modus) => {
     eq('Kein Run im Modus ' + modus + ' trägt eine legendäre Spur',
       PL.Run.rollLegend(4242, modus), -1);
   });
@@ -2881,6 +2885,35 @@ section('Sammlung: Marken, Aufträge, Bestwerte');
   eq('Eine nie gespielte Art hat keinen Bestwert', meta.artRekord(9999), null);
 
   delete globalThis.localStorage;
+}
+
+section('Abgeschaffte Modi');
+{
+  // Kurzrun und Boss-Rush sind weg. Weder die Liste im Menü noch der
+  // Bauplan eines Runs darf sie noch kennen.
+  check('Kurzrun steht nicht mehr in der Liste', !PL.Run.MODES.kurz);
+  check('Boss-Rush auch nicht', !PL.Run.MODES.bossrush);
+  const waehlbar = Object.keys(PL.Run.MODES).filter((k) => !PL.Run.MODES[k].versteckt);
+  eq('Drei Modi stehen zur Wahl', waehlbar.join(','), 'standard,endlos,taeglich');
+
+  // Wer einen davon anfordert, bekommt einen gewöhnlichen Run.
+  eq('Ein erfundener Modus wird zum Standard',
+    new PL.Run({ seed: 1, starter: 'bulbasaur', mode: 'kurz' }).mode, 'standard');
+
+  // Ein Spielstand aus der Zeit davor läuft weiter, statt abzustürzen.
+  const alt = new PL.Run({ seed: 5, starter: 'charmander' });
+  const daten = alt.toJSON();
+  daten.mode = 'bossrush';
+  const geladen = PL.Run.fromJSON(daten);
+  check('Ein alter Boss-Rush lässt sich laden', !!geladen);
+  eq('… und läuft als Standard weiter', geladen.mode, 'standard');
+  eq('… mit der Regionszahl des Standardmodus', geladen.totalRegions(), 9);
+  check('… und kann eine neue Region bauen', (() => {
+    geladen.region = 1; geladen.buildMap(); return geladen.map.length > 0;
+  })());
+
+  // Der Name eines alten Laufs bleibt lesbar.
+  eq('Ein vergangener Kurzrun heißt weiter Kurzrun', PL.Run.ALTE_MODI.kurz, 'Kurzrun');
 }
 
 section('Gezeichnete Zeichen');

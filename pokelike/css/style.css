@@ -2278,7 +2278,8 @@ body.automat-da #screen { padding-bottom: calc(4.6rem + env(safe-area-inset-bott
 
 /* --- Gemeinsam: der Streifen, den schon Protokoll und Anzeige tragen --- */
 .region-header, .item-row, .mon-card, .relic-card, .offer, .stat-tile,
-.menue-fenster, .modal, .team-detail, .gen-karte, .legende-karte {
+.menue-fenster, .modal, .team-detail, .gen-karte, .legende-karte,
+.choice, .option, .starter {
   background-image:
     repeating-linear-gradient(180deg,
       rgba(255, 255, 255, .5) 0 2px,
@@ -2290,12 +2291,14 @@ body.automat-da #screen { padding-bottom: calc(4.6rem + env(safe-area-inset-bott
 [data-app-theme="dark"] .menue-fenster, [data-app-theme="dark"] .modal,
 [data-app-theme="dark"] .team-detail,
 [data-app-theme="dark"] .gen-karte, [data-app-theme="dark"] .legende-karte,
+[data-app-theme="dark"] .choice, [data-app-theme="dark"] .option, [data-app-theme="dark"] .starter,
 [data-theme="dark"] .region-header, [data-theme="dark"] .item-row,
 [data-theme="dark"] .mon-card, [data-theme="dark"] .relic-card,
 [data-theme="dark"] .offer, [data-theme="dark"] .stat-tile,
 [data-theme="dark"] .menue-fenster, [data-theme="dark"] .modal,
 [data-theme="dark"] .team-detail,
-[data-theme="dark"] .gen-karte, [data-theme="dark"] .legende-karte {
+[data-theme="dark"] .gen-karte, [data-theme="dark"] .legende-karte,
+[data-theme="dark"] .choice, [data-theme="dark"] .option, [data-theme="dark"] .starter {
   background-image:
     repeating-linear-gradient(180deg,
       rgba(255, 255, 255, .05) 0 2px,
@@ -2405,4 +2408,21 @@ body.automat-da #screen { padding-bottom: calc(4.6rem + env(safe-area-inset-bott
     inset 0 0 0 2px var(--panel),
     inset 0 0 0 4px color-mix(in srgb, var(--innen) 50%, var(--panel)),
     var(--versatz) var(--versatz) 0 var(--relief);
+}
+
+/* --- Die Wahl vor dem Run --------------------------------------------------
+   Drei Modi stehen zur Wahl, und welcher davon gewählt ist, soll man von
+   weitem sehen: Die gewählte Karte trägt die Farbe als Platte, so wie die
+   Attackenkachel im Kampf und die Teamkarte im Team. Ein dünner Rahmen
+   allein war zu leise. */
+.choice.selected, .option.selected, .starter.selected {
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--accent) 30%, var(--panel)) 0 45%,
+      color-mix(in srgb, var(--accent) 15%, var(--panel)) 45% 100%);
+  border: 2px solid color-mix(in srgb, var(--accent) 70%, #101418);
+  box-shadow: var(--versatz) var(--versatz) 0 var(--relief);
+}
+.choice.selected strong, .option.selected strong, .starter.selected .starter-name {
+  font-weight: 700;
 }

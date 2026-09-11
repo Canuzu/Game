@@ -408,9 +408,7 @@ Fähigkeits-Kapsel und -Pflaster und Silberkronkorken.
 | Modus | Beschreibung |
 |---|---|
 | Standard | Neun Regionen, danach die Liga |
-| Kurzrun | Vier Regionen, dann direkt zur Liga |
 | Endlos | Die Regionen wiederholen sich und werden härter — jede volle Runde bringt einen Segen zur Wahl |
-| Boss-Rush | Fast nur Arenaleiter |
 | Tages-Run | Fester Startwert aus dem Datum — heute für alle gleich |
 | Legendärer Run | Eigener Weg: ein Duell gegen ein einzelnes legendäres Pokémon |
 

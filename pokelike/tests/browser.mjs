@@ -357,9 +357,9 @@ await page.waitForSelector('.teilen-zone');
   await page.getByRole('button', { name: 'Schließen' }).click();
   await page.waitForSelector('.run-karte', { state: 'detached' });
 
-  const gelesen = await page.evaluate(() => PL.share.ausCode('kurz-1-999-n'));
+  const gelesen = await page.evaluate(() => PL.share.ausCode('endlos-1-999-n'));
   check('Ein geschickter Run lässt sich wieder einlesen',
-    gelesen && gelesen.modus === 'kurz' && gelesen.startwert === 999 && gelesen.nuzlocke === true,
+    gelesen && gelesen.modus === 'endlos' && gelesen.startwert === 999 && gelesen.nuzlocke === true,
     JSON.stringify(gelesen));
 }
 
@@ -442,8 +442,10 @@ await page.waitForSelector('.asc-box');
   check('Daneben steht der Name der Stufe', beschriftung.trim() === 'Stufe 1 — Reise', beschriftung);
   check('Ohne einen einzigen Sieg endet der Regler bei der ersten Stufe',
     (await regler.getAttribute('max')) === '0', await regler.getAttribute('max'));
-  const modi = await page.locator('.choice-row .choice').count();
-  check('Der Legendäre Run steht nicht in der Modusliste', modi === 5, String(modi));
+  const modi = await page.locator('.choice-row .choice').evaluateAll(
+    (ns) => ns.map((n) => n.getAttribute('data-modus')));
+  check('Drei Modi stehen zur Wahl — der Legendäre Run steht nicht dabei',
+    modi.join(',') === 'standard,endlos,taeglich', modi.join(','));
 
   await page.evaluate(() => {
     const m = PL.meta.load();

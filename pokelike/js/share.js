@@ -25,9 +25,12 @@
 
   /* ---------- 1) Das Ergebnis ----------------------------------------------- */
 
+  /* Kurzrun und Boss-Rush lassen sich nicht mehr starten; wer einen alten
+     Lauf teilt, soll ihn trotzdem beim Namen nennen können. */
   var MODUS_NAME = {
-    standard: 'Standard', kurz: 'Kurzrun', endlos: 'Endlos',
-    bossrush: 'Boss-Rush', taeglich: 'Tages-Run', legenden: 'Legendärer Run'
+    standard: 'Standard', endlos: 'Endlos',
+    taeglich: 'Tages-Run', legenden: 'Legendärer Run',
+    kurz: 'Kurzrun', bossrush: 'Boss-Rush'
   };
 
   /** "Stufe 3 — Prüfung", auch ohne geladenes Fortschrittsmodul. */

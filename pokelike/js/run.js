@@ -26,9 +26,7 @@
 
   var MODES = {
     standard: { name: 'Standard', regions: 9, rows: 9, desc: 'Alle neun Regionen und danach die Liga.' },
-    kurz: { name: 'Kurzrun', regions: 4, rows: 10, desc: 'Vier Regionen, dann direkt zur Liga.' },
     endlos: { name: 'Endlos', regions: 99, rows: 9, desc: 'Die Regionen wiederholen sich und werden härter.' },
-    bossrush: { name: 'Boss-Rush', regions: 9, rows: 3, desc: 'Fast nur Arenaleiter. Kurz und brutal.' },
     taeglich: { name: 'Tages-Run', regions: 6, rows: 8, desc: 'Fester Startwert für alle: heute für jeden gleich.' },
     // Der Legendäre Run ist kein Weg mehr, sondern ein Duell: ein Kampf
     // gegen genau ein legendäres Pokémon, mit einem Team, das man vorher
@@ -37,6 +35,12 @@
     legenden: { name: 'Legendärer Run', regions: 1, rows: 0, versteckt: true,
       desc: 'Ein Duell gegen ein einzelnes legendäres Pokémon.' }
   };
+
+  /* Kurzrun und Boss-Rush gibt es nicht mehr. Ihre Namen bleiben hier stehen,
+     damit ein Run, der damals gespielt wurde, in der Liste der vergangenen
+     Läufe weiter seinen Namen trägt statt seines Schlüssels. Starten lässt
+     sich keiner von beiden. */
+  var ALTE_MODI = { kurz: 'Kurzrun', bossrush: 'Boss-Rush' };
 
   /* ---------- Schwierigkeitsstufen -------------------------------------------
    * Vorher waren es elf Aufstiege, von denen jeder genau eine Schraube drehte.
@@ -315,7 +319,7 @@
       // damit allein Aufstellung und Attacken entscheiden.
       if (this.mode === 'legenden') return 100;
       if (this.leagueStage >= 0) return 78 + this.leagueStage * 4 + this.ascension * 2;
-      var step = this.mode === 'kurz' ? 17 : 8;
+      var step = 8;
       return Math.min(100, 8 + (this.regionsCleared() + 1) * step + this.ascension * 2 +
         (this.levelBonus || 0));
     }
@@ -465,7 +469,6 @@
     for (i = 0; i < middleSlots.length; i++) {
       var n = middleSlots[i];
       if (n.fixed || n.type === 'rest') continue;
-      if (this.mode === 'bossrush') { n.type = rng.chance(0.6) ? 'elite' : 'trainer'; continue; }
       n.type = rng.weighted(pool).k;
     }
 
@@ -1787,6 +1790,12 @@
     // Seine Karte ist eine Reihe aus 125 Kämpfen, den Modus gibt es so nicht
     // mehr. Lieber ehrlich verwerfen als halb geladen weiterlaufen.
     if (run.mode === 'legenden' && (!data.stufenFassung || data.stufenFassung < 3)) return null;
+    // Kurzrun und Boss-Rush sind abgeschafft. Ein Spielstand aus einem der
+    // beiden läuft als gewöhnlicher Run weiter: Die Karte, auf der man steht,
+    // bleibt stehen, für alles Weitere gelten die Regeln des Standardmodus.
+    // Das ist ehrlicher als ein Absturz und freundlicher, als den Fortschritt
+    // wegzuwerfen.
+    if (!MODES[run.mode]) run.mode = 'standard';
     // Ein laufender Run kann noch eine legendäre Spur aus der alten Regel auf
     // der Karte tragen. Die gibt es nicht mehr — was noch nicht betreten
     // wurde, wird zu einer gewöhnlichen Begegnung.
@@ -1808,6 +1817,7 @@
   Run.VERSION = RUN_VERSION;
   Run.BLESSINGS = BLESSINGS;
   Run.MODES = MODES;
+  Run.ALTE_MODI = ALTE_MODI;
   Run.NODE_INFO = NODE_INFO;
   PL.Run = Run;
 

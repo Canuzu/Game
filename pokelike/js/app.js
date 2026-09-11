@@ -986,7 +986,10 @@
     // Stufen öffnen, die man sich nicht erspielt hat.
     var einladung = arg && arg.einladung;
     if (einladung) {
-      chosen.mode = einladung.modus;
+      // Eine alte Einladung kann einen Modus mitbringen, den es nicht mehr
+      // gibt — dann wird daraus ein gewöhnlicher Run.
+      chosen.mode = PL.Run.MODES[einladung.modus] && !PL.Run.MODES[einladung.modus].versteckt
+        ? einladung.modus : 'standard';
       chosen.ascension = Math.min(einladung.aufstieg, maxAsc);
       chosen.nuzlocke = einladung.nuzlocke;
       chosen.seed = einladung.startwert;
@@ -3587,7 +3590,8 @@
       ? m.history.map(function (h) {
         return el('div', { className: 'history-row ' + (h.outcome === 'sieg' ? 'won' : 'lost') }, [
           el('span', { className: 'history-date', text: h.date }),
-          el('span', { text: PL.Run.MODES[h.mode] ? PL.Run.MODES[h.mode].name : h.mode }),
+          el('span', { text: (PL.Run.MODES[h.mode] && PL.Run.MODES[h.mode].name) ||
+            PL.Run.ALTE_MODI[h.mode] || h.mode }),
           el('span', { text: meta.stufenName(h.ascension) + (h.nuzlocke ? ' · Nuzlocke' : '') }),
           el('span', { text: 'Region ' + (h.region + 1) }),
           el('span', { text: h.battles + ' Kämpfe' }),
