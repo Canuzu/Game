@@ -71,6 +71,11 @@
   --rahmen:  var(--l-rahmen);
   --innen:   var(--l-innen);
   --relief:  var(--l-relief);
+  /* Der Grund, in den die Regionsfarbe eingemischt wird. Hell ist er weiß.
+     Vorher stand hier fest #ffffff — im dunklen Anstrich blieb das Spielfeld
+     deshalb hell, während alle Fenster darauf dunkel wurden, und die
+     Überschriften verschwanden in der Fläche. */
+  --grund:   #ffffff;
 
   /* Alles sitzt auf einem Raster aus zwei Pixeln: keine Rundungen, keine
      weichen Schatten, sondern ein harter Versatz wie bei einem gedruckten
@@ -104,6 +109,7 @@
   --accent-text: var(--d-accent-text);
   --good: var(--d-good); --warn: var(--d-warn); --bad: var(--d-bad);
   --rahmen: var(--d-rahmen); --innen: var(--d-innen); --relief: var(--d-relief);
+  --grund: var(--d-bg);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -115,6 +121,7 @@
   --accent-text: var(--d-accent-text);
     --good: var(--d-good); --warn: var(--d-warn); --bad: var(--d-bad);
     --rahmen: var(--d-rahmen); --innen: var(--d-innen); --relief: var(--d-relief);
+    --grund: var(--d-bg);
   }
 }
 
@@ -203,7 +210,7 @@ button { font: inherit; color: inherit; }
 /* Ein Hauch der Regionsfarbe auf hellem Grund. Erster Versuch mischte sie in
    das blaugraue --bg — aus Rot und Blaugrau wurde Lila. Gegen Weiß gemischt
    bleibt warm warm und kalt kalt. */
-#screen { background: color-mix(in srgb, var(--region) 7%, #ffffff); }
+#screen { background: color-mix(in srgb, var(--region) 7%, var(--grund)); }
 
 /* Regionsplakette und Kartengrund tragen sie offen */
 .region-badge { border-color: var(--region); }
@@ -447,7 +454,10 @@ button { font: inherit; color: inherit; }
   display: flex; flex-direction: column; align-items: center; gap: .3rem;
   background: none; border: 0; padding: 0; cursor: not-allowed; opacity: .5;
   transition: transform .12s ease, opacity .15s ease;
-  width: 92px;
+  /* Breit genug, dass »Trainerkampf« auf eine Zeile passt — auf dem Handy
+     ist der Knoten schmaler, dort trennt der Name an den weichen
+     Trennstellen, die in run.js stehen. */
+  width: 132px;
 }
 .node-badge {
   width: 52px; height: 52px; border-radius: 50%;
@@ -462,8 +472,10 @@ button { font: inherit; color: inherit; }
   font-size: 20px; text-align: center; line-height: 1.2;
   color: var(--text); text-shadow: 0 1px 3px var(--bg);
   /* Der Name bleibt im Feld des Knotens. Vorher lief »Trainerkampf« über
-     den Rand hinaus und stieß auf der Karte an den Namen daneben. */
-  max-width: 100%; overflow-wrap: anywhere; hyphens: auto;
+     den Rand hinaus und stieß auf der Karte an den Namen daneben. Getrennt
+     wird nach den Regeln der Sprache; erst wenn das nicht reicht, mitten im
+     Wort. */
+  max-width: 100%; hyphens: manual; overflow-wrap: break-word;
 }
 .map-node.open { opacity: 1; cursor: pointer; }
 .map-node.open .node-badge {
@@ -1228,7 +1240,7 @@ button.move-row:hover { border-color: var(--accent); }
   }
 
   /* --- Karte --- */
-  .map-node { width: 84px; }
+  .map-node { width: 104px; }
   .node-badge { width: 46px; height: 46px; }
   .node-icon { font-size: 20px; }
   .node-name { font-size: 20px; }
@@ -2248,3 +2260,149 @@ body.automat-da #screen { padding-bottom: calc(4.6rem + env(safe-area-inset-bott
   color: var(--gold-tief, #7a5a10); letter-spacing: .04em;
 }
 .hp-wrap .hp-bar { flex: 1 1 auto; }
+
+/* =============================================================================
+ * Karte, Team und Laden in derselben Fassung
+ * -----------------------------------------------------------------------------
+ * Was der Kampfbildschirm bekommen hat, bekommen jetzt auch die übrigen
+ * Bildschirme — und zwar aus denselben drei Gründen:
+ *
+ *  1) Rangfolge. Auf jedem Bildschirm gibt es genau eine Sache, die man
+ *     gerade tut: auf der Karte den nächsten Weg wählen, im Team ein Pokémon
+ *     anfassen, im Laden etwas kaufen. Die trägt Farbe. Alles andere — schon
+ *     Begangenes, Gesperrtes, zu Teures — tritt zurück.
+ *  2) Textur. Fenster sind nicht leeres Weiß, sondern fein gestreift, mit
+ *     der doppelten Fassung der Vorbilder: außen dunkel, innen hell.
+ *  3) Gezeichnete Zeichen statt Emoji — auch bei den Relikten.
+ * ========================================================================== */
+
+/* --- Gemeinsam: der Streifen, den schon Protokoll und Anzeige tragen --- */
+.region-header, .item-row, .mon-card, .relic-card, .offer, .stat-tile,
+.menue-fenster, .modal, .team-detail, .gen-karte, .legende-karte {
+  background-image:
+    repeating-linear-gradient(180deg,
+      rgba(255, 255, 255, .5) 0 2px,
+      color-mix(in srgb, var(--innen) 7%, transparent) 2px 4px);
+}
+[data-app-theme="dark"] .region-header, [data-app-theme="dark"] .item-row,
+[data-app-theme="dark"] .mon-card, [data-app-theme="dark"] .relic-card,
+[data-app-theme="dark"] .offer, [data-app-theme="dark"] .stat-tile,
+[data-app-theme="dark"] .menue-fenster, [data-app-theme="dark"] .modal,
+[data-app-theme="dark"] .team-detail,
+[data-app-theme="dark"] .gen-karte, [data-app-theme="dark"] .legende-karte,
+[data-theme="dark"] .region-header, [data-theme="dark"] .item-row,
+[data-theme="dark"] .mon-card, [data-theme="dark"] .relic-card,
+[data-theme="dark"] .offer, [data-theme="dark"] .stat-tile,
+[data-theme="dark"] .menue-fenster, [data-theme="dark"] .modal,
+[data-theme="dark"] .team-detail,
+[data-theme="dark"] .gen-karte, [data-theme="dark"] .legende-karte {
+  background-image:
+    repeating-linear-gradient(180deg,
+      rgba(255, 255, 255, .05) 0 2px,
+      rgba(0, 0, 0, .12) 2px 4px);
+}
+
+/* --- Die Karte ------------------------------------------------------------ */
+
+/* Jede Knotenart hat ihre Farbe. Bisher lag sie nur auf dem Rand; jetzt
+   trägt die offene Plakette sie als Fläche — so sieht man auf einen Blick,
+   was einen erwartet, ohne die Beschriftung zu lesen. */
+.map-node { --knoten: var(--line); }
+.map-node.t-wild   { --knoten: #4fae5a; }
+.map-node.t-trainer{ --knoten: #4a8fd8; }
+.map-node.t-elite  { --knoten: #7a8596; }
+.map-node.t-catch  { --knoten: #d8a05a; }
+.map-node.t-item   { --knoten: #e0554a; }
+.map-node.t-shop   { --knoten: #e8863c; }
+.map-node.t-rest   { --knoten: #e8b93c; }
+.map-node.t-rival  { --knoten: #c0504a; }
+.map-node.t-event  { --knoten: #a370d8; }
+.map-node.t-relic  { --knoten: #b07ae0; }
+.map-node.t-legend, .map-node.t-legendboss { --knoten: #e8c860; }
+.map-node.t-boss   { --knoten: #d8a82c; }
+.map-node.t-e4, .map-node.t-champ { --knoten: #e0b52c; }
+
+/* Was weiter vorn liegt, trägt seine Farbe schon leise: Man soll zwei
+   Schritte im Voraus sehen, dass dort ein Händler steht. */
+.node-badge {
+  background: color-mix(in srgb, var(--knoten) 14%, var(--panel));
+}
+/* Was jetzt zur Wahl steht, trägt sie ganz. */
+.map-node.open .node-badge {
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--knoten) 46%, var(--panel)) 0 45%,
+      color-mix(in srgb, var(--knoten) 26%, var(--panel)) 45% 100%);
+  border-color: color-mix(in srgb, var(--knoten) 70%, #101418);
+}
+/* Was hinter einem liegt, ist grau — da geht es nicht mehr hin. */
+.map-node.done .node-badge { filter: grayscale(.9); }
+.map-node.open .node-name { font-weight: 650; }
+/* Wo man steht, blinkt nichts — es steht einfach heller da. */
+.map-node.here .node-badge {
+  border-color: var(--good);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--good) 45%, transparent),
+              var(--versatz) var(--versatz) 0 var(--relief);
+}
+
+/* Die Regionstafel ist das Fenster dieses Bildschirms: doppelte Fassung. */
+.region-header {
+  border: 2px solid var(--rahmen);
+  border-left: 6px solid var(--region, var(--accent));
+  box-shadow:
+    inset 0 0 0 2px var(--panel),
+    inset 0 0 0 4px color-mix(in srgb, var(--innen) 50%, var(--panel)),
+    var(--versatz) var(--versatz) 0 var(--relief);
+}
+
+/* --- Das Team ------------------------------------------------------------- */
+
+/* Eine Teamkarte trägt die Farbe ihres Typs als Platte — dasselbe Mittel wie
+   bei den Attackenkacheln, damit ein Feuerteam auch aus der Ferne wie ein
+   Feuerteam aussieht. */
+.mon-card:not(.empty) {
+  background:
+    linear-gradient(180deg,
+      color-mix(in srgb, var(--typ-farbe, var(--line)) 26%, var(--panel)) 0 42%,
+      color-mix(in srgb, var(--typ-farbe, var(--line)) 12%, var(--panel)) 42% 100%);
+  border: 2px solid color-mix(in srgb, var(--typ-farbe, var(--line)) 60%, #101418);
+}
+.mon-card::before { width: 8px; left: 3px; top: 3px; bottom: 3px; }
+/* Die Box ist Lager, nicht Team: dieselbe Karte, nur ohne Farbe. */
+.box-list .mon-card:not(.empty) { background: var(--panel); border-color: var(--line); }
+
+/* Die Balken der Werte bekommen dieselbe Rille wie die Lebensbalken. */
+.stat-bar, .mini-bar {
+  background: #3c4450;
+  border: 1px solid #171c24;
+  box-shadow: inset 0 1px 0 rgba(0, 0, 0, .45);
+}
+.stat-bar i { background: linear-gradient(180deg,
+  color-mix(in srgb, var(--accent) 70%, #ffffff) 0 45%, var(--accent) 45% 100%); }
+.mini-bar i { background: linear-gradient(180deg,
+  color-mix(in srgb, var(--accent) 70%, #ffffff) 0 45%, var(--accent) 45% 100%); }
+
+/* --- Der Laden ------------------------------------------------------------ */
+
+/* Der Preis ist die Angabe, auf die es ankommt: eigene Platte, nicht nur
+   rote Schrift. Was man sich nicht leisten kann, bleibt blass. */
+.item-price {
+  padding: .1rem .4rem;
+  background: color-mix(in srgb, var(--accent) 16%, var(--panel));
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, #101418);
+  color: var(--accent-text);
+}
+.item-row:disabled .item-price, .item-row.sold .item-price {
+  background: var(--panel); border-color: var(--line); color: var(--muted);
+}
+.item-row { border: 2px solid var(--line); }
+.item-row:not(:disabled):not(.sold) { border-color: var(--rahmen); }
+
+/* Fenster in Menü und Team: dieselbe doppelte Fassung wie im Kampf. */
+.menue-fenster, .team-detail {
+  border: 2px solid var(--rahmen);
+  box-shadow:
+    inset 0 0 0 2px var(--panel),
+    inset 0 0 0 4px color-mix(in srgb, var(--innen) 50%, var(--panel)),
+    var(--versatz) var(--versatz) 0 var(--relief);
+}

@@ -397,89 +397,89 @@
   // mods werden vom Run abgefragt:
   //   expMult, moneyMult, shopDiscount, catchMult, shinyMult, healPerNode,
   //   extraReward, revealAhead, evPerFloor, teamStatMult, typeBoost
-  relic('glueckliches_ei', { name: 'Glückliches Ei', rarity: 'haeufig', icon: '🥚',
+  relic('glueckliches_ei', { name: 'Glückliches Ei', rarity: 'haeufig', icon: 'ei',
     desc: '+30 % Erfahrung aus allen Kämpfen.', mods: { expMult: 1.3 } });
-  relic('muenzamulett', { name: 'Münzamulett', rarity: 'haeufig', icon: '🪙',
+  relic('muenzamulett', { name: 'Münzamulett', rarity: 'haeufig', icon: 'amulett',
     desc: '+40 % Geld aus allen Quellen.', mods: { moneyMult: 1.4 } });
-  relic('ep_teiler', { name: 'EP-Teiler', rarity: 'haeufig', icon: '📶',
+  relic('ep_teiler', { name: 'EP-Teiler', rarity: 'haeufig', icon: 'balken',
     desc: 'Die Bank bekommt 60 % der Erfahrung statt 25 %.', mods: { benchExp: 0.6 } });
-  relic('honigtopf', { name: 'Honigtopf', rarity: 'haeufig', icon: '🍯',
+  relic('honigtopf', { name: 'Honigtopf', rarity: 'haeufig', icon: 'honig',
     desc: 'Fangchance ×1,5 und wilde Pokémon erscheinen häufiger.', mods: { catchMult: 1.5 } });
-  relic('schillerpin', { name: 'Schillerpin', rarity: 'selten', icon: '✨',
+  relic('schillerpin', { name: 'Schillerpin', rarity: 'selten', icon: 'funken',
     desc: 'Schillernde Pokémon achtmal so häufig.', mods: { shinyMult: 8 } });
-  relic('wunderbroetchen', { name: 'Wunderbrötchen', rarity: 'haeufig', icon: '🍞',
+  relic('wunderbroetchen', { name: 'Wunderbrötchen', rarity: 'haeufig', icon: 'brot',
     desc: 'Nach jedem Knoten heilt das Team 8 % seiner KP.', mods: { healPerNode: 0.08 } });
-  relic('haendlerkarte', { name: 'Händlerkarte', rarity: 'haeufig', icon: '💳',
+  relic('haendlerkarte', { name: 'Händlerkarte', rarity: 'haeufig', icon: 'karte',
     desc: 'Alle Preise 25 % günstiger.', mods: { shopDiscount: 0.25 } });
-  relic('typenkompass', { name: 'Typenkompass', rarity: 'haeufig', icon: '🧭',
+  relic('typenkompass', { name: 'Typenkompass', rarity: 'haeufig', icon: 'kompass',
     desc: 'Zeigt vor jedem Kampf das gegnerische Team.', mods: { scout: 1 } });
-  relic('alte_karte', { name: 'Alte Karte', rarity: 'haeufig', icon: '🗺️',
+  relic('alte_karte', { name: 'Alte Karte', rarity: 'haeufig', icon: 'landkarte',
     desc: 'Jeder Knoten der Route bekommt eine zusätzliche Verzweigung — mehr Auswahl auf jedem Schritt.',
     mods: { extraPaths: 1 } });
-  relic('trainingsgewichte', { name: 'Trainingsgewichte', rarity: 'haeufig', icon: '🏋️',
+  relic('trainingsgewichte', { name: 'Trainingsgewichte', rarity: 'haeufig', icon: 'hantel',
     desc: 'Nach jedem Kampf +4 Fleißpunkte auf einen zufälligen Wert.', mods: { evPerBattle: 4 } });
-  relic('vitamin_abo', { name: 'Vitamin-Abo', rarity: 'selten', icon: '💊',
+  relic('vitamin_abo', { name: 'Vitamin-Abo', rarity: 'selten', icon: 'pille',
     desc: 'Auf jeder neuen Route +12 Fleißpunkte auf den besten Wert jedes Teammitglieds.',
     mods: { evPerFloor: 12 } });
-  relic('notfallband', { name: 'Notfallband', rarity: 'selten', icon: '🎗️',
+  relic('notfallband', { name: 'Notfallband', rarity: 'selten', icon: 'schleife',
     desc: 'Einmal pro Kampf steht das erste besiegte Pokémon mit 30 % KP wieder auf.',
     mods: { emergencyRevive: 0.3 }, battle: true });
-  relic('eilekarte', { name: 'Eilekarte', rarity: 'selten', icon: '⚡',
+  relic('eilekarte', { name: 'Eilekarte', rarity: 'selten', icon: 'blitz',
     desc: 'In der ersten Runde jedes Kampfes handelst du zuerst.',
     mods: { firstTurnPriority: 1 }, battle: true });
-  relic('schutzhelm', { name: 'Schutzhelm', rarity: 'selten', icon: '⛑️',
+  relic('schutzhelm', { name: 'Schutzhelm', rarity: 'selten', icon: 'helm',
     desc: 'Dein Team ignoriert Tarnsteine, Stachler und Klebenetze.',
     mods: { hazardImmune: 1 }, battle: true });
-  relic('mega_armband', { name: 'Mega-Armband', rarity: 'episch', icon: '💎',
+  relic('mega_armband', { name: 'Mega-Armband', rarity: 'episch', icon: 'kristall',
     desc: 'Du darfst zweimal pro Kampf mega-entwickeln.',
     mods: { megaCharges: 2 }, battle: true });
-  relic('steinsammlung', { name: 'Steinsammlung', rarity: 'selten', icon: '💍',
+  relic('steinsammlung', { name: 'Steinsammlung', rarity: 'selten', icon: 'stein',
     desc: 'Mega-Steine kosten im Laden nur die Hälfte und tauchen häufiger auf.',
     mods: { stoneDiscount: 0.5 } });
-  relic('meisterball_splitter', { name: 'Meisterball-Splitter', rarity: 'episch', icon: '🔮',
+  relic('meisterball_splitter', { name: 'Meisterball-Splitter', rarity: 'episch', icon: 'lilaball',
     desc: 'Einmal pro Run fängst du garantiert.', mods: { freeMasterball: 1 } });
-  relic('zweite_chance', { name: 'Zweite Chance', rarity: 'selten', icon: '🔁',
+  relic('zweite_chance', { name: 'Zweite Chance', rarity: 'selten', icon: 'wechseln',
     desc: 'Belohnungen dürfen einmal pro Knoten neu gewürfelt werden.', mods: { reroll: 1 } });
-  relic('doppelfund', { name: 'Doppelfund', rarity: 'episch', icon: '🎁',
+  relic('doppelfund', { name: 'Doppelfund', rarity: 'episch', icon: 'geschenk',
     desc: 'Jede Belohnungsauswahl bietet eine Option mehr.', mods: { extraReward: 1 } });
-  relic('teamgeist', { name: 'Teamgeist', rarity: 'episch', icon: '🤝',
+  relic('teamgeist', { name: 'Teamgeist', rarity: 'episch', icon: 'team',
     desc: 'Mit sechs Pokémon im Team haben alle +8 % auf ihre Werte.',
     mods: { fullTeamStats: 1.08 }, battle: true });
-  relic('erfahrungsbonbon', { name: 'Erfahrungsbonbon', rarity: 'haeufig', icon: '🍬',
+  relic('erfahrungsbonbon', { name: 'Erfahrungsbonbon', rarity: 'haeufig', icon: 'bonbon',
     desc: 'Neu gefangene Pokémon kommen zwei Level über dem Durchschnitt an.',
     mods: { catchLevelBonus: 2 } });
-  relic('notarzt', { name: 'Notarzt', rarity: 'selten', icon: '🚑',
+  relic('notarzt', { name: 'Notarzt', rarity: 'selten', icon: 'kreuz',
     desc: 'Nach jedem Arenakampf wird das Team vollständig geheilt.', mods: { healAfterBoss: 1 } });
-  relic('kampfgeist', { name: 'Kampfgeist', rarity: 'selten', icon: '🔥',
+  relic('kampfgeist', { name: 'Kampfgeist', rarity: 'selten', icon: 'faust',
     desc: 'Nach jedem Sieg im Kampf +1 auf einen zufälligen Wert.',
     mods: { koBoost: 1 }, battle: true });
-  relic('wunderkerze', { name: 'Wunderkerze', rarity: 'selten', icon: '🕯️',
+  relic('wunderkerze', { name: 'Wunderkerze', rarity: 'selten', icon: 'kerze',
     desc: 'Deine Statusattacken treffen immer.', mods: { statusNeverMiss: 1 }, battle: true });
-  relic('ausdauertraining', { name: 'Ausdauertraining', rarity: 'haeufig', icon: '💪',
+  relic('ausdauertraining', { name: 'Ausdauertraining', rarity: 'haeufig', icon: 'muskel',
     desc: 'Zwischen den Kämpfen regenerieren alle Attacken 5 AP.', mods: { ppPerNode: 5 } });
-  relic('glueckswuerfel', { name: 'Glückswürfel', rarity: 'selten', icon: '🎲',
+  relic('glueckswuerfel', { name: 'Glückswürfel', rarity: 'selten', icon: 'wuerfel',
     desc: '15 % Chance, dass eine Belohnung doppelt ausgeschüttet wird.', mods: { doubleReward: 0.15 } });
-  relic('zeitmesser', { name: 'Zeitmesser', rarity: 'haeufig', icon: '⏱️',
+  relic('zeitmesser', { name: 'Zeitmesser', rarity: 'haeufig', icon: 'uhr',
     desc: 'Bälle werden mit jeder Kampfrunde deutlich stärker.', mods: { timerBalls: 1 } });
-  relic('erste_hilfe_set', { name: 'Erste-Hilfe-Set', rarity: 'haeufig', icon: '🩹',
+  relic('erste_hilfe_set', { name: 'Erste-Hilfe-Set', rarity: 'haeufig', icon: 'pflaster',
     desc: 'Statusprobleme verschwinden nach jedem Kampf von allein.', mods: { autoCure: 1 } });
-  relic('gluecksbringer', { name: 'Glücksbringer', rarity: 'episch', icon: '🍀',
+  relic('gluecksbringer', { name: 'Glücksbringer', rarity: 'episch', icon: 'klee',
     desc: 'Volltreffer und Zusatzeffekte deiner Attacken sind wahrscheinlicher.',
     mods: { luck: 1 }, battle: true });
-  relic('schmiedehammer', { name: 'Schmiedehammer', rarity: 'selten', icon: '🔨',
+  relic('schmiedehammer', { name: 'Schmiedehammer', rarity: 'selten', icon: 'hammer',
     desc: 'Im Laden liegt immer mindestens ein Tragegegenstand aus.', mods: { shopHold: 1 } });
-  relic('lehrbuch', { name: 'Lehrbuch', rarity: 'selten', icon: '📘',
+  relic('lehrbuch', { name: 'Lehrbuch', rarity: 'selten', icon: 'buch',
     desc: 'Nach jedem Kampf darf ein Pokémon eine Attacke neu lernen.', mods: { moveTutor: 1 } });
-  relic('bruthelfer', { name: 'Bruthelfer', rarity: 'episch', icon: '🥚',
+  relic('bruthelfer', { name: 'Bruthelfer', rarity: 'episch', icon: 'ei',
     desc: 'Entwicklungen brauchen fünf Level weniger.', mods: { evoEarly: 5 } });
-  relic('sammlerkoffer', { name: 'Sammlerkoffer', rarity: 'haeufig', icon: '🧰',
+  relic('sammlerkoffer', { name: 'Sammlerkoffer', rarity: 'haeufig', icon: 'kiste',
     desc: 'Du startest jeden Kampf mit zwei zusätzlichen Bällen.', mods: { freeBalls: 2 } });
-  relic('waermflasche', { name: 'Wärmflasche', rarity: 'haeufig', icon: '🧣',
+  relic('waermflasche', { name: 'Wärmflasche', rarity: 'haeufig', icon: 'wetter',
     desc: 'Dein Team ist immun gegen Wetterschaden.', mods: { weatherImmune: 1 }, battle: true });
 
   function typeRelic(type, de) {
     relic('fokus_' + toID(type), {
-      name: 'Fokus: ' + de, rarity: 'selten', icon: '🎯', type: type,
+      name: 'Fokus: ' + de, rarity: 'selten', icon: 'ziel', type: type,
       desc: '+30 % Schaden mit ' + de + '-Attacken.',
       mods: { typeBoost: type }, battle: true
     });

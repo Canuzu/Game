@@ -945,5 +945,686 @@ export const SYMBOLE = {
     '.KGgGGGGGGGGgGK.',
     '.KKKKKKKKKKKKKK.',
     '................'
+  ],
+
+  /* --- Ei: Erfahrung und Brut --- */
+  ei: [
+    '................',
+    '.......KK.......',
+    '......KWWK......',
+    '.....KWWWWK.....',
+    '....KWWWWWWK....',
+    '...KWWWWWWWWK...',
+    '...KWWWwwWWWK...',
+    '..KWWWWwwWWWWK..',
+    '..KWWWWWWWWWWK..',
+    '..KWWwwWWWWWWK..',
+    '..KWWwwWWWWWWK..',
+    '..KWWWWWWWWWWK..',
+    '...KWWWWWWWWK...',
+    '....KWwwwwWK....',
+    '.....KKKKKK.....',
+    '................'
+  ],
+
+  /* --- Amulett: Geld an der Kette --- */
+  amulett: [
+    '................',
+    '..KK........KK..',
+    '...KK......KK...',
+    '....KK....KK....',
+    '.....KK..KK.....',
+    '......KKKK......',
+    '.....KGGGGK.....',
+    '....KGGGGGGK....',
+    '...KGGGGGGGGK...',
+    '..KGGGWWWWGGGK..',
+    '..KGGGWWWWGGGK..',
+    '...KGGGGGGGGK...',
+    '....KGgGGgGK....',
+    '.....KGggGK.....',
+    '......KKKK......',
+    '................'
+  ],
+
+  /* --- Balken: geteilte Erfahrung --- */
+  balken: [
+    '................',
+    '................',
+    '............KK..',
+    '...........KNNK.',
+    '........KK.KNNK.',
+    '.......KNNKKNNK.',
+    '....KK.KNNKKNNK.',
+    '...KNNKKNNKKNNK.',
+    'KK.KNNKKNNKKNNK.',
+    'KNNKKNNKKNNKKNNK',
+    'KNNKKNNKKNNKKNNK',
+    'KNNKKNNKKNNKKNNK',
+    'KNNKKNNKKNNKKNNK',
+    'KKKKKKKKKKKKKKKK',
+    '................',
+    '................'
+  ],
+
+  /* --- Honigtopf: lockt an --- */
+  honig: [
+    '................',
+    '................',
+    '....KKKKKKKK....',
+    '...KGGGGGGGGK...',
+    '..KKKKKKKKKKKK..',
+    '..KGGGGGGGGGGK..',
+    '.KGGGGGGGGGGGGK.',
+    '.KGGKKKKKKKGGGK.',
+    '.KGGKWWWWWKGGGK.',
+    '.KGGKWWWWWKGGGK.',
+    '.KGGKKKKKKKGGGK.',
+    '.KGGGGGGGGGGGGK.',
+    '.KGgGGGGGGGGgGK.',
+    '..KGgggggggggK..',
+    '..KKKKKKKKKKKK..',
+    '................'
+  ],
+
+  /* --- Wunderbrötchen --- */
+  brot: [
+    '................',
+    '................',
+    '....KKKKKKK.....',
+    '..KKHHHHHHHKK...',
+    '.KHHHHHHHHHHHK..',
+    'KHHHHHHHHHHHHHK.',
+    'KHHHHHHHHHHHHHK.',
+    'KHhHHHHHHHHHhHK.',
+    'KHhHHHHHHHHHhHK.',
+    'KHhHHHHHHHHHhHK.',
+    'KHhhHHHHHHHhhHK.',
+    '.KHhhhhhhhhhhK..',
+    '..KKKKKKKKKKK...',
+    '................',
+    '................',
+    '................'
+  ],
+
+  /* --- Händlerkarte --- */
+  karte: [
+    '................',
+    '................',
+    '................',
+    'KKKKKKKKKKKKKKKK',
+    'KBBBBBBBBBBBBBBK',
+    'KBBBBBBBBBBBBBBK',
+    'KKKKKKKKKKKKKKKK',
+    'KBBBBBBBBBBBBBBK',
+    'KBBWWWWKBBBBBBBK',
+    'KBBWWWWKBBBBBBBK',
+    'KBBKKKKKBBBBBBBK',
+    'KBbBBBBBBBBBBbBK',
+    'KBbBBBBBBBBBBbBK',
+    'KKKKKKKKKKKKKKKK',
+    '................',
+    '................'
+  ],
+
+  /* --- Alte Karte --- */
+  landkarte: [
+    '................',
+    '...KKKKKKKKKK...',
+    '..KWWWKWWWKWWWK.',
+    '.KWWWWKWWWKWWWWK',
+    'KWWNNWKWWWKWWWWK',
+    'KWWNNWKWWNNKWWWK',
+    'KWWWWWKWNNNKWWWK',
+    'KWWWWWKWNNWKWWWK',
+    'KWWBBBBBBBWKWWWK',
+    'KWWWBBBBBWWKWWWK',
+    'KWWWWWWWWWWKWWWK',
+    'KWWWWWKWWWWKWWWK',
+    'KWWWWWKWWWWKWWWK',
+    '.KWWWWKWWWWKWWWK',
+    '..KKKKKKKKKKKKK.',
+    '................'
+  ],
+
+  /* --- Trainingsgewichte --- */
+  hantel: [
+    '................',
+    '................',
+    '.KKK........KKK.',
+    'KXXXK......KXXXK',
+    'KXXXKKK..KKKXXXK',
+    'KXXXKXKKKKXKXXXK',
+    'KXXXKXXXXXXKXXXK',
+    'KXXXKXXXXXXKXXXK',
+    'KXXXKXKKKKXKXXXK',
+    'KXXXKKK..KKKXXXK',
+    'KXXXK......KXXXK',
+    '.KKK........KKK.',
+    '................',
+    '................',
+    '................',
+    '................'
+  ],
+
+  /* --- Notfallband --- */
+  schleife: [
+    '................',
+    '......KKKK......',
+    '....KKRRRRKK....',
+    '...KRRRRRRRRK...',
+    '..KRRRWWWWRRRK..',
+    '..KRRWWWWWWRRK..',
+    '..KRRWWWWWWRRK..',
+    '..KRRRWWWWRRRK..',
+    '...KRRRRRRRRK...',
+    '....KKRRRRKK....',
+    '.....KRKKRK.....',
+    '....KRRK.KRRK...',
+    '....KRRK.KRRK...',
+    '....KRK...KRK...',
+    '....KK.....KK...',
+    '................'
+  ],
+
+  /* --- Schutzhelm --- */
+  helm: [
+    '................',
+    '................',
+    '.....KKKKKK.....',
+    '...KKWWWWWWKK...',
+    '..KWWWWRRWWWWK..',
+    '.KWWWWWRRWWWWWK.',
+    '.KWWWRRRRRRWWWK.',
+    'KWWWWWRRWWWWWWWK',
+    'KWWWWWRRWWWWWWWK',
+    'KWWWWWWWWWWWWWWK',
+    'KKKKKKKKKKKKKKKK',
+    'KwwwwwwwwwwwwwwK',
+    'KKKKKKKKKKKKKKKK',
+    '................',
+    '................',
+    '................'
+  ],
+
+  /* --- Meisterball-Splitter --- */
+  lilaball: [
+    '.....KKKKKK.....',
+    '...KKPPPPPPKK...',
+    '..KPPWPPPPPPPK..',
+    '.KPPPPPWPWPPPPK.',
+    '.KPPPPWPWPWPPPK.',
+    'KPPPPPPPPPPPPPPK',
+    'KPPPPPKKKKPPPPPK',
+    'KKKKKKKWWKKKKKKK',
+    'KKKKKKKWWKKKKKKK',
+    'KWWWWWKKKKWWWWWK',
+    'KWWWWWWWWWWWWWWK',
+    '.KWWWWWWWWWWWWK.',
+    '.KWWWWWWWWWWWWK.',
+    '..KWWWWWWWWWWK..',
+    '...KKWWWWWWKK...',
+    '.....KKKKKK.....'
+  ],
+
+  /* --- Erfahrungsbonbon --- */
+  bonbon: [
+    '................',
+    '................',
+    '................',
+    '....KKKKKKKK....',
+    '...KBBBBBBBBK...',
+    '..KBBBBBBBBBBK..',
+    '..KBWWBBBBWWBK..',
+    '..KBWWBBBBWWBK..',
+    '..KBBBBBBBBBBK..',
+    '..KBWWBBBBWWBK..',
+    '..KBWWBBBBWWBK..',
+    '..KBBBBBBBBBBK..',
+    '...KBbbbbbbBK...',
+    '....KKKKKKKK....',
+    '................',
+    '................'
+  ],
+
+  /* --- Notarzt --- */
+  kreuz: [
+    '................',
+    '................',
+    '.....KKKKKK.....',
+    '.....KRRRRK.....',
+    '.....KRRRRK.....',
+    'KKKKKKRRRRKKKKKK',
+    'KRRRRRRRRRRRRRRK',
+    'KRRRRRRRRRRRRRRK',
+    'KRRRRRRRRRRRRRRK',
+    'KKKKKKRRRRKKKKKK',
+    '.....KRRRRK.....',
+    '.....KRRRRK.....',
+    '.....KKKKKK.....',
+    '................',
+    '................',
+    '................'
+  ],
+
+  /* --- Wunderkerze --- */
+  kerze: [
+    '................',
+    '.......K........',
+    '......KOK.......',
+    '......KGK.......',
+    '.......K........',
+    '......KWK.......',
+    '.....KWWWK......',
+    '.....KWWWK......',
+    '.....KWWWK......',
+    '.....KWWWK......',
+    '.....KWWWK......',
+    '.....KWWWK......',
+    '....KWWWWWK.....',
+    '....KwwwwwK.....',
+    '....KKKKKKK.....',
+    '................'
+  ],
+
+  /* --- Ausdauertraining --- */
+  muskel: [
+    '................',
+    '....KKKK........',
+    '...KHHHHK.......',
+    '...KHHHHK.......',
+    '...KHHHHK.......',
+    '..KKHHHHKK......',
+    '.KHHHHHHHHKK....',
+    '.KHHHHHHHHHHK...',
+    '.KHHHHHHHHHHHK..',
+    '.KHhHHHHHHHHHK..',
+    '..KhhHHHHHHHHK..',
+    '...KKhhhhhhhhK..',
+    '......KKKKKKKK..',
+    '................',
+    '................',
+    '................'
+  ],
+
+  /* --- Glückswürfel --- */
+  wuerfel: [
+    '................',
+    '..KKKKKKKKKKKK..',
+    '..KWWWWWWWWWWK..',
+    '..KWKKWWWWWWWK..',
+    '..KWKKWWWWWWWK..',
+    '..KWWWWWWWWWWK..',
+    '..KWWWWKKWWWWK..',
+    '..KWWWWKKWWWWK..',
+    '..KWWWWWWWWWWK..',
+    '..KWWWWWWWKKWK..',
+    '..KWWWWWWWKKWK..',
+    '..KWwwwwwwwwwK..',
+    '..KKKKKKKKKKKK..',
+    '................',
+    '................',
+    '................'
+  ],
+
+  /* --- Zeitmesser --- */
+  uhr: [
+    '................',
+    '......KKKK......',
+    '......KXXK......',
+    '....KKKKKKKK....',
+    '...KXXWWWWXXK...',
+    '..KXWWWWWWWWXK..',
+    '.KXWWWWKWWWWWXK.',
+    '.KXWWWWKWWWWWXK.',
+    '.KXWWWWKWWWWWXK.',
+    '.KXWWWWKKKWWWXK.',
+    '.KXWWWWWWWWWWXK.',
+    '..KXWWWWWWWWXK..',
+    '...KXXWWWWXXK...',
+    '....KKKKKKKK....',
+    '................',
+    '................'
+  ],
+
+  /* --- Erste-Hilfe-Set --- */
+  pflaster: [
+    '................',
+    '................',
+    '....KKKK........',
+    '...KHHHHKK......',
+    '..KHHHHHHHKK....',
+    '..KHHwwHHHHHKK..',
+    '..KHwwHHwwHHHHK.',
+    '..KHHHHwwHHwwHK.',
+    '..KHHHHHHHHwwHK.',
+    '..KKHHHHHHHHHHK.',
+    '....KKHHHHHHHK..',
+    '......KKHHHHK...',
+    '........KKKK....',
+    '................',
+    '................',
+    '................'
+  ],
+
+  /* --- Glücksbringer --- */
+  klee: [
+    '................',
+    '....KK....KK....',
+    '...KNNK..KNNK...',
+    '..KNNNNKKNNNNK..',
+    '..KNNNNNNNNNNK..',
+    '...KNNNNNNNNK...',
+    '....KNNNNNNK....',
+    '..KKKNNNNNNKKK..',
+    '.KNNNNNNNNNNNNK.',
+    '.KNNNNNNNNNNNNK.',
+    '..KKKNNNNNNKKK..',
+    '....KNNNNNNK....',
+    '......KnnK......',
+    '.......KnK......',
+    '.......KKK......',
+    '................'
+  ],
+
+  /* --- Schmiedehammer --- */
+  hammer: [
+    '................',
+    '...KKKKKKK......',
+    '..KXXXXXXXK.....',
+    '.KXXXXXXXXXK....',
+    '.KXxXXXXXXXK....',
+    '.KXxxxxxxxxK....',
+    '..KKKKHHKKK.....',
+    '.....KHHK.......',
+    '.....KHHK.......',
+    '.....KHHK.......',
+    '.....KHhK.......',
+    '.....KHhK.......',
+    '.....KHhK.......',
+    '.....KKKK.......',
+    '................',
+    '................'
+  ],
+
+  /* --- Lehrbuch --- */
+  buch: [
+    '................',
+    '...KKKKKKKKKK...',
+    '..KBBBBKBBBBBK..',
+    '.KBBBBBKBBBBBBK.',
+    'KBWWWWBKBWWWWWBK',
+    'KBWWWWBKBWWWWWBK',
+    'KBWWWWBKBWWWWWBK',
+    'KBWWWWBKBWWWWWBK',
+    'KBWWWWBKBWWWWWBK',
+    'KBWWWWBKBWWWWWBK',
+    'KBWWWWBKBWWWWWBK',
+    'KBbbbbBKBbbbbbBK',
+    'KBBBBBBKBBBBBBBK',
+    '.KKKKKKKKKKKKKK.',
+    '................',
+    '................'
+  ],
+
+
+  /* --- Fokus auf einen Typ --- */
+  ziel: [
+    '................',
+    '.....KKKKKK.....',
+    '...KKWWWWWWKK...',
+    '..KWWWWWWWWWWK..',
+    '.KWWWKKKKKKWWWK.',
+    '.KWWKRRRRRRKWWK.',
+    'KWWKRRWWWWRRKWWK',
+    'KWWKRRWRRWRRKWWK',
+    'KWWKRRWRRWRRKWWK',
+    'KWWKRRWWWWRRKWWK',
+    '.KWWKRRRRRRKWWK.',
+    '.KWWWKKKKKKWWWK.',
+    '..KWWWWWWWWWWK..',
+    '...KKWWWWWWKK...',
+    '.....KKKKKK.....',
+    '................'
+  ],
+
+  /* --- Wolkenspeicher --- */
+  wolke: [
+    '................',
+    '................',
+    '......KKKK......',
+    '....KKWWWWKK....',
+    '...KWWWWWWWWK...',
+    '..KWWWWWWWWWWK..',
+    '.KWWWWWWWWWWWWK.',
+    'KWWWWWWWWWWWWWWK',
+    'KWWWWWWWWWWWWWWK',
+    'KwwwwwwwwwwwwwwK',
+    '.KKKKKKKKKKKKKK.',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................'
+  ],
+
+  /* --- Speichern --- */
+  diskette: [
+    '................',
+    'KKKKKKKKKKKKKK..',
+    'KBBBBBBBBBBBBK..',
+    'KBKKKKKKKKBBBKK.',
+    'KBKWWWWWWKBBBBK.',
+    'KBKWWWWWWKBBBBK.',
+    'KBKWWWWWWKBBBBK.',
+    'KBKKKKKKKKBBBBK.',
+    'KBBBBBBBBBBBBBK.',
+    'KBKKKKKKKKKKKBK.',
+    'KBKWWWWWWWWWKBK.',
+    'KBKWWWWWWWWWKBK.',
+    'KBKWWWWWWWWWKBK.',
+    'KBKKKKKKKKKKKBK.',
+    'KKKKKKKKKKKKKKK.',
+    '................'
+  ],
+
+  /* --- Kopieren --- */
+  klemmbrett: [
+    '................',
+    '......KKKK......',
+    '.....KXXXXK.....',
+    '..KKKKXXXXKKKK..',
+    '..KWWKKKKKKWWK..',
+    '..KWWWWWWWWWWK..',
+    '..KWWKKKKKKWWK..',
+    '..KWWWWWWWWWWK..',
+    '..KWWKKKKKKWWK..',
+    '..KWWWWWWWWWWK..',
+    '..KWWKKKKKKWWK..',
+    '..KWWWWWWWWWWK..',
+    '..KWWWWWWWWWWK..',
+    '..KKKKKKKKKKKK..',
+    '................',
+    '................'
+  ],
+
+  /* --- Spieler --- */
+  person: [
+    '................',
+    '.....KKKKK......',
+    '....KHHHHHK.....',
+    '...KHHHHHHHK....',
+    '...KHHHHHHHK....',
+    '...KHHHHHHHK....',
+    '....KHHHHHK.....',
+    '.....KKKKK......',
+    '...KKBBBBBKK....',
+    '..KBBBBBBBBBK...',
+    '.KBBBBBBBBBBBK..',
+    '.KBBBBBBBBBBBK..',
+    '.KBbBBBBBBBbBK..',
+    '.KBbBBBBBBBbBK..',
+    '.KKKKKKKKKKKKK..',
+    '................'
+  ],
+
+  /* --- Löschen --- */
+  papierkorb: [
+    '................',
+    '.....KKKKKK.....',
+    '..KKKKKKKKKKKK..',
+    '..KXXXXXXXXXXK..',
+    '..KKKKKKKKKKKK..',
+    '...KXXXXXXXXK...',
+    '...KXKXKXKXXK...',
+    '...KXKXKXKXXK...',
+    '...KXKXKXKXXK...',
+    '...KXKXKXKXXK...',
+    '...KXKXKXKXXK...',
+    '...KXKXKXKXXK...',
+    '...KXXXXXXXXK...',
+    '....KKKKKKKK....',
+    '................',
+    '................'
+  ],
+
+  /* --- Starten --- */
+  start: [
+    '................',
+    '...KK...........',
+    '...KNK..........',
+    '...KNNK.........',
+    '...KNNNK........',
+    '...KNNNNK.......',
+    '...KNNNNNK......',
+    '...KNNNNNNK.....',
+    '...KNNNNNNK.....',
+    '...KNNNNNK......',
+    '...KNNNNK.......',
+    '...KNNNK........',
+    '...KNNK.........',
+    '...KNK..........',
+    '...KK...........',
+    '................'
+  ],
+
+  /* --- Tages-Run --- */
+  kalender: [
+    '................',
+    '....KK....KK....',
+    '...KXXK..KXXK...',
+    '.KKKXXKKKKXXKKK.',
+    '.KWWWWWWWWWWWWK.',
+    '.KWWWWWWWWWWWWK.',
+    '.KKKKKKKKKKKKKK.',
+    '.KWKWKWKWKWKWWK.',
+    '.KWKWKWKWKWKWWK.',
+    '.KWWWWWWWWWWWWK.',
+    '.KWKWKWKWKWKWWK.',
+    '.KWKWKWKWKWKWWK.',
+    '.KWWWWWWWWWWWWK.',
+    '.KKKKKKKKKKKKKK.',
+    '................',
+    '................'
+  ],
+
+  /* --- Geteilter Link --- */
+  kette: [
+    '................',
+    '................',
+    '....KKK...KKK...',
+    '..KKBBBKKKBBBKK.',
+    '..KBKKKBBBKKKBK.',
+    '..KBK.KBKBK.KBK.',
+    '..KBK.KBKBK.KBK.',
+    '..KBK.KBKBK.KBK.',
+    '..KBKKKBBBKKKBK.',
+    '..KKBBBKKKBBBKK.',
+    '....KKK...KKK...',
+    '................',
+    '................',
+    '................',
+    '................',
+    '................'
+  ],
+
+  /* --- Achtung --- */
+  warnung: [
+    '.......KK.......',
+    '.......KK.......',
+    '......KGGK......',
+    '......KGGK......',
+    '.....KGGGGK.....',
+    '.....KGKKGK.....',
+    '....KGGKKGGK....',
+    '....KGGKKGGK....',
+    '...KGGGKKGGGK...',
+    '...KGGGKKGGGK...',
+    '..KGGGGKKGGGGK..',
+    '..KGGGGGGGGGGK..',
+    '.KGGGGGKKGGGGGK.',
+    '.KGGGGGKKGGGGGK.',
+    'KGGGGGGGGGGGGGGK',
+    'KKKKKKKKKKKKKKKK'
+  ],
+
+  /* --- Run-Karte --- */
+  bild: [
+    '................',
+    'KKKKKKKKKKKKKKKK',
+    'KCCCCCCCCCCCCCCK',
+    'KCCCGCCCCCCCCCCK',
+    'KCCGGGCCCCCCCCCK',
+    'KCCCGCCCCCCCCCCK',
+    'KCCCCCCCCCCCCCCK',
+    'KCCCCCCCCKCCCCCK',
+    'KCCCCCCCKNKCCCCK',
+    'KCCCKCCKNNNKCCCK',
+    'KCCKNKKNNNNNKCCK',
+    'KCKNNNKNNNNNNKCK',
+    'KNNNNNNNNNNNNNNK',
+    'KNNNNNNNNNNNNNNK',
+    'KKKKKKKKKKKKKKKK',
+    '................'
+  ],
+
+  /* --- Teilen --- */
+  teilen: [
+    '................',
+    '...........KKK..',
+    '..........KBBBK.',
+    '..........KBBBK.',
+    '...KKK.....KKK..',
+    '..KBBBK..KK.....',
+    '..KBBBK.KK......',
+    '..KBBBKKK.......',
+    '..KBBBK.KK......',
+    '...KKK...KK.....',
+    '..........KKK...',
+    '..........KBBBK.',
+    '..........KBBBK.',
+    '...........KKK..',
+    '................',
+    '................'
+  ],
+
+  /* --- Delegator --- */
+  puppe: [
+    '................',
+    '......KKKK......',
+    '.....KWWWWK.....',
+    '....KWWWWWWK....',
+    '....KWKWWKWK....',
+    '....KWWWWWWK....',
+    '....KWWKKWWK....',
+    '.....KWWWWK.....',
+    '...KKKKKKKKKK...',
+    '..KWWWWWWWWWWK..',
+    '..KWWKWWWWKWWK..',
+    '..KWWWWWWWWWWK..',
+    '..KWWWWWWWWWWK..',
+    '..KWwwwwwwwwWK..',
+    '..KKKKKKKKKKKK..',
+    '................'
   ]
 };

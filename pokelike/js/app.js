@@ -380,7 +380,7 @@
       ? el('div', { className: 'grave-grid' }, list.map(function (g) {
         return el('div', { className: 'grave' }, [
           el('div', { className: 'grave-stone' }, [
-            el('span', { className: 'grave-cross', text: '✝' }),
+            U.sym('grab', { className: 'grave-cross' }),
             U.sprite(dex.species[g.sp], { shiny: g.shiny, className: 'grave-sprite' })
           ]),
           el('strong', { text: g.name + (g.shiny ? ' ✦' : '') }),
@@ -392,7 +392,7 @@
       }))
       : el('p', { text: 'Noch niemand. So soll es bleiben.' });
     U.modal({
-      title: '🪦 Friedhof', wide: true,
+      title: 'Friedhof', wide: true,
       content: el('div', {}, [
         el('p', { className: 'muted', text: 'Im Nuzlocke bleibt ein besiegtes Pokémon fort. Hier stehen sie alle.' }),
         content
@@ -423,13 +423,13 @@
     var stand = meta.tagesStand();
     var gespielt = !!stand.eigen;
     var unterzeile = gespielt
-      ? (stand.eigen.gewonnen ? 'Heute: Liga bezwungen 👑' : 'Heute: Region ' + stand.eigen.region + ' von 6')
+      ? (stand.eigen.gewonnen ? 'Heute: Liga bezwungen' : 'Heute: Region ' + stand.eigen.region + ' von 6')
       : 'Für alle derselbe Startwert · noch nicht gespielt';
     return el('button', {
       className: 'tages-banner' + (gespielt ? ' fertig' : ''), type: 'button',
       onclick: function () { show('daily'); }
     }, [
-      el('span', { className: 'tages-icon', text: '📅' }),
+      U.sym('kalender', { className: 'tages-icon' }),
       el('span', {}, [
         el('strong', { text: 'Tages-Run' }),
         el('span', { className: 'muted small block', text: unterzeile })
@@ -449,7 +449,7 @@
     if (!ein) return null;
     return el('div', { className: 'einladung' }, [
       el('div', {}, [
-        el('strong', { text: '🔗 Ein Run wurde dir geschickt' }),
+        el('strong', {}, U.symText('kette', 'Ein Run wurde dir geschickt')),
         el('div', { className: 'muted small', text:
           ein.modusName + (ein.aufstieg ? ' · ' + meta.stufenName(ein.aufstieg) : '') +
           (ein.nuzlocke ? ' · Nuzlocke' : '') + ' · Startwert ' + ein.startwert })
@@ -540,7 +540,8 @@
     var legStand = meta.duellUebersicht();
     eintraege.push(menueZeile('Legendärer Run', function () { show('legenden'); }, {
       gold: true,
-      notiz: legFrei ? legStand.gefangen + '/' + PL.Run.legendenGesamt() : '🔒',
+      notiz: legFrei ? legStand.gefangen + '/' + PL.Run.legendenGesamt() : null,
+      gesperrt: !legFrei,
       unter: legFrei
         ? 'Ein Duell gegen ein legendäres Pok\u00e9mon.'
         : 'Erst Stufe 5 im normalen Run gewinnen.'
@@ -575,13 +576,13 @@
    */
   function saveMark() {
     var cloud = PL.cloud ? PL.cloud.state() : null;
-    var text, cls, title;
+    var zeichen, cls, title;
     if (cloud && cloud.available) {
-      text = '☁';
+      zeichen = 'wolke';
       cls = 'chip cloud';
       title = 'Der Spielstand liegt in der Wolke — Code ' + (cloud.code || 'wird angelegt');
     } else if (!meta.available()) {
-      text = '⚠';
+      zeichen = 'warnung';
       cls = 'chip cloud off';
       title = 'Dieser Browser lässt kein Speichern zu — der Fortschritt geht beim Schließen verloren';
     } else {
@@ -591,7 +592,7 @@
       className: cls, type: 'button', title: title,
       style: { cursor: 'pointer' },
       onclick: function () { show('saves'); }
-    }, text);
+    }, U.sym(zeichen));
   }
 
   /* ---------- Wolkenspeicher ----------------------------------------------------
@@ -667,14 +668,14 @@
 
     if (!st.available) {
       host.appendChild(embedded() ? el('p', {}, [
-        el('strong', { text: '☁ Kein Wolkenspeicher hier. ' }),
+        el('strong', {}, U.symText('wolke', 'Kein Wolkenspeicher hier.')),
         'Das Spiel läuft in einem Rahmen auf fremder Adresse, und manche Browser ' +
         'werfen den Speicher solcher Seiten weg, sobald der Tab zugeht — wenn dir ' +
         'dein Fortschritt verloren geht, liegt es daran. Öffne das Spiel unter ' +
         'seiner eigenen Adresse, dann hält der Speicher wie bei jeder normalen ' +
         'Seite; oder sichere den Stand hier unten als Text.'
       ]) : el('p', {}, [
-        el('strong', { text: '💾 Alles im Browser dieses Geräts. ' }),
+        el('strong', {}, U.symText('diskette', 'Alles im Browser dieses Geräts.')),
         'Das Spiel läuft unter seiner eigenen Adresse — der Speicher hält hier ' +
         'wie bei jeder normalen Seite: geschlossene Tabs, Neustarts und ' +
         'Browser-Updates überstehen ihn. Nur ein geleerter Browserspeicher oder ' +
@@ -692,11 +693,11 @@
           try { root.navigator.clipboard.writeText(st.code); U.toast('Code kopiert.'); }
           catch (e) { U.toast('Code: ' + st.code); }
         }
-      }, '📋') : null
+      }, U.sym('klemmbrett')) : null
     ]);
 
     host.appendChild(el('p', {}, [
-      el('strong', { text: '☁ Wolkenspeicher aktiv. ' }),
+      el('strong', {}, U.symText('wolke', 'Wolkenspeicher aktiv.')),
       'Dein Fortschritt liegt außerhalb des Browsers und übersteht geschlossene ' +
       'Tabs, geleerte Speicher und Gerätewechsel. Notier dir den Code — mit ihm ' +
       'holst du deinen Stand überall zurück.'
@@ -711,7 +712,7 @@
             redraw();
           });
         }
-      }, '☁ Jetzt sichern'),
+      }, U.symText('wolke', 'Jetzt sichern')),
       el('button', {
         className: 'btn small', type: 'button',
         onclick: function () {
@@ -728,7 +729,7 @@
             });
           }, { title: 'Stand von woanders holen', maxlength: 20 });
         }
-      }, '⤵ Code eingeben')
+      }, U.symText('pfeilrunter', 'Code eingeben'))
     ]));
     return host;
   }
@@ -744,7 +745,7 @@
   function profileBar() {
     var p = meta.activeProfile();
     return el('div', { className: 'profile-bar' }, [
-      el('span', { className: 'profile-who' }, ['👤 ', el('strong', { text: p ? p.name : 'Spieler 1' })]),
+      el('span', { className: 'profile-who' }, [U.sym('person'), el('strong', { text: p ? p.name : 'Spieler 1' })]),
       el('button', {
         className: 'btn small', type: 'button',
         title: 'Profil wechseln, anlegen oder umbenennen',
@@ -800,7 +801,7 @@
               redraw();
             }, { danger: true });
           }
-        }, '🗑') : null
+        }, U.sym('papierkorb')) : null
       ]);
     });
     rows.push(el('button', {
@@ -868,7 +869,7 @@
           if (slot.empty) write();
           else U.confirm('Platz ' + slot.n + ' überschreiben?', write);
         }
-      }, '💾 Speichern'));
+      }, U.symText('diskette', 'Speichern')));
     }
     buttons.push(el('button', {
       className: 'btn small primary', type: 'button', disabled: slot.empty || slot.outdated,
@@ -885,7 +886,7 @@
         if (App.run) U.confirm('Der laufende Run wird dabei ersetzt. Trotzdem laden?', load, { danger: true });
         else load();
       }
-    }, '▶ Laden'));
+    }, U.symText('start', 'Laden')));
     if (!slot.auto) {
       buttons.push(el('button', {
         className: 'btn small danger', type: 'button', disabled: slot.empty,
@@ -895,7 +896,7 @@
             redraw();
           }, { danger: true });
         }
-      }, '🗑'));
+      }, U.sym('papierkorb')));
     }
 
     return el('div', { className: 'slot-card' + (slot.empty ? ' empty' : '') }, [
@@ -928,8 +929,8 @@
       if (cloud) host.appendChild(cloud);
       host.appendChild(el('p', { className: 'section-label', text: 'Auf ein anderes Gerät mitnehmen' }));
       host.appendChild(el('div', { className: 'scene-actions' }, [
-        el('button', { className: 'btn', type: 'button', onclick: openSaveExport }, '⬇ Sichern'),
-        el('button', { className: 'btn', type: 'button', onclick: openSaveImport }, '⬆ Einspielen')
+        el('button', { className: 'btn', type: 'button', onclick: openSaveExport }, U.symText('pfeilrunter', 'Sichern')),
+        el('button', { className: 'btn', type: 'button', onclick: openSaveImport }, U.symText('pfeilhoch', 'Einspielen'))
       ]));
       if (!meta.available()) {
         host.appendChild(el('p', { className: 'warn-note',
@@ -1061,7 +1062,7 @@
         U.sprite(s.species, { className: 'starter-sprite' }),
         el('span', { className: 'starter-name', text: T.species(s.species) }),
         el('span', { className: 'starter-types' }, s.species.t.map(function (t) { return U.typeChip(t, true); })),
-        s.unlocked ? null : el('span', { className: 'lock', text: '🔒' })
+        s.unlocked ? null : U.sym('schloss', { className: 'lock' })
       ]);
       starterGrid.appendChild(card);
     });
@@ -1771,7 +1772,7 @@
       U.sprite(mon, { back: isMine, eager: true, ground: true, pid: formPid,
         className: 'battle-sprite' + (mon.hp <= 0 ? ' fainted' : '') }),
       mon.shiny ? el('span', { className: 'shiny-mark', text: '✦' }) : null,
-      act.vol.substitute ? el('span', { className: 'sub-mark', title: 'Delegator', text: '🪆' }) : null
+      act.vol.substitute ? U.sym('puppe', { className: 'sub-mark', title: 'Delegator' }) : null
     ]);
     slot.appendChild(art);
 
@@ -2110,13 +2111,13 @@
       var mForm = bt.megaFormFor(me);
       var primal = /Primal/.test(mForm.n);
       BV.actionRow.appendChild(transformBtn('mega',
-        (primal ? '☀ Proto ' : '◈ Mega ') + shortForm(mForm),
+        U.symText(primal ? 'funken' : 'kristall', (primal ? 'Proto ' : 'Mega ') + shortForm(mForm)),
         primal ? 'Protoform vorgemerkt — wähle deine Attacke.'
                : 'Mega-Entwicklung vorgemerkt — wähle deine Attacke.',
         busy));
     }
     if (bt.canGmax(me)) {
-      BV.actionRow.appendChild(transformBtn('gmax', '◈ Giga ' + shortForm(bt.gmaxFormFor(me)),
+      BV.actionRow.appendChild(transformBtn('gmax', U.symText('kristall', 'Giga ' + shortForm(bt.gmaxFormFor(me))),
         'Gigadynamax vorgemerkt — drei Runden groß, dann zurück.', busy));
     }
     // Der Auto-Schalter ist immer bedienbar, auch mitten im Ablauf.
@@ -2645,7 +2646,7 @@
     var grid = el('div', { className: 'relic-grid' }, scene.offers.map(function (r) {
       return el('button', { className: 'relic-card r-' + r.rarity, type: 'button',
         onclick: function () { take(r); } }, [
-        el('span', { className: 'relic-icon', text: r.icon || '🏛️' }),
+        U.sym(r.icon || 'saeule', { className: 'relic-icon' }),
         el('strong', { text: r.name }),
         el('span', { className: 'relic-rarity', text: r.rarity }),
         el('span', { className: 'muted', text: r.desc })
@@ -3372,7 +3373,7 @@
       ? ids.map(function (id) {
         var r = PL.relics.get(id);
         return el('div', { className: 'relic-row r-' + r.rarity }, [
-          el('span', { className: 'relic-icon', text: r.icon || '🏛️' }),
+          U.sym(r.icon || 'saeule', { className: 'relic-icon' }),
           el('div', {}, [el('strong', { text: r.name }), el('div', { className: 'muted', text: r.desc })])
         ]);
       })
@@ -3677,7 +3678,7 @@
         ]),
         el('span', { className: 'muted small', text: m.bed }),
         m.geschafft ? null : fortschritt(m.stand, m.ziel),
-        el('span', { className: 'marke-lohn', text: '🎁 ' + m.lohnText })
+        el('span', { className: 'marke-lohn' }, U.symText('geschenk', m.lohnText))
       ]);
     }
 
@@ -3696,19 +3697,19 @@
 
       /* --- Was gerade gilt --- */
       el('div', { className: 'sammlung-karte' }, [
-        el('h3', { text: '🎁 Dein Startvorteil' }),
+        el('h3', {}, U.symText('geschenk', 'Dein Startvorteil')),
         el('p', { className: 'muted small', text:
           'Gilt in jedem Run — nur nicht im Tages-Run, wo alle gleich anfangen.' }),
         el('div', { className: 'vorteil-liste' }, [
-          lohn.geld ? el('span', { className: 'chip', text: '💰 +' + U.money(lohn.geld) }) : null,
-          lohn.baelle ? el('span', { className: 'chip', text: '⚪ +' + lohn.baelle + ' Pokébälle' }) : null,
-          lohn.superbaelle ? el('span', { className: 'chip', text: '🔵 +' + lohn.superbaelle + ' Superbälle' }) : null,
-          lohn.traenke ? el('span', { className: 'chip', text: '🧪 +' + lohn.traenke + ' Hypertränke' }) : null,
-          lohn.beleber ? el('span', { className: 'chip', text: '💊 +' + lohn.beleber + ' Beleber' }) : null,
-          lohn.meisterball ? el('span', { className: 'chip', text: '🟣 Meisterball' }) : null,
-          lohn.relikte ? el('span', { className: 'chip', text: '🏛️ ' + lohn.relikte + ' Relikt zur Wahl' }) : null,
-          lohn.reroll ? el('span', { className: 'chip', text: '🎲 Ein Wurf neu je Run' }) : null,
-          lohn.shiny > 1 ? el('span', { className: 'chip', text: '✨ Schillernde ×' + lohn.shiny }) : null,
+          lohn.geld ? el('span', { className: 'chip' }, U.symText('muenze', '+' + U.money(lohn.geld))) : null,
+          lohn.baelle ? el('span', { className: 'chip' }, U.symText('ball', '+' + lohn.baelle + ' Pokébälle')) : null,
+          lohn.superbaelle ? el('span', { className: 'chip' }, U.symText('ball', '+' + lohn.superbaelle + ' Superbälle')) : null,
+          lohn.traenke ? el('span', { className: 'chip' }, U.symText('traenkchen', '+' + lohn.traenke + ' Hypertränke')) : null,
+          lohn.beleber ? el('span', { className: 'chip' }, U.symText('pille', '+' + lohn.beleber + ' Beleber')) : null,
+          lohn.meisterball ? el('span', { className: 'chip' }, U.symText('lilaball', 'Meisterball')) : null,
+          lohn.relikte ? el('span', { className: 'chip' }, U.symText('saeule', lohn.relikte + ' Relikt zur Wahl')) : null,
+          lohn.reroll ? el('span', { className: 'chip' }, U.symText('wuerfel', 'Ein Wurf neu je Run')) : null,
+          lohn.shiny > 1 ? el('span', { className: 'chip' }, U.symText('funken', 'Schillernde ×' + lohn.shiny)) : null,
           !hatVorteil(lohn)
             ? el('span', { className: 'muted', text: 'Noch keine Marke geholt — fang 25 Arten, dann geht es los.' })
             : null
@@ -3719,7 +3720,7 @@
 
       /* --- Der Stand im Legendären Run --- */
       el('div', { className: 'sammlung-karte' }, [
-        el('h3', { text: '🌟 Legendärer Run' }),
+        el('h3', {}, U.symText('stern', 'Legendärer Run')),
         el('p', { className: 'daily-gross', text: duell.gefangen + ' von ' + PL.Run.legendenGesamt() + ' gefangen' }),
         el('p', { className: 'muted small', text:
           duell.besiegt + ' besiegt · ' +
@@ -3732,11 +3733,12 @@
 
       /* --- Die Wochenaufträge --- */
       el('div', { className: 'sammlung-karte' }, [
-        el('h3', { text: '📋 Aufträge dieser Woche' }),
+        el('h3', {}, U.symText('klemmbrett', 'Aufträge dieser Woche')),
         el('p', { className: 'muted small', text:
           'Kalenderwoche ' + woche.woche + ' · für alle dieselben · zählt über alle Runs der Woche' }),
         el('div', { className: 'wochenpreis' + (woche.preisGeholt ? ' fertig' : '') }, [
-          el('strong', { text: woche.preisGeholt ? '✓ Volle Woche geschafft' : '🏛️ Alle drei schaffen' }),
+          el('strong', {}, woche.preisGeholt ? '✓ Volle Woche geschafft'
+          : U.symText('saeule', 'Alle drei schaffen')),
           el('span', { className: 'marke-lohn', text: woche.preis })
         ]),
         el('div', { className: 'auftrag-liste' }, woche.auftraege.map(function (a) {
@@ -3746,7 +3748,7 @@
               el('span', { className: 'marke-haken', text: a.geschafft ? '✓' : '' })
             ]),
             a.geschafft ? null : fortschritt(a.stand, a.ziel),
-            el('span', { className: 'marke-lohn', text: '🎁 ' + a.lohnText })
+            el('span', { className: 'marke-lohn' }, U.symText('geschenk', a.lohnText))
           ]);
         }))
       ]),
@@ -3770,7 +3772,7 @@
     if (r.lvl) teile.push('höchstes Level ' + r.lvl);
     if (r.kaempfe) teile.push(r.kaempfe + ' Kämpfe');
     if (r.runs) teile.push(r.runs + (r.runs === 1 ? ' Run' : ' Runs'));
-    return el('p', { className: 'art-rekord', text: '🏅 Dein Bestwert: ' + teile.join(' · ') });
+    return el('p', { className: 'art-rekord' }, U.symText('orden', 'Dein Bestwert: ' + teile.join(' · ')));
   }
 
   SCREENS.achievements = function () {
@@ -3845,8 +3847,8 @@
         el('p', { className: 'muted', text: 'Alles liegt nur in diesem Browser. Sichere den Stand als Text, ' +
           'wenn du ihn behalten oder auf ein anderes Gerät bringen willst.' }),
         el('div', { className: 'setting-actions' }, [
-          el('button', { className: 'btn', type: 'button', onclick: openSaveExport }, '⬇ Spielstand sichern'),
-          el('button', { className: 'btn', type: 'button', onclick: openSaveImport }, '⬆ Spielstand einspielen')
+          el('button', { className: 'btn', type: 'button', onclick: openSaveExport }, U.symText('pfeilrunter', 'Spielstand sichern')),
+          el('button', { className: 'btn', type: 'button', onclick: openSaveImport }, U.symText('pfeilhoch', 'Spielstand einspielen'))
         ])
       ]),
       el('div', { className: 'danger-zone' }, [
@@ -3910,7 +3912,7 @@
       knopf.textContent = 'Wird geprüft …';
       PL.update.check({ reload: false }).then(function (res) {
         knopf.disabled = false;
-        knopf.textContent = '🔄 Nach Aktualisierung sehen';
+        clear(knopf); U.append(knopf, U.symText('wechseln', 'Nach Aktualisierung sehen'));
         if (res.state === 'aktuell') { U.toast('Das ist die neueste Fassung.', 'good'); return; }
         if (res.state === 'unbekannt' || res.state === 'entwicklung') {
           U.toast('Von hier aus lässt sich das nicht prüfen.', 'bad');
@@ -3922,7 +3924,7 @@
             root.location.replace(root.location.pathname + '?v=' + encodeURIComponent(res.latest));
           }, { yes: 'Neu laden' });
       });
-    } }, '🔄 Nach Aktualisierung sehen');
+    } }, U.symText('wechseln', 'Nach Aktualisierung sehen'));
     return el('div', { className: 'save-zone' }, [
       el('h3', { text: 'Fassung' }),
       stand,
@@ -3973,7 +3975,7 @@
         el('p', { className: 'muted small', text: 'Größe: ' + (text.length / 1024).toFixed(1) + ' KB' })
       ]),
       actions: [
-        downloads ? { label: '💾 Als Datei', close: false, onClick: function () {
+        downloads ? { label: 'Als Datei', zeichen: 'diskette', close: false, onClick: function () {
           var name = 'pokelike-' + (meta.activeProfile() || {}).name + '-' +
             new Date().toISOString().slice(0, 10) + '.json';
           saveToFile(text, name.replace(/[^A-Za-z0-9._-]+/g, '-')).then(function (ok) {
@@ -3981,7 +3983,7 @@
             else U.toast('Als Datei gesichert.', 'good');
           });
         } } : null,
-        { label: '📋 Kopieren', primary: true, close: false, onClick: function () {
+        { label: 'Kopieren', zeichen: 'klemmbrett', primary: true, close: false, onClick: function () {
           area.focus();
           area.select();
           var done = false;
@@ -4188,7 +4190,7 @@
     var marken = App.neueMarken || [], auftraege = App.wochenLohn || [];
     if (!marken.length && !auftraege.length) return null;
     return el('div', { className: 'sammlung-karte' }, [
-      el('h3', { text: '🎁 Dazugekommen' }),
+      el('h3', {}, U.symText('geschenk', 'Dazugekommen')),
       el('div', { className: 'auftrag-liste' }, marken.map(function (ms) {
         return el('div', { className: 'auftrag fertig' }, [
           el('strong', { text: 'Sammelmarke: ' + ms.name }),
@@ -4284,7 +4286,7 @@
 
     function zeigeLatte(latte) {
       clear(latteHost);
-      latteHost.appendChild(el('h3', { text: '🤖 Die Messlatte' }));
+      latteHost.appendChild(el('h3', {}, U.symText('roboter', 'Die Messlatte')));
       if (!latte) {
         latteHost.appendChild(el('p', { className: 'muted', text:
           'Der Automat spielt den heutigen Startwert gerade durch …' }));
@@ -4308,7 +4310,7 @@
     /* --- Das eigene Ergebnis --- */
     var eigenHost = el('div', { className: 'daily-karte' });
     wrap.appendChild(eigenHost);
-    eigenHost.appendChild(el('h3', { text: '🎮 Dein Ergebnis' }));
+    eigenHost.appendChild(el('h3', {}, U.symText('person', 'Dein Ergebnis')));
 
     if (stand.eigen) {
       var e = stand.eigen;
@@ -4322,7 +4324,7 @@
         var gleich = (e.gewonnen && latte.gewonnen) || e.region === latte.region;
         eigenHost.appendChild(el('p', {
           className: besser ? 'daily-urteil gut' : gleich ? 'daily-urteil' : 'daily-urteil schlecht',
-          text: besser ? '🏆 Du hast den Automaten geschlagen!'
+          text: besser ? 'Du hast den Automaten geschlagen!'
             : gleich ? 'Gleichauf mit dem Automaten.'
             : 'Der Automat kam weiter. Morgen wieder.'
         }));
@@ -4331,7 +4333,7 @@
       eigenHost.appendChild(el('pre', { className: 'teilen-text', text: text }));
       eigenHost.appendChild(el('div', { className: 'setting-actions' }, [
         el('button', { className: 'btn primary', type: 'button',
-          onclick: function () { kopiere(text, 'Ergebnis kopiert.'); } }, '📋 Ergebnis teilen')
+          onclick: function () { kopiere(text, 'Ergebnis kopiert.'); } }, U.symText('klemmbrett', 'Ergebnis teilen'))
       ]));
     } else {
       eigenHost.appendChild(el('p', { className: 'muted', text:
@@ -4343,14 +4345,14 @@
             U.confirm('Der laufende Run wird dabei gelöscht. Trotzdem den Tages-Run starten?',
               los, { danger: true });
           } else los();
-        } }, '▶ Tages-Run starten')
+        } }, U.symText('start', 'Tages-Run starten'))
       ]));
     }
 
     /* --- Vergleichen --- */
     var vglHost = el('div', { className: 'daily-karte' });
     wrap.appendChild(vglHost);
-    vglHost.appendChild(el('h3', { text: '👥 Mit Freunden vergleichen' }));
+    vglHost.appendChild(el('h3', {}, U.symText('team', 'Mit Freunden vergleichen')));
     vglHost.appendChild(el('p', { className: 'muted small', text:
       'Füge den Code eines anderen ein — dann stehen beide Ergebnisse nebeneinander.' }));
     var feld = el('input', { type: 'text', className: 'code-feld', placeholder: 'TR-…',
@@ -4389,7 +4391,7 @@
       }
       return el('div', { className: 'vgl-spalte' + (hervor ? ' gewinner' : '') }, [
         el('strong', { text: titel }),
-        el('div', { className: 'daily-gross', text: e.gewonnen ? '👑 Sieg' : 'Region ' + e.region }),
+        el('div', { className: 'daily-gross' }, e.gewonnen ? U.symText('krone', 'Sieg') : [el('span', { text: 'Region ' + e.region })]),
         kaestchenReihe(e.region, 6, e.gewonnen),
         el('div', { className: 'muted small', text: e.kaempfe + ' Kämpfe · ' + e.faenge + ' Fänge' })
       ]);
@@ -4468,7 +4470,7 @@
       var reihe = el('div', { className: 'setting-actions' });
       reihe.appendChild(el('button', {
         className: 'btn primary', type: 'button', onclick: function () { teileBild(leinwand, erg); }
-      }, '📤 Karte teilen'));
+      }, U.symText('teilen', 'Karte teilen')));
       host.appendChild(reihe);
     }, function () {
       clear(host);
@@ -4507,12 +4509,12 @@
       vorschau,
       el('div', { className: 'setting-actions' }, [
         el('button', { className: 'btn primary', type: 'button',
-          onclick: function () { openRunKarte(erg); } }, '🖼 Run-Karte'),
+          onclick: function () { openRunKarte(erg); } }, U.symText('bild', 'Run-Karte')),
         el('button', { className: 'btn', type: 'button',
-          onclick: function () { kopiere(PL.share.alsText(erg), 'Ergebnis kopiert.'); } }, '📋 Text kopieren'),
+          onclick: function () { kopiere(PL.share.alsText(erg), 'Ergebnis kopiert.'); } }, U.symText('klemmbrett', 'Text kopieren')),
         el('button', { className: 'btn', type: 'button',
           onclick: function () { kopiere(PL.share.startwertLink(erg), 'Einladung kopiert.'); } },
-          '🔗 »Spiel meinen Run«')
+          U.symText('kette', '»Spiel meinen Run«'))
       ]),
       el('p', { className: 'muted small', text:
         'Der Link öffnet dieselbe Welt: dieselbe Karte, dieselben Gegner, dieselben Angebote. ' +

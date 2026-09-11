@@ -2897,6 +2897,7 @@ section('Gezeichnete Zeichen');
   const benutzt = new Set([...text.matchAll(/\bsymText?\(\s*'([a-z]+)'/g)].map((m) => m[1]));
   Object.keys(PL.Run.NODE_INFO).forEach((k) => benutzt.add(PL.Run.NODE_INFO[k].icon));
   PL.Run.BLESSINGS.forEach((b) => benutzt.add(b.icon));
+  PL.relics.all().forEach((r) => benutzt.add(r.icon));
   // Die Zeichen der Gegenstandsarten stehen in einer Tabelle in ui.js.
   const ui = readFileSync(join(SRC_DIR, 'ui.js'), 'utf8');
   const tafel = /var KIND_ICON = \{([\s\S]*?)\};/.exec(ui);

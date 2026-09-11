@@ -90,18 +90,18 @@
 
   var NODE_INFO = {
     wild: { name: 'Wildes Pokémon', icon: 'gras', desc: 'Ein wildes Pokémon — fangen oder besiegen.' },
-    trainer: { name: 'Trainerkampf', icon: 'trikot', desc: 'Ein Trainer will kämpfen. Bringt Geld.' },
+    trainer: { name: 'Trainer\u00ADkampf', icon: 'trikot', desc: 'Ein Trainer will kämpfen. Bringt Geld.' },
     elite: { name: 'Starker Trainer', icon: 'schwerter', desc: 'Ein Ass-Trainer mit vollem Team. Gute Belohnung.' },
-    catch: { name: 'Begegnung', icon: 'pfote', desc: 'Ein Pokémon steht zur Wahl.' },
-    item: { name: 'Fundstück', icon: 'geschenk', desc: 'Ein Gegenstand liegt bereit.' },
+    catch: { name: 'Begeg\u00ADnung', icon: 'pfote', desc: 'Ein Pokémon steht zur Wahl.' },
+    item: { name: 'Fund\u00ADstück', icon: 'geschenk', desc: 'Ein Gegenstand liegt bereit.' },
     shop: { name: 'Händler', icon: 'korb', desc: 'Kaufen und verkaufen.' },
-    rest: { name: 'Rastplatz', icon: 'lagerfeuer', desc: 'Heilen, entwickeln oder trainieren.' },
+    rest: { name: 'Rast\u00ADplatz', icon: 'lagerfeuer', desc: 'Heilen, entwickeln oder trainieren.' },
     rival: { name: 'Rivale', icon: 'kappe', desc: 'Dein Rivale stellt sich dir wieder in den Weg.' },
     legend: { name: 'Legendäre Spur', icon: 'funken', desc: 'Etwas Seltenes hält sich hier auf. Fangen erlaubt.' },
     legendboss: { name: 'Legende', icon: 'stern', desc: 'Eine Legende stellt sich dir. Es gibt keinen Weg daran vorbei.' },
     event: { name: 'Ereignis', icon: 'frage', desc: 'Etwas Ungewöhnliches.' },
     relic: { name: 'Schrein', icon: 'saeule', desc: 'Ein Relikt zur Auswahl.' },
-    boss: { name: 'Arenaleiter', icon: 'orden', desc: 'Der Weg aus der Region führt nur hier hindurch.' },
+    boss: { name: 'Arena\u00ADleiter', icon: 'orden', desc: 'Der Weg aus der Region führt nur hier hindurch.' },
     e4: { name: 'Top Vier', icon: 'krone', desc: 'Ein Mitglied der Top Vier.' },
     champ: { name: 'Champ', icon: 'pokal', desc: 'Das letzte Duell.' }
   };

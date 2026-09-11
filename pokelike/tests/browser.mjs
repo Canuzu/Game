@@ -526,6 +526,11 @@ await page.waitForSelector('.asc-box');
     const bt = run.makeWild(run.rng, {});
     run.setScene({ kind: 'battle', battle: bt, node: { row: 0, col: 0, type: 'wild' } });
     globalThis.PokelikeApp.battle = bt;
+    // Hier wird von Hand geworfen. Lief aus einem früheren Abschnitt noch der
+    // Auto-Kampf, führte die KI den Kampf zu Ende, bevor der Knopf überhaupt
+    // anklickbar war — die Prüfung hing dann an einem Knopf, den es längst
+    // nicht mehr gab.
+    globalThis.PokelikeApp.autoPlay = false;
     bt.start();
     globalThis.PokelikeApp.show('battle');
   });
@@ -533,6 +538,11 @@ await page.waitForSelector('.asc-box');
   check('Im wilden Kampf lässt sich fangen',
     await page.evaluate(() => globalThis.PokelikeApp.battle.canCatch === true));
 
+  // Erst wenn das Protokoll durch ist, nimmt die Aktionszeile Eingaben an.
+  await page.waitForFunction(() => {
+    const b = [...document.querySelectorAll('.action-btn')].find((n) => /Ball/.test(n.textContent));
+    return !!b && !b.disabled;
+  }, null, { timeout: 20000 });
   await page.getByRole('button', { name: /Ball/ }).first().click();
   await page.waitForSelector('.modal .item-row');
   const ballReihen = await page.locator('.modal .item-row').count();

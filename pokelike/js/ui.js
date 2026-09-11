@@ -267,7 +267,8 @@
           el('span', { className: 'lvl', text: 'Lv ' + mon.lvl })
         ]),
         el('div', { className: 'mon-card-types' }, sp.t.map(function (t) { return typeChip(t, true); })),
-        hpBar(mon.hp, max, { thin: true }),
+        // »KP« vor dem Balken, wie im Kampf und wie in den Vorbildern.
+        el('div', { className: 'hp-wrap' }, hpBar(mon.hp, max, { thin: true })),
         el('div', { className: 'mon-card-hp' }, [
           el('span', { text: mon.hp + ' / ' + max }),
           statusChip(mon.status)
@@ -361,7 +362,6 @@
     return el('span', { className: 'mega-note', title: title.join(' · ') }, parts.join(' · '));
   }
 
-  var CAT_ICON = { P: '💥', S: '✨', T: '🌀' };
   /* Dieselben drei Angriffsarten, aber gezeichnet: Stoß, Wirbel, Spirale. */
   var CAT_SYM = { P: 'faust', S: 'welle', T: 'spirale' };
   var CAT_NAME = { P: 'Physisch', S: 'Spezial', T: 'Status' };
@@ -411,7 +411,7 @@
             if (a.onClick) a.onClick();
             if (a.close !== false) close();
           }
-        }, a.label);
+        }, a.zeichen ? symText(a.zeichen, a.label) : a.label);
       })) : null
     ]);
     var back = el('div', { className: 'modal-back' }, box);
@@ -528,6 +528,6 @@
     money: money, itemRow: itemRow, itemIcon: itemIcon,
     ballBild: ballBild, ballName: ballName, ballDaten: ballDaten,
     sym: sym, symText: symText,
-    TYPE_COLOR: TYPE_COLOR, CAT_ICON: CAT_ICON, CAT_SYM: CAT_SYM, CAT_NAME: CAT_NAME
+    TYPE_COLOR: TYPE_COLOR, CAT_SYM: CAT_SYM, CAT_NAME: CAT_NAME
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);
