@@ -156,7 +156,7 @@
       });
       doc.body.appendChild(btn);
     }
-    var hidden = !App.run || App.screen === 'title' || App.screen === 'newrun' || App.screen === 'end';
+    var hidden = !imRun() || App.screen === 'end';
     btn.hidden = hidden;
     btn.className = 'autopilot-btn' + (AUTO.on ? ' on' : '');
     btn.title = AUTO.on
@@ -168,6 +168,17 @@
   }
 
   var SCREENS = {};
+
+  /**
+   * Auf welchen Bildschirmen gehört die Kopfleiste zum laufenden Run? Team,
+   * Beutel, Relikte, Geld und Levelgrenze haben nur dort etwas zu sagen, wo
+   * man sie auch braucht. Im Pokédex, in der Sammlung, in der Statistik oder
+   * im Legendären Run sind sie Ballast: Dort gibt es nichts auszurüsten, und
+   * der Weg zurück steht ohnehin auf dem Bildschirm.
+   */
+  var RUN_BILDSCHIRME = { map: 1, battle: 1, scene: 1, team: 1, end: 1 };
+
+  function imRun() { return !!App.run && !!RUN_BILDSCHIRME[App.screen]; }
 
   function show(name, arg) {
     App.screen = name;
@@ -182,7 +193,13 @@
     host.appendChild(view(arg));
     renderHeader();
     renderAutoButton();
+    // Nach oben. Gescrollt wird das Dokument, nicht #screen — deshalb hat
+    // host.scrollTop allein nie etwas bewirkt, und man landete nach einem
+    // Wechsel dort, wo man auf dem vorigen Bildschirm stehen geblieben war.
     host.scrollTop = 0;
+    if (root.scrollTo) root.scrollTo(0, 0);
+    doc.documentElement.scrollTop = 0;
+    if (doc.body) doc.body.scrollTop = 0;
     scheduleAuto();
   }
   App.show = show;
@@ -246,7 +263,7 @@
       var reg = gen ? PL.world.REGIONS[gen - 1] : null;
       if (reg) farbe = reg.color;
     }
-    if (!farbe && run && App.screen !== 'title' && App.screen !== 'newrun') {
+    if (!farbe && imRun()) {
       farbe = run.leagueStage >= 0 ? '#c9a227' : (run.currentRegion() || {}).color;
     }
     var wurzel = doc.documentElement;
@@ -267,7 +284,7 @@
     ]);
 
     var mid = el('div', { className: 'topbar-mid' });
-    if (run && App.screen !== 'title' && App.screen !== 'newrun') {
+    if (imRun()) {
       var region = run.leagueStage >= 0 ? { name: 'Pokémon-Liga', color: '#c9a227' } : run.currentRegion();
       mid.appendChild(el('span', { className: 'region-badge', style: { borderColor: region.color }, text: region.name }));
       // Im Duell zählt keine Region und kein Geld — dort steht, gegen wen es
@@ -299,7 +316,7 @@
     var right = el('div', { className: 'topbar-right' });
     var mark = saveMark();
     if (mark) right.appendChild(mark);
-    if (run && App.screen !== 'title' && App.screen !== 'newrun') {
+    if (imRun()) {
       right.appendChild(iconBtn('👥', 'Team', function () { show('team'); }));
       right.appendChild(iconBtn('🎒', 'Beutel', function () { openBag(); }));
       right.appendChild(iconBtn('🏛️', 'Relikte', function () { openRelics(); }));

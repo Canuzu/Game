@@ -467,6 +467,60 @@ await page.waitForSelector('.asc-box');
     await page.locator('.asc-value').innerText());
 }
 
+// Die Kopfleiste gehört dem Run — und jeder Wechsel beginnt oben
+{
+  await page.evaluate(() => {
+    globalThis.PokelikeApp.run = new PL.Run({ seed: 4, starter: 'bulbasaur' });
+    globalThis.PokelikeApp.show('map');
+  });
+  await page.waitForSelector('.map-screen');
+  const aufKarte = await page.evaluate(() => ({
+    knoepfe: [...document.querySelectorAll('#topbar .icon-btn')].map((e) => e.title),
+    chips: document.querySelectorAll('#topbar .chip, #topbar .region-badge').length,
+    automat: !document.querySelector('#autopilot').hidden
+  }));
+  check('Auf der Karte stehen Team, Beutel und Relikte oben',
+    aufKarte.knoepfe.join(',') === 'Team,Beutel,Relikte,Menü', aufKarte.knoepfe.join(','));
+  check('… dazu die Angaben zum Run', aufKarte.chips >= 3, String(aufKarte.chips));
+  check('… und der Reise-Automat', aufKarte.automat);
+
+  // Weit nach unten scrollen, dann in den Pokédex wechseln
+  const imDex = await page.evaluate(() => {
+    window.scrollTo(0, 1500);
+    globalThis.PokelikeApp.show('dex');
+    return {
+      knoepfe: [...document.querySelectorAll('#topbar .icon-btn')].map((e) => e.title),
+      chips: document.querySelectorAll('#topbar .chip, #topbar .region-badge').length,
+      automat: !document.querySelector('#autopilot').hidden,
+      scroll: Math.round(window.scrollY)
+    };
+  });
+  check('Im Pokédex bleibt von der Run-Leiste nur das Menü',
+    imDex.knoepfe.join(',') === 'Menü', imDex.knoepfe.join(','));
+  check('… keine Angaben zum Run', imDex.chips === 0, String(imDex.chips));
+  check('… und kein Automat', imDex.automat === false);
+  check('Und der Bildschirm beginnt oben, nicht in der Mitte',
+    imDex.scroll === 0, String(imDex.scroll));
+
+  const zurueck = await page.evaluate(() => {
+    window.scrollTo(0, 900);
+    globalThis.PokelikeApp.show('map');
+    return {
+      knoepfe: [...document.querySelectorAll('#topbar .icon-btn')].map((e) => e.title).length,
+      scroll: Math.round(window.scrollY)
+    };
+  });
+  check('Zurück auf der Karte ist die Leiste wieder da', zurueck.knoepfe === 4, String(zurueck.knoepfe));
+  check('… und auch dort beginnt es oben', zurueck.scroll === 0, String(zurueck.scroll));
+
+  await page.evaluate(() => {
+    globalThis.PokelikeApp.run = null;
+    PL.meta.clearRun();
+    globalThis.PokelikeApp.show('title');
+  });
+  await page.waitForSelector('.title-screen');
+}
+
 // Der Pokédex zeigt alle neun Generationen, nicht nur die ersten sieben
 {
   const dexStand = await page.evaluate(() => {
