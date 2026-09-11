@@ -229,7 +229,7 @@
       el('button', {
         className: 'logo', type: 'button', title: 'Zum Hauptmenü',
         onclick: function () { openMenu(); }
-      }, [el('span', { className: 'logo-ball' }), el('span', { text: 'Pokélike' })])
+      }, [el('span', { className: 'logo-ball pixelball' }), el('span', { text: 'Pokélike' })])
     ]);
 
     var mid = el('div', { className: 'topbar-mid' });
@@ -362,7 +362,7 @@
         el('strong', { text: 'Tages-Run' }),
         el('span', { className: 'muted small block', text: unterzeile })
       ]),
-      el('span', { className: 'tages-pfeil', text: '›' })
+      el('span', { className: 'menue-zeiger tages-pfeil', text: '\u25b8' })
     ]);
   }
 
@@ -436,11 +436,7 @@
         el('i', { className: 'titel-huegel h2' }),
         el('i', { className: 'titel-boden' })
       ]),
-      el('div', { className: 'titel-ball' }, [
-        el('i', { className: 'ball-oben' }),
-        el('i', { className: 'ball-band' }),
-        el('i', { className: 'ball-knopf' })
-      ]),
+      el('div', { className: 'titel-ball pixelball' }),
       el('h1', { className: 'game-title' }, [
         el('span', { className: 'title-poke', text: 'Pok\u00e9' }),
         el('span', { className: 'title-like', text: 'like' }),
