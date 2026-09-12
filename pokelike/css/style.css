@@ -210,7 +210,11 @@ button { font: inherit; color: inherit; }
 /* Ein Hauch der Regionsfarbe auf hellem Grund. Erster Versuch mischte sie in
    das blaugraue --bg — aus Rot und Blaugrau wurde Lila. Gegen Weiß gemischt
    bleibt warm warm und kalt kalt. */
-#screen { background: color-mix(in srgb, var(--region) 7%, var(--grund)); }
+/* Derselbe Ton für das Spielfeld und für alles, was darüber stehen bleibt —
+   die Zeile mit dem Weiter-Knopf etwa. Die Regionsfarbe hat immer einen
+   Wert, auch außerhalb eines Runs. */
+:root { --spielgrund: color-mix(in srgb, var(--region) 7%, var(--grund)); }
+#screen { background: var(--spielgrund); }
 
 /* Regionsplakette und Kartengrund tragen sie offen */
 .region-badge { border-color: var(--region); }
@@ -827,7 +831,19 @@ button { font: inherit; color: inherit; }
 
 .scene { max-width: 900px; margin: 0 auto; }
 .scene-body { margin: 1rem 0; display: flex; flex-direction: column; gap: 1rem; }
-.scene-actions { display: flex; gap: .6rem; justify-content: flex-end; flex-wrap: wrap; }
+/* Der Knopf, mit dem es weitergeht, steht am Ende der Szene — und die Szene
+   ist oft länger als das Bild. Vorher musste man nach jedem Fundstück, jedem
+   Laden, jedem gewonnenen Kampf erst ans Ende schieben, um weiterzukommen.
+   Jetzt bleibt die Zeile am unteren Rand stehen, und der Inhalt läuft
+   darunter durch. Der negative Rand unten gibt ihr den Weg dafür frei. */
+.scene-actions {
+  position: sticky; bottom: 0; z-index: 6;
+  display: flex; gap: .6rem; justify-content: flex-end; flex-wrap: wrap;
+  margin: 1rem -1rem calc(-3rem);
+  padding: .6rem 1rem calc(.6rem + env(safe-area-inset-bottom));
+  background: var(--spielgrund);
+  border-top: var(--kante) solid var(--frame-edge, var(--rahmen));
+}
 .event-text { font-size: 20px; line-height: 1.6; padding: 1rem; border-left: 3px solid var(--accent); background: var(--panel); border-radius: var(--radius); }
 .aftermath { padding: .8rem 1rem; border-radius: var(--radius); background: var(--panel); border: 1px solid var(--line); }
 .offer-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: .7rem; }
@@ -1361,8 +1377,15 @@ button.move-row:hover { border-color: var(--accent); }
     border-top: 2px solid var(--frame-edge);
   }
   .newrun-actions .btn { flex: 1; justify-content: center; }
-  .scene-actions { flex-direction: column; align-items: stretch; }
+  .scene-actions {
+    flex-direction: column; align-items: stretch;
+    margin: .8rem -.6rem calc(-2.2rem - env(safe-area-inset-bottom));
+    padding: .5rem .6rem calc(.5rem + env(safe-area-inset-bottom));
+  }
   .scene-actions .btn { width: 100%; justify-content: center; }
+  /* Steht der Automat in der Ecke, hält das Spielfeld unten mehr Platz frei —
+     dann reicht die Zeile genauso weit nach unten. */
+  body.automat-da .scene-actions { margin-bottom: calc(-4.6rem - env(safe-area-inset-bottom)); }
 }
 
 @keyframes sheet-up { from { transform: translateY(14px); opacity: 0; } }
@@ -1839,7 +1862,11 @@ button.move-row:hover { border-color: var(--accent); }
 .exp-rows { display: grid; gap: .15rem; }
 .exp-row { display: flex; align-items: center; gap: .5rem; font-size: 20px; }
 .exp-row img { width: 28px; height: 28px; object-fit: contain; }
-.exp-name { flex: 1; }
+/* Name und Betrag stehen nebeneinander, und keiner der beiden bricht um:
+   Auf schmalen Schirmen schob sich sonst »an der Levelgrenze« mitten in den
+   Namen. Wird es eng, weicht der Name. */
+.exp-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.exp-amount { flex: 0 0 auto; white-space: nowrap; }
 .exp-amount { font-variant-numeric: tabular-nums; color: var(--good); }
 .exp-row.capped .exp-amount { color: var(--muted); font-size: 20px; }
 
@@ -2106,6 +2133,9 @@ button.move-row:hover { border-color: var(--accent); }
    Karte —, hält der Inhalt so viel Abstand nach unten frei, wie der Knopf
    hoch ist. */
 body.automat-da #screen { padding-bottom: calc(4.6rem + env(safe-area-inset-bottom)); }
+/* Bleibt unten eine Zeile stehen, hört sie vor dem Automaten auf — sonst
+   liegt er auf dem Knopf, mit dem es weitergeht. */
+body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inset-right)); }
 
 /* Ein Zeichen in einer Knopfreihe bekommt seinen Abstand vom Zwischenraum der
    Reihe. Steht es dagegen mitten im Text — in einer Überschrift, in einer

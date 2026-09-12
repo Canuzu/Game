@@ -628,13 +628,22 @@ await page.waitForSelector('.asc-box');
   const zurueck = await page.evaluate(() => {
     window.scrollTo(0, 900);
     globalThis.PokelikeApp.show('map');
+    const offen = [...document.querySelectorAll('.map-node.open')];
+    const r = offen.length ? offen[0].getBoundingClientRect() : null;
+    const leiste = document.querySelector('#topbar').getBoundingClientRect().height;
     return {
       knoepfe: [...document.querySelectorAll('#topbar .icon-btn')].map((e) => e.title).length,
-      scroll: Math.round(window.scrollY)
+      offen: offen.length,
+      sichtbar: !!r && r.top >= leiste && r.bottom <= window.innerHeight,
+      lage: r ? Math.round(r.top) + '–' + Math.round(r.bottom) + ' von ' + window.innerHeight : 'keiner'
     };
   });
   check('Zurück auf der Karte ist die Leiste wieder da', zurueck.knoepfe === 4, String(zurueck.knoepfe));
-  check('… und auch dort beginnt es oben', zurueck.scroll === 0, String(zurueck.scroll));
+  // Die Karte wird von unten nach oben gezeichnet: Oben wartet der
+  // Arenaleiter, unten steht man selbst. Wer oben landet, muss erst scrollen,
+  // um weiterspielen zu können — also landet man bei der nächsten Wahl.
+  check('… und man landet bei der nächsten Wahl, nicht am fernen Ziel',
+    zurueck.offen > 0 && zurueck.sichtbar, zurueck.lage);
 
   await page.evaluate(() => {
     globalThis.PokelikeApp.run = null;
@@ -1065,6 +1074,33 @@ console.log('\nHandy');
     App.show('map');
   });
   await fits('Karte mit vollem Team');
+
+  /* Weiterspielen ohne Schieben: Nach jedem Knoten landet man dort, wo die
+     nächste Wahl steht, und in einer Szene bleibt der Knopf zum Weitergehen
+     unten stehen. Vorher lagen beide gut fünfhundert Punkte unter dem
+     sichtbaren Bereich — nach jedem Kampf, jedem Laden, jedem Fundstück
+     musste man erst nach unten schieben. */
+  const weiter = await phone.evaluate(() => {
+    const App = globalThis.PokelikeApp, run = App.run;
+    App.show('scene', { type: 'shop', scene: run.makeShop(run.rng) });
+    const k = [...document.querySelectorAll('.scene-actions .btn')].pop();
+    const kr = k.getBoundingClientRect();
+    App.show('map');
+    const offen = [...document.querySelectorAll('.map-node.open')];
+    const nr = offen.length ? offen[0].getBoundingClientRect() : null;
+    const leiste = document.querySelector('#topbar').getBoundingClientRect().height;
+    return {
+      knopfDrin: kr.top >= 0 && kr.bottom <= innerHeight,
+      knopfLage: Math.round(kr.top) + '–' + Math.round(kr.bottom),
+      knotenDrin: !!nr && nr.top >= leiste && nr.bottom <= innerHeight,
+      knotenLage: nr ? Math.round(nr.top) + '–' + Math.round(nr.bottom) : 'keiner',
+      fenster: innerHeight
+    };
+  });
+  check('Der Knopf zum Weitergehen steht ohne Schieben im Bild',
+    weiter.knopfDrin, weiter.knopfLage + ' von ' + weiter.fenster);
+  check('Auf der Karte steht die nächste Wahl ohne Schieben im Bild',
+    weiter.knotenDrin, weiter.knotenLage + ' von ' + weiter.fenster);
 
   /* Die Kopfleiste war die engste Stelle des Handybildes: Geld, Levelgrenze,
      Stufe, Nuzlocke und vier Knöpfe standen in einer Zeile, und die letzte

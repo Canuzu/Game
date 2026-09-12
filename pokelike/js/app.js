@@ -198,15 +198,48 @@
     host.appendChild(view(arg));
     renderHeader();
     renderAutoButton();
-    // Nach oben. Gescrollt wird das Dokument, nicht #screen — deshalb hat
-    // host.scrollTop allein nie etwas bewirkt, und man landete nach einem
-    // Wechsel dort, wo man auf dem vorigen Bildschirm stehen geblieben war.
-    host.scrollTop = 0;
-    if (root.scrollTo) root.scrollTo(0, 0);
-    doc.documentElement.scrollTop = 0;
-    if (doc.body) doc.body.scrollTop = 0;
+    springeAnDieStelle(host);
     scheduleAuto();
   }
+  /**
+   * Wo man landet, wenn ein Bildschirm aufgeht.
+   *
+   * Normalerweise oben: Wer den Pokédex öffnet, will bei Nummer eins
+   * anfangen. Auf der Karte ist das aber falsch. Die Route wird von unten
+   * nach oben gezeichnet — unten steht man, oben wartet der Arenaleiter —,
+   * und nach jedem Knoten landete man ganz oben bei einem Ziel, das noch
+   * sechs Reihen entfernt ist. Jedes Mal musste man erst ein halbes Bild
+   * weit nach unten schieben, um überhaupt weiterspielen zu können.
+   *
+   * Ein Bildschirm darf deshalb die Stelle benennen, an der es weitergeht:
+   * »data-hierher« an dem Element, das man sehen muss. »unten« heißt, dass
+   * darüber der weitere Weg sichtbar bleiben soll, »oben«, dass die Stelle
+   * unter die Kopfleiste rückt.
+   */
+  function springeAnDieStelle(host) {
+    var ziel = host.querySelector('[data-hierher]');
+    var y = 0;
+    if (ziel) {
+      var leiste = $('#topbar');
+      var hoch = leiste ? leiste.getBoundingClientRect().height : 0;
+      var kasten = ziel.getBoundingClientRect();
+      var oben = kasten.top + (root.pageYOffset || doc.documentElement.scrollTop || 0);
+      if (ziel.getAttribute('data-hierher') === 'unten') {
+        // Die Stelle sitzt im unteren Drittel: Man sieht, wo es weitergeht,
+        // und darüber den Weg, der noch kommt.
+        y = oben + kasten.height - (root.innerHeight || 0) * 0.88;
+      } else {
+        y = oben - hoch - 12;
+      }
+      // Passt ohnehin alles aufs Bild, bleibt es beim Anfang.
+      if (y < 0) y = 0;
+    }
+    host.scrollTop = 0;
+    if (root.scrollTo) root.scrollTo(0, y);
+    doc.documentElement.scrollTop = y;
+    if (doc.body) doc.body.scrollTop = y;
+  }
+
   App.show = show;
 
   /** Die Art, die dem Spieler gegenübersteht — sie wählt das Stück. */
@@ -1471,6 +1504,11 @@
     for (var r = run.map.length - 1; r >= 0; r--) {
       var row = run.map[r];
       var rowEl = el('div', { className: 'map-row' + (r === run.rowIndex ? ' current' : '') });
+      // Die Reihe mit den offenen Knoten ist die Stelle, an der es
+      // weitergeht — dorthin springt der Bildschirm.
+      if (row.some(function (n) { return openSet[n.row + ':' + n.col]; })) {
+        rowEl.setAttribute('data-hierher', 'unten');
+      }
       row.forEach(function (node) {
         var info = PL.Run.NODE_INFO[node.type] || { name: node.type, icon: 'frage' };
         var isOpen = openSet[node.row + ':' + node.col];
