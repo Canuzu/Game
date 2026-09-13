@@ -1861,8 +1861,10 @@ button.move-row:hover { border-color: var(--accent); }
    weichen Rand. Der Schein war der Grund, warum die Effekte wie Wasserzeichen
    über der Bühne lagen statt darin. */
 .fx-bit.fx-hart { box-shadow: none; }
-/* Blätter trudeln beim Fliegen. */
-.fx-form.fx-dreht { animation: fx-trudeln .5s linear infinite; }
+/* Blätter trudeln beim Fliegen — in Stufen, nicht fließend. Fließend
+   verschmierten sie zu grünen Strichen; in acht Stufen bleibt das Blatt ein
+   Blatt, so wie sich in den Vorbildern auch alles ruckweise dreht. */
+.fx-form.fx-dreht { animation: fx-trudeln 1.1s steps(8) infinite; }
 @keyframes fx-trudeln { to { rotate: 360deg; } }
 /* Der Pfeil nach unten ist derselbe, auf den Kopf gestellt. */
 .fx-maske.fx-kopfueber { rotate: 180deg; }
@@ -2918,7 +2920,7 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
   var PL = root.PL || (root.PL = {});
 
   // Diese Zeile ersetzt tools/build-single.mjs beim Bauen.
-  var BUILD = '20260913T132731Z-7e484ca';
+  var BUILD = '20260913T133349Z-1af27ac';
 
   var TRIED_KEY = 'pokelike.plus.update.versucht';
   var state = { build: BUILD, latest: null, checking: false, stuck: false };
@@ -16885,8 +16887,16 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
       var t = i / (n - 1);
       // Der Strahl bleibt ein harter Balken — Rasterpunkt an Rasterpunkt,
       // ohne Schein. Vorn sitzt ein Funke als Spitze.
-      var b = bit(l, from.x + dx * t, from.y + dy * t, dicke || 10, dicke || 10,
-        i % 2 ? color : hell(color), 'fx-hart');
+      var d = dicke || 10;
+      var b = bit(l, from.x + dx * t, from.y + dy * t, d, d, color, 'fx-hart');
+      var kern = bit(l, from.x + dx * t, from.y + dy * t, Math.max(4, d * 0.45),
+        Math.max(4, d * 0.45), '#ffffff', 'fx-hart');
+      animate(kern, [
+        { transform: schiebe(0, 0, 0.2), opacity: 0 },
+        { transform: schiebe(0, 0, 1), opacity: 1, offset: 0.25 },
+        { transform: schiebe(0, 0, 1), opacity: 1, offset: 0.7 },
+        { transform: schiebe(0, 0, 0.4), opacity: 0 }
+      ], ms, i * 14);
       animate(b, [
         { transform: schiebe(0, 0, 0.2), opacity: 0 },
         { transform: schiebe(0, 0, 1), opacity: 1, offset: 0.25 },
@@ -16906,14 +16916,17 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
   function wurf(l, from, to, color, ms, anzahl, hoehe, gestalt) {
     var i, count = anzahl || 6;
     for (i = 0; i < count; i++) {
-      var b = form(l, from.x, from.y, gestalt === 'blatt' ? 34 : 30,
+      var b = form(l, from.x, from.y, gestalt === 'blatt' ? 46 : 34,
         gestalt === 'blatt' ? 'blatt' : 'stoss', color, gestalt === 'blatt' ? 'fx-dreht' : '');
-      var streu = (i - count / 2) * 6;
+      // Auffächern statt aufreihen: Ohne Streuung quer zur Flugbahn wurde aus
+      // elf Blättern ein grüner Strich.
+      var streu = (i - count / 2) * 14;
+      var quer = zufall(-18, 18);
       animate(b, [
         { transform: schiebe(0, 0, 0.7), opacity: 0 },
-        { transform: schiebe((to.x - from.x) / 2, (to.y - from.y) / 2 - (hoehe || 30) + streu, 1), opacity: 1, offset: 0.5 },
-        { transform: schiebe(to.x - from.x, to.y - from.y + streu * 0.2, 1), opacity: 1 }
-      ], ms, i * 22);
+        { transform: schiebe((to.x - from.x) / 2 + quer, (to.y - from.y) / 2 - (hoehe || 30) + streu, 1), opacity: 1, offset: 0.5 },
+        { transform: schiebe(to.x - from.x, to.y - from.y + streu * 0.35, 1), opacity: 1 }
+      ], ms, i * 26);
     }
   }
 
@@ -16939,12 +16952,13 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
     var i;
     for (i = 0; i < anzahl; i++) {
       var x = at.x + zufall(-at.w * 0.5, at.w * 0.5);
-      var b = form(l, x, at.boden, zufall(22, 38), 'stein', color);
+      var b = form(l, x, at.boden, zufall(30, 52), 'stein', color);
       animate(b, [
-        { transform: schiebe(0, 20, 0.4), opacity: 0 },
-        { transform: schiebe(0, -zufall(20, 55), 1), opacity: 1, offset: 0.45 },
-        { transform: schiebe(zufall(-14, 14), -zufall(40, 90), 0.7), opacity: 0 }
-      ], ms, i * 35);
+        { transform: schiebe(0, 26, 0.4), opacity: 0 },
+        { transform: schiebe(0, -zufall(30, 70), 1), opacity: 1, offset: 0.4 },
+        { transform: schiebe(zufall(-18, 18), -zufall(50, 110), 0.8), opacity: 1, offset: 0.8 },
+        { transform: schiebe(zufall(-24, 24), -zufall(60, 130), 0.6), opacity: 0 }
+      ], ms, i * 30);
     }
   }
 
@@ -16970,9 +16984,9 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
 
   /** Ein Wirbel um eine Stelle — Psycho, Drache, Geist. */
   function wirbel(l, at, color, ms, runden) {
-    var i, n = 14;
+    var i, n = 6;
     for (i = 0; i < n; i++) {
-      var b = form(l, at.x, at.y, 30, 'wirbelform', color);
+      var b = form(l, at.x, at.y, 36 + (i % 3) * 16, 'wirbelform', color);
       var a0 = (Math.PI * 2 * i) / n;
       var a1 = a0 + Math.PI * 2 * (runden || 1.5);
       var r0 = 52, r1 = 6;
@@ -17017,7 +17031,7 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
     for (i = 0; i < n; i++) {
       var x = at.x + zufall(-at.w * 0.5, at.w * 0.5);
       var y = at.y + zufall(-at.h * 0.4, at.h * 0.4);
-      var b = form(l, x, y, zufall(18, 30), 'funke', i % 3 ? color : '#ffffff');
+      var b = form(l, x, y, zufall(26, 44), 'funke', i % 3 ? color : '#ffffff');
       animate(b, [
         { transform: 'scale(0) rotate(0deg)', opacity: 0 },
         { transform: 'scale(1.2) rotate(45deg)', opacity: 1, offset: 0.4 },
@@ -17031,12 +17045,12 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
     var i, n = anzahl || 9;
     for (i = 0; i < n; i++) {
       var x = at.x + zufall(-at.w * 0.45, at.w * 0.45);
-      var b = form(l, x, at.boden - 10, zufall(18, 34), 'blase', i % 2 ? color : hell(color));
+      var b = form(l, x, at.boden - 20, zufall(26, 48), 'blase', i % 2 ? color : hell(color));
       animate(b, [
-        { transform: schiebe(0, 10, 0.4), opacity: 0 },
-        { transform: schiebe(zufall(-10, 10), -40, 1), opacity: 1, offset: 0.5 },
-        { transform: schiebe(zufall(-16, 16), -90, 0.6), opacity: 0 }
-      ], ms, i * 40);
+        { transform: schiebe(0, 20, 0.3), opacity: 0 },
+        { transform: schiebe(zufall(-12, 12), -50, 1), opacity: 1, offset: 0.45 },
+        { transform: schiebe(zufall(-20, 20), -120, 0.7), opacity: 0 }
+      ], ms, i * 34);
     }
   }
 
@@ -17129,13 +17143,19 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
     ], { duration: ms || 360, easing: 'ease-out' });
   }
 
-  function aufblitzen(stage, color, ms) {
+  function aufblitzen(stage, color, ms, staerke) {
     if (reduced()) return;
     var f = doc.createElement('div');
     f.className = 'fx-blitzschirm';
     f.style.background = color;
     stage.appendChild(f);
-    animate(f, [{ opacity: 0 }, { opacity: 0.75, offset: 0.2 }, { opacity: 0 }], ms || 260);
+    // Ein kurzes Zucken, kein Weißabgleich: Vorher lag der Schirm mit drei
+    // Vierteln Deckkraft über der Bühne und wusch Pokémon wie Effekt aus.
+    animate(f, [
+      { opacity: 0 },
+      { opacity: staerke || 0.3, offset: 0.15 },
+      { opacity: 0 }
+    ], ms || 200);
   }
 
   var ruckelZeit = null;
@@ -17160,7 +17180,7 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
     Fire: function (c) { zunge(c.l, c.from, c.to, c.farbe, 460); return 520; },
     Water: function (c) { bahn(c.l, c.stage, c.farbe, 520, c.from.x < c.to.x); blasen(c.l, c.to, c.farbe, 460, 7); return 560; },
     Electric: function (c) { fallen(c.l, c.to, c.farbe, 3, 420, 'blitz'); welle(c.l, c.to, c.farbe, 320, 2); return 480; },
-    Grass: function (c) { wurf(c.l, c.from, c.to, c.farbe, 460, 8, 44, 'lang'); steigen(c.l, c.to, c.farbe, 6, 420); return 540; },
+    Grass: function (c) { wurf(c.l, c.from, c.to, c.farbe, 460, 9, 44, 'blatt'); return 520; },
     Ice: function (c) { splitter(c.l, c.to, c.farbe, 460, 8); return 520; },
     Fighting: function (c) { platzen(c.l, c.to, c.farbe, 10, 40, 260); welle(c.l, c.to, '#ffffff', 420, 3); return 460; },
     Poison: function (c) { blasen(c.l, c.to, c.farbe, 520, 10); return 560; },
@@ -17173,7 +17193,7 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
     Dragon: function (c) { wirbel(c.l, c.to, c.farbe, 480, 2.5); strahl(c.l, c.from, c.to, c.farbe, 420, 12); return 560; },
     Dark: function (c) { hieb(c.l, c.to, c.farbe, 420, 3); aufblitzen(c.stage, '#101018', 300); return 500; },
     Steel: function (c) { platzen(c.l, c.to, '#e8f0f8', 10, 40, 260); funkeln(c.l, c.to, c.farbe, 420, 8); return 480; },
-    Fairy: function (c) { funkeln(c.l, c.to, c.farbe, 520, 14); welle(c.l, c.to, c.farbe, 420, 2); return 560; }
+    Fairy: function (c) { funkeln(c.l, c.to, c.farbe, 520, 16); welle(c.l, c.to, c.farbe, 460, 3); return 560; }
   };
 
   /* ---------- 5) Eigene Auftritte --------------------------------------------
@@ -17186,28 +17206,28 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
     magnitude: function (c) { return ATTACKE.earthquake(c); },
     bulldoze: function (c) { return ATTACKE.earthquake(c); },
     fissure: function (c) { steigen(c.l, c.to, '#6a4a2a', 16, 640); shake(c.stage, 2); return 700; },
-    thunder: function (c) { fallen(c.l, c.to, c.farbe, 5, 520, 'blitz'); aufblitzen(c.stage, '#fff6c0', 240); shake(c.stage, 1); return 600; },
-    thunderbolt: function (c) { fallen(c.l, c.to, c.farbe, 3, 440, 'blitz'); aufblitzen(c.stage, '#fff6c0', 200); return 500; },
+    thunder: function (c) { fallen(c.l, c.to, c.farbe, 5, 520, 'blitz'); aufblitzen(c.stage, '#fff6c0', 200, 0.45); shake(c.stage, 1); return 600; },
+    thunderbolt: function (c) { fallen(c.l, c.to, c.farbe, 3, 440, 'blitz'); aufblitzen(c.stage, '#fff6c0', 180, 0.35); return 500; },
     voltswitch: function (c) { return ATTACKE.thunderbolt(c); },
     surf: function (c) { bahn(c.l, c.stage, c.farbe, 640, c.from.x < c.to.x); return 680; },
     hydropump: function (c) { strahl(c.l, c.from, c.to, c.farbe, 480, 18); blasen(c.l, c.to, c.farbe, 420, 8); return 560; },
     flamethrower: function (c) { zunge(c.l, c.from, c.to, c.farbe, 560); return 620; },
     fireblast: function (c) { zunge(c.l, c.from, c.to, c.farbe, 520); platzen(c.l, c.to, c.farbe, 16, 60, 380); shake(c.stage, 1); return 640; },
-    hyperbeam: function (c) { strahl(c.l, c.from, c.to, '#f0d8ff', 620, 22); aufblitzen(c.stage, '#ffffff', 300); shake(c.stage, 1); return 720; },
+    hyperbeam: function (c) { strahl(c.l, c.from, c.to, '#e0a8ff', 620, 26); aufblitzen(c.stage, '#ffffff', 240, 0.35); shake(c.stage, 1); return 720; },
     gigaimpact: function (c) { ansturm(c.angreifer, { x: c.to.x - c.from.x, y: c.to.y - c.from.y }, 420); platzen(c.l, c.to, '#f0c8ff', 18, 64, 420); shake(c.stage, 2); return 640; },
     solarbeam: function (c) { strahl(c.l, c.from, c.to, c.farbe, 560, 20); funkeln(c.l, c.from, '#fff0a0', 400, 8); return 640; },
     icebeam: function (c) { strahl(c.l, c.from, c.to, c.farbe, 460, 12); splitter(c.l, c.to, c.farbe, 420, 6); return 560; },
     blizzard: function (c) { bahn(c.l, c.stage, c.farbe, 560, c.from.x < c.to.x); splitter(c.l, c.to, c.farbe, 460, 8); return 620; },
     rockslide: function (c) { fallen(c.l, c.to, c.farbe, 8, 560, 'stein'); shake(c.stage, 2); return 640; },
     stoneedge: function (c) { steigen(c.l, c.to, c.farbe, 8, 480); platzen(c.l, c.to, c.farbe, 10, 44, 300); return 560; },
-    razorleaf: function (c) { wurf(c.l, c.from, c.to, c.farbe, 480, 10, 52, 'lang'); return 540; },
+    razorleaf: function (c) { wurf(c.l, c.from, c.to, c.farbe, 480, 8, 52, 'blatt'); return 540; },
     leafstorm: function (c) { bahn(c.l, c.stage, c.farbe, 560, c.from.x < c.to.x); wirbel(c.l, c.to, c.farbe, 480, 2); return 620; },
     petalblizzard: function (c) { return ATTACKE.leafstorm(c); },
-    explosion: function (c) { aufblitzen(c.stage, '#ffffff', 420); platzen(c.l, c.from, '#ffd070', 24, 90, 520); shake(c.stage, 2); return 700; },
+    explosion: function (c) { aufblitzen(c.stage, '#ffffff', 380, 0.55); platzen(c.l, c.from, '#ffd070', 24, 90, 520); shake(c.stage, 2); return 700; },
     selfdestruct: function (c) { return ATTACKE.explosion(c); },
     dracometeor: function (c) { fallen(c.l, c.to, c.farbe, 6, 560, 'stein'); shake(c.stage, 2); return 640; },
     shadowball: function (c) { wurf(c.l, c.from, c.to, c.farbe, 440, 5, 36); wirbel(c.l, c.to, c.farbe, 420, 1.5); return 560; },
-    psychic: function (c) { wirbel(c.l, c.to, c.farbe, 560, 2); aufblitzen(c.stage, '#f8d0f0', 260); return 600; },
+    psychic: function (c) { wirbel(c.l, c.to, c.farbe, 560, 2); aufblitzen(c.stage, '#f8d0f0', 220, 0.3); return 600; },
     recover: function (c) { funkeln(c.l, c.from, '#8ce890', 520, 14); return 560; },
     rest: function (c) { funkeln(c.l, c.from, '#8ce890', 520, 14); return 560; },
     synthesis: function (c) { funkeln(c.l, c.from, '#8ce890', 520, 14); return 560; },
@@ -17271,7 +17291,7 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
       root.setTimeout(function () {
         blinken(ziel, 420);
         rueckstoss(ziel, richtung, wucht);
-        if (opts.eff > 1) aufblitzen(stage, '#ffffff', 220);
+        if (opts.eff > 1) aufblitzen(stage, '#ffffff', 180, 0.28);
         if (opts.crit) shake(stage, 2);
       }, Math.max(120, dauer * 0.45));
     }
