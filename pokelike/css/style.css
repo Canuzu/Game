@@ -677,7 +677,7 @@ button { font: inherit; color: inherit; }
 .battle-sprite.fainted { opacity: .2; filter: grayscale(1); }
 .sub-mark { position: absolute; bottom: 0; right: 4px; font-size: 20px; }
 
-.frame-wrap { position: absolute; z-index: 3; width: min(232px, 36%); }
+.frame-wrap { position: absolute; z-index: 6; width: min(232px, 36%); }
 .frame-enemy { top: 4%; left: 2.5%; }
 .frame-mine { bottom: 4%; right: 2.5%; }
 /* Die Anzeige soll ablesbar sein, aber der Bühne nicht die Schau stehlen —
@@ -1654,11 +1654,41 @@ button.move-row:hover { border-color: var(--accent); }
 .slot-enemy .battle-sprite { animation-duration: 2.9s; animation-delay: -.7s; }
 .battle-sprite.fainted { animation: none; }
 
-.fx-layer { position: absolute; inset: 0; z-index: 4; pointer-events: none; overflow: hidden; }
+/* Die Effekte liegen über den Pokémon, aber unter den Anzeigen: In den
+   Vorbildern verdeckt keine Flamme die Lebensleiste. */
+.fx-layer { position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; }
 .fx-bit {
   position: absolute; display: block;
   box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 0 6px currentColor;
 }
+/* Ein Balken ohne Schein: In einem Bild aus Rasterpunkten hat nichts einen
+   weichen Rand. Der Schein war der Grund, warum die Effekte wie Wasserzeichen
+   über der Bühne lagen statt darin. */
+.fx-bit.fx-hart { box-shadow: none; }
+/* Blätter trudeln beim Fliegen. */
+.fx-form.fx-dreht { animation: fx-trudeln .5s linear infinite; }
+@keyframes fx-trudeln { to { rotate: 360deg; } }
+/* Der Pfeil nach unten ist derselbe, auf den Kopf gestellt. */
+.fx-maske.fx-kopfueber { rotate: 180deg; }
+/* Die Formen, aus denen die Attacken bestehen. Alles bleibt eckig — nur die
+   Blasen und die Flammen sind rund, weil sie sonst wie Bauklötze aussähen. */
+.fx-bit.fx-rund { border-radius: 50%; }
+.fx-bit.fx-schraeg { transform-origin: center; }
+.fx-bit.fx-stern {
+  box-shadow: 0 0 0 3px currentColor, 3px 0 0 0 currentColor, -3px 0 0 0 currentColor,
+              0 3px 0 0 currentColor, 0 -3px 0 0 currentColor, 0 0 8px currentColor;
+}
+/* Pfeile für Statusattacken: ein Klotz mit einer Spitze. */
+.fx-bit.fx-pfeil-auf { clip-path: polygon(50% 0, 100% 100%, 0 100%); box-shadow: 0 0 6px currentColor; }
+.fx-bit.fx-pfeil-ab { clip-path: polygon(0 0, 100% 0, 50% 100%); box-shadow: 0 0 6px currentColor; }
+/* Ringe, die nach außen laufen. */
+.fx-ring {
+  position: absolute; display: block; width: 20px; height: 20px;
+  border: 3px solid currentColor; border-radius: 50%;
+  box-shadow: 0 0 8px currentColor;
+}
+/* Das Aufblitzen der ganzen Bühne bei einem sehr wirksamen Treffer. */
+.fx-blitzschirm { position: absolute; inset: 0; z-index: 3; pointer-events: none; mix-blend-mode: screen; }
 
 @keyframes fx-shake {
   0%, 100% { transform: translate(0, 0); }
@@ -1668,6 +1698,17 @@ button.move-row:hover { border-color: var(--accent); }
   80% { transform: translate(3px, 1px); }
 }
 .fx-shake { animation: fx-shake .32s steps(4); }
+/* Erdbeben und Volltreffer rütteln kräftiger und länger. */
+@keyframes fx-shake-stark {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-7px, 4px); }
+  25% { transform: translate(7px, -4px); }
+  40% { transform: translate(-6px, -3px); }
+  55% { transform: translate(6px, 3px); }
+  70% { transform: translate(-4px, 2px); }
+  85% { transform: translate(4px, -1px); }
+}
+.fx-shake-stark { animation: fx-shake-stark .6s steps(6); }
 
 .trainer-art { position: relative; width: 186px; height: 186px; display: grid; place-items: end center; z-index: 1; }
 .slot-enemy .trainer-art { width: 156px; height: 156px; }

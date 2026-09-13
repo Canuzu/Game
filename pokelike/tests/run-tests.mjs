@@ -3040,6 +3040,31 @@ section('Schlaf');
     Math.min(dauer[1], dauer[2], dauer[3]) > 300 * 0.2, JSON.stringify(dauer));
 }
 
+section('Attackeneffekte');
+{
+  // Die Effekte bestanden aus runden Farbflecken mit Schein — auf einem Bild
+  // aus Rasterpunkten ein Fremdkörper. Jetzt sind es gezeichnete Formen.
+  const css = readFileSync(join(SRC_DIR, '..', 'css', 'effekte.css'), 'utf8');
+  const formen = new Set([...css.matchAll(/\.fx-(?:form|maske)-([a-z]+)\s*\{/g)].map((m) => m[1]));
+  check('Die Formendatei ist gebaut', formen.size >= 12, formen.size + ' Formen');
+
+  const fx = readFileSync(join(SRC_DIR, 'fx.js'), 'utf8');
+  const benutzt = new Set([...fx.matchAll(/form\([^)]*?'([a-z]+)'/g)].map((m) => m[1]));
+  const fehlend = [...benutzt].filter((n) => !formen.has(n));
+  check('Jede benutzte Form ist gezeichnet', fehlend.length === 0, fehlend.join(', '));
+
+  // Jeder Typ hat seinen eigenen Auftritt — sonst sähe ein Flammenwurf aus
+  // wie eine Aquaknarre in Rot.
+  const typen = PL.dex.types || [];
+  const auftritte = new Set([...fx.matchAll(/^    ([A-Z][a-z]+): function/gm)].map((m) => m[1]));
+  const ohne = typen.filter((t) => !auftritte.has(t));
+  check('Jeder der achtzehn Typen hat eine eigene Choreografie', ohne.length === 0, ohne.join(', '));
+  check('Bekannte Attacken haben einen eigenen Auftritt',
+    /ATTACKE = \{/.test(fx) && /earthquake:/.test(fx) && /hyperbeam:/.test(fx));
+  check('Kein weicher Schein mehr in den Effekten',
+    !/box-shadow[^;]*currentColor/.test(readFileSync(join(SRC_DIR, '..', 'css', 'effekte.css'), 'utf8')));
+}
+
 section('Abgeschaffte Modi');
 {
   // Kurzrun und Boss-Rush sind weg. Weder die Liste im Menü noch der

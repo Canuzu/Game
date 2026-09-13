@@ -1971,9 +1971,29 @@
       var self = mv && mv.tg === 'self';
       var from = BV['art' + e.side], to = BV['art' + (1 - e.side)];
       if (from) {
+        // Der Auftritt kennt die Attacke beim Namen, weiß, ob der Treffer
+        // sehr wirksam war, und bei Statusattacken, in welche Richtung es
+        // geht. Die Wirksamkeit steht in den nächsten Protokollzeilen.
+        var wirkung = 1, j;
+        for (j = next; j < (entries || []).length && j < next + 4; j++) {
+          if (entries[j].k === 'super') { wirkung = 2; break; }
+          if (entries[j].k === 'resist') { wirkung = 0.5; break; }
+          if (entries[j].k === 'damage') break;
+        }
+        var richtung = null;
+        if (mv && mv.c === 'T') {
+          var bo = mv.bo || (mv.slf && mv.slf.bo);
+          if (bo) {
+            var summe = 0, k;
+            for (k in bo) { if (bo.hasOwnProperty(k)) summe += bo[k]; }
+            richtung = summe > 0 ? 'hoch' : summe < 0 ? 'runter' : null;
+          }
+          if (mv.hl) richtung = 'hoch';
+        }
         var dur = PL.fx.move({
           stage: BV.stage, fromArt: from, toArt: self ? from : to,
-          type: e.type, category: e.cat, self: self
+          type: e.type, category: e.cat, self: self,
+          id: mv && mv.id, eff: wirkung, boost: richtung
         });
         if (from) flash(from, 'attack');
         return dur;
