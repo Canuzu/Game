@@ -2528,3 +2528,145 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
 .move-info-wirkung { font-weight: 650; }
 .move-row { cursor: pointer; }
 .move-row:not(button) { cursor: default; }
+
+/* =============================================================================
+ * Der Kampf als ein Gerät
+ * -----------------------------------------------------------------------------
+ * Bisher zerfiel der Kampfbildschirm in vier lose Blöcke — Bühne, Protokoll,
+ * Attacken, Aktionen —, zwischen denen der Seitenhintergrund durchschien. In
+ * den Vorbildern ist das ein Stück: ein Fenster mit Rahmen, oben die Kulisse,
+ * darunter das Textfeld, unten die Befehle. Genau das wird hier daraus.
+ *
+ * Die Anordnung der Befehle folgt ebenfalls dem Vorbild: die vier Attacken
+ * als Feld aus zwei mal zwei, daneben die übrigen Aktionen. Nebenbei löst das
+ * ein altes Ärgernis — auf vier Spalten war jede Kachel so schmal, dass lange
+ * Attackennamen abgeschnitten wurden.
+ * ========================================================================== */
+
+.battle {
+  gap: 0;
+  border: 2px solid var(--rahmen);
+  background: var(--panel);
+  box-shadow: var(--versatz) var(--versatz) 0 var(--relief);
+  overflow: hidden;
+}
+
+/* Die Bühne sitzt randlos im Gerät — ihren eigenen Rahmen braucht sie nicht
+   mehr, den trägt jetzt das Gehäuse. */
+.battle > .battle-stage {
+  border: 0; border-radius: 0;
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--frame-inner) 35%, transparent);
+}
+
+/* Das Textfenster schließt unmittelbar an die Bühne an. Seine doppelte
+   Fassung behält es, nach außen hin trennt nur noch eine Linie. */
+.battle > .battle-log {
+  border: 0; border-top: 2px solid var(--rahmen); border-radius: 0;
+  box-shadow:
+    inset 0 0 0 2px var(--panel),
+    inset 0 0 0 4px color-mix(in srgb, var(--innen) 55%, var(--panel));
+  margin: 0;
+}
+
+.battle > .scout { border-radius: 0; border: 0; border-top: 2px solid var(--rahmen); }
+
+.battle-controls {
+  gap: 0;
+  border-top: 2px solid var(--rahmen);
+  background: color-mix(in srgb, var(--innen) 12%, var(--panel));
+}
+.battle-controls .move-area { padding: .5rem; }
+.battle-controls .action-row { padding: 0 .5rem .5rem; }
+
+/* Zwei mal zwei, wie im Vorbild — und mit Platz für den ganzen Namen. */
+.move-grid { grid-template-columns: repeat(2, 1fr); }
+
+/* Auf breiten Flächen stehen Attacken und Aktionen nebeneinander, so wie die
+   Vorbilder die untere Bildhälfte teilen. Darunter bleibt es gestapelt. */
+@media (min-width: 760px) {
+  .battle-controls { display: grid; grid-template-columns: 1fr minmax(170px, 210px); }
+  .battle-controls .move-area {
+    border-right: 2px solid var(--rahmen);
+    min-height: 0; display: flex;
+  }
+  /* Beide Hälften enden auf derselben Höhe: Die vier Kacheln teilen sich den
+     Platz, den die Befehlsliste daneben braucht. */
+  .battle-controls .move-grid { flex: 1; grid-auto-rows: 1fr; }
+  /* Die Befehle stehen untereinander wie die Liste im Vorbild — nebeneinander
+     wären sie zu schmal für »Wechseln« und »Fliehen«. */
+  .battle-controls .action-row {
+    display: grid; grid-template-columns: 1fr; gap: .35rem;
+    align-content: start; padding: .5rem;
+  }
+  .battle-controls .action-btn { width: 100%; justify-content: flex-start; }
+}
+
+/* Die Kopfleiste soll auf dem Schreibtisch in einer Zeile bleiben: Vier
+   Täfelchen und vier Knöpfe brauchten vier Pixel mehr, als da waren. */
+.topbar-mid { gap: .3rem; }
+#topbar .chip, #topbar .region-badge { padding-inline: .42rem; }
+
+/* =============================================================================
+ * Beschriftung auf der Karte: Text gehört in ein Fenster
+ * -----------------------------------------------------------------------------
+ * Die Namen der Wegmarken standen als nackter Text auf dem Gras. Auf einer
+ * gemusterten Fläche ist das nicht zu lesen, und ein weicher Schatten hilft
+ * dagegen nicht. In den Vorbildern steht Schrift grundsätzlich in einem
+ * Fenster — auch draußen auf der Route, auf den Schildern am Weg. Genau so
+ * bekommt jeder Name jetzt sein Täfelchen.
+ * ========================================================================== */
+
+.node-name {
+  background: var(--panel);
+  border: 2px solid var(--rahmen);
+  box-shadow:
+    inset 0 0 0 2px color-mix(in srgb, var(--innen) 45%, var(--panel)),
+    var(--versatz) var(--versatz) 0 var(--relief);
+  padding: .12rem .34rem;
+  text-shadow: none;
+  color: var(--text);
+}
+/* Was zur Wahl steht, trägt seine Farbe auch auf dem Schild. */
+.map-node.open .node-name { border-color: color-mix(in srgb, var(--knoten) 70%, #101418); }
+
+/* =============================================================================
+ * Das Pausenmenü als Auswahlfenster
+ * -----------------------------------------------------------------------------
+ * Es war ein breiter Kasten voller Knöpfe, die in unregelmäßigen Reihen
+ * umbrachen — »Einstellungen« stand am Ende allein in der letzten Zeile. In
+ * den Vorbildern ist das eine schmale Liste mit einem Zeiger davor. Genau die
+ * Zeilen, die der Titelbildschirm längst benutzt, stehen jetzt auch hier.
+ * ========================================================================== */
+
+.modal.menue-modal { max-width: 340px; }
+.modal.menue-modal .modal-body { display: flex; flex-direction: column; gap: .5rem; }
+.menue-modal .menue-fenster { margin: 0; }
+.menue-tasten { font-size: 20px; line-height: 1.35; margin: 0; }
+
+/* =============================================================================
+ * Attackenzeilen: der Name bekommt seine eigene Zeile
+ * -----------------------------------------------------------------------------
+ * In der Liste stand alles nebeneinander — Typ, Name, Art, Stärke, AP —, und
+ * wenn es eng wurde, gab der Name nach: aus »Rankenhieb« wurde »Rank…«. Die
+ * Vorbilder setzen den Namen in die erste Zeile und alles Übrige darunter.
+ * Dieselbe Aufteilung trägt schon die Attackenkachel im Kampf.
+ * ========================================================================== */
+
+.move-row {
+  display: grid;
+  grid-template-columns: auto auto 1fr auto;
+  grid-template-areas:
+    "name  name name kraft"
+    "typ   art  .    ap";
+  column-gap: .4rem; row-gap: .1rem;
+  align-items: center;
+}
+.move-name {
+  grid-area: name;
+  overflow: visible; text-overflow: clip; white-space: normal;
+  overflow-wrap: break-word;
+}
+.move-type { grid-area: typ; }
+.move-cat { grid-area: art; }
+.move-power { grid-area: kraft; }
+.move-pp { grid-area: ap; }

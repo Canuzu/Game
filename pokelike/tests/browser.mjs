@@ -1019,6 +1019,91 @@ const saved = await page.evaluate(() => {
 });
 check('Run lässt sich speichern', saved === 'ok' || saved === 'kein Run', saved);
 
+/* ---------- Das Pausenmenü und der zusammenhängende Kampf ------------------ */
+
+console.log('\nMenü und Kampffenster');
+{
+  // Zurück auf die Karte, von dort das Menü öffnen.
+  await page.evaluate(() => globalThis.PokelikeApp.show('map'));
+  await page.getByRole('button', { name: 'Menü' }).click();
+  await page.waitForSelector('.menue-modal');
+
+  const zeilen = await page.locator('.menue-modal .menue-zeile').count();
+  check('Das Menü ist eine Liste, kein Knopffeld', zeilen >= 6, zeilen + ' Zeilen');
+  check('Es hat keine Knopfreihe mehr',
+    (await page.locator('.menue-modal .modal-actions').count()) === 0);
+
+  // Der Zeiger steht auf der Zeile, auf der man gerade ist — wie im Vorbild.
+  check('Die erste Zeile hat den Zeiger', await page.evaluate(() => {
+    const z = document.querySelector('.menue-modal .menue-zeile .menue-zeiger');
+    return !!z && getComputedStyle(z).visibility === 'visible';
+  }));
+
+  // Pfeil ab führt weiter, Pfeil auf wieder zurück.
+  const vorher = await page.evaluate(() => document.activeElement.textContent.trim());
+  await page.keyboard.press('ArrowDown');
+  const nachher = await page.evaluate(() => document.activeElement.textContent.trim());
+  check('Pfeil ab geht eine Zeile weiter', vorher !== nachher, vorher + ' → ' + nachher);
+  await page.keyboard.press('ArrowUp');
+  check('Pfeil auf geht wieder zurück',
+    (await page.evaluate(() => document.activeElement.textContent.trim())) === vorher);
+
+  // Und eine Zeile führt wirklich irgendwohin.
+  await page.locator('.menue-modal .menue-zeile', { hasText: 'Statistik' }).click();
+  await page.waitForSelector('.modal', { state: 'detached' });
+  check('Eine Menüzeile wechselt den Bildschirm',
+    (await page.evaluate(() => document.body.getAttribute('data-screen'))) === 'stats');
+}
+
+{
+  // Der Kampf soll ein Stück sein: zwischen Bühne, Textfenster und Befehlen
+  // darf kein Seitenhintergrund durchscheinen.
+  await page.evaluate(() => globalThis.PokelikeApp.show('map'));
+  for (let i = 0; i < 40; i++) {
+    const bild = await page.evaluate(() => document.body.getAttribute('data-screen'));
+    if (bild === 'battle') break;
+    if (await page.locator('.modal').count()) {
+      // Denselben Weg nehmen wie der Durchlauf oben: die Knopfreihe des
+      // Dialogs. Irgendeinen letzten Knopf zu drücken wäre gefährlich —
+      // im Menüfenster wäre das »Zum Titel«, und der Run wäre weg.
+      const knopf = page.locator('.modal-actions .btn');
+      if (await knopf.count()) await knopf.last().click({ timeout: 3000 }).catch(() => {});
+      else await page.locator('.modal .btn, .modal .mon-card').first()
+        .click({ timeout: 3000 }).catch(() => {});
+      await page.waitForTimeout(120); continue;
+    }
+    if (bild !== 'map') { await page.evaluate(() => globalThis.PokelikeApp.show('map')); continue; }
+    const offen = page.locator('.map-node.open');
+    if (!(await offen.count())) break;
+    await offen.first().click({ timeout: 6000 }).catch(() => {});
+    await page.waitForTimeout(350);
+  }
+  if ((await page.evaluate(() => document.body.getAttribute('data-screen'))) === 'battle') {
+    const luecken = await page.evaluate(() => {
+      const r = (s) => { const e = document.querySelector(s); return e ? e.getBoundingClientRect() : null; };
+      const b = r('.battle-stage'), l = r('.battle-log'), c = r('.battle-controls');
+      if (!b || !l || !c) return null;
+      return [Math.round(l.top - b.bottom), Math.round(c.top - l.bottom)];
+    });
+    check('Bühne, Text und Befehle sitzen ohne Lücke aneinander',
+      !!luecken && luecken.every((n) => n <= 2), JSON.stringify(luecken));
+    const spalten = await page.evaluate(() => {
+      const m = document.querySelector('.move-area'), a = document.querySelector('.action-row');
+      if (!m || !a) return null;
+      return Math.round(a.getBoundingClientRect().left - m.getBoundingClientRect().right);
+    });
+    check('Attacken und Befehle stehen nebeneinander', spalten !== null && Math.abs(spalten) <= 4,
+      String(spalten));
+    // Zwei mal zwei, und darin passt der ganze Name.
+    const abgeschnitten = await page.evaluate(() => [...document.querySelectorAll('.move-btn-name')]
+      .filter((e) => e.scrollWidth > e.clientWidth + 1).map((e) => e.textContent));
+    check('Kein Attackenname wird abgeschnitten', abgeschnitten.length === 0,
+      abgeschnitten.join(', '));
+  } else {
+    check('Kampf für die Fensterprüfung erreicht', false, 'kein Kampf');
+  }
+}
+
 await page.reload();
 await page.waitForSelector('.title-screen');
 check('Nach dem Neuladen bleibt der Fortschritt',
@@ -1120,6 +1205,14 @@ console.log('\nHandy');
     info.istKnopf && /Stärke/.test(info.text), info.text.slice(0, 80));
   check('… und die wechselnde Stärke wird dabei erklärt',
     /10 bis 150/.test(info.text), info.text.slice(0, 90));
+
+  // Der Name steht in einer eigenen Zeile und wird nicht mehr beschnitten:
+  // Aus »Rankenhieb« war auf schmalen Flächen »Rank…« geworden.
+  const gestutzt = await phone.evaluate(() => [...document.querySelectorAll('.move-name')]
+    .filter((e) => e.scrollWidth > e.clientWidth + 1).map((e) => e.textContent));
+  check('Kein Attackenname im Team wird abgeschnitten', gestutzt.length === 0,
+    gestutzt.join(', '));
+
   await phone.evaluate(() => globalThis.PokelikeApp.show('map'));
 
   check('Der Knopf zum Weitergehen steht ohne Schieben im Bild',

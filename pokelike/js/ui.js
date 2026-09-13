@@ -455,7 +455,7 @@
    */
   function modal(opts) {
     var host = ensureOverlay();
-    var box = el('div', { className: 'modal' + (opts.wide ? ' wide' : '') }, [
+    var box = el('div', { className: 'modal' + (opts.wide ? ' wide' : '') + (opts.klasse ? ' ' + opts.klasse : '') }, [
       opts.title ? el('h2', { className: 'modal-title', text: opts.title }) : null,
       el('div', { className: 'modal-body' }, opts.content),
       opts.actions ? el('div', { className: 'modal-actions' }, opts.actions.filter(Boolean).map(function (a) {

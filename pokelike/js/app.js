@@ -3447,26 +3447,70 @@
     U.modal({ title: 'Relikte', wide: true, content: el('div', { className: 'list' }, content), actions: [{ label: 'Schließen', primary: true }] });
   }
 
+  /**
+   * Das Pausenmenü, wie es die Vorbilder zeigen: ein schmales Fenster mit
+   * einer Liste, ein Zeiger an der Zeile, auf der man steht, und sonst nichts.
+   * Vorher war es ein breiter Kasten voller Knöpfe, die in unregelmäßigen
+   * Reihen umbrachen — das sah nach Webseite aus, nicht nach Spiel.
+   *
+   * Die Pfeiltasten führen durch die Liste, Eingabe wählt, Esc schließt.
+   */
   function openMenu() {
-    var run = App.run;
-    var actions = [];
+    var run = App.run, fenster = el('div', { className: 'menue-fenster' }), box;
+    function geh(fn) { return function () { if (box) box.close(); fn(); }; }
+    function zeile(text, aktion, opts) { fenster.appendChild(menueZeile(text, aktion, opts)); }
+
     if (run && App.screen !== 'title') {
-      actions.push({ label: 'Weiterspielen', primary: true });
-      actions.push({ label: 'Speichern', onClick: function () { autosave(); show('saves'); } });
-      actions.push({ label: 'Zum Titel', onClick: function () { autosave(); App.battle = null; show('title'); } });
+      zeile('Weiterspielen', function () { box.close(); }, { stark: true });
+      zeile('Team', geh(function () { show('team'); }));
+      zeile('Beutel', geh(function () { openBag(); }));
+      zeile('Speichern', geh(function () { autosave(); show('saves'); }));
     }
-    actions.push({ label: 'Pokédex', onClick: function () { show('dex'); } });
-    actions.push({ label: 'Sammlung', onClick: function () { show('sammlung'); } });
-    actions.push({ label: 'Erfolge', onClick: function () { show('achievements'); } });
-    actions.push({ label: 'Statistik', onClick: function () { show('stats'); } });
-    actions.push({ label: 'Einstellungen', onClick: function () { show('settings'); } });
-    if (!run || App.screen === 'title') actions.push({ label: 'Schließen' });
-    U.modal({
+    var stand = meta.dexStats();
+    zeile('Pok\u00e9dex', geh(function () { show('dex'); }),
+      { notiz: stand.caught + '/' + stand.total });
+    var offen = offeneAuftraege();
+    zeile('Sammlung', geh(function () { show('sammlung'); }),
+      { notiz: offen ? offen + ' offen' : null });
+    zeile('Erfolge', geh(function () { show('achievements'); }));
+    zeile('Statistik', geh(function () { show('stats'); }));
+    zeile('Einstellungen', geh(function () { show('settings'); }));
+    if (run && App.screen !== 'title') {
+      zeile('Zum Titel', geh(function () { autosave(); App.battle = null; show('title'); }));
+    } else {
+      zeile('Schließen', function () { box.close(); });
+    }
+
+    box = U.modal({
       title: 'Menü',
-      content: el('div', { className: 'menu-hint' }, [
-        el('p', { className: 'muted', text: 'Tasten: 1–4 Attacken · W Wechseln · B Beutel · M Verwandeln · A Auto-Kampf · ⇧A Reise-Automat · Esc Menü' })
-      ]),
-      actions: actions
+      klasse: 'menue-modal',
+      content: [
+        fenster,
+        el('p', { className: 'menue-tasten muted', text:
+          'Tasten: 1–4 Attacken · W Wechseln · B Beutel · M Verwandeln · ' +
+          'A Auto-Kampf · ⇧A Reise-Automat · Esc Menü' })
+      ]
+    });
+    pfeilFuehrung(fenster);
+    var erste = fenster.querySelector('.menue-zeile');
+    if (erste) erste.focus();
+  }
+
+  /**
+   * Pfeiltasten führen durch ein Menüfenster — hoch, runter, und am Ende
+   * wieder von vorn. Ohne das müsste man mit der Tabulatortaste durch die
+   * Liste wandern, und das ist in keinem Vorbild so.
+   */
+  function pfeilFuehrung(host) {
+    host.addEventListener('keydown', function (e) {
+      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+      var zeilen = [].slice.call(host.querySelectorAll('.menue-zeile:not([disabled])'));
+      if (!zeilen.length) return;
+      e.preventDefault();
+      var schritt = e.key === 'ArrowDown' ? 1 : -1;
+      var i = zeilen.indexOf(doc.activeElement);
+      if (i < 0) i = schritt > 0 ? -1 : 0;
+      zeilen[(i + schritt + zeilen.length) % zeilen.length].focus();
     });
   }
 
