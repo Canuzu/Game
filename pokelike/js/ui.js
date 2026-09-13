@@ -548,11 +548,9 @@
       onclick: opts.onClick || null,
       disabled: opts.disabled || false
     }, [
-      // Hat ein Gegenstand ein eigenes Bild — der Ball einer Legende —, steht
-      // es anstelle des Sinnbilds.
-      item.bild
-        ? el('img', { className: 'item-icon eigenball', src: item.bild, alt: '' })
-        : el('span', { className: 'item-icon' }, sym(opts.icon || itemIcon(item), { className: 'gross' })),
+      opts.icon
+        ? el('span', { className: 'item-icon' }, sym(opts.icon, { className: 'gross' }))
+        : itemBild(item),
       el('div', { className: 'item-text' }, [
         el('strong', { text: item.name + (opts.count > 1 ? ' ×' + opts.count : '') }),
         el('span', { className: 'muted', text: item.desc || '' })
@@ -562,9 +560,21 @@
     ]);
   }
 
-  /* Welches gezeichnete Zeichen zu welcher Art Gegenstand gehört. Wie in den
-     Vorbildern steht das Zeichen für die Art, nicht für das einzelne Stück:
-     Alle Tränke sehen gleich aus, alle Bälle auch. */
+  /* Das Bild eines Gegenstands. Jedes Ding im Beutel ist einzeln gezeichnet
+     (css/gegenstaende.css, erzeugt aus tools/gegenstaende.mjs), so wie in den
+     Vorbildern: Jeder Ball in seinen Farben, jeder Trank, jede Beere, jeder
+     Stein. Nur die TMs teilen sich die Scheibe — von denen gibt es so viele
+     wie Attacken. Legendenbälle bringen ihr eigenes Bild mit.
+
+     Dass wirklich jeder Gegenstand eine Zeichnung hat, prüft der Test
+     »Gezeichnete Gegenstände« in tests/run-tests.mjs. */
+  function itemBild(item) {
+    if (item.bild) return el('img', { className: 'item-icon eigenball', src: item.bild, alt: '' });
+    if (item.kind === 'tm') return el('span', { className: 'item-icon' }, sym('scheibe', { className: 'gross' }));
+    return el('span', { className: 'item-icon' }, el('span', { className: 'gg gg-' + item.id }));
+  }
+
+  /* Das Zeichen der Art — für Stellen, an denen nur die Gattung zählt. */
   var KIND_ICON = { ball: 'ball', heal: 'traenkchen', status: 'pille', boost: 'pfeilhoch',
     hold: 'beutel', evo: 'stein', tm: 'scheibe', special: 'stern' };
   function itemIcon(item) {
@@ -580,7 +590,7 @@
     typeChip: typeChip, hpBar: hpBar, expBar: expBar, statusChip: statusChip, genderMark: genderMark,
     monCard: monCard, monDetail: monDetail, moveRow: moveRow, megaNote: megaNote,
     modal: modal, confirm: confirm, toast: toast,
-    money: money, itemRow: itemRow, itemIcon: itemIcon,
+    money: money, itemRow: itemRow, itemIcon: itemIcon, itemBild: itemBild,
     ballBild: ballBild, ballName: ballName, ballDaten: ballDaten,
     sym: sym, symText: symText, moveInfo: moveInfo, langerDruck: langerDruck,
     TYPE_COLOR: TYPE_COLOR, CAT_SYM: CAT_SYM, CAT_NAME: CAT_NAME

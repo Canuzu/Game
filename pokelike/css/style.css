@@ -879,7 +879,26 @@ button { font: inherit; color: inherit; }
 }
 .item-row:hover:not(:disabled) { border-color: var(--accent); }
 .item-row:disabled, .item-row.sold { opacity: .45; cursor: not-allowed; }
-.item-icon { font-size: 20px; flex: none; }
+.item-icon { font-size: 20px; flex: none; display: flex; align-items: center; }
+/* Der einzeln gezeichnete Gegenstand steht ohne Zeilenversatz in der Reihe. */
+.item-icon .gg { width: 36px; height: 36px; vertical-align: 0; }
+
+/* Die Gegenstände sind wie ihre Vorbilder mit fast schwarzer Kontur gezeichnet
+   — gedacht für den hellen Beutel. Steht das Spiel auf dunkel, verschwände
+   diese Kontur im Untergrund, und ein Hyperball zerfiele in zwei Hälften.
+   Ein Saum von einem Punkt hebt die Zeichnung wieder ab. Die drei Auswahlen
+   sind dieselben wie oben bei den Farben: Wahl im Spiel, Seite, System. */
+:root[data-app-theme="dark"] .gg,
+:root[data-theme="dark"]:not([data-app-theme="light"]) .gg {
+  filter: drop-shadow(1px 0 0 #8e9aae) drop-shadow(-1px 0 0 #8e9aae)
+          drop-shadow(0 1px 0 #8e9aae) drop-shadow(0 -1px 0 #8e9aae);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-app-theme="light"]):not([data-theme="light"]) .gg {
+    filter: drop-shadow(1px 0 0 #8e9aae) drop-shadow(-1px 0 0 #8e9aae)
+            drop-shadow(0 1px 0 #8e9aae) drop-shadow(0 -1px 0 #8e9aae);
+  }
+}
 .item-text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .item-text span { font-size: 20px; }
 .item-price { font-weight: 650; color: var(--accent-text); white-space: nowrap; }

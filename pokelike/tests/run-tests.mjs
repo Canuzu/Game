@@ -3094,6 +3094,39 @@ section('Abgeschaffte Modi');
   eq('Ein vergangener Kurzrun heißt weiter Kurzrun', PL.Run.ALTE_MODI.kurz, 'Kurzrun');
 }
 
+section('Gezeichnete Gegenstände');
+{
+  // Jedes Ding im Beutel ist einzeln gezeichnet: css/gegenstaende.css, erzeugt
+  // aus tools/gegenstaende.mjs. Fehlt einem Gegenstand seine Zeichnung, bleibt
+  // im Beutel ein leerer Kasten — stumm, ohne Fehler. Das fängt diese Prüfung.
+  const ggCss = readFileSync(join(SRC_DIR, '..', 'css', 'gegenstaende.css'), 'utf8');
+  const regel = /^\.gg-([a-z0-9-]+) \{ --gg: url\("([^"]*)"\); \}$/gm;
+  const bilder = new Map();
+  for (const m of ggCss.matchAll(regel)) bilder.set(m[1], m[2]);
+
+  check('Die Datei bringt Zeichnungen mit', bilder.size > 100, bilder.size + ' Stück');
+
+  // Nur die TMs teilen sich die Scheibe: Von denen gibt es so viele wie Attacken.
+  const ohne = PL.items.all().filter((i) => i.kind !== 'tm' && !bilder.has(i.id));
+  check('Jeder Gegenstand hat seine eigene Zeichnung', ohne.length === 0,
+    ohne.map((i) => i.id).join(', '));
+
+  const imSpiel = new Set(PL.items.all().map((i) => i.id));
+  const ueber = [...bilder.keys()].filter((id) => !imSpiel.has(id));
+  check('Keine Zeichnung ohne Gegenstand', ueber.length === 0, ueber.join(', '));
+
+  // Eine Zeichnung, die kaum Daten enthält, wäre ein leeres Bild.
+  const leer = [...bilder].filter(([, url]) => url.length < 300).map(([id]) => id);
+  check('Keine Zeichnung ist leer', leer.length === 0, leer.join(', '));
+
+  // Zwei Gegenstände mit demselben Bild hieße: Die Mühe war umsonst.
+  const nachBild = new Map();
+  for (const [id, url] of bilder) nachBild.set(url, (nachBild.get(url) || []).concat(id));
+  const doppelt = [...nachBild.values()].filter((l) => l.length > 1);
+  check('Keine zwei Gegenstände sehen gleich aus', doppelt.length === 0,
+    doppelt.map((l) => l.join('=')).join(' | '));
+}
+
 section('Gezeichnete Zeichen');
 {
   // Jedes Zeichen wird über seinen Namen geholt: U.sym('beutel'). Steht der
