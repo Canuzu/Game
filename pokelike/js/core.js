@@ -270,13 +270,59 @@
   }
 
   /** Kurzer Steckbrief einer Attacke, ohne den englischen Fließtext. */
+  /* Attacken, deren Stärke erst im Kampf feststeht. Ohne diesen Satz stand im
+     Hinweisfeld nur »Stärke —«, und man wusste weder, wie hart sie zuschlagen,
+     noch wovon das abhängt. */
+  var STAERKE_TEXT = {
+    magnitude: 'Stärke 10 bis 150, ausgewürfelt (meist 70)',
+    'return': 'Stärke bis 102 — je mehr Zutrauen, desto härter',
+    frustration: 'Stärke bis 102 — je weniger Zutrauen, desto härter',
+    pikapapow: 'Stärke bis 102 — je mehr Zutrauen, desto härter',
+    veeveevolley: 'Stärke bis 102 — je mehr Zutrauen, desto härter',
+    crushgrip: 'Stärke bis 120 — je voller die KP des Ziels, desto härter',
+    wringout: 'Stärke bis 120 — je voller die KP des Ziels, desto härter',
+    hardpress: 'Stärke bis 100 — je voller die KP des Ziels, desto härter',
+    punishment: 'Stärke 60, dazu 20 je Steigerung des Ziels (bis 200)',
+    flail: 'Stärke bis 200 — je weniger eigene KP, desto härter',
+    reversal: 'Stärke bis 200 — je weniger eigene KP, desto härter',
+    gyroball: 'Stärke bis 150 — je langsamer man selbst ist, desto härter',
+    electroball: 'Stärke bis 150 — je schneller man selbst ist, desto härter',
+    lowkick: 'Stärke 20 bis 120 — je schwerer das Ziel, desto härter',
+    grassknot: 'Stärke 20 bis 120 — je schwerer das Ziel, desto härter',
+    heatcrash: 'Stärke 40 bis 120 — je leichter das Ziel, desto härter',
+    heavyslam: 'Stärke 40 bis 120 — je leichter das Ziel, desto härter',
+    storedpower: 'Stärke 20, dazu 20 je eigener Steigerung',
+    trumpcard: 'Stärke 80',
+    beatup: 'Ein Schlag je gesundem Teammitglied, jeder mit dessen Angriff',
+    present: '40, 80 oder 120 Stärke — oder es heilt das Ziel um ein Viertel',
+    psywave: 'Schaden: das halbe bis anderthalbfache eigene Level',
+    dragonrage: 'Immer 40 Schaden',
+    sonicboom: 'Immer 20 Schaden',
+    seismictoss: 'Schaden in Höhe des eigenen Levels',
+    nightshade: 'Schaden in Höhe des eigenen Levels',
+    superfang: 'Nimmt dem Ziel die Hälfte seiner KP',
+    naturesmadness: 'Nimmt dem Ziel die Hälfte seiner KP',
+    ruination: 'Nimmt dem Ziel die Hälfte seiner KP',
+    endeavor: 'Zieht die KP des Ziels auf die eigenen herunter',
+    finalgambit: 'Schaden in Höhe der eigenen KP — man geht dabei selbst zu Boden',
+    counter: 'Gibt physischen Schaden doppelt zurück',
+    mirrorcoat: 'Gibt spezialen Schaden doppelt zurück',
+    metalburst: 'Gibt den letzten Treffer anderthalbfach zurück',
+    comeuppance: 'Gibt den letzten Treffer anderthalbfach zurück',
+    guillotine: 'K.-o. auf einen Schlag; versagt gegen höhere Level',
+    horndrill: 'K.-o. auf einen Schlag; versagt gegen höhere Level',
+    fissure: 'K.-o. auf einen Schlag; versagt gegen höhere Level',
+    sheercold: 'K.-o. auf einen Schlag; versagt gegen Eis und höhere Level'
+  };
+
   function moveDesc(m) {
     var head = [TYPE_DE[m.t] || m.t, CATEGORY_DE[m.c]];
-    if (m.c !== 'T') head.push('Stärke ' + (m.bp || '—'));
+    if (m.c !== 'T') head.push(m.bp ? 'Stärke ' + m.bp : 'wechselnde Stärke');
     head.push(m.ac === 0 ? 'trifft immer' : 'Genauigkeit ' + m.ac + ' %');
     head.push(m.pp + ' AP');
 
     var fx = [];
+    if (STAERKE_TEXT[m.id]) fx.push(STAERKE_TEXT[m.id]);
     if (m.pr > 0) fx.push('Erstschlag (+' + m.pr + ')');
     if (m.pr < 0) fx.push('handelt zuletzt (' + m.pr + ')');
     if (m.mh) fx.push('trifft ' + (typeof m.mh === 'number' ? m.mh : m.mh[0] + '–' + m.mh[1]) + '×');

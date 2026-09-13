@@ -100,6 +100,26 @@
     return mh[0] === 2 && mh[1] === 5 ? 3.1 : (mh[0] + mh[1]) / 2;
   }
 
+  /* Attacken, deren Stärke erst im Kampf feststeht, stehen im Pokédex mit
+     Stärke 0. Für die Bewertung braucht es einen Ersatzwert — sonst hält der
+     Bauplan sie für wertlos und legt sie keinem Pokémon ins Set, und die
+     Regeln, die sie im Kampf ausrechnen, laufen ins Leere.
+     Die Zahlen sind das, was die Attacke im Mittel wirklich leistet. */
+  var ERSATZ_BP = {
+    magnitude: 71,          // der Erwartungswert der sieben Stufen
+    crushgrip: 100, wringout: 100, hardpress: 85,
+    punishment: 70, beatup: 55, present: 60,
+    // Zutrauen bleibt in einem Run meist niedrig: Frustration trifft härter.
+    'return': 45, pikapapow: 45, veeveevolley: 45, frustration: 75,
+    psywave: 55, seismictoss: 55, nightshade: 55,
+    dragonrage: 30, sonicboom: 25,
+    superfang: 60, naturesmadness: 60, rulingwater: 60, ruination: 60,
+    endeavor: 40, finalgambit: 25,
+    counter: 35, mirrorcoat: 35, metalburst: 35, comeuppance: 35,
+    // K.-o.-Attacken treffen selten genug, um kein Standardwerkzeug zu sein.
+    guillotine: 15, horndrill: 15, fissure: 15, sheercold: 15
+  };
+
   /** Roher Nutzwert einer Attacke für ein bestimmtes Pokémon. */
   function moveValue(move, sp, level) {
     var v, acc = move.ac === 0 ? 100 : move.ac, stabs = sp.t;
@@ -107,7 +127,7 @@
       v = GOOD_STATUS[move.id] !== undefined ? GOOD_STATUS[move.id] : 12;
       return v * (acc / 100);
     }
-    v = (move.bp || 0) * avgHits(move.mh) * (acc / 100);
+    v = (move.bp || ERSATZ_BP[move.id] || 0) * avgHits(move.mh) * (acc / 100);
     if (move.dmg) v = 60;                                   // Fixschaden (Nachthieb & Co.)
     if (move.ohko) v = 10;
     if (stabs.indexOf(move.t) >= 0) v *= 1.5;
@@ -135,7 +155,7 @@
    */
   function tmMinLevel(move) {
     if (move.c === 'T') return 8 + (GOOD_STATUS[move.id] || 20) * 0.22;
-    var bp = (move.bp || 40) * avgHits(move.mh);
+    var bp = (move.bp || ERSATZ_BP[move.id] || 40) * avgHits(move.mh);
     if (move.dmg || move.ohko) bp = 70;
     return 4 + bp * 0.33;
   }

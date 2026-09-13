@@ -298,7 +298,13 @@
   B.setStatus = function (act, status, source, move, silent) {
     if (!this.canSetStatus(act, status, source, move)) return false;
     act.mon.status = status;
-    if (status === 'slp') act.mon.slp = this.rng.range(1, 3);
+    // Der Zähler wird zu Beginn des eigenen Zuges heruntergezählt und erst
+    // danach geprüft. Er zählt also die Runde mit, in der aufgewacht wird:
+    // 2 bedeutet eine verschlafene Runde, 4 bedeutet drei. Vorher stand hier
+    // 1 bis 3 — bei einer 1 wachte das Pokémon sofort auf, ohne eine einzige
+    // Runde zu verlieren, und der Schlaf kostete im Mittel eine Runde statt
+    // zweier. In den Vorbildern sind es seit der fünften Fassung 1 bis 3.
+    if (status === 'slp') act.mon.slp = this.rng.range(2, 4);
     if (status === 'tox') act.vol.toxicTurns = 0;
     if (!silent) {
       var msg = {
@@ -490,7 +496,7 @@
     if (eff === 0) return { dmg: 0, eff: 0, crit: false, immune: true, type: moveType };
 
     var bp = move.bp;
-    if (ov.bp) bp = ov.bp(this, atk, def, move) || bp;
+    if (ov.bp) bp = ov.bp(this, atk, def, move, opts.hit || 0) || bp;
     // Erdbeben trifft einen Eingegrabenen doppelt, Surfer einen Abgetauchten.
     if (def.vol.invuln && TOUCHES[def.vol.invuln][move.id] === 2) bp *= 2;
     if (atk.vol.charge && moveType === 'Electric') bp *= 2;
@@ -703,6 +709,15 @@
 
   /** Trefferwahrscheinlichkeit und Wurf. */
   B.accuracyCheck = function (atk, def, move) {
+    // Eine eigene Regel darf die Genauigkeit selbst ausrechnen. Die
+    // K.-o.-Attacken tun das: Bei ihnen hängt sie am Levelunterschied.
+    var eigen = this.effects.moves[move.id];
+    if (eigen && eigen.acc) {
+      var wert = eigen.acc(this, atk, def, move);
+      if (wert === true) return true;
+      if (wert <= 0) return false;
+      return this.rng.next() * 100 < wert;
+    }
     if (move.ac === 0) return true;
     if (atk.side.isPlayer && move.c === 'T' && this.relicMod('statusNeverMiss')) return true;
     if (this.abilityId(atk) === 'noguard' || this.abilityId(def) === 'noguard') return true;
@@ -721,6 +736,8 @@
   };
 
   function hitsFor(bt, move, act) {
+    var ov = bt.effects.moves[move.id];
+    if (ov && ov.hits) return ov.hits(bt, act);
     if (!move.mh) return 1;
     if (typeof move.mh === 'number') return move.mh;
     var id = bt.abilityId(act);
@@ -872,7 +889,7 @@
       } else if (ov.fixed) {
         result = { dmg: ov.fixed(this, actor, target, move), eff: 1, crit: false, type: move.t };
       } else {
-        result = this.calcDamage(actor, target, move);
+        result = this.calcDamage(actor, target, move, { hit: h });
       }
       if (result.immune) break;
       var dealt = this.damage(target, result.dmg);

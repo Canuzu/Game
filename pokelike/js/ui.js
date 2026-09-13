@@ -371,10 +371,12 @@
     var m = dex.move(slot.m || slot.move || slot);
     var pp = slot.pp !== undefined ? slot.pp : null;
     var maxPP = m.pp + (slot.ppUp || 0) * Math.floor(m.pp / 5);
-    return el(opts.onClick ? 'button' : 'div', {
+    // Eine Zeile ohne eigene Aufgabe schlägt die Attacke beim Antippen nach;
+    // eine, die schon etwas tut, erst beim langen Druck.
+    var reihe = el(opts.onClick || !opts.stumm ? 'button' : 'div', {
       className: 'move-row' + (opts.className ? ' ' + opts.className : ''),
-      type: opts.onClick ? 'button' : null,
-      onclick: opts.onClick || null,
+      type: (opts.onClick || !opts.stumm) ? 'button' : null,
+      onclick: opts.onClick || (opts.stumm ? null : function () { moveInfo(m); }),
       title: T.moveDesc(m)
     }, [
       el('span', { className: 'move-type', style: { background: TYPE_COLOR[m.t] }, text: T.type(m.t) }),
@@ -383,6 +385,59 @@
       el('span', { className: 'move-power', text: m.c === 'T' ? '—' : m.bp }),
       pp !== null ? el('span', { className: 'move-pp' + (pp === 0 ? ' empty' : ''), text: pp + '/' + maxPP }) : null
     ]);
+    if (opts.onClick) langerDruck(reihe, function () { moveInfo(m); });
+    return reihe;
+  }
+
+  /**
+   * Was eine Attacke wirklich tut — als Fenster, nicht als Hinweisfähnchen.
+   *
+   * Die Beschreibung stand bisher nur im title-Attribut. Auf einem
+   * Berührungsbildschirm gibt es kein Überfahren mit der Maus, also war sie
+   * dort überhaupt nicht zu lesen: Man sah Name, Typ und AP und musste raten,
+   * was die Attacke anrichtet.
+   */
+  function moveInfo(m) {
+    m = dex.move(m.m !== undefined ? m.m : m);
+    var kopf = el('div', { className: 'move-info-kopf' }, [
+      el('span', { className: 'move-type', style: { background: TYPE_COLOR[m.t] }, text: T.type(m.t) }),
+      sym(CAT_SYM[m.c] || 'spirale', { title: CAT_NAME[m.c] }),
+      el('span', { text: CAT_NAME[m.c] || '' })
+    ]);
+    // Typ und Art stehen schon oben als Plakette — die Kopfzeile der
+    // Beschreibung fängt deshalb erst bei der Stärke an.
+    var zeilen = T.moveDesc(m).split(' — ');
+    var werte = zeilen[0].split(' · ').slice(2).join(' · ');
+    var block = el('div', { className: 'move-info' }, [
+      kopf,
+      el('p', { text: werte }),
+      zeilen.length > 1 ? el('p', { className: 'move-info-wirkung', text: zeilen.slice(1).join(' — ') }) : null,
+      T.lang() === 'de' ? null : el('p', { className: 'muted small', text: m.d || '' })
+    ]);
+    modal({ title: T.move(m), content: block, actions: [{ label: 'Schließen', primary: true }] });
+  }
+
+  /**
+   * Ein langer Druck — mit dem Finger gehalten oder mit der rechten Maustaste.
+   * Der darauffolgende Klick wird verschluckt, damit ein Nachschlagen nicht
+   * versehentlich die Attacke auslöst.
+   */
+  function langerDruck(node, fn) {
+    var timer = null, ausgeloest = false;
+    function los() {
+      ausgeloest = false;
+      timer = root.setTimeout(function () { ausgeloest = true; timer = null; fn(); }, 450);
+    }
+    function halt() { if (timer) { root.clearTimeout(timer); timer = null; } }
+    node.addEventListener('pointerdown', los);
+    node.addEventListener('pointerup', halt);
+    node.addEventListener('pointerleave', halt);
+    node.addEventListener('pointercancel', halt);
+    node.addEventListener('click', function (e) {
+      if (ausgeloest) { e.preventDefault(); e.stopPropagation(); ausgeloest = false; }
+    }, true);
+    node.addEventListener('contextmenu', function (e) { e.preventDefault(); halt(); fn(); });
+    return node;
   }
 
   /* ---------- Dialoge und Hinweise ------------------------------------------------ */
@@ -527,7 +582,7 @@
     modal: modal, confirm: confirm, toast: toast,
     money: money, itemRow: itemRow, itemIcon: itemIcon,
     ballBild: ballBild, ballName: ballName, ballDaten: ballDaten,
-    sym: sym, symText: symText,
+    sym: sym, symText: symText, moveInfo: moveInfo, langerDruck: langerDruck,
     TYPE_COLOR: TYPE_COLOR, CAT_SYM: CAT_SYM, CAT_NAME: CAT_NAME
   };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

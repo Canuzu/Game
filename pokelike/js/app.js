@@ -2089,7 +2089,7 @@
         else if (eff <= 0.25) effTag = { c: 'weak', t: '×¼' };
         else if (eff < 1) effTag = { c: 'weak', t: '×½' };
       }
-      grid.appendChild(el('button', {
+      var kachel = el('button', {
         className: 'move-btn' + (mv.disabled ? ' disabled' : ''),
         type: 'button', disabled: mv.disabled,
         // Auch die Farbe folgt dem wirklichen Typ: Ein Feenschicht-Tackle ist rosa.
@@ -2107,7 +2107,12 @@
           U.sym(U.CAT_SYM[m.c] || 'spirale', { title: U.CAT_NAME[m.c] }),
           el('span', { className: 'move-btn-pp', text: mv.pp + '/' + mv.maxPP })
         ])
-      ]));
+      ]);
+      // Gehalten wird nachgeschlagen, was die Attacke anrichtet. Auf einem
+      // Berührungsbildschirm gibt es kein Überfahren mit der Maus — dort war
+      // die Beschreibung bis jetzt überhaupt nicht zu erreichen.
+      U.langerDruck(kachel, function () { U.moveInfo(m); });
+      grid.appendChild(kachel);
     });
     BV.moveArea.appendChild(grid);
   }

@@ -1097,6 +1097,31 @@ console.log('\nHandy');
       fenster: innerHeight
     };
   });
+  /* Was eine Attacke anrichtet, stand nur im Hinweisfähnchen der Maus — auf
+     einem Berührungsbildschirm also nirgends. Jetzt öffnet ein langer Druck
+     auf die Kachel ein Fenster, und im Team genügt ein Tippen. */
+  const info = await phone.evaluate(async () => {
+    const App = globalThis.PokelikeApp, run = App.run;
+    run.party[0].moves[0] = { m: PL.dex.moves.find((m) => m.id === 'magnitude').i, pp: 30, ppUp: 0 };
+    App.show('team');
+    document.querySelector('.mon-card').click();
+    await new Promise((r) => setTimeout(r, 50));
+    const zeile = document.querySelector('.move-block .move-row');
+    const istKnopf = zeile && zeile.tagName === 'BUTTON';
+    if (zeile) zeile.click();
+    await new Promise((r) => setTimeout(r, 50));
+    const fenster = document.querySelector('.modal .move-info');
+    const text = fenster ? fenster.textContent.replace(/\s+/g, ' ') : '';
+    const zu = document.querySelector('.modal-actions .btn');
+    if (zu) zu.click();
+    return { istKnopf: istKnopf, text: text };
+  });
+  check('Im Team lässt sich eine Attacke antippen und nachschlagen',
+    info.istKnopf && /Stärke/.test(info.text), info.text.slice(0, 80));
+  check('… und die wechselnde Stärke wird dabei erklärt',
+    /10 bis 150/.test(info.text), info.text.slice(0, 90));
+  await phone.evaluate(() => globalThis.PokelikeApp.show('map'));
+
   check('Der Knopf zum Weitergehen steht ohne Schieben im Bild',
     weiter.knopfDrin, weiter.knopfLage + ' von ' + weiter.fenster);
   check('Auf der Karte steht die nächste Wahl ohne Schieben im Bild',

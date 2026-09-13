@@ -2456,3 +2456,13 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
 .choice.selected strong, .option.selected strong, .starter.selected .starter-name {
   font-weight: 700;
 }
+
+/* --- Was eine Attacke anrichtet ---------------------------------------------
+   Die Beschreibung stand nur im Hinweisfähnchen der Maus. Auf dem Handy gibt
+   es das nicht, also öffnet ein langer Druck auf die Kachel ein Fenster. */
+.move-info { display: flex; flex-direction: column; gap: .5rem; }
+.move-info-kopf { display: flex; align-items: center; gap: .5rem; }
+.move-info p { margin: 0; }
+.move-info-wirkung { font-weight: 650; }
+.move-row { cursor: pointer; }
+.move-row:not(button) { cursor: default; }

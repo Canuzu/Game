@@ -946,6 +946,8 @@
   M.seismictoss = { fixed: function (bt, a) { return a.mon.lvl; } };
   M.nightshade = M.seismictoss;
   M.superfang = { fixed: function (bt, a, d) { return Math.max(1, Math.floor(d.mon.hp / 2)); } };
+  M.ruination = M.superfang;
+
   M.naturesmadness = M.superfang;
   M.rulingwater = M.superfang;
   M.endeavor = {
@@ -979,6 +981,152 @@
       if (!a.vol.lastPhysicalHit && !a.vol.lastSpecialHit) { bt.say('Es klappt nicht.', 'text', {}); return false; }
       return true;
     }
+  };
+
+  /* ---------- Attacken mit wechselnder Stärke -------------------------------
+   * Achtzehn Angriffe standen mit Stärke 0 im Pokédex, weil ihre Stärke nicht
+   * feststeht, sondern im Kampf ausgerechnet wird. Ohne eigene Regel fiel die
+   * Engine auf die Untergrenze zurück: Stärke 1, also praktisch kein Schaden.
+   * Wer Intensität oder Rückkehr im Team hatte, schlug damit ins Leere.
+   *
+   * Die Formeln sind die der Vorbilder.
+   * ------------------------------------------------------------------------ */
+
+  // Intensität würfelt eine Stärke aus — von 4 (schwach, selten) bis 10
+  // (verheerend, selten). Die Verteilung steht in den Spielen fest.
+  var INTENSITAET = [
+    { stufe: 4, bp: 10, p: 0.05 },
+    { stufe: 5, bp: 30, p: 0.10 },
+    { stufe: 6, bp: 50, p: 0.20 },
+    { stufe: 7, bp: 70, p: 0.30 },
+    { stufe: 8, bp: 90, p: 0.20 },
+    { stufe: 9, bp: 110, p: 0.10 },
+    { stufe: 10, bp: 150, p: 0.05 }
+  ];
+  M.magnitude = {
+    beforeMove: function (bt, a) {
+      var r = bt.rng.next(), summe = 0, i;
+      for (i = 0; i < INTENSITAET.length; i++) {
+        summe += INTENSITAET[i].p;
+        if (r < summe) break;
+      }
+      var wahl = INTENSITAET[Math.min(i, INTENSITAET.length - 1)];
+      a.vol.intensitaet = wahl;
+      bt.say('Intensität ' + wahl.stufe + '!', 'text', {});
+      return true;
+    },
+    bp: function (bt, a) { return (a.vol.intensitaet || INTENSITAET[3]).bp; }
+  };
+
+  // Rückkehr und Frustration hängen am Zutrauen des Pokémon: bis 102 Stärke.
+  function freundschaft(a) {
+    var f = a.mon.friendship;
+    return typeof f === 'number' ? Math.max(0, Math.min(255, f)) : 70;
+  }
+  M['return'] = { bp: function (bt, a) { return Math.max(1, Math.floor(freundschaft(a) * 2 / 5)); } };
+  M.frustration = { bp: function (bt, a) { return Math.max(1, Math.floor((255 - freundschaft(a)) * 2 / 5)); } };
+  M.pikapapow = M['return'];
+  M.veeveevolley = M['return'];
+
+  // Je mehr das Ziel noch auf den Rippen hat, desto härter der Griff.
+  function nachKP(hoechst) {
+    return function (bt, a, d) { return Math.max(1, Math.floor(hoechst * bt.hpFraction(d))); };
+  }
+  M.crushgrip = { bp: nachKP(120) };
+  M.wringout = { bp: nachKP(120) };
+  M.hardpress = { bp: nachKP(100) };
+
+  // Strafattacke schlägt härter zu, je mehr das Ziel sich aufgebaut hat.
+  M.punishment = {
+    bp: function (bt, a, d) {
+      var stufen = 0, k;
+      for (k in d.boosts) { if (d.boosts.hasOwnProperty(k) && d.boosts[k] > 0) stufen += d.boosts[k]; }
+      return Math.min(200, 60 + 20 * stufen);
+    }
+  };
+
+  // Vendetta gibt zurück, was man eingesteckt hat — anderthalbfach.
+  M.comeuppance = M.metalburst;
+
+  // Fester Schaden, unabhängig von Werten und Typen.
+  M.dragonrage = { fixed: function () { return 40; } };
+  M.sonicboom = { fixed: function () { return 20; } };
+  // Psywelle: das halbe bis anderthalbfache eigene Level.
+  M.psywave = {
+    fixed: function (bt, a) {
+      return Math.max(1, Math.floor(a.mon.lvl * (bt.rng.int(101) + 50) / 100));
+    }
+  };
+
+  // Geschenk ist ein Los: meistens ein Schlag, manchmal eine Heilung.
+  M.present = {
+    beforeMove: function (bt, a, d) {
+      var r = bt.rng.next();
+      a.vol.geschenk = r < 0.40 ? 40 : r < 0.70 ? 80 : r < 0.80 ? 120 : 0;
+      if (a.vol.geschenk === 0) {
+        if (d.mon.hp >= bt.maxHP(d)) { bt.say('Das Geschenk verpufft.', 'text', {}); return false; }
+        bt.healAct(d, Math.floor(bt.maxHP(d) / 4), false, 'Geschenk');
+        bt.say(bt.name(d) + ' freut sich über das Geschenk!', 'text', { side: d.side.id });
+        return false;
+      }
+      return true;
+    },
+    bp: function (bt, a) { return a.vol.geschenk || 40; }
+  };
+
+  // Prügler: Jedes gesunde Teammitglied schlägt einmal zu, und zwar mit
+  // seinem eigenen Grundangriff.
+  function pruegelTrupp(bt, a) {
+    return (a.side.team || []).filter(function (m) { return m.hp > 0 && !m.status; });
+  }
+  M.beatup = {
+    beforeMove: function (bt, a) {
+      if (!pruegelTrupp(bt, a).length) { bt.say('Es klappt nicht.', 'text', {}); return false; }
+      return true;
+    },
+    hits: function (bt, a) { return Math.min(6, pruegelTrupp(bt, a).length); },
+    bp: function (bt, a, d, move, treffer) {
+      var trupp = pruegelTrupp(bt, a);
+      var m = trupp[Math.min(treffer, trupp.length - 1)];
+      var sp = m && PL.dex.sp(m.sp);
+      return sp ? Math.floor(sp.bs[1] / 10) + 5 : 5;
+    }
+  };
+
+  /* ---------- K.-o.-Attacken ------------------------------------------------
+   * Sie treffen selten, aber wenn sie treffen, ist der Kampf vorbei. Die
+   * Genauigkeit hängt am Levelunterschied, und gegen ein höheres Level
+   * versagen sie ganz.
+   * ------------------------------------------------------------------------ */
+  function koAttacke(grund, zusatz) {
+    return {
+      acc: function (bt, a, d) { return (grund || 30) + a.mon.lvl - d.mon.lvl; },
+      beforeMove: function (bt, a, d) {
+        if (d.mon.lvl > a.mon.lvl) {
+          bt.say('Es klappt nicht — das Ziel ist zu stark.', 'text', {});
+          return false;
+        }
+        if (bt.abilityId(d) === 'sturdy') {
+          bt.say(bt.name(d) + ': Robustheit hält stand.', 'ability', { side: d.side.id });
+          return false;
+        }
+        if (zusatz && !zusatz(bt, a, d)) return false;
+        return true;
+      },
+      fixed: function (bt, a, d) { return d.mon.hp; },
+      onHit: function (bt, a, d) { bt.say('Ein K.-o.-Treffer!', 'crit', { side: d.side.id }); }
+    };
+  }
+  M.guillotine = koAttacke(30);
+  M.horndrill = koAttacke(30);
+  M.fissure = koAttacke(30);
+  M.sheercold = koAttacke(30, function (bt, a, d) {
+    if (d.types.indexOf('Ice') >= 0) { bt.say('Eiseskälte lässt Eispokémon kalt.', 'text', {}); return false; }
+    return true;
+  });
+  // Wer selbst kein Eis ist, trifft damit deutlich seltener.
+  M.sheercold.acc = function (bt, a, d) {
+    return (a.types.indexOf('Ice') >= 0 ? 30 : 20) + a.mon.lvl - d.mon.lvl;
   };
 
   M.painsplit = {
@@ -1027,7 +1175,7 @@
     onHit: function (bt, a) {
       a.mon.hp = bt.maxHP(a);
       a.mon.status = 'slp';
-      a.mon.slp = 2;
+      a.mon.slp = 3;                 // zwei verschlafene Runden, wie im Vorbild
       bt.log.push({ k: 'heal', side: a.side.id, amount: 0, hp: a.mon.hp, max: bt.maxHP(a), s: '' });
       bt.say(bt.name(a) + ' schläft und wird kerngesund!', 'status', { side: a.side.id, status: 'slp' });
     }

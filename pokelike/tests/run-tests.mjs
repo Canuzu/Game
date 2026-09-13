@@ -2887,6 +2887,159 @@ section('Sammlung: Marken, Aufträge, Bestwerte');
   delete globalThis.localStorage;
 }
 
+section('Attacken mit wechselnder Stärke');
+{
+  // Achtzehn Angriffe hatten im Pokédex Stärke 0, weil ihre Stärke erst im
+  // Kampf feststeht — und keine Regel, die sie ausrechnet. Sie schlugen
+  // deshalb mit Stärke 1 zu, also praktisch für nichts.
+  const M = PL.effects.moves;
+  const mvi = (id) => PL.dex.moves.find((m) => m.id === id).i;
+  function wurf(moveId, angreiferId, zielId, saat, vor) {
+    const rng = PL.rng(saat);
+    const a = mons.create(angreiferId, 50, rng, {}), b = mons.create(zielId, 50, rng, {});
+    a.moves = [{ m: mvi(moveId), pp: 25, ppUp: 0 }];
+    b.moves = [{ m: mvi('tackle'), pp: 35, ppUp: 0 }];
+    const bt = new PL.Battle({ teams: [[a], [b]], rng: PL.rng(saat + 1) });
+    bt.start();
+    if (vor) vor(bt, bt.sides[0].active, bt.sides[1].active);
+    const davor = bt.sides[1].active.mon.hp;
+    bt.useMove(bt.sides[0].active, 0, {});
+    return { schaden: davor - bt.sides[1].active.mon.hp, bt: bt,
+      ich: bt.sides[0].active, gegner: bt.sides[1].active };
+  }
+
+  const offen = PL.dex.moves.filter((m) => m && m.c !== 'T' && !m.bp && !m.np)
+    .filter((m) => { const o = M[m.id]; return !o || (!o.bp && !o.damage && !o.fixed); });
+  check('Kein Angriff im Pool steht mehr ohne Regel da', offen.length === 0,
+    offen.map((m) => m.id).join(', '));
+
+  // Intensität: sieben Stufen, feste Verteilung, Stärke 10 bis 150.
+  {
+    const staerken = {};
+    for (let i = 0; i < 800; i++) {
+      const rng = PL.rng(i);
+      const a = mons.create('sandslash', 50, rng, {});
+      const bt = new PL.Battle({ teams: [[a], [mons.create('snorlax', 50, rng, {})]], rng: PL.rng(i + 1) });
+      bt.start();
+      M.magnitude.beforeMove(bt, bt.sides[0].active, bt.sides[1].active);
+      const w = bt.sides[0].active.vol.intensitaet;
+      staerken[w.stufe] = (staerken[w.stufe] || 0) + 1;
+      if (i === 0) eq('Intensität 4 hat Stärke 10', M.magnitude.bp(bt, bt.sides[0].active) > 0, true);
+    }
+    const stufen = Object.keys(staerken).map(Number).sort((x, y) => x - y);
+    eq('Intensität würfelt die Stufen 4 bis 10', stufen.join(','), '4,5,6,7,8,9,10');
+    check('Stufe 7 kommt am häufigsten vor',
+      staerken[7] > staerken[6] && staerken[7] > staerken[8], JSON.stringify(staerken));
+    check('Die Randstufen sind selten', staerken[4] < staerken[5] && staerken[10] < staerken[9],
+      JSON.stringify(staerken));
+  }
+
+  // Fester Schaden
+  eq('Drachenwut macht immer 40', wurf('dragonrage', 'dragonite', 'snorlax', 7).schaden, 40);
+  eq('Ultraschall macht immer 20', wurf('sonicboom', 'voltorb', 'snorlax', 8).schaden, 20);
+  {
+    const r = wurf('ruination', 'chienpao', 'snorlax', 9);
+    near('Verderben nimmt die Hälfte der KP', r.schaden, Math.floor(r.gegner.stats[0] / 2), 2);
+  }
+  {
+    const werte = [];
+    for (let i = 0; i < 60; i++) werte.push(wurf('psywave', 'alakazam', 'snorlax', 200 + i).schaden);
+    check('Psywelle liegt zwischen halbem und anderthalbfachem Level',
+      Math.min.apply(null, werte) >= 25 && Math.max.apply(null, werte) <= 75,
+      Math.min.apply(null, werte) + '–' + Math.max.apply(null, werte));
+  }
+
+  // Zutrauen: Rückkehr stark bei hoher, Frustration bei niedriger Freundschaft
+  {
+    const hoch = wurf('return', 'snorlax', 'snorlax', 11, (bt, a) => { a.mon.friendship = 255; });
+    const tief = wurf('return', 'snorlax', 'snorlax', 11, (bt, a) => { a.mon.friendship = 0; });
+    check('Rückkehr schlägt mit vollem Zutrauen viel härter zu', hoch.schaden > tief.schaden * 10,
+      hoch.schaden + ' gegen ' + tief.schaden);
+    const fHoch = wurf('frustration', 'snorlax', 'snorlax', 11, (bt, a) => { a.mon.friendship = 255; });
+    const fTief = wurf('frustration', 'snorlax', 'snorlax', 11, (bt, a) => { a.mon.friendship = 0; });
+    check('Frustration genau andersherum', fTief.schaden > fHoch.schaden * 10,
+      fTief.schaden + ' gegen ' + fHoch.schaden);
+  }
+
+  // Je voller das Ziel, desto härter
+  {
+    const voll = wurf('crushgrip', 'snorlax', 'snorlax', 13);
+    const leer = wurf('crushgrip', 'snorlax', 'snorlax', 13, (bt, a, d) => { d.mon.hp = Math.floor(d.stats[0] * 0.1); });
+    check('Quetschgriff schlägt bei vollen KP härter zu', voll.schaden > leer.schaden * 3,
+      voll.schaden + ' gegen ' + leer.schaden);
+  }
+
+  // Strafattacke wächst mit den Steigerungen des Ziels
+  {
+    const ruhig = wurf('punishment', 'umbreon', 'snorlax', 15);
+    const stark = wurf('punishment', 'umbreon', 'snorlax', 15, (bt, a, d) => { d.boosts.atk = 3; d.boosts.spe = 2; });
+    check('Strafattacke straft Aufbau ab', stark.schaden > ruhig.schaden * 1.8,
+      ruhig.schaden + ' gegen ' + stark.schaden);
+  }
+
+  // K.-o.-Attacken
+  {
+    const r = wurf('guillotine', 'kingler', 'snorlax', 17, (bt, a, d) => { a.mon.lvl = 60; });
+    check('Guillotine setzt das Ziel bei einem Treffer außer Gefecht',
+      r.schaden === 0 || r.gegner.mon.hp === 0, String(r.schaden));
+    let hoeher = 0;
+    for (let i = 0; i < 20; i++) {
+      const x = wurf('fissure', 'sandslash', 'snorlax', 300 + i, (bt, a, d) => { d.mon.lvl = 80; });
+      if (x.schaden > 0) hoeher++;
+    }
+    eq('Gegen ein höheres Level versagt sie immer', hoeher, 0);
+    let robust = 0;
+    for (let i = 0; i < 20; i++) {
+      const x = wurf('horndrill', 'rhydon', 'geodude', 400 + i, (bt, a, d) => { d.ability = 'sturdy'; });
+      if (x.schaden > 0) robust++;
+    }
+    eq('Robustheit hält jede K.-o.-Attacke auf', robust, 0);
+  }
+
+  // Prügler schlägt einmal je gesundem Teammitglied zu
+  {
+    const rng = PL.rng('pruegler');
+    const team = ['houndoom', 'snorlax', 'pikachu'].map((id) => mons.create(id, 50, rng, {}));
+    team[0].moves = [{ m: mvi('beatup'), pp: 10, ppUp: 0 }];
+    const bt = new PL.Battle({ teams: [team, [mons.create('chansey', 50, rng, {})]], rng: PL.rng(5) });
+    bt.start();
+    eq('Drei gesunde Teammitglieder, drei Schläge',
+      M.beatup.hits(bt, bt.sides[0].active), 3);
+    team[1].status = 'slp';
+    eq('Wer schläft, schlägt nicht mit', M.beatup.hits(bt, bt.sides[0].active), 2);
+  }
+}
+
+section('Schlaf');
+{
+  const mvi = (id) => PL.dex.moves.find((m) => m.id === id).i;
+  const dauer = {};
+  for (let s = 0; s < 300; s++) {
+    const rng = PL.rng(s);
+    const a = mons.create('snorlax', 50, rng, {}), b = mons.create('pikachu', 50, rng, {});
+    a.moves = [{ m: mvi('tackle'), pp: 35, ppUp: 0 }];
+    b.moves = [{ m: mvi('tackle'), pp: 35, ppUp: 0 }];
+    const bt = new PL.Battle({ teams: [[a], [b]], rng: PL.rng(s + 1) });
+    bt.start();
+    const A = bt.sides[0].active;
+    bt.setStatus(A, 'slp', null, null, true);
+    let verschlafen = 0;
+    for (let t = 0; t < 8; t++) {
+      const vorher = A.mon.status;
+      bt.runTurn([{ type: 'move', index: 0 }, { type: 'move', index: 0 }]);
+      if (vorher === 'slp' && A.mon.status === 'slp') verschlafen++;
+      else if (vorher === 'slp') break;
+    }
+    dauer[verschlafen] = (dauer[verschlafen] || 0) + 1;
+  }
+  const stufen = Object.keys(dauer).map(Number).sort((x, y) => x - y);
+  // Vorher stand der Zähler auf 1 bis 3 und wurde vor der Prüfung gesenkt:
+  // Bei einer 1 wachte das Pokémon auf, ohne je eine Runde verloren zu haben.
+  eq('Geschlafen wird eine, zwei oder drei Runden — nie null', stufen.join(','), '1,2,3');
+  check('Alle drei Längen kommen ähnlich oft vor',
+    Math.min(dauer[1], dauer[2], dauer[3]) > 300 * 0.2, JSON.stringify(dauer));
+}
+
 section('Abgeschaffte Modi');
 {
   // Kurzrun und Boss-Rush sind weg. Weder die Liste im Menü noch der
