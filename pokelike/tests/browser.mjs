@@ -1104,6 +1104,65 @@ console.log('\nMenü und Kampffenster');
   }
 }
 
+/* ---------- Statistik, Einstellungen und Pokédex als Fenster --------------- */
+
+console.log('\nNebenbildschirme');
+{
+  await page.evaluate(() => globalThis.PokelikeApp.show('stats'));
+  await page.waitForSelector('.stat-grid');
+  const karte = await page.evaluate(() => {
+    const g = document.querySelector('.stat-grid');
+    const s = getComputedStyle(g);
+    const zeilen = [...g.querySelectorAll('.stat-tile')];
+    return {
+      rahmen: parseFloat(s.borderTopWidth),
+      spalten: s.gridTemplateColumns.split(' ').length,
+      gestutzt: zeilen.filter((z) => {
+        const l = z.querySelector('span');
+        return l && l.scrollWidth > l.clientWidth + 1;
+      }).map((z) => z.textContent.trim()),
+      // Zwei Zeilen derselben Spalte müssen linksbündig untereinander stehen.
+      buendig: new Set(zeilen.map((z) => Math.round(z.getBoundingClientRect().left))).size <= 4
+    };
+  });
+  check('Die Statistik steht in einem Fenster', karte.rahmen >= 2, String(karte.rahmen));
+  check('Ihre Zeilen stehen in Spalten untereinander', karte.buendig, String(karte.spalten));
+  check('Keine Bezeichnung wird dabei abgeschnitten', karte.gestutzt.length === 0,
+    karte.gestutzt.join(' | '));
+
+  await page.evaluate(() => globalThis.PokelikeApp.show('settings'));
+  await page.waitForSelector('.optionen');
+  const opt = await page.evaluate(() => {
+    const f = document.querySelector('.optionen');
+    const zeilen = [...f.querySelectorAll('.setting')];
+    return {
+      rahmen: parseFloat(getComputedStyle(f).borderTopWidth),
+      zeilen: zeilen.length,
+      ohneZeiger: zeilen.filter((z) => !z.querySelector('.menue-zeiger')).length
+    };
+  });
+  check('Die Einstellungen stehen in einem Fenster', opt.rahmen >= 2 && opt.zeilen >= 6,
+    opt.zeilen + ' Zeilen');
+  check('Jede Optionszeile hat ihren Zeiger', opt.ohneZeiger === 0, String(opt.ohneZeiger));
+
+  await page.evaluate(() => globalThis.PokelikeApp.show('dex'));
+  await page.waitForSelector('.dex-gens');
+  const dex = await page.evaluate(() => {
+    const g = document.querySelector('.dex-gens');
+    const reihen = [...g.querySelectorAll('.dex-gen')];
+    // Der Stand je Generation lief früher als ein Satz über zwei Zeilen.
+    // Stehen die neun Einträge in einem Raster, gibt es wenige Anfangsspalten.
+    return {
+      rahmen: parseFloat(getComputedStyle(g).borderTopWidth),
+      anfaenge: new Set(reihen.map((r) => Math.round(r.getBoundingClientRect().left))).size,
+      kopfRahmen: parseFloat(getComputedStyle(document.querySelector('.dex-summary')).borderTopWidth)
+    };
+  });
+  check('Der Stand je Generation steht in einem Fenster', dex.rahmen >= 2, String(dex.rahmen));
+  check('… in Spalten statt als durchlaufender Satz', dex.anfaenge <= 4, dex.anfaenge + ' Spalten');
+  check('Auch der Kopf des Pokédex ist ein Fenster', dex.kopfRahmen >= 2, String(dex.kopfRahmen));
+}
+
 await page.reload();
 await page.waitForSelector('.title-screen');
 check('Nach dem Neuladen bleibt der Fortschritt',

@@ -3904,9 +3904,14 @@
 
   SCREENS.settings = function () {
     var s = settings();
+    /* Eine Zeile im Optionsfenster: links der Zeiger und die Bezeichnung mit
+       ihrer Erklärung, rechts die Wahl. Der Zeiger erscheint auf der Zeile,
+       auf der man gerade ist — wie im Menü und wie in den Vorbildern. */
     function row(label, desc, control) {
       return el('div', { className: 'setting' }, [
-        el('div', {}, [el('strong', { text: label }), el('div', { className: 'muted', text: desc })]),
+        el('span', { className: 'menue-zeiger', text: '\u25b8' }),
+        el('div', { className: 'setting-text' },
+          [el('strong', { text: label }), el('div', { className: 'muted', text: desc })]),
         control
       ]);
     }
@@ -3929,6 +3934,7 @@
         el('h2', { text: 'Einstellungen' }),
         el('button', { className: 'btn', type: 'button', onclick: function () { show(App.run ? 'map' : 'title'); } }, 'Zurück')
       ]),
+      el('div', { className: 'optionen' }, [
       row('Ansicht', 'Automatisch richtet sich nach deinem System.', picker(
         [{ value: 'auto', label: 'Automatisch' }, { value: 'dark', label: 'Dunkel' }, { value: 'light', label: 'Hell' }],
         s.theme, function (v) { meta.setSetting('theme', v); applyTheme(); })),
@@ -3952,7 +3958,8 @@
           meta.setSetting('music', v);
           if (PL.audio) { PL.audio.setEnabled(v); if (v) updateMusic(App.screen); }
         })),
-      row('Lautstärke', 'Gilt für Musik und Klänge.', volumeSlider(s)),
+      row('Lautstärke', 'Gilt für Musik und Klänge.', volumeSlider(s))
+      ]),
       el('div', { className: 'save-zone' }, [
         el('h3', { text: 'Spielstand' }),
         el('p', { className: 'muted', text: 'Alles liegt nur in diesem Browser. Sichere den Stand als Text, ' +

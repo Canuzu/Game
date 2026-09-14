@@ -2693,8 +2693,19 @@ section('Sammlung: Marken, Aufträge, Bestwerte');
     Object.keys(meta.vorrat()).length > 0, JSON.stringify(meta.vorrat()));
 
   /* --- Vorrat und Startvorteil --- */
-  const vor = meta.startVorteil('standard');
-  check('Der Startvorteil enthält Marken und Vorrat', vor.superbaelle > 2, JSON.stringify(vor));
+  // Welchen Lohn ein Auftrag zahlt, würfelt die Woche aus: mal Superbälle,
+  // mal Startgeld, mal Tränke. Diese Prüfung erwartete fest »mehr als zwei
+  // Superbälle« und bestand darum nur in manchen Wochen — an einem Montag
+  // schlug sie fehl, ohne dass jemand etwas geändert hatte. Jetzt wird
+  // geprüft, was wirklich gemeint war: Der Lohn des erfüllten Auftrags liegt
+  // oben auf dem, was die Marken schon dauerhaft bringen.
+  const auftragsLohn = meta.wochenAuftraege().find((a) => a.id === ziel.id).lohn;
+  const markenLohn = meta.sammelLohn();
+  const posten = Object.keys(auftragsLohn);
+  const vor = meta.startVorteil('standard');   // hebt den Vorrat ab: nur einmal aufrufen
+  check('Der Startvorteil enthält Marken und Vorrat',
+    posten.length > 0 && posten.every((k) => (vor[k] || 0) >= (markenLohn[k] || 0) + auftragsLohn[k]),
+    JSON.stringify({ lohn: auftragsLohn, marken: markenLohn, vorteil: vor }));
   eq('Der Vorrat ist danach leer', Object.keys(meta.vorrat()).length, 0);
   eq('Ein zweiter Griff bringt nur noch die Marken', meta.startVorteil('standard').superbaelle, 2);
   eq('Der Tages-Run bekommt nichts', meta.startVorteil('taeglich'), null);
