@@ -2409,6 +2409,95 @@ section('Eine Legende ist ein Bosskampf');
     (run.bag.revive || 0) <= 6, JSON.stringify(run.bag));
 }
 
+section('Eine Legende klingt wie eine Legende');
+{
+  const A = PL.audio, dex = PL.dex;
+  const halb = (n) => {
+    const m = /^([A-G])(#?)(-?\d)$/.exec(n);
+    const st = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
+    return (parseInt(m[3], 10) + 1) * 12 + st[m[1]] + (m[2] ? 1 : 0);
+  };
+  // Neun Legenden, eine je Generation.
+  const proben = ['mewtwo', 'lugia', 'kyogre', 'dialga', 'reshiram',
+    'xerneas', 'solgaleo', 'zacian', 'koraidon']
+    .map((id) => dex.sp(id)).filter(Boolean);
+  const stuecke = proben.map((sp) => A.legendenStueck(sp));
+
+  check('Jede Legende hat ein eigenes Stück', stuecke.length === proben.length);
+  check('Alle stehen über acht Takte statt über vier',
+    stuecke.every((st) => st.melody.length === 128),
+    stuecke.map((st) => st.melody.length / 16).join(','));
+  // Größe kommt nicht vom Tempo: vorher 118 bis 168, jetzt darunter.
+  check('Keine hetzt', stuecke.every((st) => st.bpm <= 135),
+    stuecke.map((st) => st.bpm).join(','));
+  check('… und keine schleicht', stuecke.every((st) => st.bpm >= 80),
+    stuecke.map((st) => st.bpm).join(','));
+
+  // Quinten ohne Terz: Ein Akkord aus zwei Tönen kann keine Terz enthalten.
+  // Vier Takte lang stand vorher ein Dreiklang — Grundton, Terz, Quinte —,
+  // und die Terz ist es, die einen Klang nach Dur oder Moll festlegt.
+  const zweiToenig = stuecke.every((st) => {
+    for (let takt = 0; takt * 16 < st.chords.length; takt++) {
+      const eigene = new Set(st.chords.slice(takt * 16, takt * 16 + 16)
+        .filter((n) => n !== '.'));
+      if (eigene.size > 2) return false;
+    }
+    return true;
+  });
+  check('Die Begleitung steht in offenen Quinten, ohne Terz', zweiToenig);
+  // Und der Abstand ist wirklich eine Quinte (oder ihre Umkehrung).
+  const istQuinte = stuecke.every((st) => {
+    const erste = st.chords.slice(0, 16).filter((n) => n !== '.').map(halb);
+    if (erste.length < 2) return false;
+    const d = Math.abs(erste[1] - erste[0]) % 12;
+    return d >= 5 && d <= 8;
+  });
+  check('… und der Abstand ist eine Quinte', istQuinte);
+
+  // Der Bass geht tief. Unter MIDI 48 liegt die zweite Oktave.
+  check('Der Bass trägt in der Tiefe',
+    stuecke.every((st) => Math.min.apply(null, st.low.filter((n) => n !== '.').map(halb)) < 48),
+    stuecke.map((st) => Math.min.apply(null, st.low.filter((n) => n !== '.').map(halb))).join(','));
+  check('Er hat Zähne — Sägezahn statt Dreieck',
+    stuecke.every((st) => st.bass === 'sawtooth'));
+  check('Und die Quinte steht als getragener Bordun',
+    stuecke.every((st) => st.harmLang >= 3), stuecke[0].harmLang);
+
+  // Der Bogen: erste Hälfte atmet, zweite trägt.
+  const ohneHand = proben.filter((sp) => !A.handMotive[sp.id]);
+  check('Es gibt Legenden ohne Motiv von Hand', ohneHand.length > 0);
+  ohneHand.slice(0, 3).forEach((sp) => {
+    const st = A.legendenStueck(sp);
+    const ersterTakt = st.melody.slice(0, 16).filter((n) => n !== '.').length;
+    const vorn = st.melody.slice(0, 64).filter((n) => n !== '.').length;
+    const hinten = st.melody.slice(64).filter((n) => n !== '.').length;
+    eq(sp.n + ': der erste Takt schweigt', ersterTakt, 0);
+    check(sp.n + ': die zweite Hälfte trägt mehr als die erste', hinten > vorn,
+      vorn + ' gegen ' + hinten);
+  });
+
+  // Keine helle Tonleiter mehr über den Typ. Mew und Xerneas standen in
+  // Lydisch und klangen ausgesprochen freundlich.
+  check('Kein Typ führt eine Legende nach Dur oder Lydisch',
+    Object.keys(A.LEGENDEN_SKALA).every((t) =>
+      A.LEGENDEN_SKALA[t] !== 'dur' && A.LEGENDEN_SKALA[t] !== 'lydisch'),
+    JSON.stringify(A.LEGENDEN_SKALA));
+  check('Unlicht und Geist bekommen die doppelt harmonische Leiter',
+    A.LEGENDEN_SKALA.Dark === 'doppelharmonisch' &&
+    A.LEGENDEN_SKALA.Ghost === 'doppelharmonisch');
+
+  // Das gemeinsame Stück der Übersicht zieht mit.
+  check('Auch das gemeinsame Legendenstück ist zurückgenommen',
+    A.tracks.legenden.bpm <= 115 && A.tracks.legenden.bass === 'sawtooth',
+    A.tracks.legenden.bpm + ' / ' + A.tracks.legenden.bass);
+
+  // Die Titelträger bleiben, wie sie waren — das hier gilt nur den Legenden.
+  const brock = A.trainerStueck('Brock', 'arena', 'Rock');
+  eq('Ein Arenaleiter steht weiter über vier Takte', brock.melody.length, 64);
+  check('… und behält seinen Klang', brock.bass === 'triangle' && !brock.harmLang,
+    brock.bass + ' / ' + brock.harmLang);
+}
+
 section('Jeder Titelträger hat sein eigenes Stück');
 {
   const A = PL.audio, W = PL.world, L = PL.leaders;
@@ -2877,9 +2966,9 @@ section('Jede Legende hat ihr eigenes Stück');
   const arktos = PL.audio.legendenStueck(PL.dex.sp('articuno'));
   const zapdos = PL.audio.legendenStueck(PL.dex.sp('zapdos'));
 
-  check('Ein Stück ist vier Takte lang',
-    mewtu.melody.length === 64 && mewtu.chords.length === 64 &&
-    mewtu.low.length === 64 && mewtu.beat.length === 64,
+  check('Ein Stück ist acht Takte lang',
+    mewtu.melody.length === 128 && mewtu.chords.length === 128 &&
+    mewtu.low.length === 128 && mewtu.beat.length === 128,
     [mewtu.melody.length, mewtu.chords.length, mewtu.low.length, mewtu.beat.length].join('/'));
   check('Zwei Legenden klingen nicht gleich',
     JSON.stringify(arktos.melody) !== JSON.stringify(zapdos.melody));
@@ -2888,7 +2977,9 @@ section('Jede Legende hat ihr eigenes Stück');
   check('Mewtu bekommt sein Motiv von Hand', !!PL.audio.handMotive.mewtwo);
   eq('Die Titelträger sind ein Dutzend', Object.keys(PL.audio.handMotive).length, 13);
 
-  // Alle 125 lassen sich bauen, und keines pfeift oder brummt.
+  // Alle 125 lassen sich bauen, und keines pfeift oder brummt. Stumm zählt
+  // hier das ganze Stück, nicht der einzelne Takt: Der erste schweigt bei
+  // einer Legende mit Absicht, damit der Einsatz Gewicht bekommt.
   let tiefste = Infinity, hoechste = 0, leer = 0;
   for (let g = 1; g <= 9; g++) {
     for (const sp of PL.Run.legendenDerGeneration(g)) {
@@ -2900,11 +2991,13 @@ section('Jede Legende hat ihr eigenes Stück');
         if (f < tiefste) tiefste = f;
         if (f > hoechste) hoechste = f;
       }
-      if (!(t.bpm >= 100 && t.bpm <= 170)) leer++;
+      if (!(t.bpm >= 80 && t.bpm <= 135)) leer++;
     }
   }
   eq('Keines der 125 bleibt stumm oder aus dem Takt', leer, 0);
-  check('Keine Melodie säuft im Bass ab', tiefste >= 390, String(Math.round(tiefste)));
+  // Die Melodie liegt jetzt eine Oktave tiefer als früher — dunkler, aber
+  // immer noch über dem Bass.
+  check('Keine Melodie säuft im Bass ab', tiefste >= 190, String(Math.round(tiefste)));
   check('Und keine pfeift', hoechste <= 1600, String(Math.round(hoechste)));
 
   eq('Der Kampf gegen eine Legende bestellt ihr Stück',

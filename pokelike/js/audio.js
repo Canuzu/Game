@@ -285,8 +285,14 @@
      * Geschrieben, nicht abgehört: Die Musik der Spiele gehört Nintendo und
      * hat hier nichts zu suchen. Gesucht war die Stimmung von etwas, das
      * größer ist als man selbst. */
+    /* Das gemeinsame Legendenstück — es lag schon richtig: acht Takte,
+       offene Quinten, Bass in der zweiten Oktave. Es war nur zu schnell
+       und zu hell abgemischt. Die Noten bleiben, wie sie geschrieben
+       sind; langsamer, mit Sägezahn im Bass und getragener Quinte klingt
+       dasselbe Stück nach Legende statt nach Verfolgungsjagd. */
     legenden: {
-      bpm: 138, lead: 'square', harm: 'triangle', bass: 'square',
+      bpm: 102, lead: 'square', harm: 'triangle', bass: 'sawtooth',
+      harmLang: 2.6, harmLaut: 0.038, bassLang: 4.0, bassLaut: 0.066,
       melody: pattern(`
         E4 . . . B4 . . . E5 . . . B4 . . .
         C5 . . . B4 . . . A4 . . . G4 . F#4 .
@@ -639,7 +645,12 @@
     dorisch:     [0, 2, 3, 5, 7, 9, 10],
     phrygisch:   [0, 1, 3, 5, 7, 8, 10],
     lydisch:     [0, 2, 4, 6, 7, 9, 11],
-    dur:         [0, 2, 4, 5, 7, 9, 11]
+    dur:         [0, 2, 4, 5, 7, 9, 11],
+    // Die doppelt harmonische Leiter — kleine Sekunde und große Terz
+    // nebeneinander, dazu dieselbe Wendung eine Quinte höher. Zwei
+    // übermäßige Sekunden in einer Oktave; nichts klingt so alt und so
+    // wenig nach Dur oder Moll. Den Legenden vorbehalten.
+    doppelharmonisch: [0, 1, 4, 5, 7, 8, 11]
   };
 
   // Welcher Typ klingt wonach. Unlicht und Geist dunkel, Psycho und Fee weit,
@@ -673,6 +684,72 @@
     pattern('k . h . s . h . k . h . s . h .'),
     pattern('k . h k s . h . k . h k s . h s'),
     pattern('k h . h s h . h k h . h s h k h')
+  ];
+
+  /* ---------- Wie eine Legende klingt -----------------------------------------
+   * Ein legendäres Pokémon bekam bisher dasselbe Stück wie alles andere,
+   * nur in einer anderen Tonart: vier Takte, zwanzig Töne darin, 150
+   * Schläge je Minute. Das klingt nach Kampf, nicht nach Legende — und wer
+   * über seinen Typ in Lydisch landete (Mew, Xerneas), klang sogar
+   * ausgesprochen freundlich.
+   *
+   * Legenden werden deshalb anders gebaut:
+   *
+   *   Nur dunkle Tonleitern. Kein Dur, kein Lydisch. Wo der Typ hell wäre,
+   *   rückt er nach Moll; Unlicht und Geist bekommen die doppelt
+   *   harmonische Leiter.
+   *
+   *   Acht Takte statt vier, und die Akkorde wechseln nur alle zwei Takte.
+   *   Der Bogen wird doppelt so lang, die Harmonie halb so hastig.
+   *
+   *   Quinten ohne Terz in der Begleitung. Eine Quinte ist weder Dur noch
+   *   Moll — sie klingt offen und alt, wie etwas, das vor den Tonarten da
+   *   war.
+   *
+   *   Ein Orgelpunkt im Bass: Die erste Hälfte steht auf dem Grundton,
+   *   während sich die Harmonie darüber bewegt. Das ist der Trick, mit dem
+   *   Filmmusik Größe macht.
+   *
+   *   Eine sparsame Melodie. Der erste Takt schweigt ganz, dann kommen
+   *   wenige, lange Töne. Ein Ton, der klingen darf, wiegt schwerer als
+   *   vier, die sich drängeln.
+   *
+   *   Langsamer (88 bis 126 statt 118 bis 162), tiefer gelegt, und ein
+   *   Schlagzeug aus Schlägen statt aus Hi-Hat-Geklapper.
+   * -------------------------------------------------------------------------- */
+
+  /* Welcher Typ in welche dunkle Tonleiter fällt. */
+  var LEGENDEN_SKALA = {
+    Dark: 'doppelharmonisch', Ghost: 'doppelharmonisch', Psychic: 'doppelharmonisch',
+    Dragon: 'harmonisch', Fighting: 'harmonisch', Steel: 'harmonisch',
+    Fire: 'harmonisch', Electric: 'harmonisch',
+    Poison: 'phrygisch', Rock: 'phrygisch', Ground: 'phrygisch', Bug: 'phrygisch',
+    Water: 'moll', Ice: 'moll', Flying: 'moll', Fairy: 'moll',
+    Grass: 'moll', Normal: 'moll'
+  };
+
+  /* Zwei Sätze Melodierhythmen, einer je Hälfte. Die erste Hälfte atmet —
+     wenige Anschläge, viel Luft dazwischen —, die zweite trägt die Linie.
+     Daraus entsteht der Bogen: leise anfangen, groß werden. */
+  var LEGENDEN_RHYTHMEN = [
+    [1,0,0,0, 0,0,0,0, 1,0,0,0, 0,0,1,0],
+    [1,0,0,0, 0,0,1,0, 0,0,0,0, 1,0,0,0],
+    [1,0,0,0, 0,0,0,0, 1,0,0,1, 0,0,0,0],
+    [0,0,1,0, 0,0,0,0, 1,0,0,0, 0,1,0,0]
+  ];
+
+  var LEGENDEN_RHYTHMEN_VOLL = [
+    [1,0,0,1, 0,0,1,0, 1,0,0,0, 1,0,1,0],
+    [1,0,1,0, 0,1,0,0, 1,0,0,1, 0,1,0,0],
+    [1,0,0,0, 1,0,1,0, 1,0,1,0, 0,1,0,1],
+    [1,1,0,0, 1,0,0,1, 0,1,0,0, 1,0,1,0]
+  ];
+
+  /* Schläge statt Geklapper. Kein Hi-Hat. */
+  var LEGENDEN_SCHLAG = [
+    pattern('k . . . . . . . k . . . . . . .'),
+    pattern('k . . . . . . . k . . . s . . .'),
+    pattern('k . . . k . . . . . . . s . . .')
   ];
 
   /**
@@ -748,9 +825,11 @@
    * Hält einen Ton in der Lage, in der ein Rechteckgenerator noch angenehm
    * klingt: unter G4 säuft die Melodie im Bass ab, über G6 pfeift sie.
    */
-  function inLage(midi) {
-    while (midi > 91) midi -= 12;
-    while (midi < 67) midi += 12;
+  function inLage(midi, tief, hoch) {
+    var u = tief === undefined ? 67 : tief;
+    var o = hoch === undefined ? 91 : hoch;
+    while (midi > o) midi -= 12;
+    while (midi < u) midi += 12;
     return midi;
   }
 
@@ -767,30 +846,67 @@
    * Würfel, der eines erfindet.
    */
   function baueLegendenstueck(o) {
+    var legende = !!o.legende;
     var skala = SKALEN[o.skala] || SKALEN.moll;
     var folge = FOLGEN[o.folge % FOLGEN.length];
     var grund = noteZuHalb(o.ton + '4');
     var melody = [], chords = [], low = [], beat = [];
     var rnd = o.rnd || wuerfel(1);
-    var rhythmus = RHYTHMEN[o.rhythmus % RHYTHMEN.length];
-    var schlag = SCHLAG[o.schlag % SCHLAG.length];
+    var rhythmus = legende ? null : RHYTHMEN[o.rhythmus % RHYTHMEN.length];
+    /* Der Rhythmus wandert von Takt zu Takt weiter. Stünde in jedem Takt
+       derselbe, klänge die Melodie wie eine Maschine — und gerade das soll
+       eine Legende nicht. */
+    function legendenRhythmus(nr) {
+      var satz = nr >= takte / 2 ? LEGENDEN_RHYTHMEN_VOLL : LEGENDEN_RHYTHMEN;
+      return satz[(o.rhythmus + nr) % satz.length];
+    }
+    var schlag = legende
+      ? LEGENDEN_SCHLAG[o.schlag % LEGENDEN_SCHLAG.length]
+      : SCHLAG[o.schlag % SCHLAG.length];
+    // Eine Legende bekommt acht Takte statt vier, und die Melodie liegt
+    // eine Oktave tiefer — dunkler und mit Luft nach oben für die Spitzen.
+    var takte = legende ? 8 : 4;
+    var tiefe = legende ? 55 : 67;                  // untere Grenze der Lage
+    var hoehe = legende ? 84 : 91;
     var takt, i;
 
-    for (takt = 0; takt < 4; takt++) {
-      var stufe = folge[takt];
-      var akkord = [stufe, stufe + 2, stufe + 4];
+    for (takt = 0; takt < takte; takt++) {
+      // Legenden wechseln die Harmonie nur alle zwei Takte. Das halbiert
+      // die Hast und lässt jeden Akkord stehen.
+      var stufe = folge[(legende ? (takt >> 1) : takt) % folge.length];
+      // Quinte ohne Terz: weder Dur noch Moll, und damit älter als beides.
+      var akkord = legende ? [stufe, stufe + 4] : [stufe, stufe + 2, stufe + 4];
       var wurzel = grund + stufeZuHalb(skala, stufe) - 24;      // zwei Oktaven tiefer
-      for (i = 0; i < 16; i++) {
-        // Begleitung: der Akkord als gebrochene Figur auf jeder Achtel
-        if (i % 2 === 0) {
-          var ton = akkord[(i / 2) % 3];
-          chords.push(halbZuNote(grund + stufeZuHalb(skala, ton) - 12));
-        } else chords.push('.');
+      // Orgelpunkt: Die erste Hälfte steht auf dem Grundton, während sich
+      // die Harmonie darüber bewegt.
+      var orgelpunkt = legende && takt < takte / 2;
+      var bassTon = orgelpunkt ? grund - 24 : wurzel;
 
-        // Bass: Grundton auf der Eins, Quinte in der Mitte
-        if (i === 0 || i === 8) low.push(halbZuNote(wurzel));
-        else if (i === 6 || i === 12) low.push(halbZuNote(wurzel + 7));
-        else low.push('.');
+      for (i = 0; i < 16; i++) {
+        if (legende) {
+          // Begleitung: Quinte im Viertelpuls, ruhig und offen.
+          if (i % 4 === 0) {
+            chords.push(halbZuNote(grund + stufeZuHalb(skala, akkord[(i / 4) % 2]) - 12));
+          } else chords.push('.');
+
+          // Bass: zwei Schläge je Takt wie ein Herzschlag, in der zweiten
+          // Hälfte kommt die Quinte dazu.
+          if (i === 0) low.push(halbZuNote(bassTon));
+          else if (i === 8) low.push(halbZuNote(bassTon + (orgelpunkt ? 0 : 7)));
+          else if (i === 12 && takt >= takte - 2) low.push(halbZuNote(bassTon + 7));
+          else low.push('.');
+        } else {
+          // Begleitung: der Akkord als gebrochene Figur auf jeder Achtel
+          if (i % 2 === 0) {
+            var ton = akkord[(i / 2) % akkord.length];
+            chords.push(halbZuNote(grund + stufeZuHalb(skala, ton) - 12));
+          } else chords.push('.');
+
+          // Bass: Grundton auf der Eins, Quinte in der Mitte
+          if (i === 0 || i === 8) low.push(halbZuNote(wurzel));
+          else if (i === 6 || i === 12) low.push(halbZuNote(wurzel + 7));
+          else low.push('.');
+        }
 
         beat.push(schlag[i % schlag.length]);
 
@@ -798,23 +914,46 @@
         // in Akkordtönen mit Durchgangsnoten dazwischen.
         if (o.motiv) {
           var m = o.motiv[(takt % 2) * 16 + i];
-          melody.push(m === undefined || m < 0 ? '.' : halbZuNote(inLage(grund + stufeZuHalb(skala, m) + 12)));
-        } else if (!rhythmus[i]) {
+          melody.push(m === undefined || m < 0 ? '.'
+            : halbZuNote(inLage(grund + stufeZuHalb(skala, m) + 12, tiefe, hoehe)));
+        } else if (legende && takt === 0) {
+          // Der erste Takt schweigt: nur Bass, Quinte und Schlag. Danach
+          // setzt die Melodie ein, und das hat Gewicht.
+          melody.push('.');
+        } else if (!(legende ? legendenRhythmus(takt) : rhythmus)[i]) {
           melody.push('.');
         } else {
           var w = rnd();
           var wahl = w < 0.62
-            ? akkord[Math.floor(rnd() * 3)]                     // Akkordton
+            ? akkord[Math.floor(rnd() * akkord.length)]         // Akkordton
             : stufe + (rnd() < 0.5 ? 1 : 3);                    // Durchgang
-          if (rnd() < 0.22) wahl += 7;                          // Oktavsprung
-          melody.push(halbZuNote(inLage(grund + stufeZuHalb(skala, wahl) + 12)));
+          if (rnd() < (legende ? 0.3 : 0.22)) wahl += 7;        // Oktavsprung
+          melody.push(halbZuNote(inLage(grund + stufeZuHalb(skala, wahl) + 12, tiefe, hoehe)));
         }
       }
     }
-    return {
-      bpm: o.bpm, lead: 'square', harm: 'triangle', bass: 'triangle',
+    var stueck = {
+      bpm: o.bpm,
+      lead: 'square',
+      harm: 'triangle',
+      bass: 'triangle',
       melody: melody, chords: chords, low: low, beat: beat
     };
+    if (legende) {
+      // Die Quinte steht als Bordun: eine weiche Stimme, laut genug, um
+      // getragen zu werden, und lang genug, um über den Viertelpuls hinweg
+      // zu klingen — so entsteht ein Klangteppich statt einer Tupfenfolge.
+      stueck.harm = 'sine';
+      stueck.harmLang = 4.2;
+      stueck.harmLaut = 0.05;
+      // Der Bass bekommt Zähne: Der Sägezahn trägt viel mehr Obertöne als
+      // das Dreieck und klingt dadurch groß statt nur tief. Er steht länger
+      // und etwas leiser, weil er sonst alles zudeckt.
+      stueck.bass = 'sawtooth';
+      stueck.bassLang = 5.5;
+      stueck.bassLaut = 0.062;
+    }
+    return stueck;
   }
 
   var legendenCache = {};
@@ -829,23 +968,34 @@
     var hand = HAND_MOTIVE[sp.id];
     var stueck;
     if (hand) {
+      // Auch ein Motiv von Hand bekommt den Unterbau einer Legende: acht
+      // Takte, Orgelpunkt, offene Quinten. Nur die Melodie bleibt, wie sie
+      // geschrieben wurde — und eine helle Tonleiter darf sie behalten,
+      // denn sie ist von Hand dafür gesetzt.
       stueck = baueLegendenstueck({
-        ton: hand.ton, skala: hand.skala, bpm: hand.bpm, folge: hand.folge,
-        motiv: hand.motiv, rhythmus: 0, schlag: 1
+        ton: hand.ton, skala: hand.skala,
+        // Auch die Handstücke rücken zurück: ein Viertel langsamer.
+        bpm: Math.round(hand.bpm * 0.78),
+        folge: hand.folge,
+        motiv: hand.motiv, rhythmus: 0, schlag: 1, legende: true
       });
     } else {
       var rnd = wuerfel(sp.i * 2654435761);
       var typ = (sp.t && sp.t[0]) || 'Normal';
       var bst = sp.bst || 600;
       stueck = baueLegendenstueck({
-        ton: NAMEN[sp.i % 12].replace('#', '#'),
-        skala: TYP_SKALA[typ] || 'moll',
-        // Je stärker das Pokémon, desto drängender das Tempo: 118 bis 162.
-        bpm: Math.round(118 + Math.min(1, Math.max(0, (bst - 480) / 240)) * 44),
+        ton: NAMEN[sp.i % 12],
+        // Nur dunkle Leitern — über den Typ, aber nie nach Dur oder Lydisch.
+        skala: LEGENDEN_SKALA[typ] || 'moll',
+        // Je stärker das Pokémon, desto drängender — aber im Ganzen ruhiger
+        // als vorher: 88 bis 126 statt 118 bis 162. Größe kommt nicht vom
+        // Tempo.
+        bpm: Math.round(88 + Math.min(1, Math.max(0, (bst - 480) / 240)) * 38),
         folge: sp.i % FOLGEN.length,
-        rhythmus: (sp.i >> 2) % RHYTHMEN.length,
-        schlag: (sp.i >> 1) % SCHLAG.length,
-        rnd: rnd
+        rhythmus: (sp.i >> 2) % LEGENDEN_RHYTHMEN.length,
+        schlag: (sp.i >> 1) % LEGENDEN_SCHLAG.length,
+        rnd: rnd,
+        legende: true
       });
     }
     legendenCache[sp.id] = stueck;
@@ -1020,9 +1170,19 @@
     var beat = track.beat ? track.beat[i % track.beat.length] : '.';
     var d = stepDur(track);
 
+    // Ein Stück darf sagen, wie lang und wie laut seine Begleitung steht.
+    // Ein Bordun, der nach einer Achtel wieder weg ist, ist kein Bordun —
+    // und eine Sinusstimme bei 0,028 hört man gegen Melodie und Bass gar
+    // nicht erst.
     if (lead && lead !== '.' && lead !== '-') tone(when, freq(lead), d * 3.2, track.lead || 'square', 0.055);
-    if (harm && harm !== '.' && harm !== '-') tone(when, freq(harm), d * 1.6, track.harm || 'triangle', 0.028);
-    if (bass && bass !== '.' && bass !== '-') tone(when, freq(bass), d * 3.0, track.bass || 'triangle', 0.075);
+    if (harm && harm !== '.' && harm !== '-') {
+      tone(when, freq(harm), d * (track.harmLang || 1.6), track.harm || 'triangle',
+        track.harmLaut || 0.028);
+    }
+    if (bass && bass !== '.' && bass !== '-') {
+      tone(when, freq(bass), d * (track.bassLang || 3.0), track.bass || 'triangle',
+        track.bassLaut || 0.075);
+    }
     if (beat === 'k') drum(when, 'kick');
     else if (beat === 's') drum(when, 'snare');
     else if (beat === 'h') drum(when, 'hat');
@@ -1159,6 +1319,7 @@
     regionTracks: REGION_TRACKS, regionVariant: fuerRegion, tracks: TRACKS,
     trackFor: trackFor, legendenStueck: legendenStueck, handMotive: HAND_MOTIVE,
     trainerStueck: trainerStueck, trainerMotive: TRAINER_MOTIVE, ROLLEN: ROLLEN,
+    LEGENDEN_SKALA: LEGENDEN_SKALA, SKALEN: SKALEN,
     isEnabled: function () { return enabled; },
     current: function () { return current; },
     freq: freq
