@@ -1481,6 +1481,104 @@ console.log('\nHandy');
   await browser2.close();
 }
 
+// Titelträger bleiben im Kampf stehen; die Anzeige lässt sie in Ruhe
+console.log('\nDer Trainer bleibt auf der Bühne');
+{
+  const browser3 = await chromium.launch(launchOpts);
+  const page = await browser3.newPage({ viewport: { width: 1000, height: 800 } });
+  await page.goto(PAGE);
+  await page.waitForSelector('.title-screen', { timeout: 30000 });
+  await page.evaluate(() => PL.meta.reset());
+  const stelle = async (seite, was) => page.evaluate(({ w }) => {
+    const App = globalThis.PokelikeApp, PL = globalThis.PL;
+    App.run = new PL.Run({ seed: 7, region: 0, starter: 'charmander' });
+    App.run.badges = 7;
+    if (w === 'boss') App.battle = App.run.makeBoss(PL.rng('g'));
+    else if (w === 'champ') {
+      App.run.badges = 8; App.run.leagueStage = 0; App.run.rowIndex = 7;
+      App.battle = App.run.makeChampion(PL.rng('c'));
+    } else App.battle = App.run.makeWild(PL.rng('w'));
+    App.battle.start();
+    App.show('battle');
+  }, { w: was });
+
+  await stelle(1, 'boss');
+  await page.waitForSelector('.battle-stage');
+  await page.waitForTimeout(3400);
+  check('Beim Arenaleiter steht der Trainer neben seinem Pokémon',
+    (await page.locator('.trainer-dauer').count()) === 1,
+    String(await page.locator('.trainer-dauer').count()));
+
+  // Er darf das Pokémon nicht verdecken: getrennte Kästen, kein Überlapp.
+  const lage = await page.evaluate(() => {
+    const t = document.querySelector('.trainer-dauer').getBoundingClientRect();
+    const m = document.querySelector('.slot-enemy .mon-art').getBoundingClientRect();
+    const b = document.querySelector('.battle-stage').getBoundingClientRect();
+    return { trainerRechts: t.right, monLinks: m.left,
+      fussT: Math.round(t.bottom - b.top), fussM: Math.round(m.bottom - b.top) };
+  });
+  check('… ohne es zu verdecken', lage.trainerRechts <= lage.monLinks + 2,
+    JSON.stringify(lage));
+  check('… und auf derselben Grundlinie',
+    Math.abs(lage.fussT - lage.fussM) <= 6, JSON.stringify(lage));
+
+  await stelle(1, 'champ');
+  await page.waitForTimeout(3400);
+  check('Beim Champ ebenso', (await page.locator('.trainer-dauer').count()) === 1);
+
+  await stelle(1, 'wild');
+  await page.waitForTimeout(3400);
+  check('Ein wildes Pokémon bringt keinen Trainer mit',
+    (await page.locator('.trainer-dauer').count()) === 0);
+  if (SHOT_DIR) await page.screenshot({ path: join(SHOT_DIR, '11-trainer.png') });
+  await browser3.close();
+}
+
+// Auf dem Handy darf die Anzeige der Bühne nicht die Schau stehlen
+{
+  const browser4 = await chromium.launch(launchOpts);
+  const phone2 = await browser4.newPage({
+    viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true
+  });
+  await phone2.goto(PAGE);
+  await phone2.waitForSelector('.title-screen', { timeout: 30000 });
+  await phone2.evaluate(() => {
+    const App = globalThis.PokelikeApp, PL = globalThis.PL;
+    PL.meta.reset();
+    App.run = new PL.Run({ seed: 7, region: 0, starter: 'charmander' });
+    App.run.badges = 7;
+    App.battle = App.run.makeBoss(PL.rng('g'));
+    App.battle.start();
+    App.show('battle');
+  });
+  await phone2.waitForSelector('.battle-stage');
+  await phone2.waitForTimeout(3400);
+
+  const mass = await phone2.evaluate(() => {
+    const b = document.querySelector('.battle-stage').getBoundingClientRect();
+    const f = document.querySelector('.frame-wrap').getBoundingClientRect();
+    const kopf = document.querySelector('.mon-frame .frame-head');
+    const lvl = document.querySelector('.mon-frame .frame-head .lvl');
+    const rahmen = document.querySelector('.mon-frame').getBoundingClientRect();
+    return {
+      anteil: f.width / b.width,
+      flaeche: (f.width * f.height) / (b.width * b.height),
+      lvlDrin: lvl.getBoundingClientRect().right <= rahmen.right + 1,
+      kopfPasst: kopf.scrollWidth <= kopf.clientWidth + 1,
+      typenWeg: getComputedStyle(document.querySelector('.mon-frame .frame-types')).display
+    };
+  });
+  check('Die Anzeige nimmt höchstens die halbe Bühnenbreite',
+    mass.anteil <= 0.5, (mass.anteil * 100).toFixed(0) + ' %');
+  check('… und höchstens ein Fünftel der Fläche',
+    mass.flaeche <= 0.2, (mass.flaeche * 100).toFixed(0) + ' %');
+  check('Das Level steht vollständig im Rahmen', mass.lvlDrin, JSON.stringify(mass));
+  check('Die Kopfzeile läuft nicht über', mass.kopfPasst, JSON.stringify(mass));
+  check('Die Typenplaketten weichen auf dem Handy', mass.typenWeg === 'none', mass.typenWeg);
+  if (SHOT_DIR) await phone2.screenshot({ path: join(SHOT_DIR, '10-handy-kampf.png') });
+  await browser4.close();
+}
+
 console.log('\n' + '─'.repeat(56));
 if (fails) {
   console.log(fails + ' Prüfung(en) fehlgeschlagen:');

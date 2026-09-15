@@ -106,6 +106,25 @@
   /** Wie viele Arenaleiter eine Region stellt. Überall acht. */
   var ORDEN_GESAMT = 8;
 
+  /* ---------- Der Panzer der Legenden -----------------------------------------
+   * Ein Duell dauerte gemessen acht Runden und wurde zu 64 % gewonnen;
+   * Groudon fiel in knapp sechs. Das war kein Endboss, das war ein
+   * Zwischengegner. Jetzt sind es 21 Runden bei 44 % — dieselbe Messung,
+   * über je fünfzehn Duelle gegen neun Legenden.
+   *
+   *   hp           wie viel mehr KP als gewöhnlich
+   *   stat         Aufschlag auf die übrigen Werte
+   *   nimmt        wie viel Schaden bei ihr ankommt
+   *   macht        wie viel Schaden sie selbst austeilt
+   *   typZaehmung  wie stark ein Typvorteil noch durchschlägt
+   *
+   * »nimmt« ist die Hauptschraube: Zusammen mit den KP hält die Legende
+   * jetzt gut das Zwanzigfache aus statt des Dreifachen. »macht« liegt nur
+   * knapp unter eins — sie soll weiter wehtun, bloß nicht in vier Runden
+   * durch sein.
+   * -------------------------------------------------------------------------- */
+  var DUELL_PANZER = { hp: 6.5, stat: 1.15, nimmt: 0.30, macht: 0.85, typZaehmung: 0.55 };
+
   var NODE_WEIGHTS = {
     wild: 34, trainer: 30, item: 8, event: 9, shop: 6, catch: 8, relic: 4, elite: 5
   };
@@ -208,6 +227,7 @@
 
   Run.ORDEN_GESAMT = ORDEN_GESAMT;
   Run.ANSTIEG = ANSTIEG;
+  Run.DUELL_PANZER = DUELL_PANZER;
 
 
   /**
@@ -255,7 +275,6 @@
     // Die Generation des Gegners ist die Region des Duells: Sie gibt dem
     // Kampf seinen Namen, seine Farbe und seine Musik.
     this.region = ziel ? Math.max(0, Math.min(8, (ziel.g || 1) - 1)) : 0;
-    this.regionOrder = W.REGIONS.map(function (r, i) { return i; });
 
     this.party = [];
     this.box = [];
@@ -278,9 +297,13 @@
     // ersten Sieg hergegeben hat.
     this.money = 0;
     this.bag = {};
-    this.addItem('hyperpotion', 2);
-    this.addItem('fullrestore', 1);
-    this.addItem('revive', 1);
+    // Vorrat für einen langen Kampf. Gemessen endeten die meisten Duelle
+    // nicht damit, dass die Legende fiel, sondern damit, dass das eigene
+    // Team aufgebraucht war — nach wenigen Runden. Mehr Vorrat verlängert
+    // den Kampf, ohne die Legende zahnlos zu machen: Man muss ihn einteilen.
+    this.addItem('hyperpotion', 4);
+    this.addItem('fullrestore', 2);
+    this.addItem('revive', 2);
     if (duell.meisterball) this.addItem('masterball', 1);
   };
 
@@ -1043,9 +1066,16 @@
     mons.addEVs(mon, mon.ivs[1] >= mon.ivs[3] ? 'atk' : 'spa', 252);
     mons.addEVs(mon, 'spe', 252);
     // Sechs gegen eins: Der Aufschlag gleicht aus, dass die andere Seite
-    // sechsmal so oft am Zug ist. Vor allem KP, damit der Kampf lang wird
-    // und nicht die einzelnen Treffer unfair.
-    mon.buff = { hp: 3.2, stat: 1.15 };
+    // sechsmal so oft am Zug ist.
+    //
+    // Gemessen dauerte ein Duell damit acht Runden — Groudon fiel in knapp
+    // sechs. Das ist kein Bosskampf, das ist ein Zwischengegner. Der Panzer
+    // ist deshalb die Hauptschraube: Die Legende nimmt weniger Schaden,
+    // teilt etwas weniger aus und hat mehr KP. Alle drei verlängern den
+    // Kampf, ohne einzelne Treffer unfair hart zu machen.
+    mon.buff = DUELL_PANZER;
+    // Kein Boss sprengt sich selbst in die Luft.
+    mons.ohneSelbstKO(mon);
     mons.heal(mon);
     var bt = new PL.Battle(this.battleOpts({ team: [mon], wild: true }));
     bt.aiLevel = 3;

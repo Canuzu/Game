@@ -706,6 +706,34 @@ button { font: inherit; color: inherit; }
 .battle-sprite.fainted { opacity: .2; filter: grayscale(1); }
 .sub-mark { position: absolute; bottom: 0; right: 4px; font-size: 20px; }
 
+/* Der Titelträger, der stehen bleibt.
+ *
+ * Er steht neben seinem Pokémon, nicht davor: kleiner (er ist weiter hinten),
+ * eine Spur ins Blau der Ferne getaucht und mit demselben harten, versetzten
+ * Schatten wie alles andere auf dieser Bühne. Sein z-index liegt unter dem
+ * Standplatz, damit das Pokémon vorn bleibt. */
+.trainer-dauer {
+  position: absolute; z-index: 1;
+  /* Oben und hoch wie der gegnerische Standplatz: So stehen Trainer und
+     Pokémon auf derselben Grundlinie, statt dass einer in der Luft hängt. */
+  top: 4%; right: 30%;
+  width: 116px; height: 190px;
+  display: grid; place-items: end center;
+  pointer-events: none;
+  animation: trainer-auftritt 420ms ease-out both;
+}
+.trainer-dauer .trainer-sprite {
+  width: 104px; height: 104px; object-fit: contain;
+  filter: drop-shadow(3px 4px 0 rgba(16, 22, 30, .34)) saturate(.88) brightness(.94);
+}
+@keyframes trainer-auftritt {
+  from { opacity: 0; transform: translateX(14px); }
+  to   { opacity: .94; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .trainer-dauer { animation: none; opacity: .94; }
+}
+
 .frame-wrap { position: absolute; z-index: 6; width: min(232px, 36%); }
 .frame-enemy { top: 4%; left: 2.5%; }
 .frame-mine { bottom: 4%; right: 2.5%; }
@@ -718,8 +746,13 @@ button { font: inherit; color: inherit; }
   box-shadow: 2px 2px 0 rgba(0,0,0,.35);
 }
 .frame-head { display: flex; align-items: baseline; gap: .25rem; }
-.frame-head strong { font-size: 20px; }
-.frame-head .lvl { font-size: 20px; }
+/* Wird es eng, weicht der Name — nicht das Level. Andersherum stand auf dem
+   Handy »Glumanda ♂ Lv« da, und die Zahl, auf die es ankommt, fehlte. */
+.frame-head strong {
+  font-size: 20px; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.frame-head .lvl { font-size: 20px; flex: 0 0 auto; margin-left: auto; }
 .frame-types { display: flex; gap: .15rem; margin: .12rem 0; }
 .frame-types .type-chip.small { font-size: 10px; padding: .1rem .28rem; }
 .frame-sub { display: flex; align-items: center; gap: .28rem; margin-top: .18rem; flex-wrap: wrap; font-size: 20px; }
@@ -1349,17 +1382,34 @@ button.move-row:hover { border-color: var(--accent); }
   .platform { width: 118px; height: 28px; }
   .slot-enemy .platform { width: 98px; height: 24px; }
 
-  /* Die Anzeigen sitzen auf der Bühne — auf dem Handy müssen sie klein
-     bleiben, sonst decken sie die Pokémon zu. */
-  .frame-wrap { width: 50%; }
-  .mon-frame { padding: .2rem .35rem; font-size: 20px; line-height: 1.2; }
+  /* Die Anzeigen sitzen auf der Bühne — auf dem Handy standen sie ihr im
+     Weg. Mit 50 % Breite waren sie dort sogar breiter als am Schreibtisch
+     (36 %), und auf einer Bühne von 250 Pixeln Höhe blieb vom Pokémon kaum
+     etwas übrig. Jetzt sind sie schmal, rücken in die Ecken und zeigen nur
+     noch, was im Kampf wirklich zählt: Name, Level, Leben.
+     Die Schrift bleibt bei 20 px — darunter fiele der Pixelsatz auf einen
+     Bildpunkt je Buchstabenpixel zusammen und würde unleserlich. */
+  .frame-wrap { width: min(172px, 48%); }
+  /* Das Geschlechtszeichen ist Zierrat — auf dem Handy kostet es genau die
+     Breite, die dem Namen fehlt. Es steht weiter im Team und im Pokédex. */
+  .mon-frame .frame-head .gender { display: none; }
+  .frame-enemy { top: 2.5%; left: 1.5%; }
+  .frame-mine { bottom: 2.5%; right: 1.5%; }
+  .mon-frame { padding: .14rem .3rem; font-size: 20px; line-height: 1.12; }
   .mon-frame .frame-head strong { font-size: 20px; }
   .mon-frame .frame-head .lvl { font-size: 20px; }
-  .mon-frame .frame-sub { font-size: 20px; gap: .22rem; }
-  .mon-frame .frame-types { margin: .08rem 0; }
-  .mon-frame .hp-bar { height: 6px; }
-  .mon-frame .exp-bar { height: 3px; margin-top: .15rem; }
-  .team-dots .dot { width: 6px; height: 6px; }
+  .mon-frame .frame-sub { font-size: 20px; gap: .22rem; margin-top: .1rem; }
+  /* Die Typen stehen schon an den Attackenkacheln und am Pokémon selbst. */
+  .mon-frame .frame-types { display: none; }
+  .mon-frame .hp-bar { height: 5px; }
+  .mon-frame .exp-bar { height: 3px; margin-top: .1rem; }
+  .team-dots { margin-top: .16rem; }
+  .team-dots .dot { width: 5px; height: 5px; }
+
+  /* Der Titelträger rückt weiter aus der Mitte und wird kleiner, sonst
+     steht er auf dem Pokémon seines Gegenübers. */
+  .trainer-dauer { right: 36%; width: 76px; height: 132px; }
+  .trainer-dauer .trainer-sprite { width: 68px; height: 68px; }
   .field-effects { max-width: 92%; top: auto; bottom: 3px; }
   .field-chip { font-size: 20px; padding: .06rem .3rem; }
 

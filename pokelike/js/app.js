@@ -1817,6 +1817,9 @@
     } else {
       renderSide(0);
       renderSide(1);
+      // Nach dem Laden mitten im Kampf gibt es keinen Auftritt mehr, der den
+      // Trainer hinstellen könnte — dann stellt er sich selbst hin.
+      stelleTrainerDazu(bt);
     }
     renderField();
     playLog(bt.log.slice(), function () { awaitInput(); });
@@ -1840,17 +1843,47 @@
       })));
   }
 
+  /**
+   * Arenaleiter, Top Vier und Champ bleiben stehen.
+   *
+   * Ein gewöhnlicher Trainer tritt zur Seite, sobald sein Pokémon draußen
+   * ist — bei einem mit Namen ist das schade: Man kämpft gegen Giovanni,
+   * sieht aber nur ein Rihorn. Er steht deshalb weiter da, neben seinem
+   * Pokémon: kleiner, ein Stück zurückgesetzt und leicht in die Kulisse
+   * getaucht, damit er dem Pokémon nicht die Schau stiehlt.
+   */
+  function stelleTrainerDazu(bt) {
+    if (!BV || !BV.stage || !PL.scenery) return;
+    var t = bt && bt.trainer;
+    if (!t || !t.leader) return;
+    if (BV.stage.querySelector('.trainer-dauer')) return;
+    var seed = PL.util.hashSeed(t.leader);
+    BV.stage.appendChild(el('div', { className: 'trainer-dauer', title: t.name },
+      el('img', {
+        className: 'trainer-sprite', alt: '',
+        src: PL.scenery.trainer(t.cls, seed, false, t.look || null, t.leader)
+      })));
+  }
+
   /** Lässt eine Trainerfigur zur Seite gehen, bevor das Pokémon erscheint. */
   function dismissTrainer(sideId, done) {
     var slot = BV.slots[sideId];
     var art = slot && slot.querySelector('.trainer-art');
-    if (!art || !art.animate || (PL.fx && PL.fx.reduced())) { if (art) art.remove(); done(); return; }
+    var bleibt = sideId === 1 && BV.bt && BV.bt.trainer && BV.bt.trainer.leader;
+    var fertig = function () {
+      if (art) art.remove();
+      if (bleibt) stelleTrainerDazu(BV.bt);
+      done();
+    };
+    if (!art || !art.animate || (PL.fx && PL.fx.reduced())) { fertig(); return; }
     var dir = sideId === 0 ? -1 : 1;
+    // Wer bleibt, tritt nur einen Schritt zur Seite, statt zu verschwinden.
+    var weg = bleibt ? dir * 40 : dir * 90;
     var anim = art.animate([
       { transform: 'translateX(0)', opacity: 1 },
-      { transform: 'translateX(' + dir * 90 + 'px)', opacity: 0 }
+      { transform: 'translateX(' + weg + 'px)', opacity: 0 }
     ], { duration: 260, easing: 'ease-in' });
-    anim.onfinish = function () { art.remove(); done(); };
+    anim.onfinish = fertig;
   }
 
   /** Typenkompass: zeigt vor dem Kampf, was der Gegner im Ärmel hat. */

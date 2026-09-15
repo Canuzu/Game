@@ -599,6 +599,23 @@
     mal('Ziel', this.collect(def, 'modDamageTaken', [move, atk, eff, moveType]));
     if (ov.mod) mal('Attacke', ov.mod(this, atk, def, move, eff));
 
+    // Bosspanzer: Ein legendäres Pokémon steht im Duell allein gegen ein
+    // ganzes Team. »nimmt« senkt, was bei ihm ankommt, »macht« das, was es
+    // selbst austeilt. Beide stehen am Pokémon, nicht am Kampf — so trägt
+    // der Panzer auch, wenn die Legende die Seite wechselt.
+    var panzer = def.mon.buff;
+    if (panzer && panzer.nimmt !== undefined) mal('Bosspanzer', panzer.nimmt);
+    // Ein Boss hält auch dem Typvorteil besser stand. Ohne das entscheidet
+    // allein die Aufstellung: Gemessen fiel Xerneas gegen ein Team mit
+    // Gift-Attacken in vier Runden, während Lugia vierzig durchhielt. Der
+    // Vorteil bleibt ein Vorteil — er wird nur nicht mehr zum Abkürzer.
+    // Steht als eigener Posten in der Rechnung, damit man ihn sieht.
+    if (panzer && panzer.typZaehmung && eff > 1) {
+      mal('Bosspanzer gegen Typvorteil', (1 + (eff - 1) * panzer.typZaehmung) / eff);
+    }
+    var wucht = atk.mon.buff;
+    if (wucht && wucht.macht !== undefined) mal('Bosswucht', wucht.macht);
+
     var dmg = Math.max(1, Math.floor(base * m));
     var erg = { dmg: dmg, eff: eff, crit: crit, immune: false, type: moveType, bp: bp };
     if (teile) {

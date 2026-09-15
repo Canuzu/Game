@@ -33,7 +33,9 @@
   /**
    * Endwerte [KP, Ang, Ver, SpA, SpV, Ini] eines Pokémon.
    *
-   * mon.buff ist der Aufschlag für einen Bosskampf: { hp, stat }. Ein
+   * mon.buff ist der Aufschlag für einen Bosskampf: { hp, stat, nimmt,
+   * macht }. »nimmt« und »macht« wirken in der Schadensrechnung (battle.js),
+   * hier zählen nur die beiden Werte. Ein
    * legendäres Pokémon steht im Duell allein gegen ein ganzes Team — ohne
    * Aufschlag wäre das keine Frage des Könnens, sondern der Geduld, weil
    * sechs Pokémon sechsmal so oft angreifen dürfen wie eines. Der Aufschlag
@@ -61,6 +63,31 @@
   }
 
   function maxHP(mon) { return stats(mon)[0]; }
+
+  /**
+   * Attacken, die den Anwender selbst besiegen. Sie standen bisher nur
+   * halb in der Bewertung — Nebelexplosion fehlte —, und das hatte Folgen:
+   * Im Duell sprengte sich Xerneas in der zweiten Runde selbst in die Luft
+   * und schenkte den Kampf her. Ein Boss bekommt sie deshalb gar nicht
+   * erst ins Set.
+   */
+  var SELBST_KO = {
+    explosion: 1, selfdestruct: 1, mistyexplosion: 1,
+    memento: 1, healingwish: 1, lunardance: 1, finalgambit: 1
+  };
+
+  /** Nimmt einem Pokémon alle Attacken, die es selbst besiegen würden. */
+  function ohneSelbstKO(mon) {
+    if (!mon || !mon.moves) return mon;
+    var bleibt = mon.moves.filter(function (m) {
+      var mv = dex.move(m.m);
+      return !mv || !SELBST_KO[mv.id];
+    });
+    // Ganz ohne Attacken darf niemand dastehen — dann bleibt das Set, wie
+    // es war, und der Boss lebt mit dem Risiko.
+    if (bleibt.length) mon.moves = bleibt;
+    return mon;
+  }
 
   /* ---------- 2) Attackenwahl ----------------------------------------------
    * Bewertet einen Movepool und stellt ein spielbares Set aus vier Attacken
@@ -138,7 +165,8 @@
     if (move.rc) v *= 0.88;                                  // Rückstoß
     if (move.sec && move.sec.length) v *= 1.08;
     if (move.pr > 0) v *= 1.05;
-    if (move.id === 'lastresort' || move.id === 'explosion' || move.id === 'selfdestruct') v *= 0.5;
+    if (move.id === 'lastresort') v *= 0.5;
+    if (SELBST_KO[move.id]) v *= 0.5;
     if (move.pp <= 5 && move.bp >= 110) v *= 0.95;
     if (move.fl && move.fl.indexOf('recharge') >= 0) v *= 0.78;   // Aussetzer danach
     if (move.fl && move.fl.indexOf('charge') >= 0) v *= 0.6;      // Ladezug
@@ -496,7 +524,7 @@
   PL.mon = {
     create: create,
     stats: stats,
-    maxHP: maxHP,
+    maxHP: maxHP, ohneSelbstKO: ohneSelbstKO, SELBST_KO: SELBST_KO,
     natureMod: natureMod,
     buildMoveset: buildMoveset,
     abilityOptions: abilityOptions,

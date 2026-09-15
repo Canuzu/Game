@@ -1068,6 +1068,34 @@ button { font: inherit; color: inherit; }
 .battle-sprite.fainted { opacity: .2; filter: grayscale(1); }
 .sub-mark { position: absolute; bottom: 0; right: 4px; font-size: 20px; }
 
+/* Der Titelträger, der stehen bleibt.
+ *
+ * Er steht neben seinem Pokémon, nicht davor: kleiner (er ist weiter hinten),
+ * eine Spur ins Blau der Ferne getaucht und mit demselben harten, versetzten
+ * Schatten wie alles andere auf dieser Bühne. Sein z-index liegt unter dem
+ * Standplatz, damit das Pokémon vorn bleibt. */
+.trainer-dauer {
+  position: absolute; z-index: 1;
+  /* Oben und hoch wie der gegnerische Standplatz: So stehen Trainer und
+     Pokémon auf derselben Grundlinie, statt dass einer in der Luft hängt. */
+  top: 4%; right: 30%;
+  width: 116px; height: 190px;
+  display: grid; place-items: end center;
+  pointer-events: none;
+  animation: trainer-auftritt 420ms ease-out both;
+}
+.trainer-dauer .trainer-sprite {
+  width: 104px; height: 104px; object-fit: contain;
+  filter: drop-shadow(3px 4px 0 rgba(16, 22, 30, .34)) saturate(.88) brightness(.94);
+}
+@keyframes trainer-auftritt {
+  from { opacity: 0; transform: translateX(14px); }
+  to   { opacity: .94; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .trainer-dauer { animation: none; opacity: .94; }
+}
+
 .frame-wrap { position: absolute; z-index: 6; width: min(232px, 36%); }
 .frame-enemy { top: 4%; left: 2.5%; }
 .frame-mine { bottom: 4%; right: 2.5%; }
@@ -1080,8 +1108,13 @@ button { font: inherit; color: inherit; }
   box-shadow: 2px 2px 0 rgba(0,0,0,.35);
 }
 .frame-head { display: flex; align-items: baseline; gap: .25rem; }
-.frame-head strong { font-size: 20px; }
-.frame-head .lvl { font-size: 20px; }
+/* Wird es eng, weicht der Name — nicht das Level. Andersherum stand auf dem
+   Handy »Glumanda ♂ Lv« da, und die Zahl, auf die es ankommt, fehlte. */
+.frame-head strong {
+  font-size: 20px; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.frame-head .lvl { font-size: 20px; flex: 0 0 auto; margin-left: auto; }
 .frame-types { display: flex; gap: .15rem; margin: .12rem 0; }
 .frame-types .type-chip.small { font-size: 10px; padding: .1rem .28rem; }
 .frame-sub { display: flex; align-items: center; gap: .28rem; margin-top: .18rem; flex-wrap: wrap; font-size: 20px; }
@@ -1711,17 +1744,34 @@ button.move-row:hover { border-color: var(--accent); }
   .platform { width: 118px; height: 28px; }
   .slot-enemy .platform { width: 98px; height: 24px; }
 
-  /* Die Anzeigen sitzen auf der Bühne — auf dem Handy müssen sie klein
-     bleiben, sonst decken sie die Pokémon zu. */
-  .frame-wrap { width: 50%; }
-  .mon-frame { padding: .2rem .35rem; font-size: 20px; line-height: 1.2; }
+  /* Die Anzeigen sitzen auf der Bühne — auf dem Handy standen sie ihr im
+     Weg. Mit 50 % Breite waren sie dort sogar breiter als am Schreibtisch
+     (36 %), und auf einer Bühne von 250 Pixeln Höhe blieb vom Pokémon kaum
+     etwas übrig. Jetzt sind sie schmal, rücken in die Ecken und zeigen nur
+     noch, was im Kampf wirklich zählt: Name, Level, Leben.
+     Die Schrift bleibt bei 20 px — darunter fiele der Pixelsatz auf einen
+     Bildpunkt je Buchstabenpixel zusammen und würde unleserlich. */
+  .frame-wrap { width: min(172px, 48%); }
+  /* Das Geschlechtszeichen ist Zierrat — auf dem Handy kostet es genau die
+     Breite, die dem Namen fehlt. Es steht weiter im Team und im Pokédex. */
+  .mon-frame .frame-head .gender { display: none; }
+  .frame-enemy { top: 2.5%; left: 1.5%; }
+  .frame-mine { bottom: 2.5%; right: 1.5%; }
+  .mon-frame { padding: .14rem .3rem; font-size: 20px; line-height: 1.12; }
   .mon-frame .frame-head strong { font-size: 20px; }
   .mon-frame .frame-head .lvl { font-size: 20px; }
-  .mon-frame .frame-sub { font-size: 20px; gap: .22rem; }
-  .mon-frame .frame-types { margin: .08rem 0; }
-  .mon-frame .hp-bar { height: 6px; }
-  .mon-frame .exp-bar { height: 3px; margin-top: .15rem; }
-  .team-dots .dot { width: 6px; height: 6px; }
+  .mon-frame .frame-sub { font-size: 20px; gap: .22rem; margin-top: .1rem; }
+  /* Die Typen stehen schon an den Attackenkacheln und am Pokémon selbst. */
+  .mon-frame .frame-types { display: none; }
+  .mon-frame .hp-bar { height: 5px; }
+  .mon-frame .exp-bar { height: 3px; margin-top: .1rem; }
+  .team-dots { margin-top: .16rem; }
+  .team-dots .dot { width: 5px; height: 5px; }
+
+  /* Der Titelträger rückt weiter aus der Mitte und wird kleiner, sonst
+     steht er auf dem Pokémon seines Gegenübers. */
+  .trainer-dauer { right: 36%; width: 76px; height: 132px; }
+  .trainer-dauer .trainer-sprite { width: 68px; height: 68px; }
   .field-effects { max-width: 92%; top: auto; bottom: 3px; }
   .field-chip { font-size: 20px; padding: .06rem .3rem; }
 
@@ -3472,7 +3522,7 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
   var PL = root.PL || (root.PL = {});
 
   // Diese Zeile ersetzt tools/build-single.mjs beim Bauen.
-  var BUILD = '20260915T161943Z-7a4605d';
+  var BUILD = '20260915T164514Z-6589033';
 
   var TRIED_KEY = 'pokelike.plus.update.versucht';
   var state = { build: BUILD, latest: null, checking: false, stuck: false };
@@ -5174,7 +5224,9 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
   /**
    * Endwerte [KP, Ang, Ver, SpA, SpV, Ini] eines Pokémon.
    *
-   * mon.buff ist der Aufschlag für einen Bosskampf: { hp, stat }. Ein
+   * mon.buff ist der Aufschlag für einen Bosskampf: { hp, stat, nimmt,
+   * macht }. »nimmt« und »macht« wirken in der Schadensrechnung (battle.js),
+   * hier zählen nur die beiden Werte. Ein
    * legendäres Pokémon steht im Duell allein gegen ein ganzes Team — ohne
    * Aufschlag wäre das keine Frage des Könnens, sondern der Geduld, weil
    * sechs Pokémon sechsmal so oft angreifen dürfen wie eines. Der Aufschlag
@@ -5202,6 +5254,31 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
   }
 
   function maxHP(mon) { return stats(mon)[0]; }
+
+  /**
+   * Attacken, die den Anwender selbst besiegen. Sie standen bisher nur
+   * halb in der Bewertung — Nebelexplosion fehlte —, und das hatte Folgen:
+   * Im Duell sprengte sich Xerneas in der zweiten Runde selbst in die Luft
+   * und schenkte den Kampf her. Ein Boss bekommt sie deshalb gar nicht
+   * erst ins Set.
+   */
+  var SELBST_KO = {
+    explosion: 1, selfdestruct: 1, mistyexplosion: 1,
+    memento: 1, healingwish: 1, lunardance: 1, finalgambit: 1
+  };
+
+  /** Nimmt einem Pokémon alle Attacken, die es selbst besiegen würden. */
+  function ohneSelbstKO(mon) {
+    if (!mon || !mon.moves) return mon;
+    var bleibt = mon.moves.filter(function (m) {
+      var mv = dex.move(m.m);
+      return !mv || !SELBST_KO[mv.id];
+    });
+    // Ganz ohne Attacken darf niemand dastehen — dann bleibt das Set, wie
+    // es war, und der Boss lebt mit dem Risiko.
+    if (bleibt.length) mon.moves = bleibt;
+    return mon;
+  }
 
   /* ---------- 2) Attackenwahl ----------------------------------------------
    * Bewertet einen Movepool und stellt ein spielbares Set aus vier Attacken
@@ -5279,7 +5356,8 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
     if (move.rc) v *= 0.88;                                  // Rückstoß
     if (move.sec && move.sec.length) v *= 1.08;
     if (move.pr > 0) v *= 1.05;
-    if (move.id === 'lastresort' || move.id === 'explosion' || move.id === 'selfdestruct') v *= 0.5;
+    if (move.id === 'lastresort') v *= 0.5;
+    if (SELBST_KO[move.id]) v *= 0.5;
     if (move.pp <= 5 && move.bp >= 110) v *= 0.95;
     if (move.fl && move.fl.indexOf('recharge') >= 0) v *= 0.78;   // Aussetzer danach
     if (move.fl && move.fl.indexOf('charge') >= 0) v *= 0.6;      // Ladezug
@@ -5637,7 +5715,7 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
   PL.mon = {
     create: create,
     stats: stats,
-    maxHP: maxHP,
+    maxHP: maxHP, ohneSelbstKO: ohneSelbstKO, SELBST_KO: SELBST_KO,
     natureMod: natureMod,
     buildMoveset: buildMoveset,
     abilityOptions: abilityOptions,
@@ -7889,6 +7967,23 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
     mal('Angreifer', this.collect(atk, 'modDamage', [move, def, eff, moveType]));
     mal('Ziel', this.collect(def, 'modDamageTaken', [move, atk, eff, moveType]));
     if (ov.mod) mal('Attacke', ov.mod(this, atk, def, move, eff));
+
+    // Bosspanzer: Ein legendäres Pokémon steht im Duell allein gegen ein
+    // ganzes Team. »nimmt« senkt, was bei ihm ankommt, »macht« das, was es
+    // selbst austeilt. Beide stehen am Pokémon, nicht am Kampf — so trägt
+    // der Panzer auch, wenn die Legende die Seite wechselt.
+    var panzer = def.mon.buff;
+    if (panzer && panzer.nimmt !== undefined) mal('Bosspanzer', panzer.nimmt);
+    // Ein Boss hält auch dem Typvorteil besser stand. Ohne das entscheidet
+    // allein die Aufstellung: Gemessen fiel Xerneas gegen ein Team mit
+    // Gift-Attacken in vier Runden, während Lugia vierzig durchhielt. Der
+    // Vorteil bleibt ein Vorteil — er wird nur nicht mehr zum Abkürzer.
+    // Steht als eigener Posten in der Rechnung, damit man ihn sieht.
+    if (panzer && panzer.typZaehmung && eff > 1) {
+      mal('Bosspanzer gegen Typvorteil', (1 + (eff - 1) * panzer.typZaehmung) / eff);
+    }
+    var wucht = atk.mon.buff;
+    if (wucht && wucht.macht !== undefined) mal('Bosswucht', wucht.macht);
 
     var dmg = Math.max(1, Math.floor(base * m));
     var erg = { dmg: dmg, eff: eff, crit: crit, immune: false, type: moveType, bp: bp };
@@ -12090,6 +12185,25 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
   /** Wie viele Arenaleiter eine Region stellt. Überall acht. */
   var ORDEN_GESAMT = 8;
 
+  /* ---------- Der Panzer der Legenden -----------------------------------------
+   * Ein Duell dauerte gemessen acht Runden und wurde zu 64 % gewonnen;
+   * Groudon fiel in knapp sechs. Das war kein Endboss, das war ein
+   * Zwischengegner. Jetzt sind es 21 Runden bei 44 % — dieselbe Messung,
+   * über je fünfzehn Duelle gegen neun Legenden.
+   *
+   *   hp           wie viel mehr KP als gewöhnlich
+   *   stat         Aufschlag auf die übrigen Werte
+   *   nimmt        wie viel Schaden bei ihr ankommt
+   *   macht        wie viel Schaden sie selbst austeilt
+   *   typZaehmung  wie stark ein Typvorteil noch durchschlägt
+   *
+   * »nimmt« ist die Hauptschraube: Zusammen mit den KP hält die Legende
+   * jetzt gut das Zwanzigfache aus statt des Dreifachen. »macht« liegt nur
+   * knapp unter eins — sie soll weiter wehtun, bloß nicht in vier Runden
+   * durch sein.
+   * -------------------------------------------------------------------------- */
+  var DUELL_PANZER = { hp: 6.5, stat: 1.15, nimmt: 0.30, macht: 0.85, typZaehmung: 0.55 };
+
   var NODE_WEIGHTS = {
     wild: 34, trainer: 30, item: 8, event: 9, shop: 6, catch: 8, relic: 4, elite: 5
   };
@@ -12192,6 +12306,7 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
 
   Run.ORDEN_GESAMT = ORDEN_GESAMT;
   Run.ANSTIEG = ANSTIEG;
+  Run.DUELL_PANZER = DUELL_PANZER;
 
 
   /**
@@ -12239,7 +12354,6 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
     // Die Generation des Gegners ist die Region des Duells: Sie gibt dem
     // Kampf seinen Namen, seine Farbe und seine Musik.
     this.region = ziel ? Math.max(0, Math.min(8, (ziel.g || 1) - 1)) : 0;
-    this.regionOrder = W.REGIONS.map(function (r, i) { return i; });
 
     this.party = [];
     this.box = [];
@@ -12262,9 +12376,13 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
     // ersten Sieg hergegeben hat.
     this.money = 0;
     this.bag = {};
-    this.addItem('hyperpotion', 2);
-    this.addItem('fullrestore', 1);
-    this.addItem('revive', 1);
+    // Vorrat für einen langen Kampf. Gemessen endeten die meisten Duelle
+    // nicht damit, dass die Legende fiel, sondern damit, dass das eigene
+    // Team aufgebraucht war — nach wenigen Runden. Mehr Vorrat verlängert
+    // den Kampf, ohne die Legende zahnlos zu machen: Man muss ihn einteilen.
+    this.addItem('hyperpotion', 4);
+    this.addItem('fullrestore', 2);
+    this.addItem('revive', 2);
     if (duell.meisterball) this.addItem('masterball', 1);
   };
 
@@ -13027,9 +13145,16 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
     mons.addEVs(mon, mon.ivs[1] >= mon.ivs[3] ? 'atk' : 'spa', 252);
     mons.addEVs(mon, 'spe', 252);
     // Sechs gegen eins: Der Aufschlag gleicht aus, dass die andere Seite
-    // sechsmal so oft am Zug ist. Vor allem KP, damit der Kampf lang wird
-    // und nicht die einzelnen Treffer unfair.
-    mon.buff = { hp: 3.2, stat: 1.15 };
+    // sechsmal so oft am Zug ist.
+    //
+    // Gemessen dauerte ein Duell damit acht Runden — Groudon fiel in knapp
+    // sechs. Das ist kein Bosskampf, das ist ein Zwischengegner. Der Panzer
+    // ist deshalb die Hauptschraube: Die Legende nimmt weniger Schaden,
+    // teilt etwas weniger aus und hat mehr KP. Alle drei verlängern den
+    // Kampf, ohne einzelne Treffer unfair hart zu machen.
+    mon.buff = DUELL_PANZER;
+    // Kein Boss sprengt sich selbst in die Luft.
+    mons.ohneSelbstKO(mon);
     mons.heal(mon);
     var bt = new PL.Battle(this.battleOpts({ team: [mon], wild: true }));
     bt.aiLevel = 3;
@@ -21197,6 +21322,9 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
     } else {
       renderSide(0);
       renderSide(1);
+      // Nach dem Laden mitten im Kampf gibt es keinen Auftritt mehr, der den
+      // Trainer hinstellen könnte — dann stellt er sich selbst hin.
+      stelleTrainerDazu(bt);
     }
     renderField();
     playLog(bt.log.slice(), function () { awaitInput(); });
@@ -21220,17 +21348,47 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
       })));
   }
 
+  /**
+   * Arenaleiter, Top Vier und Champ bleiben stehen.
+   *
+   * Ein gewöhnlicher Trainer tritt zur Seite, sobald sein Pokémon draußen
+   * ist — bei einem mit Namen ist das schade: Man kämpft gegen Giovanni,
+   * sieht aber nur ein Rihorn. Er steht deshalb weiter da, neben seinem
+   * Pokémon: kleiner, ein Stück zurückgesetzt und leicht in die Kulisse
+   * getaucht, damit er dem Pokémon nicht die Schau stiehlt.
+   */
+  function stelleTrainerDazu(bt) {
+    if (!BV || !BV.stage || !PL.scenery) return;
+    var t = bt && bt.trainer;
+    if (!t || !t.leader) return;
+    if (BV.stage.querySelector('.trainer-dauer')) return;
+    var seed = PL.util.hashSeed(t.leader);
+    BV.stage.appendChild(el('div', { className: 'trainer-dauer', title: t.name },
+      el('img', {
+        className: 'trainer-sprite', alt: '',
+        src: PL.scenery.trainer(t.cls, seed, false, t.look || null, t.leader)
+      })));
+  }
+
   /** Lässt eine Trainerfigur zur Seite gehen, bevor das Pokémon erscheint. */
   function dismissTrainer(sideId, done) {
     var slot = BV.slots[sideId];
     var art = slot && slot.querySelector('.trainer-art');
-    if (!art || !art.animate || (PL.fx && PL.fx.reduced())) { if (art) art.remove(); done(); return; }
+    var bleibt = sideId === 1 && BV.bt && BV.bt.trainer && BV.bt.trainer.leader;
+    var fertig = function () {
+      if (art) art.remove();
+      if (bleibt) stelleTrainerDazu(BV.bt);
+      done();
+    };
+    if (!art || !art.animate || (PL.fx && PL.fx.reduced())) { fertig(); return; }
     var dir = sideId === 0 ? -1 : 1;
+    // Wer bleibt, tritt nur einen Schritt zur Seite, statt zu verschwinden.
+    var weg = bleibt ? dir * 40 : dir * 90;
     var anim = art.animate([
       { transform: 'translateX(0)', opacity: 1 },
-      { transform: 'translateX(' + dir * 90 + 'px)', opacity: 0 }
+      { transform: 'translateX(' + weg + 'px)', opacity: 0 }
     ], { duration: 260, easing: 'ease-in' });
-    anim.onfinish = function () { art.remove(); done(); };
+    anim.onfinish = fertig;
   }
 
   /** Typenkompass: zeigt vor dem Kampf, was der Gegner im Ärmel hat. */

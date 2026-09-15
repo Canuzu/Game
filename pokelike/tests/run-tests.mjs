@@ -2314,6 +2314,51 @@ section('Ein Run spielt eine Region ganz');
   check('… und keine Regelabfrage', typeof run.asc !== 'function');
 }
 
+section('Eine Legende ist ein Bosskampf');
+{
+  const P = PL.Run.DUELL_PANZER;
+  check('Die Legende hält ein Vielfaches aus', P.hp >= 4, String(P.hp));
+  check('… und nimmt deutlich weniger Schaden', P.nimmt <= 0.4, String(P.nimmt));
+  check('… teilt aber nur wenig weniger aus', P.macht >= 0.8 && P.macht < 1, String(P.macht));
+  // Gemessen über je 15 Duelle gegen neun Legenden: vorher 8 Runden bei
+  // 64 % Siegen, jetzt 21 Runden bei 44 %.
+  check('Zusammen ergibt das gut das Zwanzigfache an Zähigkeit',
+    P.hp / P.nimmt >= 15, (P.hp / P.nimmt).toFixed(1));
+
+  const run = new PL.Run({ seed: 4, mode: 'legenden',
+    duell: { art: 'mewtwo', team: [{ sp: 'dragonite' }, { sp: 'snorlax' }] } });
+  const bt = run.makeLegendBoss(PL.rng('m'), 'mewtwo');
+  const geg = bt.sides[1].team[0];
+  const roh = PL.mon.create(PL.dex.sp('mewtwo'), geg.lvl, PL.rng('v'), { ivs: geg.ivs, evs: geg.evs });
+  check('Der Panzer hebt die KP wirklich an',
+    PL.mon.maxHP(geg) > PL.mon.maxHP(roh) * 4,
+    PL.mon.maxHP(geg) + ' gegen ' + PL.mon.maxHP(roh));
+
+  // Der Fehler, der die Duelle wirklich kurz machte: Die Legende hatte
+  // Attacken im Set, die sie selbst besiegen. Xerneas sprengte sich in der
+  // zweiten Runde in die Luft und schenkte den Kampf her.
+  const selbstKO = geg.moves.filter((m) => PL.mon.SELBST_KO[PL.dex.move(m.m).id]);
+  eq('Kein Boss sprengt sich selbst in die Luft', selbstKO.length, 0);
+  check('Nebelexplosion zählt als solche', !!PL.mon.SELBST_KO.mistyexplosion);
+  check('Und Explosion und Selbstzerstörung auch',
+    !!PL.mon.SELBST_KO.explosion && !!PL.mon.SELBST_KO.selfdestruct);
+
+  // Wer ohne solche Attacken dastünde, behält sein Set — lieber ein Risiko
+  // als ein Pokémon, das gar nichts tun kann.
+  const nurBumm = { sp: PL.dex.sp('electrode').i, lvl: 50, ivs: [31,31,31,31,31,31],
+    evs: [0,0,0,0,0,0], nat: 0,
+    moves: [{ m: PL.dex.moves.findIndex((mv) => mv && mv.id === 'explosion'), pp: 5, ppUp: 0, used: 0 }] };
+  if (nurBumm.moves[0].m >= 0) {
+    PL.mon.ohneSelbstKO(nurBumm);
+    eq('Ein Pokémon mit nur solchen Attacken behält sie', nurBumm.moves.length, 1);
+  }
+
+  // Der Vorrat ist der Grund, warum der Kampf trägt statt kurz zu enden.
+  check('Das Duell bringt Heilmittel für einen langen Kampf mit',
+    (run.bag.hyperpotion || 0) >= 3 && (run.bag.fullrestore || 0) >= 2,
+    JSON.stringify(run.bag));
+}
+
 section('Jeder Titelträger hat sein eigenes Stück');
 {
   const A = PL.audio, W = PL.world, L = PL.leaders;
