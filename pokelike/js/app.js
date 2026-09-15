@@ -1907,10 +1907,76 @@
 
   function pushLine(entry) {
     if (!entry.s) return;
-    var line = el('div', { className: 'log-line ' + (LOG_CLASS[entry.k] || ''), text: entry.s });
+    var klasse = 'log-line ' + (LOG_CLASS[entry.k] || '');
+    var line;
+    if (entry.rechnung) {
+      // Wo eine Rechnung dranhängt, lässt sich die Zeile aufklappen.
+      line = el('button', {
+        className: klasse + ' hat-rechnung', type: 'button',
+        title: 'Zeigt, wie der Schaden zustande kam',
+        onclick: function () { zeigeRechnung(entry); }
+      }, [el('span', { text: entry.s }), el('span', { className: 'rechnung-marke', text: '?' })]);
+    } else {
+      line = el('div', { className: klasse, text: entry.s });
+    }
     BV.log.appendChild(line);
     while (BV.log.children.length > 60) BV.log.removeChild(BV.log.firstChild);
     BV.log.scrollTop = BV.log.scrollHeight;
+  }
+
+  /**
+   * Wie der Schaden zustande kam — Zeile für Zeile.
+   *
+   * Das Spiel rechnete das ohnehin aus und warf es weg. Sichtbar gemacht
+   * beantwortet es die Frage, die sich beim Spielen unweigerlich stellt:
+   * Warum ausgerechnet diese Zahl? Der Grundwert folgt der Formel der
+   * Vorbilder, danach kommt jeder Faktor einzeln — Wetter, Volltreffer,
+   * Zufall, Typenbonus, Wirksamkeit, Schirme, Fähigkeiten.
+   */
+  function zeigeRechnung(entry) {
+    var r = entry.rechnung;
+    function zeile(was, wert, stark) {
+      return el('div', { className: 'rech-zeile' + (stark ? ' stark' : '') }, [
+        el('span', { text: was }), el('b', { text: wert })
+      ]);
+    }
+    function zahl(x) {
+      var gerundet = Math.round(x * 100) / 100;
+      return String(gerundet).replace('.', ',');
+    }
+    function wertName(w) { return T.stat ? T.stat(w) : w; }
+
+    var grund = [
+      zeile('Level', String(r.level)),
+      zeile('Stärke' + (r.staerke !== r.grundStaerke ? ' (statt ' + r.grundStaerke + ')' : ''),
+        String(r.staerke)),
+      zeile(wertName(r.angriffWert), String(r.angriff)),
+      zeile(wertName(r.verteidigungWert), String(r.verteidigung)),
+      zeile('Grundwert', String(r.grund), true)
+    ];
+
+    var faktoren = r.teile.map(function (t) { return zeile(t.was, '× ' + zahl(t.faktor)); });
+    if (!faktoren.length) faktoren.push(el('p', { className: 'muted', text: 'Nichts kam dazu.' }));
+
+    U.modal({
+      title: 'Wie kam das zustande?',
+      content: el('div', { className: 'rechnung' }, [
+        el('p', { className: 'muted', text: entry.s.replace(/!$/, '') +
+          (r.ziel ? ' — gegen ' + r.ziel : '') + '.' }),
+        el('h3', { text: 'Grundwert' }),
+        el('div', { className: 'rech-block' }, grund),
+        el('p', { className: 'muted small', text:
+          '((2 × Level ÷ 5 + 2) × Stärke × ' + wertName(r.angriffWert) +
+          ' ÷ ' + wertName(r.verteidigungWert) + ' ÷ 50) + 2' }),
+        el('h3', { text: 'Und dann mal …' }),
+        el('div', { className: 'rech-block' }, faktoren),
+        el('div', { className: 'rech-ergebnis' }, [
+          el('span', { text: r.treffer ? r.treffer + ' Treffer, der erste macht' : 'Macht' }),
+          el('b', { text: r.schaden + ' Schaden' })
+        ])
+      ]),
+      actions: [{ label: 'Verstanden', primary: true }]
+    });
   }
 
   /** Spielt Protokolleinträge nacheinander ab und ruft danach done() auf. */

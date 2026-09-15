@@ -3105,6 +3105,214 @@ section('Abgeschaffte Modi');
   eq('Ein vergangener Kurzrun heißt weiter Kurzrun', PL.Run.ALTE_MODI.kurz, 'Kurzrun');
 }
 
+section('Fähigkeiten, die vorher nichts taten');
+{
+  const rngF = PL.rng('faehigkeit');
+  function stelle(idA, idB, abA, abB) {
+    const a = mons.create(idA, 50, rngF, {}), b = mons.create(idB, 50, rngF, {});
+    const bt = new PL.Battle({ teams: [[a], [b]], rng: PL.rng('f-' + idA + idB) });
+    bt.start();
+    if (abA) bt.sides[0].active.ability = abA;
+    if (abB) bt.sides[1].active.ability = abB;
+    return bt;
+  }
+
+  /* --- Angsthase: die Flucht klappt immer --- */
+  {
+    // Ein langsames Pokémon gegen ein sehr schnelles: ohne die Fähigkeit
+    // wäre die Flucht die Ausnahme, mit ihr die Regel.
+    let ohne = 0, mit = 0;
+    for (let i = 0; i < 40; i++) {
+      const bt = stelle('shuckle', 'ninjask', 'sturdy');
+      bt.wild = true;
+      if (bt.tryFlee(bt.sides[0])) ohne++;
+      const bt2 = stelle('shuckle', 'ninjask', 'runaway');
+      bt2.wild = true;
+      if (bt2.tryFlee(bt2.sides[0])) mit++;
+    }
+    check('Mit Angsthase klappt jede Flucht', mit === 40, mit + '/40');
+    check('… ohne sie nicht', ohne < 40, ohne + '/40');
+  }
+
+  /* --- Reaktionsgas: alle anderen Fähigkeiten setzen aus --- */
+  {
+    const bt = stelle('koffing', 'gyarados', 'neutralizinggas', 'intimidate');
+    eq('Reaktionsgas legt die Fähigkeit des Gegners still',
+      bt.abilityId(bt.sides[1].active), '');
+    eq('… behält seine eigene aber', bt.abilityId(bt.sides[0].active), 'neutralizinggas');
+    bt.sides[0].active.mon.hp = 0;
+    eq('Ist es weg, wirkt die andere wieder',
+      bt.abilityId(bt.sides[1].active), 'intimidate');
+  }
+
+  /* --- Prognose: Formeo folgt dem Wetter --- */
+  {
+    const bt = stelle('castform', 'pikachu', 'forecast');
+    const act = bt.sides[0].active;
+    bt.hook(act, 'onSwitchIn', [bt.sides[1].active]);
+    eq('Ohne Wetter bleibt Formeo normal', act.types.join(), 'Normal');
+    bt.field.weather = 'sunnyday'; bt.field.weatherTurns = 5;
+    bt.hook(act, 'onResidual', []);
+    eq('In der Sonne wird es zum Feuertyp', act.types.join(), 'Fire');
+    bt.field.weather = 'raindance';
+    bt.hook(act, 'onResidual', []);
+    eq('Im Regen zum Wassertyp', act.types.join(), 'Water');
+    bt.field.weather = null;
+    bt.hook(act, 'onResidual', []);
+    eq('Und ohne Wetter wieder normal', act.types.join(), 'Normal');
+  }
+
+  /* --- Blütenhülle: Pflanzen bleiben unberührt --- */
+  {
+    const bt = stelle('bulbasaur', 'pikachu', 'flowerveil');
+    const act = bt.sides[0].active;
+    check('Blütenhülle hält Status ab', bt.setStatus(act, 'par', bt.sides[1].active) === false);
+    const vorher = act.boosts.atk;
+    bt.boost(act, { atk: -2 }, bt.sides[1].active);
+    eq('… und verhindert, dass Werte gesenkt werden', act.boosts.atk, vorher);
+    // Wer kein Pflanzentyp ist, bekommt den Schutz nicht.
+    // Kein Pflanzentyp, kein Schutz. Snorlax statt Pikachu: Elektrotypen
+    // lassen sich ohnehin nicht paralysieren, das hätte nichts bewiesen.
+    const bt2 = stelle('snorlax', 'pikachu', 'flowerveil');
+    check('Bei Nicht-Pflanzen wirkt sie nicht',
+      bt2.setStatus(bt2.sides[0].active, 'par', bt2.sides[1].active) !== false);
+  }
+
+  /* --- Zauberer: klaut den Gegenstand --- */
+  {
+    const bt = stelle('delphox', 'snorlax', 'magician');
+    const dieb = bt.sides[0].active, opfer = bt.sides[1].active;
+    dieb.item = null; opfer.item = 'leftovers';
+    bt.hook(dieb, 'onDealtDamage', [opfer, dex.move('tackle'), 10]);
+    eq('Zauberer nimmt den Gegenstand an sich', dieb.item, 'leftovers');
+    eq('… und das Opfer steht ohne da', opfer.item, null);
+    // Mit vollen Händen wird nicht geklaut.
+    const bt2 = stelle('delphox', 'snorlax', 'magician');
+    bt2.sides[0].active.item = 'lifeorb'; bt2.sides[1].active.item = 'leftovers';
+    bt2.hook(bt2.sides[0].active, 'onDealtDamage', [bt2.sides[1].active, dex.move('tackle'), 10]);
+    eq('Wer schon etwas trägt, klaut nicht', bt2.sides[0].active.item, 'lifeorb');
+    // Klebehülle hält fest.
+    const bt3 = stelle('delphox', 'muk', 'magician', 'stickyhold');
+    bt3.sides[0].active.item = null; bt3.sides[1].active.item = 'leftovers';
+    bt3.hook(bt3.sides[0].active, 'onDealtDamage', [bt3.sides[1].active, dex.move('tackle'), 10]);
+    eq('Klebehülle lässt nicht los', bt3.sides[1].active.item, 'leftovers');
+  }
+
+  /* --- Rastlose Seele: Fähigkeiten tauschen --- */
+  {
+    const bt = stelle('runerigus', 'machamp', 'wanderingspirit', 'guts');
+    const act = bt.sides[0].active, angreifer = bt.sides[1].active;
+    bt.hook(act, 'onContact', [angreifer, dex.move('tackle'), 10]);
+    eq('Der Angreifer trägt jetzt Rastlose Seele', angreifer.ability, 'wanderingspirit');
+    eq('… und der Verteidiger dessen Fähigkeit', act.ability, 'guts');
+  }
+
+  /* --- Giftbelag: Giftspitzen bei physischen Treffern --- */
+  {
+    const bt = stelle('grimmsnarl', 'machamp', 'toxicdebris');
+    const act = bt.sides[0].active, angreifer = bt.sides[1].active;
+    eq('Am Anfang liegen keine Giftspitzen', angreifer.side.hazards.toxicspikes, 0);
+    bt.hook(act, 'onHitTaken', [angreifer, dex.move('tackle'), 10, 1]);
+    eq('Ein physischer Treffer streut welche aus', angreifer.side.hazards.toxicspikes, 1);
+    bt.hook(act, 'onHitTaken', [angreifer, dex.move('watergun'), 10, 1]);
+    eq('Ein Spezialtreffer nicht', angreifer.side.hazards.toxicspikes, 1);
+    bt.hook(act, 'onHitTaken', [angreifer, dex.move('tackle'), 10, 1]);
+    bt.hook(act, 'onHitTaken', [angreifer, dex.move('tackle'), 10, 1]);
+    eq('Mehr als zwei Lagen werden es nicht', angreifer.side.hazards.toxicspikes, 2);
+  }
+
+  /* --- Süßer Nektar: einmalig den Fluchtwert senken --- */
+  {
+    const bt = stelle('dipplin', 'pikachu', 'supersweetsyrup');
+    const act = bt.sides[0].active, foe = bt.sides[1].active;
+    bt.hook(act, 'onSwitchIn', [foe]);
+    eq('Süßer Nektar senkt den Fluchtwert', foe.boosts.eva, -1);
+    bt.hook(act, 'onSwitchIn', [foe]);
+    eq('… aber nur ein einziges Mal', foe.boosts.eva, -1);
+  }
+
+  /* --- Tänzer: macht die Tanzattacke nach --- */
+  {
+    const bt = stelle('oricorio', 'lilligant', 'dancer');
+    const taenzer = bt.sides[0].active, foe = bt.sides[1].active;
+    foe.mon.moves = [{ m: dex.move('quiverdance').i, pp: 20, ppUp: 0 }];
+    const vorher = taenzer.boosts.spa;
+    bt.log.length = 0;
+    bt.useMove(foe, 0);
+    check('Der Tänzer macht den Schmetterlingstanz nach',
+      taenzer.boosts.spa > vorher, 'SPA ' + vorher + ' → ' + taenzer.boosts.spa);
+    // Eine gewöhnliche Attacke wird nicht nachgemacht.
+    const bt2 = stelle('oricorio', 'lilligant', 'dancer');
+    bt2.sides[1].active.mon.moves = [{ m: dex.move('tackle').i, pp: 35, ppUp: 0 }];
+    const vor2 = bt2.sides[0].active.boosts.spa;
+    bt2.useMove(bt2.sides[1].active, 0);
+    eq('Aber keinen Tackle', bt2.sides[0].active.boosts.spa, vor2);
+  }
+}
+
+section('Die Rechnung hinter dem Treffer');
+{
+  // Jede Angriffszeile im Protokoll trägt die Rechnung, die zu ihr geführt
+  // hat. Der Sinn der Sache steht und fällt damit, dass es dieselbe Rechnung
+  // ist und keine Erzählung daneben: Grundwert mal alle Faktoren muss den
+  // Schaden ergeben, den das Spiel wirklich abgezogen hat.
+  const rngR = PL.rng('rechnung');
+  function kampf(idA, idB, seed) {
+    const bt = new PL.Battle({
+      teams: [[mons.create(idA, 50, rngR, {})], [mons.create(idB, 50, rngR, {})]],
+      rng: PL.rng(seed)
+    });
+    bt.start();
+    return bt;
+  }
+
+  let geprueft = 0; const daneben = [];
+  for (let seed = 1; seed <= 30; seed++) {
+    const bt = kampf('charizard', 'venusaur', 'r' + seed);
+    for (let zug = 0; zug < 5 && !bt.over; zug++) {
+      bt.log.length = 0;
+      bt.runTurn([{ type: 'move', index: zug % 4 }, { type: 'move', index: 0 }]);
+      for (const e of bt.log) {
+        if (e.k !== 'move' || !e.rechnung) continue;
+        const r = e.rechnung;
+        let m = 1;
+        for (const t of r.teile) m *= t.faktor;
+        const nachgerechnet = Math.max(1, Math.floor(r.grund * m));
+        geprueft++;
+        if (nachgerechnet !== r.schaden) {
+          daneben.push(r.schaden + ' statt ' + nachgerechnet + ' (Grund ' + r.grund + ', ' +
+            r.teile.map((t) => t.was + ' ×' + t.faktor).join(' ') + ')');
+        }
+      }
+    }
+  }
+  check('Angriffe liefern ihre Rechnung mit', geprueft > 30, geprueft + ' Rechnungen');
+  check('Grundwert mal alle Faktoren ergibt genau den Schaden',
+    daneben.length === 0, daneben.slice(0, 3).join(' | '));
+
+  // Typenbonus und Wirksamkeit stehen immer da — auch wenn sie nichts ändern.
+  {
+    const bt = kampf('rattata', 'rattata', 'immer');
+    bt.log.length = 0;
+    bt.runTurn([{ type: 'move', index: 0 }, { type: 'move', index: 0 }]);
+    const mit = bt.log.filter((e) => e.k === 'move' && e.rechnung);
+    const namen = mit.length ? mit[0].rechnung.teile.map((t) => t.was) : [];
+    check('Der Typenbonus steht immer in der Rechnung',
+      mit.length > 0 && namen.indexOf('Typenbonus') >= 0, namen.join(', '));
+    check('Die Wirksamkeit auch',
+      mit.length > 0 && namen.indexOf('Wirksamkeit') >= 0, namen.join(', '));
+  }
+
+  // Die KI rechnet Tausende Züge voraus — dort darf nichts mitgeschrieben werden.
+  {
+    const bt = kampf('gengar', 'snorlax', 'still');
+    bt.simulating = true;
+    const erg = bt.calcDamage(bt.sides[0].active, bt.sides[1].active,
+      dex.move(bt.sides[0].active.mon.moves[0].m), {});
+    check('Beim Vorausrechnen entsteht keine Rechnung', !erg.rechnung, JSON.stringify(erg.rechnung));
+  }
+}
+
 section('Gezeichnete Bilder');
 {
   // Alle drei Bilddateien entstehen aus Punktrastern über tools/raster.mjs.

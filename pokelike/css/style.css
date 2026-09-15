@@ -2802,3 +2802,64 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
 .dex-gen > span:first-child { white-space: nowrap; }
 .dex-gen .mini-bar { height: 10px; }
 .dex-gen > .muted { white-space: nowrap; min-width: 4.5rem; text-align: right; }
+
+/* =============================================================================
+ * Die Rechnung hinter dem Treffer
+ * -----------------------------------------------------------------------------
+ * Das Spiel rechnete den Schaden aus und warf die Rechnung weg. Übrig blieb
+ * eine Zahl, und wer sie für ausgedacht hielt, konnte es nicht nachprüfen.
+ * Jetzt trägt jede Angriffszeile im Protokoll ein Fragezeichen: Ein Druck
+ * darauf zeigt den Grundwert nach der Formel der Vorbilder und danach jeden
+ * Faktor einzeln.
+ * ========================================================================== */
+
+.log-line.hat-rechnung {
+  display: flex; align-items: baseline; gap: .4rem; width: 100%;
+  background: none; border: 0; text-align: left; font: inherit; color: inherit;
+  padding: .05rem 0; cursor: pointer;
+}
+.rechnung-marke {
+  flex: none; margin-left: auto;
+  width: 1.15em; height: 1.15em; line-height: 1.15em; text-align: center;
+  border: 2px solid var(--line); color: var(--muted);
+  font-size: .85em; font-weight: 700;
+}
+.log-line.hat-rechnung:hover .rechnung-marke,
+.log-line.hat-rechnung:focus-visible .rechnung-marke {
+  border-color: var(--accent); color: var(--accent-text);
+}
+
+.rechnung { display: flex; flex-direction: column; gap: .5rem; }
+.rechnung h3 { margin: .3rem 0 0; font-size: 20px; }
+.rechnung p { margin: 0; }
+.rech-block {
+  display: flex; flex-direction: column;
+  background: var(--panel);
+  border: 2px solid var(--rahmen);
+  box-shadow: inset 0 0 0 2px var(--panel),
+              inset 0 0 0 4px color-mix(in srgb, var(--innen) 50%, var(--panel));
+  padding: .5rem .8rem;
+}
+/* Dieselbe Punktlinie wie auf der Trainerkarte: Sie bindet Bezeichnung und
+   Wert zusammen, damit die Spalte nicht als durchlaufender Satz gelesen wird. */
+.rech-zeile { display: flex; align-items: baseline; gap: .5rem; padding: .1rem 0; }
+.rech-zeile > span {
+  flex: 1; min-width: 0; white-space: nowrap; color: var(--muted);
+  display: flex; align-items: baseline; gap: .4rem;
+}
+.rech-zeile > span::after {
+  content: ""; flex: 1 1 auto; min-width: 1rem;
+  border-bottom: 2px dotted color-mix(in srgb, var(--muted) 55%, transparent);
+  transform: translateY(-.2em);
+}
+.rech-zeile b { white-space: nowrap; font-variant-numeric: tabular-nums; }
+.rech-zeile.stark { border-top: 2px solid var(--line); margin-top: .25rem; padding-top: .3rem; }
+.rech-zeile.stark > span { color: var(--text); font-weight: 650; }
+
+.rech-ergebnis {
+  display: flex; align-items: baseline; justify-content: space-between; gap: .6rem;
+  padding: .5rem .8rem;
+  background: color-mix(in srgb, var(--accent) 16%, var(--panel));
+  border: 2px solid color-mix(in srgb, var(--accent) 70%, #101418);
+}
+.rech-ergebnis b { font-size: 22px; font-variant-numeric: tabular-nums; }

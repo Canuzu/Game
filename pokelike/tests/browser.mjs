@@ -1099,6 +1099,45 @@ console.log('\nMenü und Kampffenster');
       .filter((e) => e.scrollWidth > e.clientWidth + 1).map((e) => e.textContent));
     check('Kein Attackenname wird abgeschnitten', abgeschnitten.length === 0,
       abgeschnitten.join(', '));
+
+    /* Die Rechnung hinter dem Treffer: Eine Angriffszeile im Protokoll lässt
+       sich aufklappen, und was dann dasteht, muss sich nachrechnen lassen. */
+    for (let i = 0; i < 6; i++) {
+      if (await page.locator('.log-line.hat-rechnung').count()) break;
+      const kachel = page.locator('.move-btn:not(:disabled)').first();
+      if (!(await kachel.count())) break;
+      await kachel.click({ timeout: 5000 }).catch(() => {});
+      await page.waitForTimeout(800);
+    }
+    const aufklappbar = await page.locator('.log-line.hat-rechnung').count();
+    check('Angriffszeilen im Protokoll lassen sich aufklappen', aufklappbar > 0,
+      String(aufklappbar));
+    if (aufklappbar) {
+      await page.locator('.log-line.hat-rechnung').last().click();
+      await page.waitForSelector('.rechnung', { timeout: 5000 });
+      const inhalt = await page.evaluate(() => {
+        const zeilen = [...document.querySelectorAll('.rech-block .rech-zeile')]
+          .map((z) => z.querySelector('span').textContent.trim());
+        return {
+          zeilen: zeilen,
+          ergebnis: document.querySelector('.rech-ergebnis b').textContent,
+          formel: [...document.querySelectorAll('.rechnung p')].map((p) => p.textContent).join(' ')
+        };
+      });
+      check('Die Rechnung nennt Level, Stärke und den Grundwert',
+        ['Level', 'Stärke', 'Grundwert'].every((w) => inhalt.zeilen.some((z) => z.indexOf(w) === 0)),
+        inhalt.zeilen.join(' | '));
+      check('Typenbonus und Wirksamkeit stehen immer darin',
+        inhalt.zeilen.indexOf('Typenbonus') >= 0 && inhalt.zeilen.indexOf('Wirksamkeit') >= 0,
+        inhalt.zeilen.join(' | '));
+      check('Und sie endet mit dem Schaden', /\d+ Schaden/.test(inhalt.ergebnis), inhalt.ergebnis);
+      // Die Formelzeile muss dieselben Werte nennen wie die Zeilen darüber.
+      const wert = inhalt.zeilen.find((z) => /Angriff$/.test(z)) || 'Angriff';
+      check('Die Formel nennt dieselben Werte wie die Zeilen',
+        inhalt.formel.indexOf(wert) >= 0, wert + ' — ' + inhalt.formel.slice(0, 90));
+      await page.locator('.modal-actions .btn').last().click();
+      await page.waitForSelector('.modal', { state: 'detached' });
+    }
   } else {
     check('Kampf für die Fensterprüfung erreicht', false, 'kein Kampf');
   }

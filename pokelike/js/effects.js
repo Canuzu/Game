@@ -1487,6 +1487,124 @@
   // wie bt.abilityOf(act) verlässlich ein Objekt oder null liefern.
   Object.keys(A).forEach(function (k) { if (!A[k]) delete A[k]; });
 
+  /* ===========================================================================
+   * Fähigkeiten, die bisher nichts taten
+   * ---------------------------------------------------------------------------
+   * Eine Fähigkeit steht auf der Karte, hat einen Namen und eine Beschreibung
+   * — und im Kampf passiert nichts. Das ist genau die Sorte Fehler, bei der
+   * man die Rechnung für ausgedacht hält.
+   *
+   * Von den vierundsechzig ohne Wirkung sind die meisten hier ohne Aufgabe:
+   * Mitnahme und Angsthase wirken in den Vorbildern außerhalb des Kampfes,
+   * Plus, Minus und Telepathie brauchen einen Partner, und Variabilität und
+   * Alpha-System richten sich nach Platten und Disks, die es hier nicht gibt.
+   * Sie tun also zu Recht nichts.
+   *
+   * Hier stehen die, bei denen das nicht gilt.
+   * ======================================================================== */
+
+  /* Angsthase: Aus einem wilden Kampf kommt man immer heraus. In den
+     Vorbildern ist das eine Fähigkeit für die Route — hier, wo Fliehen eine
+     echte Wahl im Kampfmenü ist, wird daraus eine mit Gewicht. */
+  A.runaway = { alwaysFlee: true };
+
+  /* Reaktionsgas legt alle anderen Fähigkeiten stumm, solange sein Träger
+     steht. Die Ausnahme selbst sitzt in B.abilityId — dort, wo jede Frage
+     nach einer Fähigkeit vorbeikommt. */
+  A.neutralizinggas = {
+    onSwitchIn: function (bt, act) {
+      bt.say(bt.name(act) + ' verströmt Reaktionsgas — alle Fähigkeiten setzen aus!',
+        'ability', { side: act.side.id });
+    }
+  };
+
+  /* Prognose: Formeo nimmt den Typ des Wetters an. Ohne Wetter ist es
+     wieder normal. Geprüft wird beim Auftreten und danach jede Runde, denn
+     das Wetter kann sich mitten im Kampf drehen. */
+  var WETTERTYP = {
+    sunnyday: 'Fire', desolateland: 'Fire',
+    raindance: 'Water', primordialsea: 'Water',
+    hail: 'Ice', snowscape: 'Ice'
+  };
+  function prognose(bt, act) {
+    var soll = WETTERTYP[bt.weatherActive()] || 'Normal';
+    if (act.types.length === 1 && act.types[0] === soll) return;
+    act.types = [soll];
+    bt.say(bt.name(act) + ' nimmt den ' + PL.t.type(soll) + '-Typ an!', 'ability', { side: act.side.id });
+  }
+  A.forecast = {
+    onSwitchIn: function (bt, act) { prognose(bt, act); },
+    onResidual: function (bt, act) { prognose(bt, act); }
+  };
+
+  /* Blütenhülle schützt Pflanzen vor Statusproblemen und davor, dass ihre
+     Werte gesenkt werden. In den Vorbildern gilt das für die ganze Seite —
+     hier steht immer nur einer im Kampf, also für ihn selbst. */
+  A.flowerveil = {
+    blockStatus: function (bt, act) { return act.types.indexOf('Grass') >= 0; },
+    blockLower: function (bt, act) { return act.types.indexOf('Grass') >= 0; }
+  };
+
+  /* Zauberer klaut dem Ziel den Gegenstand — aber nur, wenn die eigenen
+     Hände frei sind. */
+  A.magician = {
+    onDealtDamage: function (bt, act, target) {
+      if (act.item || !target || !target.item || target.mon.hp <= 0) return;
+      var ab = bt.effects.abilities[bt.abilityId(target)];
+      if (ab && ab.keepsItem) return;
+      act.item = target.item;
+      target.item = null;
+      bt.say(bt.name(act) + ' stibitzt ' + PL.items.label(act.item) + '!', 'item', { side: act.side.id });
+    }
+  };
+
+  /* Rastlose Seele tauscht bei Berührung die Fähigkeiten. */
+  A.wanderingspirit = {
+    onContact: function (bt, act, angreifer) {
+      if (!angreifer || angreifer.mon.hp <= 0) return;
+      var fremd = bt.abilityId(angreifer);
+      if (!fremd || fremd === 'wanderingspirit') return;
+      angreifer.ability = 'wanderingspirit';
+      act.ability = fremd;
+      bt.say(bt.name(act) + ' tauscht die Fähigkeit mit dem Angreifer!',
+        'ability', { side: act.side.id });
+    }
+  };
+
+  /* Giftbelag streut Giftspitzen aus, wenn es physisch getroffen wird. */
+  A.toxicdebris = {
+    onHitTaken: function (bt, act, angreifer, move) {
+      if (!move || move.c !== 'P' || !angreifer) return;
+      var seite = angreifer.side;
+      if (seite.hazards.toxicspikes >= 2) return;
+      seite.hazards.toxicspikes++;
+      bt.say('Giftspitzen breiten sich aus!', 'side', { side: seite.id });
+    }
+  };
+
+  /* Süßer Nektar senkt beim Auftreten einmalig die Fluchtwerte des Gegners. */
+  A.supersweetsyrup = {
+    onSwitchIn: function (bt, act, foe) {
+      if (act.mon.syrupBenutzt || !foe || foe.mon.hp <= 0) return;
+      act.mon.syrupBenutzt = true;
+      bt.say(bt.name(act) + ' verteilt süßen Nektar!', 'ability', { side: act.side.id });
+      bt.boost(foe, { eva: -1 }, act);
+    }
+  };
+
+  /* Tänzer macht jede Tanzattacke des Gegners sofort nach. Die Sperre
+     verhindert, dass zwei Tänzer sich gegenseitig endlos aufschaukeln. */
+  A.dancer = {
+    onFoeMove: function (bt, act, angreifer, move) {
+      if (!move || !move.fl || move.fl.indexOf('dance') < 0) return;
+      if (act.mon.hp <= 0 || act.vol.tanztGerade) return;
+      act.vol.tanztGerade = true;
+      bt.say(bt.name(act) + ' tanzt mit!', 'ability', { side: act.side.id });
+      try { bt.useMove(act, { move: move }); }
+      finally { delete act.vol.tanztGerade; }
+    }
+  };
+
   PL.effects = { abilities: A, items: I, moves: M, typeItems: TYPE_ITEMS, resistBerries: RESIST_BERRIES };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = PL.effects;

@@ -163,7 +163,19 @@
     return this.effects.abilities[act.ability] || null;
   };
   B.abilityId = function (act) {
-    return act.vol.abilitysuppressed ? '' : act.ability;
+    if (act.vol.abilitysuppressed) return '';
+    /* Reaktionsgas legt alle anderen Fähigkeiten still, solange sein Träger
+       im Kampf steht. Hier ist die einzige Stelle, an der nach einer
+       Fähigkeit gefragt wird — deshalb steht die Ausnahme genau hier und
+       nicht an zwanzig Stellen verstreut. */
+    if (act.ability !== 'neutralizinggas' && this.sides) {
+      for (var i = 0; i < this.sides.length; i++) {
+        var a = this.sides[i].active;
+        if (a && a !== act && a.mon.hp > 0 && a.ability === 'neutralizinggas' &&
+            !a.vol.abilitysuppressed) return '';
+      }
+    }
+    return act.ability;
   };
   B.itemOf = function (act) {
     var ab = act && this.effects.abilities[this.abilityId(act)];
@@ -540,35 +552,63 @@
     var base = Math.floor(Math.floor(Math.floor(2 * level / 5 + 2) * bp * A / D) / 50) + 2;
 
     var m = 1;
+
+    /* Jeder Faktor wird beim Anwenden mitgeschrieben — daraus entsteht die
+       Rechnung, die sich im Kampf aufklappen lässt. Beim Vorausrechnen der
+       KI (simulating) bleibt das aus: Dort zählt nur die Zahl, und es sind
+       Tausende Rechnungen je Zug. Ein Faktor von genau 1 ändert nichts und
+       steht deshalb auch nicht in der Liste; eine 0 dagegen schon. */
+    var teile = this.simulating ? null : [];
+    function mal(was, faktor, immer) {
+      if (faktor === undefined || faktor === null) return;
+      if (faktor !== 1) m *= faktor;
+      // Typenbonus und Wirksamkeit stehen auch dann da, wenn sie nichts
+      // ändern: Genau nach ihnen wird gefragt, und »steht nicht drin« liest
+      // sich wie »wurde vergessen«.
+      if (teile && (immer || faktor !== 1)) teile.push({ was: was, faktor: faktor });
+    }
+
     // Wetter
     var w = this.weatherActive();
-    if (w === 'sunnyday') m *= moveType === 'Fire' ? 1.5 : moveType === 'Water' ? 0.5 : 1;
-    if (w === 'raindance') m *= moveType === 'Water' ? 1.5 : moveType === 'Fire' ? 0.5 : 1;
-    if (crit) m *= 1.5;
-    m *= 0.85 + this.rng.int(16) * 0.01;
+    if (w === 'sunnyday') mal('Sonne', moveType === 'Fire' ? 1.5 : moveType === 'Water' ? 0.5 : 1);
+    if (w === 'raindance') mal('Regen', moveType === 'Water' ? 1.5 : moveType === 'Fire' ? 0.5 : 1);
+    if (crit) mal('Volltreffer', 1.5);
+    mal('Zufall', 0.85 + this.rng.int(16) * 0.01);
 
     // STAB
     var stab = atk.types.indexOf(moveType) >= 0 ? 1.5 : 1;
     if (stab > 1 && this.abilityId(atk) === 'adaptability') stab = stab === 2 ? 2.25 : 2;
-    m *= stab;
+    mal('Typenbonus', stab, true);
 
-    m *= eff;
+    mal('Wirksamkeit', eff, true);
 
-    if (atk.mon.status === 'brn' && physical && this.abilityId(atk) !== 'guts' && move.id !== 'facade') m *= 0.5;
+    if (atk.mon.status === 'brn' && physical && this.abilityId(atk) !== 'guts' && move.id !== 'facade') {
+      mal('Verbrennung', 0.5);
+    }
 
     // Lichtschild / Reflektor
     if (!crit && this.abilityId(atk) !== 'infiltrator') {
       var sc = def.side.screens;
-      if (sc.auroraveil > 0 || (physical && sc.reflect > 0) || (!physical && sc.lightscreen > 0)) m *= 0.5;
+      if (sc.auroraveil > 0) mal('Auroraschleier', 0.5);
+      else if (physical && sc.reflect > 0) mal('Reflektor', 0.5);
+      else if (!physical && sc.lightscreen > 0) mal('Lichtschild', 0.5);
     }
-    if (atk.side.isPlayer && this.relicList('typeBoost').indexOf(moveType) >= 0) m *= 1.3;
-    if (eff > 1) m *= this.collect(def, 'modSuperEffective', [move, atk]);
-    m *= this.collect(atk, 'modDamage', [move, def, eff, moveType]);
-    m *= this.collect(def, 'modDamageTaken', [move, atk, eff, moveType]);
-    if (ov.mod) m *= ov.mod(this, atk, def, move, eff);
+    if (atk.side.isPlayer && this.relicList('typeBoost').indexOf(moveType) >= 0) mal('Relikt', 1.3);
+    if (eff > 1) mal('Gegenmittel', this.collect(def, 'modSuperEffective', [move, atk]));
+    mal('Angreifer', this.collect(atk, 'modDamage', [move, def, eff, moveType]));
+    mal('Ziel', this.collect(def, 'modDamageTaken', [move, atk, eff, moveType]));
+    if (ov.mod) mal('Attacke', ov.mod(this, atk, def, move, eff));
 
     var dmg = Math.max(1, Math.floor(base * m));
-    return { dmg: dmg, eff: eff, crit: crit, immune: false, type: moveType, bp: bp };
+    var erg = { dmg: dmg, eff: eff, crit: crit, immune: false, type: moveType, bp: bp };
+    if (teile) {
+      erg.rechnung = {
+        level: level, staerke: bp, grundStaerke: move.bp, typ: moveType,
+        angriff: A, angriffWert: atkStat, verteidigung: D, verteidigungWert: defStat,
+        grund: base, teile: teile, schaden: dmg
+      };
+    }
+    return erg;
   };
 
   B.weatherActive = function () {
@@ -757,6 +797,24 @@
    * Führt eine Attacke aus. slot ist der Index im Attackenspeicher, oder
    * ein Objekt { move: Attacke, free: true } für erzwungene Aktionen.
    */
+  /**
+   * Der Gegenüberstehende hat gesehen, was da eingesetzt wurde, und darf
+   * darauf antworten — der Tänzer macht die Bewegung nach.
+   *
+   * Gefragt wird nicht das Ziel der Attacke, sondern wer auf der anderen
+   * Seite steht: Ein Falterreigen zielt auf einen selbst, und genau den soll
+   * der Tänzer nachmachen. Und es steht hier als eigene Stelle, weil eine
+   * Attacke das Spiel auf drei Wegen verlässt — mit Schaden, als Status und
+   * als erster Teil eines Zweirundenzugs. Am Anfang hing es nur am ersten,
+   * und Tanzattacken sind fast immer Status.
+   */
+  B.zugGesehen = function (actor, move) {
+    if (!move || !actor || !actor.side.other) return;
+    var zuschauer = actor.side.other.active;
+    if (!zuschauer || zuschauer === actor || zuschauer.mon.hp <= 0) return;
+    this.hook(zuschauer, 'onFoeMove', [actor, move]);
+  };
+
   B.useMove = function (actor, slot, opts) {
     opts = opts || {};
     var self = this, entry = null, move, struggle = false;
@@ -823,7 +881,9 @@
       delete actor.vol.invuln;
     }
 
-    this.say(this.name(actor) + ' setzt ' + T.move(move) + ' ein!', 'move',
+    /* Diesen Eintrag merken: An ihn hängt executeDamage gleich die Rechnung,
+       damit sie sich im Protokoll aufklappen lässt. */
+    this.zugEintrag = this.say(this.name(actor) + ' setzt ' + T.move(move) + ' ein!', 'move',
       { side: actor.side.id, move: move.i, type: move.t, cat: move.c });
 
     if (ov.beforeMove && ov.beforeMove(this, actor, target, move) === false) {
@@ -892,6 +952,11 @@
         result = this.calcDamage(actor, target, move, { hit: h });
       }
       if (result.immune) break;
+      if (h === 0 && result.rechnung && this.zugEintrag) {
+        result.rechnung.ziel = this.name(target);
+        if (hits > 1) result.rechnung.treffer = hits;
+        this.zugEintrag.rechnung = result.rechnung;
+      }
       var dealt = this.damage(target, result.dmg);
       total += dealt;
       if (result.crit && dealt) this.say('Ein Volltreffer!', 'crit', { side: target.side.id });
@@ -955,6 +1020,7 @@
     }
     this.lockChoice(actor, entry);
     this.hook(actor, 'afterMove', [move, target, total]);
+    this.zugGesehen(actor, move);
 
     if (move.ss && total > 0 && this.hasBackup(actor.side)) actor.side.pendingSelfSwitch = true;
     if (move.fs && total >= 0 && target.mon.hp > 0) this.forceOut(target);
@@ -1019,6 +1085,7 @@
     if (!ok) this.say('Es ist nichts passiert.', 'text', {});
     this.lockChoice(actor, null);
     this.hook(actor, 'afterMove', [move, target, 0]);
+    this.zugGesehen(actor, move);
     this.checkFaints();
   };
 
@@ -1097,6 +1164,7 @@
     actor.vol.twoturn = { move: move.i };
     if (spec.hide) actor.vol.invuln = spec.hide;
     this.hook(actor, 'afterMove', [move, null, 0]);
+    this.zugGesehen(actor, move);
     return true;
   };
 
@@ -1909,6 +1977,15 @@
       return false;
     }
     var me = side.active, foe = side.other.active;
+    var meAb = me && this.effects.abilities[this.abilityId(me)];
+    if (meAb && meAb.alwaysFlee) {
+      this.ended = true;
+      this.settleForms();
+      this.outcome = 'fled';
+      this.winner = null;
+      this.say(this.name(me) + ' macht sich aus dem Staub!', 'end', { winner: null });
+      return true;
+    }
     var odds = me && foe ? clamp((this.statOf(me, 'spe') * 128 / Math.max(1, this.statOf(foe, 'spe')) + 30 * this.fleeTries) / 256, 0.15, 0.95) : 0.5;
     this.fleeTries = (this.fleeTries || 1) + 1;
     if (this.rng.next() < odds) {
