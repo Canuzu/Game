@@ -43,7 +43,57 @@
     noiseBuffer = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
     var data = noiseBuffer.getChannelData(0), i;
     for (i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+    horcheAufBeruehrung();
     return ctx;
+  }
+
+  /* ---------- 2a) Die Sperre der Browser ------------------------------------
+   * Ein Browser lässt Ton erst zu, nachdem jemand die Seite angefasst hat.
+   * Wird der Tonkontext vorher gebaut — und das passiert, weil das Spiel
+   * beim Start schon weiß, welches Stück laufen soll —, bleibt er
+   * »angehalten«. Und er bleibt es, bis ihn jemand ausdrücklich weckt.
+   *
+   * Geweckt wurde bisher nur in play(), also nur bei einem Bildschirmwechsel.
+   * Das reicht nicht: Wer auf dem Titel sitzen bleibt, hört nichts. Wer nach
+   * einer neuen Fassung mitten im Run neu geladen wird, hört nichts, bis er
+   * den nächsten Knoten betritt. Und wer erst irgendwo hinklickt, wo sich der
+   * Bildschirm nicht ändert, hört auch nichts.
+   *
+   * Deshalb drei Wege zurück zum Ton, die sich gegenseitig auffangen:
+   *   1. die erste Berührung der Seite — egal welche
+   *   2. die Rückkehr in den sichtbaren Tab
+   *   3. der Taktgeber selbst, der es bei jedem Durchlauf noch einmal versucht
+   * ------------------------------------------------------------------------ */
+
+  function aufwecken() {
+    if (!ctx || ctx.state !== 'suspended') return;
+    try {
+      var p = ctx.resume();
+      // Lehnt der Browser ab, ist das kein Fehler, sondern ein »noch nicht«.
+      if (p && p.catch) p.catch(function () {});
+    } catch (e) { /* dann eben beim nächsten Versuch */ }
+  }
+
+  var horchtSchon = false;
+  function horcheAufBeruehrung() {
+    if (horchtSchon || !root.addEventListener) return;
+    horchtSchon = true;
+    function los() {
+      aufwecken();
+      // Lief ein Stück, steht aber der Taktgeber still, wieder anwerfen.
+      if (enabled && current && ctx && !timer) startTimer();
+    }
+    // Absichtlich dauerhaft und nicht nur einmal: Auf dem Telefon hält das
+    // Betriebssystem den Ton auch später wieder an, und dann hilft nur, es
+    // bei der nächsten Berührung erneut zu versuchen.
+    ['pointerdown', 'keydown', 'touchend'].forEach(function (art) {
+      try { root.addEventListener(art, los, { capture: true, passive: true }); }
+      catch (e) { root.addEventListener(art, los, true); }
+    });
+    var doc = root.document;
+    if (doc && doc.addEventListener) {
+      doc.addEventListener('visibilitychange', function () { if (!doc.hidden) los(); });
+    }
   }
 
   /** Ein Ton mit hartem Ein- und weichem Ausschwingen — typisch Chiptune. */
@@ -843,7 +893,11 @@
     if (!ctx || !current) return;
     // Solange der Browser den Ton anhält (vor der ersten Eingabe), wird nicht
     // geplant — sonst kämen beim Fortsetzen alle Töne auf einmal.
-    if (ctx.state === 'suspended') { nextTime = ctx.currentTime + 0.05; return; }
+    if (ctx.state === 'suspended') {
+      aufwecken();
+      nextTime = ctx.currentTime + 0.05;
+      return;
+    }
     var horizon = ctx.currentTime + 0.25;
     while (nextTime < horizon) {
       var track = (jingleUntil > nextTime) ? JINGLE : current;
@@ -890,7 +944,7 @@
     currentName = name;
     if (!enabled) { current = resolve(name) || current; return; }
     if (!ensure()) return;
-    if (ctx.state === 'suspended') ctx.resume();
+    aufwecken();
     var track = resolve(name);
     if (!track || current === track) { current = track || current; if (!timer) startTimer(); return; }
     current = track;
@@ -923,7 +977,7 @@
   function setEnabled(on) {
     enabled = !!on;
     if (!enabled) { stop(); }
-    else if (current && ensure()) { if (ctx.state === 'suspended') ctx.resume(); startTimer(); }
+    else if (current && ensure()) { aufwecken(); startTimer(); }
     if (master) master.gain.value = enabled ? volume : 0;
   }
 
@@ -946,6 +1000,11 @@
 
   PL.audio = {
     play: play, stop: stop, jingle: jingle,
+    /* Auch die kurzen Klänge des Spiels nehmen diesen Kontext. Zwei
+       nebeneinander sind auf dem Telefon einer zu viel — manche Geräte
+       verweigern den zweiten —, und jeder bräuchte seine eigene Entsperrung. */
+    kontext: function () { return ensure(); },
+    aufwecken: aufwecken,
     setEnabled: setEnabled, setVolume: setVolume, setRegion: setRegion,
     regionTracks: REGION_TRACKS, regionVariant: fuerRegion, tracks: TRACKS,
     trackFor: trackFor, legendenStueck: legendenStueck, handMotive: HAND_MOTIVE,

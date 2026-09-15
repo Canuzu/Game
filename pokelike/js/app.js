@@ -4709,12 +4709,32 @@
   /* --- Töne: kurze, synthetische Klänge, keine Dateien -------------------------------- */
 
   var audio = null;
+
+  /**
+   * Der Tonkontext für die kurzen Klänge — derselbe, den auch die Musik
+   * benutzt. Vorher baute sich diese Datei einen zweiten daneben. Das ist
+   * doppelt schlecht: Manche Telefone verweigern den zweiten Kontext, und
+   * jeder braucht seine eigene Entsperrung durch eine Berührung. Über einen
+   * gemeinsamen weckt jede Berührung beide auf.
+   *
+   * Die Klänge hängen dabei nicht am Lautstärkeregler der Musik, sondern
+   * direkt am Ausgang — sonst wären sie mit abgeschalteter Musik stumm.
+   */
+  function tonKontext() {
+    if (!audio && PL.audio && PL.audio.kontext) audio = PL.audio.kontext();
+    if (!audio) audio = new (root.AudioContext || root.webkitAudioContext)();
+    if (audio.state === 'suspended' && audio.resume) {
+      var p = audio.resume();
+      if (p && p.catch) p.catch(function () {});
+    }
+    return audio;
+  }
+
   /** Ein einzelner kurzer Ton — die Momente bedienen sich daran. */
   function tone(freq, len) {
     if (!settings().sound) return;
     try {
-      if (!audio) audio = new (root.AudioContext || root.webkitAudioContext)();
-      if (audio.state === 'suspended') audio.resume();
+      audio = tonKontext();
       var now = audio.currentTime, d = len || 0.06;
       var osc = audio.createOscillator(), gain = audio.createGain();
       osc.type = 'square';
@@ -4730,8 +4750,7 @@
   function sfx(kind) {
     if (!settings().sound) return;
     try {
-      if (!audio) audio = new (root.AudioContext || root.webkitAudioContext)();
-      if (audio.state === 'suspended') audio.resume();
+      audio = tonKontext();
       var now = audio.currentTime;
       var spec = {
         hit: { f: 180, t: 'square', d: 0.09, v: 0.05 },
