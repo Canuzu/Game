@@ -852,6 +852,145 @@
     return stueck;
   }
 
+  /* ---------- 3c) Ein Stück für jeden Titelträger ------------------------------
+   * 112 Namen — 72 Arenaleiter, 31 Mitglieder der Top Vier und 9 Champs —,
+   * und bis eben spielte bei allen dasselbe Bossstück. Brock klang wie
+   * Cynthia.
+   *
+   * Jetzt bekommt jeder sein eigenes, aus drei Dingen gebaut:
+   *
+   *   Der Typ gibt die Tonleiter. Sabrinas Psycho klingt weit (lydisch),
+   *   Kogas Gift eng und schief (phrygisch), Clairs Drache streng
+   *   (harmonisch) — dieselbe Zuordnung, die schon die Legenden benutzen.
+   *
+   *   Die Rolle gibt Tempo und Wucht. Ein Arenaleiter ist zügig, die Top
+   *   Vier drängt, der Champ rennt. Dazu wird das Schlagzeug dichter.
+   *
+   *   Der Name gibt den Rest: Grundton, Akkordfolge und Melodierhythmus
+   *   kommen aus seinen Buchstaben. Damit klingen zwei Leiter desselben Typs
+   *   trotzdem verschieden — Brock und Roxanne sind beide Gestein, aber
+   *   nicht dasselbe Stück.
+   *
+   * Für die Bekanntesten steht unten ein Motiv von Hand. Die Zahlen sind
+   * Stufen der gewählten Tonleiter über zwei Takte, -1 ist eine Pause.
+   * -------------------------------------------------------------------------- */
+
+  var ROLLEN = {
+    arena: { bpmVon: 128, bpmBis: 146, schlag: 0 },
+    liga:  { bpmVon: 146, bpmBis: 158, schlag: 1 },
+    champ: { bpmVon: 156, bpmBis: 168, schlag: 2 }
+  };
+
+  /** Aus einem Namen eine Zahl — gleiche Buchstaben, gleiches Stück. */
+  function namensZahl(name) {
+    var h = 2166136261, i;
+    for (i = 0; i < name.length; i++) {
+      h ^= name.charCodeAt(i);
+      h = (h * 16777619) >>> 0;
+    }
+    return h;
+  }
+
+  var TRAINER_MOTIVE = {
+    // Brock: schwer und breit, wie Stein, der sich nicht bewegt
+    'Brock': { motiv: [
+      0,-1,-1,-1, 0,-1, 2,-1, 3,-1,-1,-1, 2,-1,-1,-1,
+      4,-1,-1, 3, 2,-1,-1,-1, 0,-1,-1,-1,-1,-1,-1,-1] },
+    // Misty: fließend, in Wellen auf und ab
+    'Misty': { motiv: [
+      4,-1, 5,-1, 6,-1, 5,-1, 4,-1, 2,-1, 1,-1, 2,-1,
+      4,-1, 6,-1, 7,-1, 6,-1, 4,-1,-1,-1,-1,-1,-1,-1] },
+    // Sabrina: ein Gedanke, der sich nicht abschütteln lässt — dieselbe
+    // Figur, jedes Mal eine Stufe höher
+    'Sabrina': { motiv: [
+      0,-1, 2, 4,-1,-1,-1,-1, 1,-1, 3, 5,-1,-1,-1,-1,
+      2,-1, 4, 6,-1,-1,-1,-1, 3,-1, 5, 7,-1,-1,-1,-1] },
+    // Giovanni: ruhig, gefährlich, tief ansetzend
+    'Giovanni': { motiv: [
+      0,-1,-1,-1,-1,-1, 0,-1, 1,-1,-1,-1, 0,-1,-1,-1,
+      4,-1, 3,-1, 2,-1, 1,-1, 0,-1,-1,-1,-1,-1,-1,-1] },
+    // Whitney: unbekümmert und viel zu fröhlich für das, was sie anrichtet
+    'Whitney': { motiv: [
+      4,-1, 4,-1, 5, 4,-1, 2, 4,-1,-1,-1, 2,-1,-1,-1,
+      0,-1, 2,-1, 4,-1, 5,-1, 4,-1,-1,-1,-1,-1,-1,-1] },
+    // Clair: ein Drache, der sich langsam aufrichtet
+    'Clair': { motiv: [
+      0,-1,-1, 1, 2,-1,-1, 3, 4,-1,-1,-1,-1,-1,-1,-1,
+      4,-1, 5,-1, 6,-1, 7,-1, 6,-1, 4,-1,-1,-1,-1,-1] },
+    // Lance: die Fanfare des Drachenmeisters, in Dreiklängen aufwärts
+    'Lance': { motiv: [
+      0,-1,-1,-1, 2,-1, 4,-1, 7,-1,-1,-1,-1,-1,-1,-1,
+      6,-1,-1,-1, 4,-1, 2,-1, 0,-1,-1,-1,-1,-1,-1,-1] },
+    // Blue: selbstsicher, fast frech — kurze Stöße, keine Pause zum Atmen
+    'Blue': { motiv: [
+      7,-1, 7,-1, 6,-1,-1,-1, 4,-1, 4,-1, 2,-1,-1,-1,
+      0,-1, 2,-1, 4,-1, 6,-1, 7,-1,-1,-1,-1,-1,-1,-1] },
+    // Steven: klar und metallisch, in Quarten gebaut
+    'Steven': { motiv: [
+      0,-1,-1,-1, 3,-1,-1,-1, 6,-1,-1,-1, 3,-1,-1,-1,
+      4,-1,-1,-1, 7,-1,-1,-1, 4,-1, 2,-1, 0,-1,-1,-1] },
+    // Cynthia: die berühmteste Wand des Spiels — schwer, unaufhaltsam,
+    // immer eine Stufe weiter, als man hofft
+    'Cynthia': { motiv: [
+      0,-1, 1,-1, 2,-1,-1,-1, 3,-1, 4,-1,-1,-1,-1,-1,
+      5,-1, 4,-1, 3,-1, 2,-1, 1,-1,-1,-1, 0,-1,-1,-1] },
+    // Leon: Stadionlärm, heroisch, mit Auftakt
+    'Leon': { motiv: [
+      -1,-1,-1, 4, 7,-1,-1,-1, 6,-1, 7,-1,-1,-1,-1,-1,
+      4,-1,-1, 2, 4,-1,-1,-1, 7,-1,-1,-1,-1,-1,-1,-1] },
+    // Geeta: kühl und geordnet, wie jemand, der alles vorher wusste
+    'Geeta': { motiv: [
+      0,-1, 4,-1, 2,-1, 6,-1, 4,-1,-1,-1,-1,-1,-1,-1,
+      1,-1, 5,-1, 3,-1, 7,-1, 5,-1,-1,-1,-1,-1,-1,-1] },
+    // Raihan: der Wetterwechsel selbst — abwärts stürzend
+    'Raihan': { motiv: [
+      7,-1, 6,-1, 5,-1, 4,-1, 3,-1,-1,-1, 2,-1,-1,-1,
+      0,-1,-1,-1, 4,-1,-1,-1, 7,-1,-1,-1,-1,-1,-1,-1] },
+    // Marnie: trotzig, knapp, ohne Schnörkel
+    'Marnie': { motiv: [
+      0,-1, 0,-1, 3,-1,-1,-1, 2,-1, 2,-1, 0,-1,-1,-1,
+      0,-1, 0,-1, 3,-1, 4,-1, 3,-1,-1,-1,-1,-1,-1,-1] },
+    // Agatha: alt, spöttisch, schleichend
+    'Agatha': { motiv: [
+      0,-1,-1, 1,-1,-1, 0,-1,-1,-1, 3,-1,-1, 2,-1,-1,
+      1,-1,-1, 0,-1,-1,-1,-1, 4,-1, 3,-1, 0,-1,-1,-1] }
+  };
+
+  var trainerCache = {};
+
+  /**
+   * Das Stück eines Arenaleiters, eines Mitglieds der Top Vier oder eines
+   * Champs. rolle ist 'arena', 'liga' oder 'champ', typ sein Kampftyp.
+   */
+  function trainerStueck(name, rolle, typ) {
+    if (!name) return TRACKS.boss;
+    var r = ROLLEN[rolle] || ROLLEN.arena;
+    var schluessel = name + '|' + rolle;
+    if (trainerCache[schluessel]) return trainerCache[schluessel];
+
+    var z = namensZahl(name);
+    var hand = TRAINER_MOTIVE[name];
+    var skala = (hand && hand.skala) || TYP_SKALA[typ] || 'moll';
+    // Der Champ bekommt Ernst: Wo sein Typ nach Dur klänge, rückt er ins
+    // Harmonische — ein Endkampf in Dur nimmt sich selbst nicht ernst.
+    if (rolle === 'champ' && (skala === 'dur' || skala === 'lydisch')) skala = 'harmonisch';
+
+    var stueck = baueLegendenstueck({
+      ton: (hand && hand.ton) || NAMEN[z % 12],
+      skala: skala,
+      // Vorzeichenlos schieben: namensZahl liefert volle 32 Bit, und mit »>>«
+      // würde aus einem großen Hash ein negativer Index.
+      bpm: (hand && hand.bpm) || (r.bpmVon + (z >>> 3) % (r.bpmBis - r.bpmVon + 1)),
+      folge: (hand && hand.folge !== undefined) ? hand.folge : (z >>> 7) % FOLGEN.length,
+      motiv: hand && hand.motiv,
+      rhythmus: (z >>> 11) % RHYTHMEN.length,
+      schlag: r.schlag,
+      rnd: wuerfel(z || 1)
+    });
+    trainerCache[schluessel] = stueck;
+    return stueck;
+  }
+
   // Kurze Fanfare nach einem Sieg — läuft einmal, dann geht das Stück weiter.
   var JINGLE = {
     bpm: 150, lead: 'square', bass: 'triangle',
@@ -924,6 +1063,12 @@
       var sp = PL.dex && PL.dex.sp ? PL.dex.sp(name.slice(8)) : null;
       return legendenStueck(sp);
     }
+    // »trainer:arena:Rock:Brock« ebenso: Rolle, Typ und Name, daraus wird
+    // sein Stück gebaut und behalten.
+    if (typeof name === 'string' && name.slice(0, 8) === 'trainer:') {
+      var teile = name.slice(8).split(':');
+      return trainerStueck(teile.slice(2).join(':'), teile[0], teile[1]);
+    }
     if (gen && REGION_TRACKS[gen]) {
       if (name === 'route') return REGION_TRACKS[gen];
       if (name === 'town' || name === 'cave') return fuerRegion(name, gen);
@@ -987,11 +1132,16 @@
   }
 
   /** Welches Stück gehört zu diesem Ort? */
-  function trackFor(kind, biome, art) {
+  function trackFor(kind, biome, art, wer) {
     // Jede Legende hat ihr eigenes Stück; ohne Angabe bleibt es beim
     // gemeinsamen.
     if (kind === 'legend') return art ? 'legende:' + art : 'legenden';
-    if (kind === 'boss') return 'boss';
+    // Dasselbe für die Titelträger: Rolle, Typ und Name bestellen ihr Stück.
+    if (kind === 'boss') {
+      return (wer && wer.name)
+        ? 'trainer:' + (wer.rolle || 'arena') + ':' + (wer.typ || 'Normal') + ':' + wer.name
+        : 'boss';
+    }
     if (kind === 'battle') return 'battle';
     if (biome === 'stadt' || biome === 'arena' || kind === 'shop') return 'town';
     if (biome === 'hoehle' || biome === 'nacht' || biome === 'liga') return 'cave';
@@ -1008,6 +1158,7 @@
     setEnabled: setEnabled, setVolume: setVolume, setRegion: setRegion,
     regionTracks: REGION_TRACKS, regionVariant: fuerRegion, tracks: TRACKS,
     trackFor: trackFor, legendenStueck: legendenStueck, handMotive: HAND_MOTIVE,
+    trainerStueck: trainerStueck, trainerMotive: TRAINER_MOTIVE, ROLLEN: ROLLEN,
     isEnabled: function () { return enabled; },
     current: function () { return current; },
     freq: freq

@@ -906,7 +906,7 @@
     this.noteMet(sp);
     var mon = W.buildMon(rng, sp, level, {
       quality: 0.72, ivFloor: 10, hiddenChance: 0.3,
-      shinyOdds: (1 / 200) * this.shinyMult()
+      shinyOdds: (1 / W.SCHILLERND.wild) * this.shinyMult()
     });
     if (mon.shiny) this.stats.shinies++;
     var biome = this.biomeFor('legend');
@@ -940,7 +940,7 @@
     this.noteMet(sp);
     var mon = W.buildMon(rng, sp, level + (opts.rare ? 3 : 0), {
       quality: 0.55 + this.fortschritt() * 0.03,
-      shinyOdds: (1 / 400) * this.shinyMult(),
+      shinyOdds: (1 / W.SCHILLERND.trainer) * this.shinyMult(),
       hiddenChance: 0.12
     });
     if (mon.shiny) this.stats.shinies++;
@@ -1012,7 +1012,7 @@
     var sp = rng.pick(pool);
     var mon = W.buildMon(rng, sp, level, {
       quality: 1, ivFloor: 26, hiddenChance: 0.4,
-      shinyOdds: (1 / 120) * this.shinyMult()
+      shinyOdds: (1 / W.SCHILLERND.arena) * this.shinyMult()
     });
     mon.item = 'sitrusberry';
     mons.addEVs(mon, mon.ivs[1] >= mon.ivs[3] ? 'atk' : 'spa', 120);
@@ -1037,7 +1037,7 @@
     var level = Math.min(100, this.levelCap);
     var mon = W.buildMon(rng, sp, level, {
       quality: 1, ivFloor: 31, hiddenChance: 0.5,
-      shinyOdds: (1 / 90) * this.shinyMult()
+      shinyOdds: (1 / W.SCHILLERND.liga) * this.shinyMult()
     });
     mon.item = 'leftovers';
     mons.addEVs(mon, mon.ivs[1] >= mon.ivs[3] ? 'atk' : 'spa', 252);
@@ -1358,7 +1358,7 @@
       this.noteMet(sp);
       picks.push(W.buildMon(rng, sp, level, {
         quality: 0.85, ivFloor: 12,
-        shinyOdds: (1 / 300) * this.shinyMult()
+        shinyOdds: (1 / W.SCHILLERND.geschenk) * this.shinyMult()
       }));
     }
     return {
@@ -1736,7 +1736,7 @@
     var sp = dex.sp(speciesRef);
     if (!sp) return 'Nichts gefunden.';
     var mon = W.buildMon(rng, sp, clamp(level, 2, this.levelCap), Object.assign({
-      quality: 0.8, ivFloor: 6, shinyOdds: (1 / 300) * this.shinyMult()
+      quality: 0.8, ivFloor: 6, shinyOdds: (1 / W.SCHILLERND.geschenk) * this.shinyMult()
     }, opts || {}));
     var res = this.acceptCatch(mon);
     this.stats.catches++;

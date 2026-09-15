@@ -63,8 +63,17 @@ if (SHOT_DIR) await page.screenshot({ path: join(SHOT_DIR, '01-titel.png') });
 console.log('\nNeuer Run');
 await page.getByRole('button', { name: 'Neuer Run' }).click();
 await page.waitForSelector('.starter-grid');
-check('Startpokémon zur Auswahl', (await page.locator('.starter').count()) >= 27);
-check('Gesperrte Starter sind gesperrt', (await page.locator('.starter.locked').count()) > 0);
+// Zur Wahl stehen nur die drei Starter der gewählten Region — in Kanto also
+// Bisasam, Glumanda und Schiggy, und sonst keine.
+check('Drei Startpokémon zur Auswahl', (await page.locator('.starter').count()) === 3,
+  String(await page.locator('.starter').count()));
+{
+  const namen = await page.locator('.starter .starter-name').evaluateAll(
+    (ns) => ns.map((n) => n.textContent));
+  check('Es sind die drei aus Kanto',
+    namen.join(',') === 'Bisasam,Glumanda,Schiggy', namen.join(','));
+  check('Keiner davon ist gesperrt', (await page.locator('.starter.locked').count()) === 0);
+}
 await page.locator('.starter:not(.locked)').first().click();
 if (SHOT_DIR) await page.screenshot({ path: join(SHOT_DIR, '02-neuer-run.png') });
 await page.click('text=Los geht’s');
@@ -485,6 +494,43 @@ await page.waitForSelector('.regionen');
     await page.locator('.region-karte').nth(3).evaluate((n) => n.classList.contains('selected')));
   check('Paldea bleibt gesperrt',
     await page.locator('.region-karte').nth(8).evaluate((n) => n.disabled));
+
+  // Mit der Region wechseln auch die Starter: Sinnoh bringt seine drei mit.
+  {
+    const namen = await page.locator('.starter .starter-name').evaluateAll(
+      (ns) => ns.map((n) => n.textContent));
+    check('Sinnoh bringt seine eigenen drei Starter mit',
+      namen.join(',') === 'Chelast,Panflam,Plinfa', namen.join(','));
+    check('Nach dem Wechsel ist noch keiner gewählt',
+      (await page.locator('.starter.selected').count()) === 0);
+    check('… und »Los geht’s« bleibt gesperrt, bis man einen nimmt',
+      await page.getByRole('button', { name: 'Los geht’s' }).isDisabled());
+    await page.locator('.starter').first().click();
+    check('Nach der Wahl darf gestartet werden',
+      !(await page.getByRole('button', { name: 'Los geht’s' }).isDisabled()));
+  }
+}
+
+// Die Legenden einer Generation stehen erst offen, wenn ihre Region fällt
+{
+  await page.evaluate(() => {
+    const m = PL.meta.load();
+    m.regionenGewonnen = { 0: true, 3: true };
+    PL.meta.save();
+    globalThis.PokelikeApp.show('legenden');
+  });
+  await page.waitForSelector('.gen-grid');
+  const offen = await page.locator('.gen-karte:not(.locked)').count();
+  check('Zwei bezwungene Regionen öffnen zwei Generationen', offen === 2, String(offen));
+  check('Kantos Legenden stehen offen',
+    !(await page.locator('.gen-karte').nth(0).evaluate((n) => n.disabled)));
+  check('Johtos nicht',
+    await page.locator('.gen-karte').nth(1).evaluate((n) => n.disabled));
+  check('Sinnohs schon',
+    !(await page.locator('.gen-karte').nth(3).evaluate((n) => n.disabled)));
+  const gesperrtText = await page.locator('.gen-karte').nth(1).innerText();
+  check('Eine gesperrte Karte sagt, welche Region sie öffnet',
+    /Johto durchspielen/.test(gesperrtText), gesperrtText.replace(/\n/g, ' | '));
 }
 
 // Der Kampf muss auf ein Handy passen — ohne Scrollen, mit allen Aktionen
@@ -701,7 +747,7 @@ await page.waitForSelector('.regionen');
   const gesperrt = await page.locator('.menue-zeile.gold').innerText();
   check('Im Titelmenü steht der Legendäre Run golden da', gesperrt.indexOf('Legendärer Run') >= 0, gesperrt);
   check('… und sagt kurz, warum er noch zu ist',
-    /drei Regionen/.test(gesperrt), gesperrt);
+    /eine Region ganz/.test(gesperrt), gesperrt);
 
   await page.locator('.menue-zeile.gold').click();
   await page.waitForSelector('.gen-grid');

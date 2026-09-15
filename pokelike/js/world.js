@@ -64,6 +64,31 @@
    * Pokal-Turnier. An ihre Stelle treten die Gegner aus dessen Endrunde.
    * -------------------------------------------------------------------------- */
 
+  /* ---------- Wie oft etwas schillert ----------------------------------------
+   * Eine Tabelle statt verstreuter Brüche. Die Zahlen sind Nenner: 80 heißt
+   * eins von achtzig.
+   *
+   * Sie liegen deutlich über den Spielen (dort 1:4096), und das mit Absicht:
+   * Ein Run dauert eine Stunde, nicht ein Jahr, und ein Schillerndes soll ein
+   * Fund sein, den man in einem Run erleben kann — nicht einer, den man nie
+   * sieht. Relikte und der Sammlungslohn multiplizieren zusätzlich.
+   *
+   * Gegner schillern seltener als eigene Funde: Ein schillernder Arenaleiter
+   * ist ein Anblick, aber man nimmt ihn nicht mit.
+   * -------------------------------------------------------------------------- */
+
+  var SCHILLERND = {
+    wild: 80,        // was einem auf der Route begegnet
+    trainer: 160,    // im Team eines gewöhnlichen Trainers
+    geschenk: 120,   // Ereignisse, Eier, Segen
+    arena: 50,       // im Team eines Arenaleiters
+    liga: 40,        // Top Vier und Champ
+    gegnerWild: 160, // gewöhnliche Gegner ohne eigene Angabe
+    gegnerArena: 50,
+    gegnerLiga: 40,
+    gegnerChamp: 25
+  };
+
   var ELITE_VIER = {
     kanto:  [['Lorelei', 'Ice'], ['Bruno', 'Fighting'], ['Agatha', 'Ghost'], ['Lance', 'Dragon']],
     johto:  [['Will', 'Psychic'], ['Koga', 'Poison'], ['Bruno', 'Fighting'], ['Karen', 'Dark']],
@@ -300,7 +325,7 @@
       quality: opts.quality === undefined ? 0.65 : opts.quality,
       ivFloor: opts.ivFloor || 0,
       hiddenChance: opts.hiddenChance || 0.1,
-      shinyOdds: opts.shinyOdds === undefined ? 1 / 400 : opts.shinyOdds,
+      shinyOdds: opts.shinyOdds === undefined ? 1 / SCHILLERND.gegnerWild : opts.shinyOdds,
       shiny: opts.shiny,
       evs: opts.evs || null,
       item: opts.item || null
@@ -425,7 +450,8 @@
     for (i = 0; i < species.length; i++) {
       var last = i === species.length - 1;
       var mon = buildMon(rng, species[i], level + (last ? 2 : 0), {
-        quality: quality, ivFloor: 6 + index, hiddenChance: 0.25, shinyOdds: 1 / 120
+        quality: quality, ivFloor: 6 + index, hiddenChance: 0.25,
+        shinyOdds: 1 / SCHILLERND.gegnerArena
       });
       // Nur der Ass-Kämpfer trägt einen Gegenstand.
       if ((last && index > 0) || (opts && opts.items && rng.chance(0.6))) {
@@ -483,7 +509,8 @@
     for (i = 0; i < species.length; i++) {
       var last = i === species.length - 1;
       var mon = buildMon(rng, species[i], level + (last ? 1 : 0), {
-        quality: quality, ivFloor: 16, hiddenChance: 0.3, shinyOdds: 1 / 100
+        quality: quality, ivFloor: 16, hiddenChance: 0.3,
+        shinyOdds: 1 / SCHILLERND.gegnerLiga
       });
       if (last || i < 1) {
         mon.item = rng.pick(['leftovers', 'lifeorb', 'focussash', 'choiceband', 'choicespecs', 'choicescarf', 'assaultvest', 'sitrusberry']);
@@ -506,7 +533,8 @@
     var team = champ.team.map(function (id, i) {
       var sp = fitToLevel(dex.sp(id) || dex.sp('pidgeot'), level);
       var mon = buildMon(rng, sp, level + (i === 5 ? 2 : 0), {
-        quality: 0.9 - ((opts && opts.ease) || 0), ivFloor: 20, hiddenChance: 0.5, shinyOdds: 1 / 60
+        quality: 0.9 - ((opts && opts.ease) || 0), ivFloor: 20, hiddenChance: 0.5,
+        shinyOdds: 1 / SCHILLERND.gegnerChamp
       });
       if (i === 5) mon.item = 'lifeorb';
       else if (i < 4) mon.item = ['leftovers', 'lifeorb', 'focussash', 'choicescarf'][i];
@@ -514,8 +542,18 @@
       mons.addEVs(mon, 'spe', 140);
       return mon;
     });
+    // Ein Champ hat keinen Typ wie ein Arenaleiter — er leiht ihn sich von
+    // seinem stärksten Pokémon, damit auch sein Stück eine Farbe bekommt.
+    // Das letzte im Team ist dafür der falsche Griff: Bei Lance steht dort
+    // Seedraken, sein Wahrzeichen ist aber Dragoran.
+    var ass = null;
+    champ.team.forEach(function (id) {
+      var sp = dex.sp(id);
+      if (sp && (!ass || sp.bst > ass.bst)) ass = sp;
+    });
     return {
       team: team, name: 'Champ ' + champ.name, cls: 'Champ', level: 3,
+      type: (ass && ass.t && ass.t[0]) || 'Normal',
       leader: champ.name,
       look: PL.leaders ? PL.leaders.look(champ.name) : null
     };
@@ -1073,7 +1111,7 @@
   PL.world = {
     REGIONS: REGIONS,
     TRAINERS: TRAINERS,
-    ELITE: ELITE, ELITE_VIER: ELITE_VIER,
+    ELITE: ELITE, ELITE_VIER: ELITE_VIER, SCHILLERND: SCHILLERND,
     CHAMPIONS: CHAMPIONS,
     EVENTS: EVENTS,
     EVENT_AUTO: EVENT_AUTO,

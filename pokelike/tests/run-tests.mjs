@@ -2314,6 +2314,93 @@ section('Ein Run spielt eine Region ganz');
   check('… und keine Regelabfrage', typeof run.asc !== 'function');
 }
 
+section('Jeder Titelträger hat sein eigenes Stück');
+{
+  const A = PL.audio, W = PL.world, L = PL.leaders;
+  const kanto = W.REGIONS[0];
+
+  // Acht Leiter, acht verschiedene Stücke — kein Zwilling.
+  const stuecke = kanto.leaders.map((l) => A.trainerStueck(l[0], 'arena', l[1]));
+  const fingerabdruck = (st) => st.bpm + '|' + st.melody.join(',') + '|' + st.low.join(',');
+  const eindeutig = new Set(stuecke.map(fingerabdruck));
+  eq('Kantos acht Arenaleiter klingen alle verschieden', eindeutig.size, 8);
+
+  // Gleicher Typ, anderer Name: trotzdem ein anderes Stück.
+  const gestein = ['Brock', 'Roxanne', 'Roark', 'Grant', 'Katy']
+    .map((n) => fingerabdruck(A.trainerStueck(n, 'arena', 'Rock')));
+  eq('Fünf Gesteinsleiter, fünf Stücke', new Set(gestein).size, 5);
+
+  // Derselbe Name klingt immer gleich — sonst wechselte die Musik mitten
+  // im Kampf, sobald der Bildschirm neu gezeichnet wird.
+  eq('Ein Stück bleibt, wie es war',
+    fingerabdruck(A.trainerStueck('Brock', 'arena', 'Rock')),
+    fingerabdruck(A.trainerStueck('Brock', 'arena', 'Rock')));
+
+  // Die Rolle hebt das Tempo: Arenaleiter, Top Vier, Champ.
+  const tempoVon = (rolle) => {
+    const r = A.ROLLEN[rolle];
+    return [r.bpmVon, r.bpmBis];
+  };
+  check('Die Top Vier drängt mehr als ein Arenaleiter',
+    tempoVon('liga')[1] > tempoVon('arena')[1], JSON.stringify(tempoVon('liga')));
+  check('Und der Champ mehr als die Top Vier',
+    tempoVon('champ')[1] > tempoVon('liga')[1], JSON.stringify(tempoVon('champ')));
+  check('Jedes Stück eines Champs liegt über 155',
+    W.REGIONS.every((r) => {
+      const c = W.CHAMPIONS[r.gen - 1];
+      return A.trainerStueck(c.name, 'champ', 'Dragon').bpm >= 155;
+    }));
+
+  // Ein Endkampf in Dur nimmt sich nicht ernst: Der Champ rückt ins
+  // Harmonische, wo sein Typ hell klänge.
+  const hell = A.trainerStueck('Kukui', 'champ', 'Normal');
+  const leiterHell = A.trainerStueck('Kukui', 'arena', 'Normal');
+  check('Der Champ klingt ernster als derselbe Name als Arenaleiter',
+    fingerabdruck(hell) !== fingerabdruck(leiterHell));
+
+  // Alle 112 Titelträger müssen ein Stück bekommen, keiner fällt durch.
+  const alle = [];
+  W.REGIONS.forEach((r) => {
+    r.leaders.forEach((l) => alle.push([l[0], 'arena', l[1]]));
+    W.ELITE_VIER[r.id].forEach((e) => alle.push([e[0], 'liga', e[1]]));
+    alle.push([W.CHAMPIONS[r.gen - 1].name, 'champ', 'Dragon']);
+  });
+  const ohneStueck = alle.filter(([n, rolle, typ]) => {
+    const st = A.trainerStueck(n, rolle, typ);
+    return !st || !st.melody || !st.melody.length || !st.bpm;
+  });
+  check('Alle Titelträger bekommen ein Stück', ohneStueck.length === 0,
+    ohneStueck.map((a) => a[0]).join(', '));
+  check('Keiner fällt auf das gemeinsame Bossstück zurück',
+    alle.every(([n, rolle, typ]) => A.trainerStueck(n, rolle, typ) !== A.tracks.boss));
+
+  // Der Rivale und die Ass-Trainer behalten das gewöhnliche Stück.
+  eq('Ohne Namen bleibt es beim Bossstück', A.trackFor('boss', 'arena', null, null), 'boss');
+  eq('Mit Namen wird sein Stück bestellt',
+    A.trackFor('boss', 'arena', null, { name: 'Brock', rolle: 'arena', typ: 'Rock' }),
+    'trainer:arena:Rock:Brock');
+  void L;
+}
+
+section('Schillernde Pokémon');
+{
+  const S = PL.world.SCHILLERND;
+  check('Alle Quoten stehen an einer Stelle',
+    ['wild', 'trainer', 'geschenk', 'arena', 'liga'].every((k) => S[k] > 0),
+    JSON.stringify(S));
+  // Gemessen über je 60 Runs: vorher 0,08 Schillernde je Run, jetzt 0,23 —
+  // etwa jeder vierte Run bringt eines statt jedem zwölften.
+  check('Ein wilder Fund schillert häufiger als 1:120', S.wild <= 120, '1:' + S.wild);
+  check('… aber nicht beliebig oft', S.wild >= 50, '1:' + S.wild);
+  check('Gegner schillern seltener als eigene Funde', S.trainer > S.wild,
+    S.trainer + ' vs ' + S.wild);
+  check('Arenaleiter und Liga sind die Ausnahme — dort lohnt das Hinsehen',
+    S.arena < S.wild && S.liga < S.arena, S.arena + ' / ' + S.liga);
+
+  const run = new PL.Run({ seed: 3, region: 0, starter: 'charmander' });
+  eq('Ohne Relikte gilt die Tabelle unverändert', run.shinyMult(), 1);
+}
+
 section('Regionen schalten sich der Reihe nach frei');
 {
   await import('../js/meta.js');
@@ -2345,11 +2432,16 @@ section('Regionen schalten sich der Reihe nach frei');
   check('Kanto gilt als bezwungen', meta.regionGewonnen(0));
   eq('Eine Region ist bezwungen', meta.regionenGewonnen(), 1);
 
-  // Das Duell öffnet sich erst nach drei Regionen.
-  check('Das Legenden-Duell ist noch verschlossen', !meta.legendenFrei());
-  sieg(1); sieg(2);
-  eq('Drei Regionen sind bezwungen', meta.regionenGewonnen(), 3);
-  check('… und das Duell steht offen', meta.legendenFrei());
+  // Die Legenden erspielt man sich dort, wo sie zu Hause sind: Kanto
+  // durchspielen öffnet Arktos, Zapdos, Lavados, Mewtu und Mew — sonst nichts.
+  check('Kantos Legenden stehen nach dem Sieg in Kanto offen', meta.legendenFrei(1));
+  check('Johtos noch nicht', !meta.legendenFrei(2));
+  check('Paldeas erst recht nicht', !meta.legendenFrei(9));
+  check('Überhaupt steht das Duell jetzt offen', meta.legendenFrei());
+  eq('Und es sagt, welche Region Johto öffnet', meta.legendenSchluessel(2), 'Johto');
+  sieg(1);
+  check('Nach Johto stehen auch dessen Legenden offen', meta.legendenFrei(2));
+  check('Hoenns weiterhin nicht', !meta.legendenFrei(3));
 
   // Ein Spielstand aus der Zeit der fünf Stufen behält seinen Rang: Wer die
   // höchste Stufe gewonnen hatte, muss nicht wieder bei Kanto anfangen.
@@ -2954,11 +3046,13 @@ section('Sammlung: Marken, Aufträge, Bestwerte');
       check('Die Kämpfe zählen trotzdem', meta.load().totals.battles >= 1);
     }
 
-    /* --- Das Duell steht erst nach drei Regionen offen --- */
-    meta.load().regionenGewonnen = { 0: true, 1: true };
-    eq('Mit zwei Regionen im Rücken bleibt es zu', meta.legendenFrei(), false);
-    meta.load().regionenGewonnen = { 0: true, 1: true, 2: true };
-    eq('Nach dreien steht es offen', meta.legendenFrei(), true);
+    /* --- Jede Region öffnet ihre eigenen Legenden --- */
+    meta.load().regionenGewonnen = {};
+    eq('Ohne eine bezwungene Region bleibt alles zu', meta.legendenFrei(), false);
+    meta.load().regionenGewonnen = { 4: true };
+    eq('Einall bezwungen öffnet Einalls Legenden', meta.legendenFrei(5), true);
+    eq('… aber nicht Kantos', meta.legendenFrei(1), false);
+    eq('… und der Eintrag im Menü steht offen', meta.legendenFrei(), true);
   }
 
   /* --- Legendäre sind aus dem Pokédex verschwunden --- */

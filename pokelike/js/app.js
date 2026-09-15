@@ -250,6 +250,19 @@
   }
 
   /** Wählt das Stück, das zum gerade gezeigten Bildschirm passt. */
+  /**
+   * Wer da drüben steht, wenn es einer mit Namen ist: Arenaleiter, Mitglied
+   * der Top Vier oder Champ. Daran hängt sein Stück. Der Rivale und die
+   * Ass-Trainer bleiben beim gewöhnlichen Kampfstück — sie haben kein
+   * Gesicht, das man wiedererkennt.
+   */
+  function titeltraeger(bt) {
+    var t = bt && bt.trainer;
+    if (!t || !t.leader) return null;
+    var rolle = t.cls === 'Champ' ? 'champ' : t.cls === 'Top Vier' ? 'liga' : 'arena';
+    return { name: t.leader, rolle: rolle, typ: t.type || 'Normal' };
+  }
+
   function updateMusic(screen) {
     if (!PL.audio) return;
     if (!settings().music) { PL.audio.stop(); return; }
@@ -257,7 +270,7 @@
     if (screen === 'battle' && bt) {
       PL.audio.play(PL.audio.trackFor(
         bt.legendary ? 'legend' : bt.aiLevel >= 3 ? 'boss' : 'battle',
-        bt.biome, gegnerArt(bt)));
+        bt.biome, gegnerArt(bt), titeltraeger(bt)));
       return;
     }
     // Der Legendäre Run bringt seine eigene Musik mit: in der Übersicht das
@@ -571,8 +584,9 @@
       } else show('newrun');
     }, { stark: !meta.hasRun() }));
     // Der Legendäre Run steht zwischen den gewöhnlichen Wegen und dem
-    // Pokédex — golden, damit man sieht, dass er etwas anderes ist. Anklicken
-    // darf man ihn immer; antreten erst nach drei bezwungenen Regionen.
+    // Pokédex — golden, damit man sieht, dass er etwas anderes ist. Offen
+    // steht er, sobald die erste Region bezwungen ist; welche Legenden man
+    // antreten darf, entscheidet sich dann Region für Region.
     var legFrei = meta.legendenFrei();
     var legStand = meta.duellUebersicht();
     eintraege.push(menueZeile('Legendärer Run', function () { show('legenden'); }, {
@@ -581,7 +595,7 @@
       gesperrt: !legFrei,
       unter: legFrei
         ? 'Ein Duell gegen ein legendäres Pok\u00e9mon.'
-        : 'Erst drei Regionen ganz durchspielen.'
+        : 'Spiele zuerst eine Region ganz durch.'
     }));
     eintraege.push(menueZeile('Pok\u00e9dex', function () { show('dex'); },
       { notiz: d.caught + '/' + d.total }));
@@ -1081,6 +1095,7 @@
             c.classList.remove('selected');
           });
           karte.classList.add('selected');
+          zeichneStarter();
         }
       }, [
         el('span', { className: 'region-kopf' }, [
@@ -1116,26 +1131,40 @@
       onclick: function () { startRun(chosen); }
     }, 'Los geht’s');
 
+    /* Zur Wahl stehen die drei Starter der gewählten Region — und sonst
+       keine. Wechselt die Region, wechseln auch sie; die bisherige Wahl
+       gilt dann nicht mehr. */
     var starterGrid = el('div', { className: 'starter-grid' });
-    meta.starters().forEach(function (s) {
-      var card = el('button', {
-        className: 'starter' + (s.unlocked ? '' : ' locked'), type: 'button',
-        disabled: !s.unlocked,
-        title: s.unlocked ? (s.special || 'Generation ' + s.gen) : s.needText,
-        onclick: function () {
-          chosen.starter = s.id;
-          Array.prototype.forEach.call(starterGrid.children, function (c) { c.classList.remove('selected'); });
-          card.classList.add('selected');
-          startBtn.disabled = false;
-        }
-      }, [
-        U.sprite(s.species, { className: 'starter-sprite' }),
-        el('span', { className: 'starter-name', text: T.species(s.species) }),
-        el('span', { className: 'starter-types' }, s.species.t.map(function (t) { return U.typeChip(t, true); })),
-        s.unlocked ? null : U.sym('schloss', { className: 'lock' })
-      ]);
-      starterGrid.appendChild(card);
-    });
+    var starterTitel = el('p', { className: 'muted' });
+
+    function zeichneStarter() {
+      starterGrid.textContent = '';
+      chosen.starter = null;
+      startBtn.disabled = true;
+      starterTitel.textContent = 'Die drei Starter aus ' +
+        W.REGIONS[chosen.region].name + '. Einer von ihnen begleitet dich durch die ganze Region.';
+      meta.starters(chosen.region).forEach(function (s) {
+        var card = el('button', {
+          className: 'starter', type: 'button',
+          title: T.species(s.species) + ' · Generation ' + s.gen,
+          onclick: function () {
+            chosen.starter = s.id;
+            Array.prototype.forEach.call(starterGrid.children, function (c) {
+              c.classList.remove('selected');
+            });
+            card.classList.add('selected');
+            startBtn.disabled = false;
+          }
+        }, [
+          U.sprite(s.species, { className: 'starter-sprite' }),
+          el('span', { className: 'starter-name', text: T.species(s.species) }),
+          el('span', { className: 'starter-types' },
+            s.species.t.map(function (t) { return U.typeChip(t, true); }))
+        ]);
+        starterGrid.appendChild(card);
+      });
+    }
+    zeichneStarter();
 
     return el('div', { className: 'newrun' }, [
       el('h2', { text: 'Neuer Run' }),
@@ -1153,7 +1182,7 @@
       ]),
       el('section', {}, [
         el('h3', { text: 'Startpokémon' }),
-        el('p', { className: 'muted', text: 'Dein erster Begleiter. Weitere schaltest du durch Erfolge frei.' }),
+        starterTitel,
         starterGrid
       ]),
       el('div', { className: 'newrun-actions' }, [
@@ -1188,6 +1217,7 @@
 
     var karten = el('div', { className: 'gen-grid' }, [1, 2, 3, 4, 5, 6, 7, 8, 9].map(function (gen) {
       var region = generationRegion(gen);
+      var genFrei = meta.legendenFrei(gen);
       var liste = legendenDerGen(gen);
       var besiegt = 0, gefangen = 0, baelle = 0;
       liste.forEach(function (sp) {
@@ -1198,8 +1228,11 @@
       });
       var umriss = PL.baelle ? PL.baelle.umriss(gen) : null;
       return el('button', {
-        className: 'gen-karte' + (gefangen === liste.length ? ' voll' : ''),
+        className: 'gen-karte' + (gefangen === liste.length ? ' voll' : '') +
+          (genFrei ? '' : ' locked'),
         type: 'button', style: { '--gen-farbe': region.color },
+        disabled: !genFrei,
+        title: genFrei ? region.motto : 'Spiele zuerst ' + region.name + ' ganz durch.',
         onclick: function () { show('legendenGen', { gen: gen }); }
       }, [
         // Der Umriss des Wahrzeichens steht als Schatten hinter dem Text:
@@ -1207,9 +1240,14 @@
         umriss ? el('i', { className: 'gen-umriss', style: { '--umriss': 'url(' + umriss + ')' } }) : null,
         el('span', { className: 'gen-nummer', text: 'Generation ' + gen }),
         el('strong', { className: 'gen-name', text: region.name }),
-        el('span', { className: 'gen-zahl', text: gefangen + ' / ' + liste.length + ' gefangen' }),
-        el('span', { className: 'muted small', text: besiegt + ' besiegt' +
-          (baelle ? ' · ' + baelle + (baelle === 1 ? ' Ball' : ' Bälle') + ' bereit' : '') })
+        el('span', { className: 'gen-zahl', text: genFrei
+          ? gefangen + ' / ' + liste.length + ' gefangen'
+          : liste.length + ' Legenden' }),
+        el('span', { className: 'muted small', text: genFrei
+          ? besiegt + ' besiegt' +
+            (baelle ? ' · ' + baelle + (baelle === 1 ? ' Ball' : ' Bälle') + ' bereit' : '')
+          : region.name + ' durchspielen' }),
+        genFrei ? null : U.sym('schloss', { className: 'lock' })
       ]);
     }));
 
@@ -1222,7 +1260,7 @@
           'Pokédex stehen. Der erste Sieg legt seinen eigenen Ball bereit — jede Legende hat einen, und er ' +
           'fängt nur sie. Fangen kannst du sie also beim zweiten Antreten.' }),
         frei ? null : el('p', { className: 'legenden-sperre', text:
-          'Noch gesperrt: Spiele zuerst drei Regionen ganz durch.' }),
+          'Noch gesperrt: Spiele zuerst eine Region ganz durch.' }),
         el('p', { className: 'muted small', text:
           uebersicht.gefangen + ' von ' + PL.Run.legendenGesamt() + ' gefangen · ' +
           uebersicht.besiegt + ' besiegt · ' +
@@ -1239,7 +1277,7 @@
   SCREENS.legendenGen = function (arg) {
     var gen = (arg && arg.gen) || 1;
     var region = generationRegion(gen);
-    var frei = meta.legendenFrei();
+    var frei = meta.legendenFrei(gen);
     var liste = legendenDerGen(gen);
 
     var gitter = el('div', { className: 'legenden-grid' }, liste.map(function (sp) {
@@ -1269,7 +1307,7 @@
         el('p', { className: 'muted', text:
           liste.length + ' legendäre Pokémon. Wähle eines aus, stelle dein Team zusammen und tritt an.' }),
         frei ? null : el('p', { className: 'legenden-sperre', text:
-          'Noch gesperrt: Spiele zuerst drei Regionen ganz durch.' })
+          'Noch gesperrt: Spiele zuerst ' + region.name + ' ganz durch.' })
       ]),
       gitter,
       el('div', { className: 'newrun-actions' }, [
@@ -1293,7 +1331,7 @@
     var ziel = dex.sp(arg.art);
     if (!ziel) return el('p', { text: 'Unbekanntes Pokémon.' });
     var region = generationRegion(gen);
-    var frei = meta.legendenFrei();
+    var frei = meta.legendenFrei(gen);
     var stand = meta.duellStand(ziel.i);
 
     // Ein neuer Gegner heißt: neue Aufstellung. Dieselbe behält man.
@@ -1372,7 +1410,7 @@
       }
       startBtn.disabled = !frei || duellWahl.team.length === 0;
       hinweis.textContent = !frei
-        ? 'Spiele zuerst drei Regionen ganz durch, dann steht dir das Duell offen.'
+        ? 'Spiele zuerst ' + region.name + ' ganz durch, dann steht dir dieses Duell offen.'
         : duellWahl.team.length === 0
           ? (pool.length ? 'Wähle mindestens ein Pokémon aus.'
             : 'Du hast aus dieser Generation noch nichts gefangen — spiel einen normalen Run und komm wieder.')

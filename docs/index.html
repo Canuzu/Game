@@ -3472,7 +3472,7 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
   var PL = root.PL || (root.PL = {});
 
   // Diese Zeile ersetzt tools/build-single.mjs beim Bauen.
-  var BUILD = '20260915T154336Z-517e813';
+  var BUILD = '20260915T161943Z-7a4605d';
 
   var TRIED_KEY = 'pokelike.plus.update.versucht';
   var state = { build: BUILD, latest: null, checking: false, stuck: false };
@@ -10344,6 +10344,31 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
    * Pokal-Turnier. An ihre Stelle treten die Gegner aus dessen Endrunde.
    * -------------------------------------------------------------------------- */
 
+  /* ---------- Wie oft etwas schillert ----------------------------------------
+   * Eine Tabelle statt verstreuter Brüche. Die Zahlen sind Nenner: 80 heißt
+   * eins von achtzig.
+   *
+   * Sie liegen deutlich über den Spielen (dort 1:4096), und das mit Absicht:
+   * Ein Run dauert eine Stunde, nicht ein Jahr, und ein Schillerndes soll ein
+   * Fund sein, den man in einem Run erleben kann — nicht einer, den man nie
+   * sieht. Relikte und der Sammlungslohn multiplizieren zusätzlich.
+   *
+   * Gegner schillern seltener als eigene Funde: Ein schillernder Arenaleiter
+   * ist ein Anblick, aber man nimmt ihn nicht mit.
+   * -------------------------------------------------------------------------- */
+
+  var SCHILLERND = {
+    wild: 80,        // was einem auf der Route begegnet
+    trainer: 160,    // im Team eines gewöhnlichen Trainers
+    geschenk: 120,   // Ereignisse, Eier, Segen
+    arena: 50,       // im Team eines Arenaleiters
+    liga: 40,        // Top Vier und Champ
+    gegnerWild: 160, // gewöhnliche Gegner ohne eigene Angabe
+    gegnerArena: 50,
+    gegnerLiga: 40,
+    gegnerChamp: 25
+  };
+
   var ELITE_VIER = {
     kanto:  [['Lorelei', 'Ice'], ['Bruno', 'Fighting'], ['Agatha', 'Ghost'], ['Lance', 'Dragon']],
     johto:  [['Will', 'Psychic'], ['Koga', 'Poison'], ['Bruno', 'Fighting'], ['Karen', 'Dark']],
@@ -10580,7 +10605,7 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
       quality: opts.quality === undefined ? 0.65 : opts.quality,
       ivFloor: opts.ivFloor || 0,
       hiddenChance: opts.hiddenChance || 0.1,
-      shinyOdds: opts.shinyOdds === undefined ? 1 / 400 : opts.shinyOdds,
+      shinyOdds: opts.shinyOdds === undefined ? 1 / SCHILLERND.gegnerWild : opts.shinyOdds,
       shiny: opts.shiny,
       evs: opts.evs || null,
       item: opts.item || null
@@ -10705,7 +10730,8 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
     for (i = 0; i < species.length; i++) {
       var last = i === species.length - 1;
       var mon = buildMon(rng, species[i], level + (last ? 2 : 0), {
-        quality: quality, ivFloor: 6 + index, hiddenChance: 0.25, shinyOdds: 1 / 120
+        quality: quality, ivFloor: 6 + index, hiddenChance: 0.25,
+        shinyOdds: 1 / SCHILLERND.gegnerArena
       });
       // Nur der Ass-Kämpfer trägt einen Gegenstand.
       if ((last && index > 0) || (opts && opts.items && rng.chance(0.6))) {
@@ -10763,7 +10789,8 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
     for (i = 0; i < species.length; i++) {
       var last = i === species.length - 1;
       var mon = buildMon(rng, species[i], level + (last ? 1 : 0), {
-        quality: quality, ivFloor: 16, hiddenChance: 0.3, shinyOdds: 1 / 100
+        quality: quality, ivFloor: 16, hiddenChance: 0.3,
+        shinyOdds: 1 / SCHILLERND.gegnerLiga
       });
       if (last || i < 1) {
         mon.item = rng.pick(['leftovers', 'lifeorb', 'focussash', 'choiceband', 'choicespecs', 'choicescarf', 'assaultvest', 'sitrusberry']);
@@ -10786,7 +10813,8 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
     var team = champ.team.map(function (id, i) {
       var sp = fitToLevel(dex.sp(id) || dex.sp('pidgeot'), level);
       var mon = buildMon(rng, sp, level + (i === 5 ? 2 : 0), {
-        quality: 0.9 - ((opts && opts.ease) || 0), ivFloor: 20, hiddenChance: 0.5, shinyOdds: 1 / 60
+        quality: 0.9 - ((opts && opts.ease) || 0), ivFloor: 20, hiddenChance: 0.5,
+        shinyOdds: 1 / SCHILLERND.gegnerChamp
       });
       if (i === 5) mon.item = 'lifeorb';
       else if (i < 4) mon.item = ['leftovers', 'lifeorb', 'focussash', 'choicescarf'][i];
@@ -10794,8 +10822,18 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
       mons.addEVs(mon, 'spe', 140);
       return mon;
     });
+    // Ein Champ hat keinen Typ wie ein Arenaleiter — er leiht ihn sich von
+    // seinem stärksten Pokémon, damit auch sein Stück eine Farbe bekommt.
+    // Das letzte im Team ist dafür der falsche Griff: Bei Lance steht dort
+    // Seedraken, sein Wahrzeichen ist aber Dragoran.
+    var ass = null;
+    champ.team.forEach(function (id) {
+      var sp = dex.sp(id);
+      if (sp && (!ass || sp.bst > ass.bst)) ass = sp;
+    });
     return {
       team: team, name: 'Champ ' + champ.name, cls: 'Champ', level: 3,
+      type: (ass && ass.t && ass.t[0]) || 'Normal',
       leader: champ.name,
       look: PL.leaders ? PL.leaders.look(champ.name) : null
     };
@@ -11353,7 +11391,7 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
   PL.world = {
     REGIONS: REGIONS,
     TRAINERS: TRAINERS,
-    ELITE: ELITE, ELITE_VIER: ELITE_VIER,
+    ELITE: ELITE, ELITE_VIER: ELITE_VIER, SCHILLERND: SCHILLERND,
     CHAMPIONS: CHAMPIONS,
     EVENTS: EVENTS,
     EVENT_AUTO: EVENT_AUTO,
@@ -12852,7 +12890,7 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
     this.noteMet(sp);
     var mon = W.buildMon(rng, sp, level, {
       quality: 0.72, ivFloor: 10, hiddenChance: 0.3,
-      shinyOdds: (1 / 200) * this.shinyMult()
+      shinyOdds: (1 / W.SCHILLERND.wild) * this.shinyMult()
     });
     if (mon.shiny) this.stats.shinies++;
     var biome = this.biomeFor('legend');
@@ -12886,7 +12924,7 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
     this.noteMet(sp);
     var mon = W.buildMon(rng, sp, level + (opts.rare ? 3 : 0), {
       quality: 0.55 + this.fortschritt() * 0.03,
-      shinyOdds: (1 / 400) * this.shinyMult(),
+      shinyOdds: (1 / W.SCHILLERND.trainer) * this.shinyMult(),
       hiddenChance: 0.12
     });
     if (mon.shiny) this.stats.shinies++;
@@ -12958,7 +12996,7 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
     var sp = rng.pick(pool);
     var mon = W.buildMon(rng, sp, level, {
       quality: 1, ivFloor: 26, hiddenChance: 0.4,
-      shinyOdds: (1 / 120) * this.shinyMult()
+      shinyOdds: (1 / W.SCHILLERND.arena) * this.shinyMult()
     });
     mon.item = 'sitrusberry';
     mons.addEVs(mon, mon.ivs[1] >= mon.ivs[3] ? 'atk' : 'spa', 120);
@@ -12983,7 +13021,7 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
     var level = Math.min(100, this.levelCap);
     var mon = W.buildMon(rng, sp, level, {
       quality: 1, ivFloor: 31, hiddenChance: 0.5,
-      shinyOdds: (1 / 90) * this.shinyMult()
+      shinyOdds: (1 / W.SCHILLERND.liga) * this.shinyMult()
     });
     mon.item = 'leftovers';
     mons.addEVs(mon, mon.ivs[1] >= mon.ivs[3] ? 'atk' : 'spa', 252);
@@ -13304,7 +13342,7 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
       this.noteMet(sp);
       picks.push(W.buildMon(rng, sp, level, {
         quality: 0.85, ivFloor: 12,
-        shinyOdds: (1 / 300) * this.shinyMult()
+        shinyOdds: (1 / W.SCHILLERND.geschenk) * this.shinyMult()
       }));
     }
     return {
@@ -13682,7 +13720,7 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
     var sp = dex.sp(speciesRef);
     if (!sp) return 'Nichts gefunden.';
     var mon = W.buildMon(rng, sp, clamp(level, 2, this.levelCap), Object.assign({
-      quality: 0.8, ivFloor: 6, shinyOdds: (1 / 300) * this.shinyMult()
+      quality: 0.8, ivFloor: 6, shinyOdds: (1 / W.SCHILLERND.geschenk) * this.shinyMult()
     }, opts || {}));
     var res = this.acceptCatch(mon);
     this.stats.catches++;
@@ -14939,72 +14977,39 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
 
   /* ---------- 2) Startpokémon ------------------------------------------------- */
 
+  /* ---------- Die Starter einer Region ----------------------------------------
+   * Drei je Region, genau die aus den Spielen. Welche zur Wahl stehen,
+   * entscheidet die Region des Runs — nicht mehr eine eigene Freischaltung.
+   *
+   * Die zusätzlichen Starter von früher (Pikachu, Evoli, Riolu, Dratini und
+   * die Pseudolegendären) sind fort: Sie gehörten in keine Region, und mit
+   * der Regionswahl wäre nicht mehr zu erklären, warum ein Kanto-Run mit
+   * einem Frigibax beginnt.
+   * -------------------------------------------------------------------------- */
+
   var STARTERS = [
     { id: 'bulbasaur', gen: 1 }, { id: 'charmander', gen: 1 }, { id: 'squirtle', gen: 1 },
     { id: 'chikorita', gen: 2 }, { id: 'cyndaquil', gen: 2 }, { id: 'totodile', gen: 2 },
     { id: 'treecko', gen: 3 }, { id: 'torchic', gen: 3 }, { id: 'mudkip', gen: 3 },
-    { id: 'turtwig', gen: 4, need: 'region2' }, { id: 'chimchar', gen: 4, need: 'region2' }, { id: 'piplup', gen: 4, need: 'region2' },
-    { id: 'snivy', gen: 5, need: 'region3' }, { id: 'tepig', gen: 5, need: 'region3' }, { id: 'oshawott', gen: 5, need: 'region3' },
-    { id: 'chespin', gen: 6, need: 'region4' }, { id: 'fennekin', gen: 6, need: 'region4' }, { id: 'froakie', gen: 6, need: 'region4' },
-    { id: 'rowlet', gen: 7, need: 'region5' }, { id: 'litten', gen: 7, need: 'region5' }, { id: 'popplio', gen: 7, need: 'region5' },
-    { id: 'grookey', gen: 8, need: 'region6' }, { id: 'scorbunny', gen: 8, need: 'region6' }, { id: 'sobble', gen: 8, need: 'region6' },
-    { id: 'sprigatito', gen: 9, need: 'region7' }, { id: 'fuecoco', gen: 9, need: 'region7' }, { id: 'quaxly', gen: 9, need: 'region7' },
-    { id: 'pikachu', gen: 1, need: 'catch50', special: 'Elektrisches Maskottchen' },
-    { id: 'eevee', gen: 1, need: 'catch100', special: 'Acht Wege stehen offen' },
-    { id: 'riolu', gen: 4, need: 'boss10', special: 'Kämpfernatur' },
-    { id: 'dratini', gen: 1, need: 'boss20', special: 'Drachenblut' },
-    { id: 'larvitar', gen: 2, need: 'win1', special: 'Pseudolegendär' },
-    { id: 'beldum', gen: 3, need: 'win1', special: 'Stahlkern' },
-    { id: 'gible', gen: 4, need: 'win2', special: 'Landhai' },
-    { id: 'deino', gen: 5, need: 'win2', special: 'Dreiköpfig' },
-    { id: 'goomy', gen: 6, need: 'shiny3', special: 'Schleimig' },
-    { id: 'jangmoo', gen: 7, need: 'win3', special: 'Schuppenklang' },
-    { id: 'dreepy', gen: 8, need: 'win3', special: 'Gespensterdrache' },
-    { id: 'frigibax', gen: 9, need: 'win4', special: 'Eisdrache' },
-    { id: 'ditto', gen: 1, need: 'ditto', special: 'Man muss es wirklich wollen' }
+    { id: 'turtwig', gen: 4 }, { id: 'chimchar', gen: 4 }, { id: 'piplup', gen: 4 },
+    { id: 'snivy', gen: 5 }, { id: 'tepig', gen: 5 }, { id: 'oshawott', gen: 5 },
+    { id: 'chespin', gen: 6 }, { id: 'fennekin', gen: 6 }, { id: 'froakie', gen: 6 },
+    { id: 'rowlet', gen: 7 }, { id: 'litten', gen: 7 }, { id: 'popplio', gen: 7 },
+    { id: 'grookey', gen: 8 }, { id: 'scorbunny', gen: 8 }, { id: 'sobble', gen: 8 },
+    { id: 'sprigatito', gen: 9 }, { id: 'fuecoco', gen: 9 }, { id: 'quaxly', gen: 9 }
   ];
 
-  var UNLOCK_TEXT = {
-    region2: 'Hole zwei Orden in einem Run.',
-    region3: 'Hole drei Orden in einem Run.',
-    region4: 'Hole vier Orden in einem Run.',
-    region5: 'Hole fünf Orden in einem Run.',
-    region6: 'Hole sechs Orden in einem Run.',
-    region7: 'Hole sieben Orden in einem Run.',
-    catch50: 'Fange insgesamt 50 Pokémon.',
-    catch100: 'Fange insgesamt 100 Pokémon.',
-    boss10: 'Besiege insgesamt 10 Arenaleiter.',
-    boss20: 'Besiege insgesamt 20 Arenaleiter.',
-    win1: 'Gewinne einen Run.',
-    win2: 'Gewinne zwei Runs.',
-    win3: 'Gewinne drei Runs.',
-    win4: 'Gewinne vier Runs.',
-    shiny3: 'Finde drei schillernde Pokémon.',
-    ditto: 'Trage 200 verschiedene Arten in den Pokédex ein.'
-  };
-
-  function unlockState(m) {
-    m = m || load();
-    return {
-      region2: m.bestOrden >= 2, region3: m.bestOrden >= 3, region4: m.bestOrden >= 4,
-      region5: m.bestOrden >= 5, region6: m.bestOrden >= 6, region7: m.bestOrden >= 7,
-      catch50: m.totals.catches >= 50, catch100: m.totals.catches >= 100,
-      boss10: (m.totals.bosses || 0) >= 10, boss20: (m.totals.bosses || 0) >= 20,
-      win1: m.wins >= 1, win2: m.wins >= 2, win3: m.wins >= 3, win4: m.wins >= 4,
-      shiny3: Object.keys(m.shinies).length >= 3,
-      ditto: Object.keys(m.caught).length >= 200
-    };
-  }
-
-  function starters() {
-    var m = load(), state = unlockState(m);
-    return STARTERS.filter(function (s) { return dex.sp(s.id); }).map(function (s) {
-      return {
-        id: s.id, species: dex.sp(s.id), gen: s.gen, special: s.special || null,
-        unlocked: !s.need || !!state[s.need] || !!m.unlocked[s.id],
-        need: s.need || null, needText: s.need ? UNLOCK_TEXT[s.need] : null
-      };
-    });
+  /**
+   * Die Starter, die in dieser Region zur Wahl stehen — ihre drei. Ohne
+   * Angabe kommen alle siebenundzwanzig, für Übersichten.
+   */
+  function starters(region) {
+    var gen = region === undefined || region === null ? null : (region | 0) + 1;
+    return STARTERS
+      .filter(function (s) { return dex.sp(s.id) && (gen === null || s.gen === gen); })
+      .map(function (s) {
+        return { id: s.id, species: dex.sp(s.id), gen: s.gen, unlocked: true };
+      });
   }
 
   /* ---------- 3) Erfolge ------------------------------------------------------ */
@@ -15384,12 +15389,23 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
   }
 
   /**
-   * Steht das Legenden-Duell offen? Erst wer drei Regionen ganz durchgespielt
-   * hat, darf antreten.
+   * Stehen die Legenden einer Generation offen? Man erspielt sie sich dort,
+   * wo sie zu Hause sind: Wer Kanto ganz durchspielt, darf gegen Arktos,
+   * Zapdos, Lavados, Mewtu und Mew antreten — und gegen sonst keine.
+   *
+   * Ohne Angabe heißt die Frage, ob überhaupt schon eine Generation
+   * offensteht; danach richtet sich, ob der Eintrag im Titelmenü anklickbar
+   * ist.
    */
-  var LEGENDEN_AB = 3;
-  function legendenFrei() {
-    return Object.keys(load().regionenGewonnen || {}).length >= LEGENDEN_AB;
+  function legendenFrei(gen) {
+    var g = load().regionenGewonnen || {};
+    if (gen === undefined || gen === null) return Object.keys(g).length > 0;
+    return !!g[(gen | 0) - 1];
+  }
+
+  /** Welche Region diese Generation öffnet. */
+  function legendenSchluessel(gen) {
+    return regionName((gen | 0) - 1);
   }
 
   /* ---------- 4c) Wochenaufträge -----------------------------------------------
@@ -15869,7 +15885,7 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
     renameProfile: renameProfile, deleteProfile: deleteProfile,
     slots: slots, saveSlot: saveSlot, loadSlot: loadSlot, deleteSlot: deleteSlot,
     SLOTS: SLOTS,
-    starters: starters, unlockState: unlockState, unlockText: UNLOCK_TEXT,
+    starters: starters,
     achievements: achievements, refreshAchievements: refreshAchievements, award: award,
     reload: reload,
     heute: heute, tagesStartwert: tagesStartwert, tagesRegion: tagesRegion,
@@ -15880,7 +15896,7 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
     noteParty: noteParty, dexStats: dexStats,
     regionFrei: regionFrei, maxRegion: maxRegion, regionName: regionName,
     regionGewonnen: regionGewonnen, regionenGewonnen: regionenGewonnen,
-    LEGENDEN_AB: LEGENDEN_AB,
+    legendenSchluessel: legendenSchluessel,
     MEILENSTEINE: MEILENSTEINE, meilensteine: meilensteine,
     pruefeMeilensteine: pruefeMeilensteine, sammelLohn: sammelLohn, sammelStand: sammelStand,
     WOCHENPREIS: WOCHENPREIS,
@@ -17008,6 +17024,145 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
     return stueck;
   }
 
+  /* ---------- 3c) Ein Stück für jeden Titelträger ------------------------------
+   * 112 Namen — 72 Arenaleiter, 31 Mitglieder der Top Vier und 9 Champs —,
+   * und bis eben spielte bei allen dasselbe Bossstück. Brock klang wie
+   * Cynthia.
+   *
+   * Jetzt bekommt jeder sein eigenes, aus drei Dingen gebaut:
+   *
+   *   Der Typ gibt die Tonleiter. Sabrinas Psycho klingt weit (lydisch),
+   *   Kogas Gift eng und schief (phrygisch), Clairs Drache streng
+   *   (harmonisch) — dieselbe Zuordnung, die schon die Legenden benutzen.
+   *
+   *   Die Rolle gibt Tempo und Wucht. Ein Arenaleiter ist zügig, die Top
+   *   Vier drängt, der Champ rennt. Dazu wird das Schlagzeug dichter.
+   *
+   *   Der Name gibt den Rest: Grundton, Akkordfolge und Melodierhythmus
+   *   kommen aus seinen Buchstaben. Damit klingen zwei Leiter desselben Typs
+   *   trotzdem verschieden — Brock und Roxanne sind beide Gestein, aber
+   *   nicht dasselbe Stück.
+   *
+   * Für die Bekanntesten steht unten ein Motiv von Hand. Die Zahlen sind
+   * Stufen der gewählten Tonleiter über zwei Takte, -1 ist eine Pause.
+   * -------------------------------------------------------------------------- */
+
+  var ROLLEN = {
+    arena: { bpmVon: 128, bpmBis: 146, schlag: 0 },
+    liga:  { bpmVon: 146, bpmBis: 158, schlag: 1 },
+    champ: { bpmVon: 156, bpmBis: 168, schlag: 2 }
+  };
+
+  /** Aus einem Namen eine Zahl — gleiche Buchstaben, gleiches Stück. */
+  function namensZahl(name) {
+    var h = 2166136261, i;
+    for (i = 0; i < name.length; i++) {
+      h ^= name.charCodeAt(i);
+      h = (h * 16777619) >>> 0;
+    }
+    return h;
+  }
+
+  var TRAINER_MOTIVE = {
+    // Brock: schwer und breit, wie Stein, der sich nicht bewegt
+    'Brock': { motiv: [
+      0,-1,-1,-1, 0,-1, 2,-1, 3,-1,-1,-1, 2,-1,-1,-1,
+      4,-1,-1, 3, 2,-1,-1,-1, 0,-1,-1,-1,-1,-1,-1,-1] },
+    // Misty: fließend, in Wellen auf und ab
+    'Misty': { motiv: [
+      4,-1, 5,-1, 6,-1, 5,-1, 4,-1, 2,-1, 1,-1, 2,-1,
+      4,-1, 6,-1, 7,-1, 6,-1, 4,-1,-1,-1,-1,-1,-1,-1] },
+    // Sabrina: ein Gedanke, der sich nicht abschütteln lässt — dieselbe
+    // Figur, jedes Mal eine Stufe höher
+    'Sabrina': { motiv: [
+      0,-1, 2, 4,-1,-1,-1,-1, 1,-1, 3, 5,-1,-1,-1,-1,
+      2,-1, 4, 6,-1,-1,-1,-1, 3,-1, 5, 7,-1,-1,-1,-1] },
+    // Giovanni: ruhig, gefährlich, tief ansetzend
+    'Giovanni': { motiv: [
+      0,-1,-1,-1,-1,-1, 0,-1, 1,-1,-1,-1, 0,-1,-1,-1,
+      4,-1, 3,-1, 2,-1, 1,-1, 0,-1,-1,-1,-1,-1,-1,-1] },
+    // Whitney: unbekümmert und viel zu fröhlich für das, was sie anrichtet
+    'Whitney': { motiv: [
+      4,-1, 4,-1, 5, 4,-1, 2, 4,-1,-1,-1, 2,-1,-1,-1,
+      0,-1, 2,-1, 4,-1, 5,-1, 4,-1,-1,-1,-1,-1,-1,-1] },
+    // Clair: ein Drache, der sich langsam aufrichtet
+    'Clair': { motiv: [
+      0,-1,-1, 1, 2,-1,-1, 3, 4,-1,-1,-1,-1,-1,-1,-1,
+      4,-1, 5,-1, 6,-1, 7,-1, 6,-1, 4,-1,-1,-1,-1,-1] },
+    // Lance: die Fanfare des Drachenmeisters, in Dreiklängen aufwärts
+    'Lance': { motiv: [
+      0,-1,-1,-1, 2,-1, 4,-1, 7,-1,-1,-1,-1,-1,-1,-1,
+      6,-1,-1,-1, 4,-1, 2,-1, 0,-1,-1,-1,-1,-1,-1,-1] },
+    // Blue: selbstsicher, fast frech — kurze Stöße, keine Pause zum Atmen
+    'Blue': { motiv: [
+      7,-1, 7,-1, 6,-1,-1,-1, 4,-1, 4,-1, 2,-1,-1,-1,
+      0,-1, 2,-1, 4,-1, 6,-1, 7,-1,-1,-1,-1,-1,-1,-1] },
+    // Steven: klar und metallisch, in Quarten gebaut
+    'Steven': { motiv: [
+      0,-1,-1,-1, 3,-1,-1,-1, 6,-1,-1,-1, 3,-1,-1,-1,
+      4,-1,-1,-1, 7,-1,-1,-1, 4,-1, 2,-1, 0,-1,-1,-1] },
+    // Cynthia: die berühmteste Wand des Spiels — schwer, unaufhaltsam,
+    // immer eine Stufe weiter, als man hofft
+    'Cynthia': { motiv: [
+      0,-1, 1,-1, 2,-1,-1,-1, 3,-1, 4,-1,-1,-1,-1,-1,
+      5,-1, 4,-1, 3,-1, 2,-1, 1,-1,-1,-1, 0,-1,-1,-1] },
+    // Leon: Stadionlärm, heroisch, mit Auftakt
+    'Leon': { motiv: [
+      -1,-1,-1, 4, 7,-1,-1,-1, 6,-1, 7,-1,-1,-1,-1,-1,
+      4,-1,-1, 2, 4,-1,-1,-1, 7,-1,-1,-1,-1,-1,-1,-1] },
+    // Geeta: kühl und geordnet, wie jemand, der alles vorher wusste
+    'Geeta': { motiv: [
+      0,-1, 4,-1, 2,-1, 6,-1, 4,-1,-1,-1,-1,-1,-1,-1,
+      1,-1, 5,-1, 3,-1, 7,-1, 5,-1,-1,-1,-1,-1,-1,-1] },
+    // Raihan: der Wetterwechsel selbst — abwärts stürzend
+    'Raihan': { motiv: [
+      7,-1, 6,-1, 5,-1, 4,-1, 3,-1,-1,-1, 2,-1,-1,-1,
+      0,-1,-1,-1, 4,-1,-1,-1, 7,-1,-1,-1,-1,-1,-1,-1] },
+    // Marnie: trotzig, knapp, ohne Schnörkel
+    'Marnie': { motiv: [
+      0,-1, 0,-1, 3,-1,-1,-1, 2,-1, 2,-1, 0,-1,-1,-1,
+      0,-1, 0,-1, 3,-1, 4,-1, 3,-1,-1,-1,-1,-1,-1,-1] },
+    // Agatha: alt, spöttisch, schleichend
+    'Agatha': { motiv: [
+      0,-1,-1, 1,-1,-1, 0,-1,-1,-1, 3,-1,-1, 2,-1,-1,
+      1,-1,-1, 0,-1,-1,-1,-1, 4,-1, 3,-1, 0,-1,-1,-1] }
+  };
+
+  var trainerCache = {};
+
+  /**
+   * Das Stück eines Arenaleiters, eines Mitglieds der Top Vier oder eines
+   * Champs. rolle ist 'arena', 'liga' oder 'champ', typ sein Kampftyp.
+   */
+  function trainerStueck(name, rolle, typ) {
+    if (!name) return TRACKS.boss;
+    var r = ROLLEN[rolle] || ROLLEN.arena;
+    var schluessel = name + '|' + rolle;
+    if (trainerCache[schluessel]) return trainerCache[schluessel];
+
+    var z = namensZahl(name);
+    var hand = TRAINER_MOTIVE[name];
+    var skala = (hand && hand.skala) || TYP_SKALA[typ] || 'moll';
+    // Der Champ bekommt Ernst: Wo sein Typ nach Dur klänge, rückt er ins
+    // Harmonische — ein Endkampf in Dur nimmt sich selbst nicht ernst.
+    if (rolle === 'champ' && (skala === 'dur' || skala === 'lydisch')) skala = 'harmonisch';
+
+    var stueck = baueLegendenstueck({
+      ton: (hand && hand.ton) || NAMEN[z % 12],
+      skala: skala,
+      // Vorzeichenlos schieben: namensZahl liefert volle 32 Bit, und mit »>>«
+      // würde aus einem großen Hash ein negativer Index.
+      bpm: (hand && hand.bpm) || (r.bpmVon + (z >>> 3) % (r.bpmBis - r.bpmVon + 1)),
+      folge: (hand && hand.folge !== undefined) ? hand.folge : (z >>> 7) % FOLGEN.length,
+      motiv: hand && hand.motiv,
+      rhythmus: (z >>> 11) % RHYTHMEN.length,
+      schlag: r.schlag,
+      rnd: wuerfel(z || 1)
+    });
+    trainerCache[schluessel] = stueck;
+    return stueck;
+  }
+
   // Kurze Fanfare nach einem Sieg — läuft einmal, dann geht das Stück weiter.
   var JINGLE = {
     bpm: 150, lead: 'square', bass: 'triangle',
@@ -17080,6 +17235,12 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
       var sp = PL.dex && PL.dex.sp ? PL.dex.sp(name.slice(8)) : null;
       return legendenStueck(sp);
     }
+    // »trainer:arena:Rock:Brock« ebenso: Rolle, Typ und Name, daraus wird
+    // sein Stück gebaut und behalten.
+    if (typeof name === 'string' && name.slice(0, 8) === 'trainer:') {
+      var teile = name.slice(8).split(':');
+      return trainerStueck(teile.slice(2).join(':'), teile[0], teile[1]);
+    }
     if (gen && REGION_TRACKS[gen]) {
       if (name === 'route') return REGION_TRACKS[gen];
       if (name === 'town' || name === 'cave') return fuerRegion(name, gen);
@@ -17143,11 +17304,16 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
   }
 
   /** Welches Stück gehört zu diesem Ort? */
-  function trackFor(kind, biome, art) {
+  function trackFor(kind, biome, art, wer) {
     // Jede Legende hat ihr eigenes Stück; ohne Angabe bleibt es beim
     // gemeinsamen.
     if (kind === 'legend') return art ? 'legende:' + art : 'legenden';
-    if (kind === 'boss') return 'boss';
+    // Dasselbe für die Titelträger: Rolle, Typ und Name bestellen ihr Stück.
+    if (kind === 'boss') {
+      return (wer && wer.name)
+        ? 'trainer:' + (wer.rolle || 'arena') + ':' + (wer.typ || 'Normal') + ':' + wer.name
+        : 'boss';
+    }
     if (kind === 'battle') return 'battle';
     if (biome === 'stadt' || biome === 'arena' || kind === 'shop') return 'town';
     if (biome === 'hoehle' || biome === 'nacht' || biome === 'liga') return 'cave';
@@ -17164,6 +17330,7 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
     setEnabled: setEnabled, setVolume: setVolume, setRegion: setRegion,
     regionTracks: REGION_TRACKS, regionVariant: fuerRegion, tracks: TRACKS,
     trackFor: trackFor, legendenStueck: legendenStueck, handMotive: HAND_MOTIVE,
+    trainerStueck: trainerStueck, trainerMotive: TRAINER_MOTIVE, ROLLEN: ROLLEN,
     isEnabled: function () { return enabled; },
     current: function () { return current; },
     freq: freq
@@ -19463,6 +19630,19 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
   }
 
   /** Wählt das Stück, das zum gerade gezeigten Bildschirm passt. */
+  /**
+   * Wer da drüben steht, wenn es einer mit Namen ist: Arenaleiter, Mitglied
+   * der Top Vier oder Champ. Daran hängt sein Stück. Der Rivale und die
+   * Ass-Trainer bleiben beim gewöhnlichen Kampfstück — sie haben kein
+   * Gesicht, das man wiedererkennt.
+   */
+  function titeltraeger(bt) {
+    var t = bt && bt.trainer;
+    if (!t || !t.leader) return null;
+    var rolle = t.cls === 'Champ' ? 'champ' : t.cls === 'Top Vier' ? 'liga' : 'arena';
+    return { name: t.leader, rolle: rolle, typ: t.type || 'Normal' };
+  }
+
   function updateMusic(screen) {
     if (!PL.audio) return;
     if (!settings().music) { PL.audio.stop(); return; }
@@ -19470,7 +19650,7 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
     if (screen === 'battle' && bt) {
       PL.audio.play(PL.audio.trackFor(
         bt.legendary ? 'legend' : bt.aiLevel >= 3 ? 'boss' : 'battle',
-        bt.biome, gegnerArt(bt)));
+        bt.biome, gegnerArt(bt), titeltraeger(bt)));
       return;
     }
     // Der Legendäre Run bringt seine eigene Musik mit: in der Übersicht das
@@ -19784,8 +19964,9 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
       } else show('newrun');
     }, { stark: !meta.hasRun() }));
     // Der Legendäre Run steht zwischen den gewöhnlichen Wegen und dem
-    // Pokédex — golden, damit man sieht, dass er etwas anderes ist. Anklicken
-    // darf man ihn immer; antreten erst nach drei bezwungenen Regionen.
+    // Pokédex — golden, damit man sieht, dass er etwas anderes ist. Offen
+    // steht er, sobald die erste Region bezwungen ist; welche Legenden man
+    // antreten darf, entscheidet sich dann Region für Region.
     var legFrei = meta.legendenFrei();
     var legStand = meta.duellUebersicht();
     eintraege.push(menueZeile('Legendärer Run', function () { show('legenden'); }, {
@@ -19794,7 +19975,7 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
       gesperrt: !legFrei,
       unter: legFrei
         ? 'Ein Duell gegen ein legendäres Pok\u00e9mon.'
-        : 'Erst drei Regionen ganz durchspielen.'
+        : 'Spiele zuerst eine Region ganz durch.'
     }));
     eintraege.push(menueZeile('Pok\u00e9dex', function () { show('dex'); },
       { notiz: d.caught + '/' + d.total }));
@@ -20294,6 +20475,7 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
             c.classList.remove('selected');
           });
           karte.classList.add('selected');
+          zeichneStarter();
         }
       }, [
         el('span', { className: 'region-kopf' }, [
@@ -20329,26 +20511,40 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
       onclick: function () { startRun(chosen); }
     }, 'Los geht’s');
 
+    /* Zur Wahl stehen die drei Starter der gewählten Region — und sonst
+       keine. Wechselt die Region, wechseln auch sie; die bisherige Wahl
+       gilt dann nicht mehr. */
     var starterGrid = el('div', { className: 'starter-grid' });
-    meta.starters().forEach(function (s) {
-      var card = el('button', {
-        className: 'starter' + (s.unlocked ? '' : ' locked'), type: 'button',
-        disabled: !s.unlocked,
-        title: s.unlocked ? (s.special || 'Generation ' + s.gen) : s.needText,
-        onclick: function () {
-          chosen.starter = s.id;
-          Array.prototype.forEach.call(starterGrid.children, function (c) { c.classList.remove('selected'); });
-          card.classList.add('selected');
-          startBtn.disabled = false;
-        }
-      }, [
-        U.sprite(s.species, { className: 'starter-sprite' }),
-        el('span', { className: 'starter-name', text: T.species(s.species) }),
-        el('span', { className: 'starter-types' }, s.species.t.map(function (t) { return U.typeChip(t, true); })),
-        s.unlocked ? null : U.sym('schloss', { className: 'lock' })
-      ]);
-      starterGrid.appendChild(card);
-    });
+    var starterTitel = el('p', { className: 'muted' });
+
+    function zeichneStarter() {
+      starterGrid.textContent = '';
+      chosen.starter = null;
+      startBtn.disabled = true;
+      starterTitel.textContent = 'Die drei Starter aus ' +
+        W.REGIONS[chosen.region].name + '. Einer von ihnen begleitet dich durch die ganze Region.';
+      meta.starters(chosen.region).forEach(function (s) {
+        var card = el('button', {
+          className: 'starter', type: 'button',
+          title: T.species(s.species) + ' · Generation ' + s.gen,
+          onclick: function () {
+            chosen.starter = s.id;
+            Array.prototype.forEach.call(starterGrid.children, function (c) {
+              c.classList.remove('selected');
+            });
+            card.classList.add('selected');
+            startBtn.disabled = false;
+          }
+        }, [
+          U.sprite(s.species, { className: 'starter-sprite' }),
+          el('span', { className: 'starter-name', text: T.species(s.species) }),
+          el('span', { className: 'starter-types' },
+            s.species.t.map(function (t) { return U.typeChip(t, true); }))
+        ]);
+        starterGrid.appendChild(card);
+      });
+    }
+    zeichneStarter();
 
     return el('div', { className: 'newrun' }, [
       el('h2', { text: 'Neuer Run' }),
@@ -20366,7 +20562,7 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
       ]),
       el('section', {}, [
         el('h3', { text: 'Startpokémon' }),
-        el('p', { className: 'muted', text: 'Dein erster Begleiter. Weitere schaltest du durch Erfolge frei.' }),
+        starterTitel,
         starterGrid
       ]),
       el('div', { className: 'newrun-actions' }, [
@@ -20401,6 +20597,7 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
 
     var karten = el('div', { className: 'gen-grid' }, [1, 2, 3, 4, 5, 6, 7, 8, 9].map(function (gen) {
       var region = generationRegion(gen);
+      var genFrei = meta.legendenFrei(gen);
       var liste = legendenDerGen(gen);
       var besiegt = 0, gefangen = 0, baelle = 0;
       liste.forEach(function (sp) {
@@ -20411,8 +20608,11 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
       });
       var umriss = PL.baelle ? PL.baelle.umriss(gen) : null;
       return el('button', {
-        className: 'gen-karte' + (gefangen === liste.length ? ' voll' : ''),
+        className: 'gen-karte' + (gefangen === liste.length ? ' voll' : '') +
+          (genFrei ? '' : ' locked'),
         type: 'button', style: { '--gen-farbe': region.color },
+        disabled: !genFrei,
+        title: genFrei ? region.motto : 'Spiele zuerst ' + region.name + ' ganz durch.',
         onclick: function () { show('legendenGen', { gen: gen }); }
       }, [
         // Der Umriss des Wahrzeichens steht als Schatten hinter dem Text:
@@ -20420,9 +20620,14 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
         umriss ? el('i', { className: 'gen-umriss', style: { '--umriss': 'url(' + umriss + ')' } }) : null,
         el('span', { className: 'gen-nummer', text: 'Generation ' + gen }),
         el('strong', { className: 'gen-name', text: region.name }),
-        el('span', { className: 'gen-zahl', text: gefangen + ' / ' + liste.length + ' gefangen' }),
-        el('span', { className: 'muted small', text: besiegt + ' besiegt' +
-          (baelle ? ' · ' + baelle + (baelle === 1 ? ' Ball' : ' Bälle') + ' bereit' : '') })
+        el('span', { className: 'gen-zahl', text: genFrei
+          ? gefangen + ' / ' + liste.length + ' gefangen'
+          : liste.length + ' Legenden' }),
+        el('span', { className: 'muted small', text: genFrei
+          ? besiegt + ' besiegt' +
+            (baelle ? ' · ' + baelle + (baelle === 1 ? ' Ball' : ' Bälle') + ' bereit' : '')
+          : region.name + ' durchspielen' }),
+        genFrei ? null : U.sym('schloss', { className: 'lock' })
       ]);
     }));
 
@@ -20435,7 +20640,7 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
           'Pokédex stehen. Der erste Sieg legt seinen eigenen Ball bereit — jede Legende hat einen, und er ' +
           'fängt nur sie. Fangen kannst du sie also beim zweiten Antreten.' }),
         frei ? null : el('p', { className: 'legenden-sperre', text:
-          'Noch gesperrt: Spiele zuerst drei Regionen ganz durch.' }),
+          'Noch gesperrt: Spiele zuerst eine Region ganz durch.' }),
         el('p', { className: 'muted small', text:
           uebersicht.gefangen + ' von ' + PL.Run.legendenGesamt() + ' gefangen · ' +
           uebersicht.besiegt + ' besiegt · ' +
@@ -20452,7 +20657,7 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
   SCREENS.legendenGen = function (arg) {
     var gen = (arg && arg.gen) || 1;
     var region = generationRegion(gen);
-    var frei = meta.legendenFrei();
+    var frei = meta.legendenFrei(gen);
     var liste = legendenDerGen(gen);
 
     var gitter = el('div', { className: 'legenden-grid' }, liste.map(function (sp) {
@@ -20482,7 +20687,7 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
         el('p', { className: 'muted', text:
           liste.length + ' legendäre Pokémon. Wähle eines aus, stelle dein Team zusammen und tritt an.' }),
         frei ? null : el('p', { className: 'legenden-sperre', text:
-          'Noch gesperrt: Spiele zuerst drei Regionen ganz durch.' })
+          'Noch gesperrt: Spiele zuerst ' + region.name + ' ganz durch.' })
       ]),
       gitter,
       el('div', { className: 'newrun-actions' }, [
@@ -20506,7 +20711,7 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
     var ziel = dex.sp(arg.art);
     if (!ziel) return el('p', { text: 'Unbekanntes Pokémon.' });
     var region = generationRegion(gen);
-    var frei = meta.legendenFrei();
+    var frei = meta.legendenFrei(gen);
     var stand = meta.duellStand(ziel.i);
 
     // Ein neuer Gegner heißt: neue Aufstellung. Dieselbe behält man.
@@ -20585,7 +20790,7 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
       }
       startBtn.disabled = !frei || duellWahl.team.length === 0;
       hinweis.textContent = !frei
-        ? 'Spiele zuerst drei Regionen ganz durch, dann steht dir das Duell offen.'
+        ? 'Spiele zuerst ' + region.name + ' ganz durch, dann steht dir dieses Duell offen.'
         : duellWahl.team.length === 0
           ? (pool.length ? 'Wähle mindestens ein Pokémon aus.'
             : 'Du hast aus dieser Generation noch nichts gefangen — spiel einen normalen Run und komm wieder.')

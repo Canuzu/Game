@@ -280,72 +280,39 @@
 
   /* ---------- 2) Startpokémon ------------------------------------------------- */
 
+  /* ---------- Die Starter einer Region ----------------------------------------
+   * Drei je Region, genau die aus den Spielen. Welche zur Wahl stehen,
+   * entscheidet die Region des Runs — nicht mehr eine eigene Freischaltung.
+   *
+   * Die zusätzlichen Starter von früher (Pikachu, Evoli, Riolu, Dratini und
+   * die Pseudolegendären) sind fort: Sie gehörten in keine Region, und mit
+   * der Regionswahl wäre nicht mehr zu erklären, warum ein Kanto-Run mit
+   * einem Frigibax beginnt.
+   * -------------------------------------------------------------------------- */
+
   var STARTERS = [
     { id: 'bulbasaur', gen: 1 }, { id: 'charmander', gen: 1 }, { id: 'squirtle', gen: 1 },
     { id: 'chikorita', gen: 2 }, { id: 'cyndaquil', gen: 2 }, { id: 'totodile', gen: 2 },
     { id: 'treecko', gen: 3 }, { id: 'torchic', gen: 3 }, { id: 'mudkip', gen: 3 },
-    { id: 'turtwig', gen: 4, need: 'region2' }, { id: 'chimchar', gen: 4, need: 'region2' }, { id: 'piplup', gen: 4, need: 'region2' },
-    { id: 'snivy', gen: 5, need: 'region3' }, { id: 'tepig', gen: 5, need: 'region3' }, { id: 'oshawott', gen: 5, need: 'region3' },
-    { id: 'chespin', gen: 6, need: 'region4' }, { id: 'fennekin', gen: 6, need: 'region4' }, { id: 'froakie', gen: 6, need: 'region4' },
-    { id: 'rowlet', gen: 7, need: 'region5' }, { id: 'litten', gen: 7, need: 'region5' }, { id: 'popplio', gen: 7, need: 'region5' },
-    { id: 'grookey', gen: 8, need: 'region6' }, { id: 'scorbunny', gen: 8, need: 'region6' }, { id: 'sobble', gen: 8, need: 'region6' },
-    { id: 'sprigatito', gen: 9, need: 'region7' }, { id: 'fuecoco', gen: 9, need: 'region7' }, { id: 'quaxly', gen: 9, need: 'region7' },
-    { id: 'pikachu', gen: 1, need: 'catch50', special: 'Elektrisches Maskottchen' },
-    { id: 'eevee', gen: 1, need: 'catch100', special: 'Acht Wege stehen offen' },
-    { id: 'riolu', gen: 4, need: 'boss10', special: 'Kämpfernatur' },
-    { id: 'dratini', gen: 1, need: 'boss20', special: 'Drachenblut' },
-    { id: 'larvitar', gen: 2, need: 'win1', special: 'Pseudolegendär' },
-    { id: 'beldum', gen: 3, need: 'win1', special: 'Stahlkern' },
-    { id: 'gible', gen: 4, need: 'win2', special: 'Landhai' },
-    { id: 'deino', gen: 5, need: 'win2', special: 'Dreiköpfig' },
-    { id: 'goomy', gen: 6, need: 'shiny3', special: 'Schleimig' },
-    { id: 'jangmoo', gen: 7, need: 'win3', special: 'Schuppenklang' },
-    { id: 'dreepy', gen: 8, need: 'win3', special: 'Gespensterdrache' },
-    { id: 'frigibax', gen: 9, need: 'win4', special: 'Eisdrache' },
-    { id: 'ditto', gen: 1, need: 'ditto', special: 'Man muss es wirklich wollen' }
+    { id: 'turtwig', gen: 4 }, { id: 'chimchar', gen: 4 }, { id: 'piplup', gen: 4 },
+    { id: 'snivy', gen: 5 }, { id: 'tepig', gen: 5 }, { id: 'oshawott', gen: 5 },
+    { id: 'chespin', gen: 6 }, { id: 'fennekin', gen: 6 }, { id: 'froakie', gen: 6 },
+    { id: 'rowlet', gen: 7 }, { id: 'litten', gen: 7 }, { id: 'popplio', gen: 7 },
+    { id: 'grookey', gen: 8 }, { id: 'scorbunny', gen: 8 }, { id: 'sobble', gen: 8 },
+    { id: 'sprigatito', gen: 9 }, { id: 'fuecoco', gen: 9 }, { id: 'quaxly', gen: 9 }
   ];
 
-  var UNLOCK_TEXT = {
-    region2: 'Hole zwei Orden in einem Run.',
-    region3: 'Hole drei Orden in einem Run.',
-    region4: 'Hole vier Orden in einem Run.',
-    region5: 'Hole fünf Orden in einem Run.',
-    region6: 'Hole sechs Orden in einem Run.',
-    region7: 'Hole sieben Orden in einem Run.',
-    catch50: 'Fange insgesamt 50 Pokémon.',
-    catch100: 'Fange insgesamt 100 Pokémon.',
-    boss10: 'Besiege insgesamt 10 Arenaleiter.',
-    boss20: 'Besiege insgesamt 20 Arenaleiter.',
-    win1: 'Gewinne einen Run.',
-    win2: 'Gewinne zwei Runs.',
-    win3: 'Gewinne drei Runs.',
-    win4: 'Gewinne vier Runs.',
-    shiny3: 'Finde drei schillernde Pokémon.',
-    ditto: 'Trage 200 verschiedene Arten in den Pokédex ein.'
-  };
-
-  function unlockState(m) {
-    m = m || load();
-    return {
-      region2: m.bestOrden >= 2, region3: m.bestOrden >= 3, region4: m.bestOrden >= 4,
-      region5: m.bestOrden >= 5, region6: m.bestOrden >= 6, region7: m.bestOrden >= 7,
-      catch50: m.totals.catches >= 50, catch100: m.totals.catches >= 100,
-      boss10: (m.totals.bosses || 0) >= 10, boss20: (m.totals.bosses || 0) >= 20,
-      win1: m.wins >= 1, win2: m.wins >= 2, win3: m.wins >= 3, win4: m.wins >= 4,
-      shiny3: Object.keys(m.shinies).length >= 3,
-      ditto: Object.keys(m.caught).length >= 200
-    };
-  }
-
-  function starters() {
-    var m = load(), state = unlockState(m);
-    return STARTERS.filter(function (s) { return dex.sp(s.id); }).map(function (s) {
-      return {
-        id: s.id, species: dex.sp(s.id), gen: s.gen, special: s.special || null,
-        unlocked: !s.need || !!state[s.need] || !!m.unlocked[s.id],
-        need: s.need || null, needText: s.need ? UNLOCK_TEXT[s.need] : null
-      };
-    });
+  /**
+   * Die Starter, die in dieser Region zur Wahl stehen — ihre drei. Ohne
+   * Angabe kommen alle siebenundzwanzig, für Übersichten.
+   */
+  function starters(region) {
+    var gen = region === undefined || region === null ? null : (region | 0) + 1;
+    return STARTERS
+      .filter(function (s) { return dex.sp(s.id) && (gen === null || s.gen === gen); })
+      .map(function (s) {
+        return { id: s.id, species: dex.sp(s.id), gen: s.gen, unlocked: true };
+      });
   }
 
   /* ---------- 3) Erfolge ------------------------------------------------------ */
@@ -725,12 +692,23 @@
   }
 
   /**
-   * Steht das Legenden-Duell offen? Erst wer drei Regionen ganz durchgespielt
-   * hat, darf antreten.
+   * Stehen die Legenden einer Generation offen? Man erspielt sie sich dort,
+   * wo sie zu Hause sind: Wer Kanto ganz durchspielt, darf gegen Arktos,
+   * Zapdos, Lavados, Mewtu und Mew antreten — und gegen sonst keine.
+   *
+   * Ohne Angabe heißt die Frage, ob überhaupt schon eine Generation
+   * offensteht; danach richtet sich, ob der Eintrag im Titelmenü anklickbar
+   * ist.
    */
-  var LEGENDEN_AB = 3;
-  function legendenFrei() {
-    return Object.keys(load().regionenGewonnen || {}).length >= LEGENDEN_AB;
+  function legendenFrei(gen) {
+    var g = load().regionenGewonnen || {};
+    if (gen === undefined || gen === null) return Object.keys(g).length > 0;
+    return !!g[(gen | 0) - 1];
+  }
+
+  /** Welche Region diese Generation öffnet. */
+  function legendenSchluessel(gen) {
+    return regionName((gen | 0) - 1);
   }
 
   /* ---------- 4c) Wochenaufträge -----------------------------------------------
@@ -1210,7 +1188,7 @@
     renameProfile: renameProfile, deleteProfile: deleteProfile,
     slots: slots, saveSlot: saveSlot, loadSlot: loadSlot, deleteSlot: deleteSlot,
     SLOTS: SLOTS,
-    starters: starters, unlockState: unlockState, unlockText: UNLOCK_TEXT,
+    starters: starters,
     achievements: achievements, refreshAchievements: refreshAchievements, award: award,
     reload: reload,
     heute: heute, tagesStartwert: tagesStartwert, tagesRegion: tagesRegion,
@@ -1221,7 +1199,7 @@
     noteParty: noteParty, dexStats: dexStats,
     regionFrei: regionFrei, maxRegion: maxRegion, regionName: regionName,
     regionGewonnen: regionGewonnen, regionenGewonnen: regionenGewonnen,
-    LEGENDEN_AB: LEGENDEN_AB,
+    legendenSchluessel: legendenSchluessel,
     MEILENSTEINE: MEILENSTEINE, meilensteine: meilensteine,
     pruefeMeilensteine: pruefeMeilensteine, sammelLohn: sammelLohn, sammelStand: sammelStand,
     WOCHENPREIS: WOCHENPREIS,

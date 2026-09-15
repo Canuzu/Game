@@ -111,6 +111,7 @@ for (let i = 0; i < N; i++) {
   endet['_level'] = (endet['_level'] || 0) + run.teamLevel();
   endet['_cap'] = (endet['_cap'] || 0) + run.levelCap;
   endet['_geld'] = (endet['_geld'] || 0) + run.money;
+  endet['_shinies'] = (endet['_shinies'] || 0) + (run.stats.shinies || 0);
   endet['_traenke'] = (endet['_traenke'] || 0) +
     Object.keys(run.bag).filter((k2) => /potion|trank|revive/i.test(k2))
       .reduce((a, k2) => a + run.bag[k2], 0);
@@ -129,6 +130,9 @@ if (process.argv.includes('--ende')) {
     ' Pokémon, Level ' + (endet._level / N).toFixed(1) +
     ' bei Grenze ' + (endet._cap / N).toFixed(1) +
     ', ' + Math.round(endet._geld / N) + ' ₽, ' + (endet._traenke / N).toFixed(1) + ' Heilmittel');
+  console.log('Schillernde: ' + endet._shinies + ' in ' + N + ' Runs  (' +
+    (endet._shinies / N).toFixed(2) + ' je Run, ' +
+    Math.round(endet._shinies / N * 100) + ' % Chance auf mindestens eines)');
   Object.keys(endet).filter((k) => !k.startsWith('_')).sort()
     .forEach((k) => console.log('  ' + k.padEnd(24), endet[k]));
   console.log();
