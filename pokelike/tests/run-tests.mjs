@@ -3105,6 +3105,77 @@ section('Abgeschaffte Modi');
   eq('Ein vergangener Kurzrun heißt weiter Kurzrun', PL.Run.ALTE_MODI.kurz, 'Kurzrun');
 }
 
+section('Gezeichnete Bilder');
+{
+  // Alle drei Bilddateien entstehen aus Punktrastern über tools/raster.mjs.
+  // Dort werden gleichfarbige Punkte zu Rechtecken verschmolzen und pro Farbe
+  // in einen Pfad gelegt — aus 456 KB für neunundsiebzig Zeichen wurden so 68.
+  // Diese Prüfung dekodiert das erzeugte CSS zurück in ein Raster und
+  // vergleicht es Punkt für Punkt mit der Quelle: Sparsamkeit darf das Bild
+  // nicht verändern.
+  const N = 16;
+  const rasterAus = (bild, farbeVon) => bild.map((z) => [...z].map(farbeVon));
+  const svgAus = (svg) => {
+    const g = Array.from({ length: N }, () => Array(N).fill(null));
+    for (const m of svg.matchAll(/<path fill="([^"]+)" d="([^"]+)"\/>/g)) {
+      for (const k of m[2].matchAll(/M(\d+) (\d+)h(\d+)v(\d+)h-\d+z/g)) {
+        const x = +k[1], y = +k[2], b = +k[3], h = +k[4];
+        for (let yy = y; yy < y + h; yy++) for (let xx = x; xx < x + b; xx++) g[yy][xx] = m[1];
+      }
+    }
+    return g;
+  };
+  const bilderAus = (datei, praefix) => {
+    const css = readFileSync(join(SRC_DIR, '..', 'css', datei), 'utf8');
+    const map = new Map();
+    for (const zeile of css.split('\n')) {
+      if (zeile.slice(0, praefix.length + 1) !== '.' + praefix) continue;
+      const a = zeile.indexOf('url("'), b = zeile.lastIndexOf('")');
+      if (a < 0 || b < 0) continue;
+      map.set(zeile.slice(praefix.length + 1, zeile.indexOf(' ')),
+        svgAus(decodeURIComponent(zeile.slice(a + 5, b).replace('data:image/svg+xml;utf8,', ''))));
+    }
+    return map;
+  };
+
+  const quellen = [];
+  {
+    const { TAFEL, SYMBOLE } = await import('../tools/symbole.mjs');
+    const da = bilderAus('symbole.css', 'sym-');
+    for (const [n, b] of Object.entries(SYMBOLE)) {
+      quellen.push(['symbole.css ' + n, rasterAus(b, (c) => TAFEL[c]), da.get(n)]);
+    }
+  }
+  {
+    const { TAFEL, FORMEN, MASKEN } = await import('../tools/effekte.mjs');
+    const da = bilderAus('effekte.css', 'fx-');
+    for (const [n, b] of Object.entries(FORMEN)) {
+      quellen.push(['effekte.css form-' + n, rasterAus(b, (c) => TAFEL[c]), da.get('form-' + n)]);
+    }
+    for (const [n, b] of Object.entries(MASKEN)) {
+      quellen.push(['effekte.css maske-' + n,
+        rasterAus(b, (c) => (TAFEL[c] === null ? null : '#000')), da.get('maske-' + n)]);
+    }
+  }
+  {
+    const { TAFEL, FORMEN, GEGENSTAENDE } = await import('../tools/gegenstaende.mjs');
+    const da = bilderAus('gegenstaende.css', 'gg-');
+    for (const [n, e] of Object.entries(GEGENSTAENDE)) {
+      const t = e.tausch || {};
+      quellen.push(['gegenstaende.css ' + n,
+        rasterAus(FORMEN[e.form], (c) => (c in t ? t[c] : TAFEL[c])), da.get(n)]);
+    }
+  }
+
+  check('Alle drei Bilddateien sind da', quellen.length > 200, quellen.length + ' Bilder');
+  const fehlend = quellen.filter(([, , ist]) => !ist).map(([n]) => n);
+  check('Kein Bild fehlt im erzeugten CSS', fehlend.length === 0, fehlend.slice(0, 5).join(', '));
+  const anders = quellen.filter(([, soll, ist]) => ist && JSON.stringify(soll) !== JSON.stringify(ist))
+    .map(([n]) => n);
+  check('Jedes Bild stimmt Punkt für Punkt mit seinem Raster überein',
+    anders.length === 0, anders.slice(0, 5).join(', '));
+}
+
 section('Gezeichnete Gegenstände');
 {
   // Jedes Ding im Beutel ist einzeln gezeichnet: css/gegenstaende.css, erzeugt

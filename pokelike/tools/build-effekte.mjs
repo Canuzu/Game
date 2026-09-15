@@ -15,36 +15,23 @@ import { writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { TAFEL, FORMEN, MASKEN } from './effekte.mjs';
+import { alsSVG, alsAdresse } from './raster.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const N = 16;
 
-function alsSVG(bild, name, maske) {
-  const teile = [];
-  bild.forEach((zeile, y) => {
-    if (zeile.length !== N) throw new Error(name + ': Zeile ' + y + ' hat ' + zeile.length + ' statt ' + N);
-    let x = 0;
-    while (x < zeile.length) {
-      const z = zeile[x];
-      if (!(z in TAFEL)) throw new Error(name + ': unbekannter Buchstabe »' + z + '«');
-      if (TAFEL[z] === null) { x++; continue; }
-      let ende = x;
-      while (ende + 1 < zeile.length && zeile[ende + 1] === z) ende++;
-      teile.push('<rect x="' + x + '" y="' + y + '" width="' + (ende - x + 1) +
-        '" height="1" fill="' + (maske ? '#000' : TAFEL[z]) + '"/>');
-      x = ende + 1;
-    }
-  });
-  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + N + ' ' + N +
-    '" shape-rendering="crispEdges">' + teile.join('') + '</svg>';
-}
 
-const adresse = (svg) => 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+/* Eine Maske ist nur ein Umriss: Jeder gesetzte Punkt wird schwarz, die
+   Farbe kommt später vom Attackentyp. Eine Form bringt ihre Farben mit. */
+const farbeVon = (name, maske) => (z) => {
+  if (!(z in TAFEL)) throw new Error(name + ': unbekannter Buchstabe »' + z + '«');
+  if (TAFEL[z] === null) return null;
+  return maske ? '#000' : TAFEL[z];
+};
 
 const bunt = Object.keys(FORMEN).map((name) =>
-  '.fx-form-' + name + ' { --form: url("' + adresse(alsSVG(FORMEN[name], name, false)) + '"); }');
+  '.fx-form-' + name + ' { --form: url("' + alsAdresse(alsSVG(FORMEN[name], farbeVon(name, false), { name: name })) + '"); }');
 const masken = Object.keys(MASKEN).map((name) =>
-  '.fx-maske-' + name + ' { --form: url("' + adresse(alsSVG(MASKEN[name], name, true)) + '"); }');
+  '.fx-maske-' + name + ' { --form: url("' + alsAdresse(alsSVG(MASKEN[name], farbeVon(name, true), { name: name })) + '"); }');
 
 const css = `/* =============================================================================
  * effekte.css — die gezeichneten Formen der Attacken

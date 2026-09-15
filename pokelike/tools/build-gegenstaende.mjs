@@ -16,9 +16,9 @@ import { writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { TAFEL, FORMEN, GEGENSTAENDE } from './gegenstaende.mjs';
+import { alsSVG, alsAdresse } from './raster.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
-const N = 16;
 const PLATZHALTER = ['A', 'a', 'B', 'b', 'C'];
 
 function farbe(zeichen, tausch, name) {
@@ -27,37 +27,6 @@ function farbe(zeichen, tausch, name) {
   throw new Error(name + ': unbekannter Buchstabe »' + zeichen + '«');
 }
 
-function alsSVG(bild, tausch, name) {
-  /* Erst waagerechte Strecken gleicher Farbe, dann senkrecht verschmelzen:
-   * Aus vielen Punkten werden wenige Rechtecke, und die Datei bleibt klein. */
-  const kaesten = [];
-  bild.forEach((zeile, y) => {
-    if (zeile.length !== N) throw new Error(name + ': Zeile ' + y + ' hat ' + zeile.length + ' statt ' + N + ' Punkte');
-    let x = 0;
-    while (x < zeile.length) {
-      const z = zeile[x];
-      const f = farbe(z, tausch, name);
-      if (f === null) { x++; continue; }
-      let ende = x;
-      while (ende + 1 < zeile.length && zeile[ende + 1] === z) ende++;
-      const breite = ende - x + 1;
-      const oben = kaesten.find((k) => k.f === f && k.x === x && k.b === breite && k.y + k.h === y);
-      if (oben) oben.h++;
-      else kaesten.push({ f: f, x: x, y: y, b: breite, h: 1 });
-      x = ende + 1;
-    }
-  });
-  /* Alles einer Farbe kommt in einen Pfad — das spart die Wiederholung. */
-  const nachFarbe = new Map();
-  for (const k of kaesten) {
-    const d = 'M' + k.x + ' ' + k.y + 'h' + k.b + 'v' + k.h + 'h-' + k.b + 'z';
-    nachFarbe.set(k.f, (nachFarbe.get(k.f) || '') + d);
-  }
-  const teile = [];
-  for (const [f, d] of nachFarbe) teile.push('<path fill="' + f + '" d="' + d + '"/>');
-  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + N + ' ' + N +
-    '" shape-rendering="crispEdges">' + teile.join('') + '</svg>';
-}
 
 const namen = Object.keys(GEGENSTAENDE);
 const bloecke = namen.map((name) => {
@@ -71,7 +40,7 @@ const bloecke = namen.map((name) => {
       throw new Error(name + ': Form »' + eintrag.form + '« benutzt »' + p + '«, aber der Tausch sagt nichts dazu');
     }
   }
-  const adresse = 'data:image/svg+xml;utf8,' + encodeURIComponent(alsSVG(bild, tausch, name));
+  const adresse = alsAdresse(alsSVG(bild, function (z) { return farbe(z, tausch, name); }, { name: name }));
   return '.gg-' + name + ' { --gg: url("' + adresse + '"); }';
 });
 
