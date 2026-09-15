@@ -284,7 +284,25 @@
     'Poppy':    { team: ['copperajah', 'bronzong', 'corviknight', 'magnezone', 'tinkaton'],
                   look: { skin: C.haut, hair: C.pink, hairdo: 'zopf', shirt: C.silber, pants: '#8a8a9a', skirt: true } },
     'Hassel':   { team: ['noivern', 'haxorus', 'flapple', 'dragalge', 'baxcalibur'],
-                  look: { skin: C.hautX, hair: '#3ab0a0', hairdo: 'lang', shirt: '#3a8a7a', pants: '#2a5a4a' } }
+                  look: { skin: C.hautX, hair: '#3ab0a0', hairdo: 'lang', shirt: '#3a8a7a', pants: '#2a5a4a' } },
+
+    /* ---------- Wer beides ist ------------------------------------------
+     * Diese vier stehen in ihrer Region einmal in der Arena und einmal in
+     * der Liga — und treten dort mit einem anderen Team an. Der Eintrag
+     * hier ist das Liga-Team; das Arena-Team steht oben unter demselben
+     * Namen. PL.leaders.team(name, true) fragt gezielt nach diesem hier.
+     * -------------------------------------------------------------------- */
+    'Koga':     { team: ['ariados', 'venomoth', 'forretress', 'muk', 'crobat'],
+                  look: { skin: C.hautM, hair: C.dunkel, hairdo: 'kurz', shirt: '#6a4a9a', pants: '#3a2a5a' } },
+    'Acerola':  { team: ['dhelmise', 'froslass', 'banette', 'drifblim', 'palossand'],
+                  look: { skin: C.hautD, hair: C.lila, hairdo: 'kurz', shirt: '#f0e0e8', pants: '#8a5a9a', skirt: true } },
+    'Larry':    { team: ['tropius', 'staraptor', 'altaria', 'oricorio', 'flamigo'],
+                  look: { skin: C.haut, hair: C.braun, hairdo: 'kurz', shirt: '#e8e8f0', pants: '#4a4a5a' } },
+
+    /* Galar hat keine Top Vier, sondern ein Turnier. Hop ist dort der
+       Gegner der Endrunde und steht deshalb hier. */
+    'Hop':      { team: ['cramorant', 'pincurchin', 'corviknight', 'dubwool', 'snorlax'],
+                  look: { skin: C.hautX, hair: C.lila, hairdo: 'kurz', shirt: '#e8e8f0', pants: '#3a5ac8' } }
   };
 
   /* ========================================================== Champions ==
@@ -314,7 +332,12 @@
     elite: ELITE,
     champions: CHAMPIONS,
     get: find,
-    team: function (name) { var l = find(name); return l && l.team ? l.team.slice() : null; },
+    /* alsLiga: für die vier, die in ihrer Region Arenaleiter und Top Vier
+       sind, gezielt das Liga-Team statt des Arena-Teams. */
+    team: function (name, alsLiga) {
+      var l = (alsLiga && ELITE[name]) || find(name);
+      return l && l.team ? l.team.slice() : null;
+    },
     look: function (name) { var l = find(name); return l ? l.look : null; }
   };
 

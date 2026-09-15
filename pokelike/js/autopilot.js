@@ -732,14 +732,14 @@
 
   /**
    * Baut den Treiber für einen Alleingang.
-   * opts: { seed, mode, ascension, nuzlocke, starter }
+   * opts: { seed, mode, region, nuzlocke, starter }
    */
   function durchlauf(opts) {
     opts = opts || {};
     var run = new PL.Run({
       seed: opts.seed,
       mode: opts.mode || 'standard',
-      ascension: opts.ascension || 0,
+      region: opts.region || 0,
       nuzlocke: !!opts.nuzlocke,
       starter: opts.starter || 'charmander'
     });

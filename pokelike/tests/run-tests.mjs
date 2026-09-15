@@ -642,7 +642,8 @@ section('Neue Systeme');
 
   // Segen im Endlosmodus
   const endless = new PL.Run({ seed: 9, mode: 'endlos', starter: 'chikorita' });
-  endless.region = 8;
+  endless.badges = 8;
+  endless.leagueStage = 0;
   endless.advanceRegion();
   check('Nach einer vollen Runde wartet ein Segen',
     !!endless.pendingBlessing && endless.pendingBlessing.offers.length === 3);
@@ -1018,11 +1019,16 @@ section('Grundschwierigkeit');
   check('Trainergegner bleiben deutlich hinter dem Team', lvlOf(run) <= mein - 4,
     lvlOf(run) + ' bei Teamlevel ' + mein.toFixed(1));
 
-  const hart = new PL.Run({ seed: 11, starter: 'squirtle', ascension: 1 });
-  hart.party.push(PL.mon.create('pikachu', 20, hart.rng, {}));
-  hart.party.push(PL.mon.create('geodude', 20, hart.rng, {}));
-  check('Aufstiege ziehen die Gegner wieder hoch', lvlOf(hart) > lvlOf(run),
+  // Gegner ziehen mit dem Team mit — solange die Levelgrenze nicht bremst.
+  // Die Grenze hängt an den Orden, deshalb bekommt dieser Vergleich welche.
+  const hart = new PL.Run({ seed: 11, starter: 'squirtle', region: 0 });
+  hart.badges = 4;
+  run.badges = 4;
+  hart.party.push(PL.mon.create('pikachu', 30, hart.rng, {}));
+  hart.party.push(PL.mon.create('geodude', 30, hart.rng, {}));
+  check('Ein stärkeres Team trifft auf stärkere Gegner', lvlOf(hart) > lvlOf(run),
     lvlOf(hart) + ' vs ' + lvlOf(run));
+  run.badges = 0;
 
   // Verschnaufen nach dem Kampf
   const r2 = new PL.Run({ seed: 5, starter: 'charmander' });
@@ -1122,31 +1128,37 @@ section('Arenaleiter');
     }));
     check('Alle Arten der Liga-Aufstellungen gibt es', schlecht.length === 0, schlecht.join(', '));
 
-    const e4 = W.eliteTeam(PL.rng('liga-test'), 60, 0, {}, {});
-    const soll4 = L.team(e4.leader);
+    const e4 = W.eliteTeam(PL.rng('liga-test'), 60, regions[0], 0, {});
+    const soll4 = L.team(e4.leader, true);
     eq('Der Liga-Kampf nutzt die echte Aufstellung',
       e4.team.map((m) => dex.sp(m.sp).id).join(','), soll4.join(','));
     check('… und das Mitglied bringt sein Aussehen mit', !!e4.look && !!e4.look.shirt);
 
-    const ch = W.championTeam(PL.rng('champ-test'), 66, {});
+    const ch = W.championTeam(PL.rng('champ-test'), 66, regions[0], {});
     check('Auch der Champ bringt sein Aussehen mit', !!ch.look && !!ch.look.shirt, ch.name);
     check('Der Typ des Liga-Mitglieds kommt in seiner Aufstellung vor',
-      W.ELITE.every((e) => L.team(e[0]).some((id) => dex.sp(id).t.indexOf(e[1]) >= 0)),
-      W.ELITE.filter((e) => !L.team(e[0]).some((id) => dex.sp(id).t.indexOf(e[1]) >= 0))
+      W.ELITE.every((e) => L.team(e[0], true).some((id) => dex.sp(id).t.indexOf(e[1]) >= 0)),
+      W.ELITE.filter((e) => !L.team(e[0], true).some((id) => dex.sp(id).t.indexOf(e[1]) >= 0))
         .map((e) => e[0]).join(', '));
   }
 
-  // Fortschritt bestimmt, welcher Leiter antritt: vorn die frühen Orden.
-  const frueh = {}, spaet = {};
-  for (let i = 0; i < 40; i++) {
-    frueh[PL.world.bossTeam(PL.rng('f' + i), kanto, 20, 0, {}).leader] = 1;
-    spaet[PL.world.bossTeam(PL.rng('s' + i), kanto, 20, 8, {}).leader] = 1;
+  // Der Orden bestimmt den Leiter — und zwar genau, nicht ungefähr: Beim
+  // ersten Orden steht immer Brock da, beim achten immer Giovanni. Vorher
+  // wurde aus dem Fortschritt ein Leiter geschätzt und gewürfelt.
+  {
+    const namen = [];
+    for (let o = 0; o < 8; o++) {
+      const treffer = {};
+      for (let i = 0; i < 12; i++) {
+        treffer[PL.world.bossTeam(PL.rng('o' + o + '-' + i), kanto, 20, o, {}).leader] = 1;
+      }
+      namen.push(Object.keys(treffer));
+    }
+    check('Jeder Orden hat genau einen Arenaleiter',
+      namen.every((n) => n.length === 1), namen.map((n) => n.join('/')).join(' · '));
+    eq('… und zwar den aus den Spielen', namen.map((n) => n[0]).join(', '),
+      kanto.leaders.map((l) => l[0]).join(', '));
   }
-  const idx = (n) => kanto.leaders.findIndex((l) => l[0] === n);
-  check('Im ersten Gebiet treten frühe Arenaleiter an',
-    Object.keys(frueh).every((n) => idx(n) <= 1), Object.keys(frueh).join(', '));
-  check('Im letzten Gebiet die späten',
-    Object.keys(spaet).every((n) => idx(n) >= 6), Object.keys(spaet).join(', '));
   void run;
 }
 
@@ -1552,29 +1564,30 @@ section('Teilen: was von einem Run übrig bleibt');
   await import('../js/share.js');
   const S = PL.share;
 
-  const run = new PL.Run({ seed: 12345, mode: 'standard', ascension: 2, starter: 'charmander' });
-  run.region = 5;
+  const run = new PL.Run({ seed: 12345, mode: 'standard', region: 2, starter: 'charmander' });
+  run.badges = 5;
   run.stats.battles = 24; run.stats.catches = 11; run.stats.evolutions = 3;
   run.relics.glueckliches_ei = 1; run.relics.honigtopf = 1;
 
   const verloren = S.ergebnis(run, 'niederlage');
   eq('Der Startwert steht im Ergebnis', verloren.startwert, 12345);
-  eq('Der Aufstieg auch', verloren.aufstieg, 2);
-  eq('Die erreichte Region zählt ohne Sieg nicht hoch', verloren.region, 5);
-  eq('Neun Regionen im Standardmodus', verloren.regionen, 9);
+  eq('Die Region auch', verloren.heimat, 2);
+  eq('… mit ihrem Namen', verloren.heimatName, 'Hoenn');
+  eq('Die geholten Orden zählen ohne Sieg nicht hoch', verloren.region, 5);
+  eq('Acht Orden führen zur Liga', verloren.regionen, 8);
   eq('Das Team ist dabei', verloren.team.length, run.party.length);
   eq('Relikte werden gezählt', verloren.relikte, 2);
 
   // Die Kästchenreihe erzählt den Weg auf einen Blick.
   const reihe = S.kaestchen(verloren);
-  eq('Ein Kästchen je Region', [...reihe].length, 9);
-  eq('… vier grüne für die geschafften', [...reihe].filter((z) => z === '🟩').length, 4);
-  eq('… eins gelb für die, in der Schluss war', [...reihe].filter((z) => z === '🟨').length, 1);
-  eq('… und der Rest bleibt leer', [...reihe].filter((z) => z === '⬜').length, 4);
+  eq('Ein Kästchen je Orden', [...reihe].length, 8);
+  eq('… fünf grüne für die geholten', [...reihe].filter((z) => z === '🟩').length, 5);
+  eq('… eins gelb für den, an dem Schluss war', [...reihe].filter((z) => z === '🟨').length, 1);
+  eq('… und der Rest bleibt leer', [...reihe].filter((z) => z === '⬜').length, 2);
 
   run.state = 'victory';
   const gewonnen = S.ergebnis(run, 'sieg');
-  eq('Mit Sieg zählt die letzte Region mit', gewonnen.region, 6);
+  eq('Mit Sieg stehen alle acht Orden', gewonnen.region, 8);
   eq('Beim Sieg ist kein Kästchen mehr gelb',
     [...S.kaestchen(gewonnen)].filter((z) => z === '🟨').length, 0);
 
@@ -1589,13 +1602,14 @@ section('Teilen: was von einem Run übrig bleibt');
 
   // Aus dem Ergebnis wird eine Einladung und wieder zurück.
   const code = S.startwertCode(verloren);
-  eq('Der Code trägt Modus, Aufstieg und Startwert', code, 'standard-2-12345');
+  eq('Der Code trägt Modus, Region und Startwert', code, 'standard-2-12345');
   const zurueck = S.ausCode(code);
   eq('… und liest sich wieder ein: Modus', zurueck.modus, 'standard');
-  eq('… Aufstieg', zurueck.aufstieg, 2);
+  eq('… Region', zurueck.heimat, 2);
+  eq('… und ihr Name', zurueck.heimatName, 'Hoenn');
   eq('… Startwert', zurueck.startwert, 12345);
   eq('Nuzlocke wird mitgenommen', S.ausCode(S.startwertCode({
-    modus: 'endlos', aufstieg: 0, startwert: 7, nuzlocke: true
+    modus: 'endlos', heimat: 0, startwert: 7, nuzlocke: true
   })).nuzlocke, true);
   // Kurzrun und Boss-Rush gibt es nicht mehr: Eine Einladung, die einen von
   // beiden mitbringt, wird nicht angenommen.
@@ -1604,7 +1618,8 @@ section('Teilen: was von einem Run übrig bleibt');
 
   check('Unsinn wird abgelehnt', S.ausCode('quatsch') === null);
   check('Ein erfundener Modus auch', S.ausCode('gibtsnicht-0-5') === null);
-  check('Ein zu hoher Aufstieg wird gedeckelt', S.ausCode('standard-99-5').aufstieg === 10);
+  check('Eine Region außerhalb der neun wird eingefangen',
+    S.ausCode('standard-99-5').heimat === 8);
 
   const link = S.startwertLink(verloren);
   check('Der Link enthält den Code', link.indexOf('?run=standard-2-12345') > 0, link);
@@ -2148,8 +2163,9 @@ section('Tages-Run: ein Startwert für alle');
   meta.setzeMesslatte({ region: 4, gewonnen: false, kaempfe: 30, faenge: 9 });
   eq('Die Messlatte bleibt liegen', meta.tagesStand().latte.region, 4);
 
-  const run = new PL.Run({ seed: meta.tagesStartwert(), mode: 'taeglich', starter: 'bulbasaur' });
-  run.region = 5; run.stats.battles = 41; run.stats.catches = 12;
+  const run = new PL.Run({ seed: meta.tagesStartwert(), mode: 'taeglich',
+    region: meta.tagesRegion(), starter: 'bulbasaur' });
+  run.badges = 5; run.stats.battles = 41; run.stats.catches = 12;
   meta.setzeTagesErgebnis(S.ergebnis(run, 'niederlage'));
   eq('Das eigene Ergebnis steht fest', meta.tagesStand().eigen.region, 5);
   eq('Der Tag gilt jetzt als gespielt', meta.tagGespielt(), true);
@@ -2210,54 +2226,158 @@ section('Tages-Run: ein Startwert für alle');
   delete globalThis.localStorage;
 }
 
-section('Fünf Stufen statt elf Aufstiege');
+section('Ein Run spielt eine Region ganz');
 {
-  const S = PL.Run.STUFEN;
-  eq('Es sind fünf Stufen — und sonst nichts', S.length, 5);
-  eq('Die erste Stufe ist die Grundschwierigkeit', S[0].regeln.length, 0);
-  check('Keine Stufe ist heimlich der Legendäre Run', S.every((st) => !st.legenden));
-  check('Jede Stufe sagt, was sie ändert', S.every((st) => st.name && st.kurz && st.punkte.length));
+  const W = PL.world;
+  eq('Es gibt neun Regionen', W.REGIONS.length, 9);
+  check('Jede stellt acht Arenaleiter',
+    W.REGIONS.every((r) => r.leaders.length === 8),
+    W.REGIONS.filter((r) => r.leaders.length !== 8).map((r) => r.name).join(', '));
+  eq('Acht Orden führen zur Liga', PL.Run.ORDEN_GESAMT, 8);
 
-  // Keine Regel darf verschwinden und keine doppelt vergeben sein.
-  const alle = S.flatMap((st) => st.regeln).sort((a, b) => a - b);
-  eq('Alle zehn Erschwernisse sind untergebracht', alle.join(','), '1,2,3,4,5,6,7,8,9,10');
+  // Jede Region bringt ihre eigene Top Vier und ihren eigenen Champ mit.
+  check('Jede Region hat vier Liga-Mitglieder',
+    W.REGIONS.every((r) => (W.ELITE_VIER[r.id] || []).length === 4),
+    W.REGIONS.filter((r) => (W.ELITE_VIER[r.id] || []).length !== 4)
+      .map((r) => r.name).join(', '));
+  eq('Kanto stellt seine echte Top Vier',
+    W.ELITE_VIER.kanto.map((e) => e[0]).join(', '), 'Lorelei, Bruno, Agatha, Lance');
+  eq('Paldea seine eigene',
+    W.ELITE_VIER.paldea.map((e) => e[0]).join(', '), 'Rika, Poppy, Larry, Hassel');
+  eq('Es gibt neun Champs, einen je Region', W.CHAMPIONS.length, 9);
+  eq('Kanto endet bei Blue',
+    W.championTeam(PL.rng('k'), 70, W.REGIONS[0], {}).name.indexOf('Blue') >= 0, true);
+  eq('Paldea bei Geeta',
+    W.championTeam(PL.rng('p'), 70, W.REGIONS[8], {}).name.indexOf('Geeta') >= 0, true);
 
-  const auf = (n) => new PL.Run({ seed: 5, ascension: n, starter: 'bulbasaur' });
-  eq('Stufe 1 schaltet nichts an', auf(0).asc(1), false);
-  eq('Stufe 2 bringt die höheren Gegnerlevel', auf(1).asc(1), true);
-  eq('… und die teureren Läden', auf(1).asc(2), true);
-  eq('… aber noch nicht die Fangchancen', auf(1).asc(5), false);
-  eq('Stufe 3 senkt die Fangchancen', auf(2).asc(5), true);
-  eq('… und erbt die Regeln von Stufe 2', auf(2).asc(1), true);
-  eq('Stufe 5 schaltet alles an', [1,2,3,4,5,6,7,8,9,10].every((r) => auf(4).asc(r)), true);
-  eq('Eine Regel, die es nicht gibt, gilt nie', auf(4).asc(99), false);
+  // Wer in seiner Region beides ist — Arenaleiter und Top Vier —, tritt in
+  // der Liga mit einem anderen Team an als in seiner Arena.
+  const L = PL.leaders;
+  ['Koga', 'Acerola', 'Larry'].forEach((n) => {
+    check(n + ' hat in der Liga ein anderes Team als in der Arena',
+      L.team(n).join(',') !== L.team(n, true).join(','),
+      n + ': ' + L.team(n, true).join(','));
+  });
 
-  // Elf alte Aufstiege werden zu fünf Stufen — ohne die letzte zu verschenken.
-  eq('Aufstieg 0 bleibt Stufe 1', PL.Run.stufeAusAltem(0), 0);
-  eq('Aufstieg 7 wird Stufe 4', PL.Run.stufeAusAltem(7), 3);
-  eq('Aufstieg 10 wird Stufe 5', PL.Run.stufeAusAltem(10), 4);
-  check('Keine Umrechnung führt über die fünfte Stufe hinaus',
-    [0,1,2,3,4,5,6,7,8,9,10,99].every((n) => PL.Run.stufeAusAltem(n) <= 4));
-  check('Die Umrechnung steigt monoton', (() => {
-    let letzte = -1;
-    for (let n = 0; n <= 10; n++) {
-      const v = PL.Run.stufeAusAltem(n);
-      if (v < letzte) return false;
-      letzte = v;
-    }
-    return true;
-  })());
+  // Die Region steht für den ganzen Run fest; gezählt werden Orden.
+  const run = new PL.Run({ seed: 5, region: 3, starter: 'bulbasaur' });
+  eq('Die gewählte Region gilt', run.currentRegion().name, 'Sinnoh');
+  eq('Der Run beginnt ohne Orden', run.badges, 0);
+  run.badges = 5;
+  eq('… und bleibt trotzdem in derselben Region', run.currentRegion().name, 'Sinnoh');
+  eq('Eine Region außerhalb der neun wird eingefangen',
+    new PL.Run({ seed: 5, region: 99, starter: 'bulbasaur' }).region, 8);
 
-  // Ein laufender Run aus der alten Zeit wird beim Laden umgerechnet.
-  const alt = new PL.Run({ seed: 9, ascension: 2, starter: 'squirtle' });
-  const roh = JSON.parse(JSON.stringify(alt.toJSON()));
-  eq('Neue Runs tragen die Fassung mit sich', roh.stufenFassung, 3);
-  delete roh.stufenFassung;
-  roh.ascension = 9;
-  eq('Ein alter Spielstand landet auf Stufe 5', PL.Run.fromJSON(roh).ascension, 4);
-  eq('Wer noch nichts gewonnen hat, bekommt nichts geschenkt', PL.Run.stufeAusAltem(-1), 0);
-  const neu2 = JSON.parse(JSON.stringify(alt.toJSON()));
-  eq('Ein neuer wird nicht noch einmal umgerechnet', PL.Run.fromJSON(neu2).ascension, 2);
+  // Der Anstieg liegt im Weg durch die Region, nicht in einer Vorwahl.
+  const grenze = (orden) => {
+    const r = new PL.Run({ seed: 5, region: 0, starter: 'bulbasaur' });
+    r.badges = orden;
+    return r.levelCap;
+  };
+  const leiter = [0,1,2,3,4,5,6,7].map(grenze);
+  check('Die Levelgrenze steigt mit jedem Orden',
+    leiter.every((v, i) => i === 0 || v > leiter[i - 1]), leiter.join(', '));
+  eq('Vor dem ersten Arenaleiter steht sie bei 16', leiter[0], 16);
+  eq('Vor dem achten bei 72', leiter[7], 72);
+
+  const liga = (zeile) => {
+    const r = new PL.Run({ seed: 5, region: 0, starter: 'bulbasaur' });
+    r.badges = 8; r.leagueStage = 0; r.rowIndex = zeile;
+    return r.levelCap;
+  };
+  const ligaWerte = [1, 2, 4, 5, 7].map(liga);
+  check('Die Liga steigt weiter, Rang für Rang',
+    ligaWerte.every((v, i) => i === 0 || v > ligaWerte[i - 1]), ligaWerte.join(', '));
+  eq('Der Champ steht am höchsten', ligaWerte[4], 100);
+  check('… und über der gesamten Top Vier', ligaWerte[4] > ligaWerte[3]);
+
+  // Die Hauptschraube des Anstiegs: Der Arenaleiter rückt mit jedem Orden
+  // näher an das eigene Team heran, und die Liga steht darüber.
+  const A = PL.Run.ANSTIEG;
+  eq('Für jeden der acht Orden steht ein Vorsprung fest', A.bossVorsprung.length, 8);
+  check('Er steigt und fällt nie zurück',
+    A.bossVorsprung.every((v, i) => i === 0 || v >= A.bossVorsprung[i - 1]),
+    A.bossVorsprung.join(', '));
+  check('Der erste Arenaleiter steht deutlich unter dem Team',
+    A.bossVorsprung[0] <= -5, String(A.bossVorsprung[0]));
+  check('Der achte steht dicht davor', A.bossVorsprung[7] >= -3,
+    String(A.bossVorsprung[7]));
+  // Die Top Vier steht nicht unter dem achten Arenaleiter — und bringt
+  // obendrein volle Teams mit, was sie in der Messung klar härter macht.
+  check('Die Top Vier steht nicht unter dem achten Arenaleiter',
+    A.ligaVorsprung >= A.bossVorsprung[7], A.ligaVorsprung + ' vs ' + A.bossVorsprung[7]);
+  check('Und der Champ über der Top Vier',
+    A.champVorsprung > A.ligaVorsprung, A.champVorsprung + ' vs ' + A.ligaVorsprung);
+
+  // Die zehn alten Erschwernisse sind fort — mit ihnen der Regler.
+  check('Es gibt keine Schwierigkeitsstufen mehr', PL.Run.STUFEN === undefined);
+  check('… und keine Regelabfrage', typeof run.asc !== 'function');
+}
+
+section('Regionen schalten sich der Reihe nach frei');
+{
+  await import('../js/meta.js');
+  const meta = PL.meta;
+  const store = {};
+  globalThis.localStorage = {
+    getItem: (k) => (k in store ? store[k] : null),
+    setItem: (k, v) => { store[k] = String(v); },
+    removeItem: (k) => { delete store[k]; }
+  };
+  meta.reload();
+
+  eq('Zu Beginn steht nur Kanto offen', meta.maxRegion(), 0);
+  check('Kanto ist frei', meta.regionFrei(0));
+  check('Johto noch nicht', !meta.regionFrei(1));
+  check('Und Paldea erst recht nicht', !meta.regionFrei(8));
+
+  // Ein gewonnener Kanto-Run öffnet Johto — und sonst nichts.
+  const sieg = (region) => meta.recordRun({
+    mode: 'standard', region: region, badges: 8, nuzlocke: false,
+    stats: { battles: 3, kos: 1, catches: 1, faints: 0, turns: 9, moneyEarned: 5,
+             evolutions: 0, wins: 3 },
+    relics: {}, party: [], bossesBeaten: 8
+  }, 'sieg');
+  sieg(0);
+  check('Nach dem Sieg in Kanto steht Johto offen', meta.regionFrei(1));
+  eq('… und die höchste offene Region ist Johto', meta.maxRegion(), 1);
+  check('Hoenn bleibt zu', !meta.regionFrei(2));
+  check('Kanto gilt als bezwungen', meta.regionGewonnen(0));
+  eq('Eine Region ist bezwungen', meta.regionenGewonnen(), 1);
+
+  // Das Duell öffnet sich erst nach drei Regionen.
+  check('Das Legenden-Duell ist noch verschlossen', !meta.legendenFrei());
+  sieg(1); sieg(2);
+  eq('Drei Regionen sind bezwungen', meta.regionenGewonnen(), 3);
+  check('… und das Duell steht offen', meta.legendenFrei());
+
+  // Ein Spielstand aus der Zeit der fünf Stufen behält seinen Rang: Wer die
+  // höchste Stufe gewonnen hatte, muss nicht wieder bei Kanto anfangen.
+  const SCHLUESSEL = 'pokelike.plus.v1';
+  const alterStand = (stufe, region) => {
+    const roh = JSON.parse(store[SCHLUESSEL]);
+    delete roh.regionenGewonnen;
+    delete roh.bestOrden;
+    roh.stufenFassung = 2;
+    roh.bestAscension = stufe;
+    roh.bestRegion = region;
+    store[SCHLUESSEL] = JSON.stringify(roh);
+    meta.reload();
+  };
+
+  alterStand(4, 6);
+  eq('Wer Stufe 5 geschafft hatte, hat alle neun Regionen offen', meta.maxRegion(), 8);
+  eq('… und behält seine beste Ordenszahl', meta.load().bestOrden, 6);
+
+  alterStand(0, 2);
+  eq('Wer auf Stufe 1 gewonnen hatte, hat Johto offen', meta.maxRegion(), 1);
+
+  alterStand(-1, 0);
+  eq('Wer nie gewonnen hatte, fängt bei Kanto an', meta.maxRegion(), 0);
+  check('… und hat keine Region im Rücken', meta.regionenGewonnen() === 0);
+
+  delete globalThis.localStorage;
+  meta.reload();
 }
 
 section('Der Legendäre Run ist ein Duell');
@@ -2271,12 +2391,10 @@ section('Der Legendäre Run ist ein Duell');
     PL.Run.legendenDerGeneration(1).map((sp) => sp.n).join(','),
     'Articuno,Zapdos,Moltres,Mewtwo,Mew');
 
-  /* --- Es ist keine Schwierigkeitsstufe mehr --- */
-  eq('Der Regler hat wieder fünf Stufen', PL.Run.STUFEN.length, 5);
-  check('Keine davon schaltet den Legendären Run an',
-    PL.Run.STUFEN.every((st) => !st.legenden));
-  eq('Die höchste Stufe heißt Meisterschaft', PL.Run.STUFEN[4].name, 'Meisterschaft');
-  eq('Ein alter Aufstieg 10 landet auf der höchsten Stufe', PL.Run.stufeAusAltem(10), 4);
+  /* --- Es ist ein eigener Modus, keine Region --- */
+  check('Das Duell ist ein Modus für sich', !!PL.Run.MODES.legenden.versteckt);
+  check('Keine Region schaltet den Legendären Run an',
+    PL.world.REGIONS.every((r) => !r.legenden));
 
   /* --- Ein Duell: ein Knoten, ein Gegner --- */
   const duell = new PL.Run({ seed: 77, mode: 'legenden', duell: {
@@ -2824,23 +2942,23 @@ section('Sammlung: Marken, Aufträge, Bestwerte');
     /* --- Ein Duell ist kein Run --- */
     {
       const vorher = { runs: meta.load().runs, wins: meta.load().wins,
-        rang: meta.load().bestAscension };
+        rang: meta.regionenGewonnen() };
       const duell = new PL.Run({ seed: 2, mode: 'legenden', ascension: 4,
         duell: { art: 'mew', team: [{ sp: 'venusaur' }] } });
       duell.stats.battles = 1;
       meta.recordRun(duell, 'sieg');
       eq('Ein gewonnenes Duell zählt nicht als gespielter Run', meta.load().runs, vorher.runs);
       eq('… und nicht als gewonnener', meta.load().wins, vorher.wins);
-      eq('… und hebt keinen Rang', meta.load().bestAscension, vorher.rang);
+      eq('… und schaltet keine Region frei', meta.regionenGewonnen(), vorher.rang);
       eq('… macht aber niemanden zum Champ', !!meta.load().achievements.champ, false);
       check('Die Kämpfe zählen trotzdem', meta.load().totals.battles >= 1);
     }
 
-    /* --- Das Duell steht erst nach Stufe 5 offen --- */
-    meta.load().bestAscension = 2;
-    eq('Mit Stufe 3 im Rücken bleibt es zu', meta.legendenFrei(), false);
-    meta.load().bestAscension = 4;
-    eq('Nach Stufe 5 steht es offen', meta.legendenFrei(), true);
+    /* --- Das Duell steht erst nach drei Regionen offen --- */
+    meta.load().regionenGewonnen = { 0: true, 1: true };
+    eq('Mit zwei Regionen im Rücken bleibt es zu', meta.legendenFrei(), false);
+    meta.load().regionenGewonnen = { 0: true, 1: true, 2: true };
+    eq('Nach dreien steht es offen', meta.legendenFrei(), true);
   }
 
   /* --- Legendäre sind aus dem Pokédex verschwunden --- */
@@ -3096,7 +3214,7 @@ section('Abgeschaffte Modi');
   const geladen = PL.Run.fromJSON(daten);
   check('Ein alter Boss-Rush lässt sich laden', !!geladen);
   eq('… und läuft als Standard weiter', geladen.mode, 'standard');
-  eq('… mit der Regionszahl des Standardmodus', geladen.totalRegions(), 9);
+  eq('… mit einer Region wie jeder Standardrun', geladen.totalRegions(), 1);
   check('… und kann eine neue Region bauen', (() => {
     geladen.region = 1; geladen.buildMap(); return geladen.map.length > 0;
   })());

@@ -25,9 +25,12 @@
   var dex = PL.dex, mons = PL.mon, W = PL.world, clamp = PL.util.clamp;
 
   var MODES = {
-    standard: { name: 'Standard', regions: 9, rows: 9, desc: 'Alle neun Regionen und danach die Liga.' },
-    endlos: { name: 'Endlos', regions: 99, rows: 9, desc: 'Die Regionen wiederholen sich und werden härter.' },
-    taeglich: { name: 'Tages-Run', regions: 6, rows: 8, desc: 'Fester Startwert für alle: heute für jeden gleich.' },
+    standard: { name: 'Standard', regionen: 1, rows: 9,
+      desc: 'Eine Region: ihre acht Arenaleiter, ihre Top Vier, ihr Champ.' },
+    endlos: { name: 'Weltreise', regionen: 9, rows: 9,
+      desc: 'Nach dem Champ geht es in der nächsten Region weiter — bis man fällt.' },
+    taeglich: { name: 'Tages-Run', regionen: 1, rows: 8,
+      desc: 'Region und Startwert des Tages: heute für jeden gleich.' },
     // Der Legendäre Run ist kein Weg mehr, sondern ein Duell: ein Kampf
     // gegen genau ein legendäres Pokémon, mit einem Team, das man vorher
     // selbst zusammenstellt. Er steht als eigener Modus da und ist keine
@@ -42,51 +45,66 @@
      sich keiner von beiden. */
   var ALTE_MODI = { kurz: 'Kurzrun', bossrush: 'Boss-Rush' };
 
-  /* ---------- Schwierigkeitsstufen -------------------------------------------
-   * Vorher waren es elf Aufstiege, von denen jeder genau eine Schraube drehte.
-   * Zum Einmessen war das gut, zum Auswählen nicht: Niemand wusste vor dem
-   * Start, was Aufstieg 7 von Aufstieg 6 unterscheidet, und die meisten Stufen
-   * fühlten sich gleich an.
+  /* ---------- Der Anstieg innerhalb einer Region ------------------------------
+   * Früher gab es fünf Schwierigkeitsstufen, die man vor dem Start wählte,
+   * und ein Run führte durch alle neun Regionen. Beides ist abgeschafft.
    *
-   * Jetzt sind es fünf Stufen mit Namen. Jede bündelt mehrere Regeln, jede
-   * erbt alles von den Stufen darunter — und die sechste ist keine
-   * Schwierigkeitsstufe mehr, sondern ein eigener Weg.
+   * Jetzt wählt man eine Region, und der Run spielt sie ganz: ihre acht
+   * Arenaleiter der Reihe nach, dann ihre Top Vier, dann ihren Champ. Die
+   * Regionen sind untereinander etwa gleich schwer — Blue am Ende von Kanto
+   * fordert so viel wie Geeta am Ende von Paldea. Der Anstieg steckt im Weg
+   * durch die Region: Der erste Leiter ist milde, der achte hart, die Top
+   * Vier eine Wand, und der Champ ist das Schwerste, was der Run zu bieten
+   * hat.
    *
-   * Die Zahlen in `regeln` sind die Kennungen, unter denen der Code die
-   * einzelne Erschwernis abfragt. Sie bleiben, wie sie waren: die Wirkung ist
-   * mit tools/balance.mjs eingemessen, nur die Bündelung ist neu.
+   * Die Zahlen unten sind die Stellschrauben dieses Anstiegs. Sie sind mit
+   * tools/balance.mjs eingemessen, nicht geraten. Über 120 Runs in Kanto:
+   *
+   *   Arenaleiter 1–6   100 %      Top Vier   79 % je Kampf
+   *   Arenaleiter 7      80 %                 (39 % durch alle vier)
+   *   Arenaleiter 8      78 %      Champ      37 %
+   *
+   * Die ersten sechs Leiter gewinnt der Automat immer — sie sollen tragen,
+   * nicht aufhalten. Spürbar wird es ab dem siebten, die Top Vier ist als
+   * Reihe die eigentliche Wand, und der Champ ist der schwerste Einzelkampf
+   * des Spiels.
+   *
+   * Zur Frage, ob die neun Regionen gleich schwer sind: gemessen ja, soweit
+   * das Messgerät es hergibt. Über je 60 bis 100 Runs liegen sie zwischen
+   * 91,8 % und 95,3 % gewonnener harter Kämpfe. Die Zahl der ganz
+   * durchgespielten Runs streut stärker — aber die Ursache ist die Wahl des
+   * Startpokémon, nicht die Region: Derselbe Einall-Run gewinnt mit Glumanda
+   * 39 % und mit Bisasam 10 %, weil Alders Liga reihenweise feuerschwach ist.
+   * Innerhalb einer Region ist die Streuung damit so groß wie zwischen den
+   * Regionen. Wer nachmisst, vergleicht deshalb mehrere Starter.
+   *
+   *   ordenLevel     Level, die je geholtem Orden auf die Grenze kommen
+   *   bossVorsprung  wie viele Level ein Arenaleiter über dem eigenen Team
+   *                  steht — je Orden einer mehr. Brock bleibt sechs Level
+   *                  darunter, Giovanni steht einen darüber. Das ist die
+   *                  Hauptschraube des Anstiegs.
+   *   ligaVorsprung  was die Top Vier über dem Team steht
+   *   champVorsprung was der Champ darüber steht
+   *   ligaLevel      Level, die die Grenze je Rang der Top Vier steigt
+   *   champLevel     was der Champ noch einmal obendrauf legt
+   *   weltGuete      wie viel besser Gegner je durchgespielter Region der
+   *                  Weltreise gebaut sind
+   *
+   * Wie gut ein Arenaleiter gebaut ist, steigt nicht hier, sondern in
+   * world.js mit seiner Nummer — Brock ist milde gebaut, Giovanni beinahe
+   * perfekt. Hier steht nur, was darüber hinaus dazukommt.
    * -------------------------------------------------------------------------- */
 
-  var STUFEN = [
-    { name: 'Reise', kurz: 'Grundschwierigkeit', regeln: [],
-      punkte: ['So ist das Spiel gedacht: fordernd, aber fair.'] },
-    { name: 'Herausforderung', kurz: 'Der erste Widerstand', regeln: [1, 2],
-      punkte: ['Gegner starten zwei Level höher.', 'Läden verlangen 25 % mehr.'] },
-    { name: 'Prüfung', kurz: 'Weniger Polster', regeln: [3, 5, 7],
-      punkte: ['Arenaleiter führen ein Pokémon mehr.', 'Fangchancen sinken deutlich.',
-               'Erfahrung um 20 % reduziert.'] },
-    { name: 'Härte', kurz: 'Kein Durchatmen', regeln: [4, 6, 8],
-      punkte: ['Rastplätze heilen nur zur Hälfte.', 'Gegner tragen häufiger Gegenstände.',
-               'Kein Vollheilen mehr nach Arenaleitern.'] },
-    { name: 'Meisterschaft', kurz: 'Alles auf einmal', regeln: [9, 10],
-      punkte: ['Gegner mega-entwickeln, sobald sie können.', 'Noch einmal zwei Level obendrauf.'] }
-  ];
+  var ANSTIEG = {
+    ordenLevel: 8,
+    bossVorsprung: [-6, -6, -5, -5, -4, -4, -3, -2],
+    ligaVorsprung: -2,
+    champVorsprung: -1,
+    ligaLevel: 4, champLevel: 6, weltGuete: 0.04
+  };
 
-  /** Ab welcher Stufe eine einzelne Regel greift. */
-  var REGEL_AB = {};
-  STUFEN.forEach(function (stufe, i) {
-    stufe.regeln.forEach(function (r) { REGEL_AB[r] = i; });
-  });
-
-  var HOECHSTE_STUFE = STUFEN.length - 1;
-
-  /**
-   * Elf alte Aufstiege werden zu fünf Stufen. Wer Aufstieg 7 geschafft hatte,
-   * steht jetzt auf Stufe 4 — der Rang bleibt erhalten, er heißt nur anders.
-   * Die letzte Stufe verschenkt die Umrechnung nicht: Den Legendären Run muss
-   * sich jeder selbst verdienen.
-   */
-  var ALTE_AUFSTIEGE = [0, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4];
+  /** Wie viele Arenaleiter eine Region stellt. Überall acht. */
+  var ORDEN_GESAMT = 8;
 
   var NODE_WEIGHTS = {
     wild: 34, trainer: 30, item: 8, event: 9, shop: 6, catch: 8, relic: 4, elite: 5
@@ -113,7 +131,7 @@
   /* ---------- 1) Anlegen ------------------------------------------------------ */
 
   /**
-   * opts: { seed, mode, ascension, nuzlocke, starter (Spezies-ID), meta }
+   * opts: { seed, mode, region (0–8), nuzlocke, starter (Spezies-ID), meta }
    */
   // Erhöht sich, sobald sich das Speicherformat ändert. Ein Run aus einer
   // älteren Fassung wird beim Laden verworfen, statt still kaputtzugehen.
@@ -124,7 +142,13 @@
     this.version = RUN_VERSION;
     this.mode = MODES[opts.mode] ? opts.mode : 'standard';
     this.seed = opts.seed !== undefined ? opts.seed : (Date.now() ^ Math.floor(Math.random() * 1e9)) >>> 0;
-    this.ascension = opts.ascension || 0;
+    // Die Region steht für den ganzen Run fest — sie ist die Wahl vor dem
+    // Start. Der Fortschritt zählt Orden: 0 heißt, der erste Arenaleiter
+    // steht noch aus; bei 8 öffnet die Liga.
+    this.region = clamp(opts.region | 0, 0, W.REGIONS.length - 1);
+    this.badges = 0;
+    // Weltreise: wie viele Regionen schon ganz durchgespielt sind.
+    this.weltRunde = 0;
     this.nuzlocke = !!opts.nuzlocke;
     this.rng = PL.rng(this.seed);
     this.started = new Date().toISOString();
@@ -134,11 +158,6 @@
     this.bag = {};
     this.relics = {};
     this.money = 1200;
-    this.region = 0;
-    this.regionOrder = this.rng.shuffle(W.REGIONS.map(function (r, i) { return i; }));
-    if (this.mode === 'standard' || this.mode === 'endlos' || this.mode === 'legenden') {
-      this.regionOrder = W.REGIONS.map(function (r, i) { return i; });
-    }
     this.leagueStage = -1;
     this.eliteUsed = {};
     this.stats = {
@@ -187,14 +206,9 @@
 
   var R = Run.prototype;
 
-  Run.STUFEN = STUFEN;
-  Run.HOECHSTE_STUFE = HOECHSTE_STUFE;
+  Run.ORDEN_GESAMT = ORDEN_GESAMT;
+  Run.ANSTIEG = ANSTIEG;
 
-  /** Rechnet einen alten Aufstiegswert (0–10) in eine Stufe (0–4) um. */
-  Run.stufeAusAltem = function (n) {
-    n = Math.max(0, Math.round(n || 0));
-    return n < ALTE_AUFSTIEGE.length ? ALTE_AUFSTIEGE[n] : HOECHSTE_STUFE;
-  };
 
   /**
    * Alle legendären Pokémon einer Generation, in Pokédex-Reihenfolge.
@@ -313,48 +327,71 @@
    */
   Run.rollLegend = function () { return -1; };
 
+  /**
+   * Der Rang innerhalb der Liga: 0 bis 3 für die vier Mitglieder der Top
+   * Vier. Abgelesen wird er an der Zeile, auf der man steht — so stimmt er
+   * auch nach dem Laden eines Spielstands, ohne einen eigenen Zähler.
+   */
+  var LIGA_RANG = { 1: 0, 2: 1, 4: 2, 5: 3, 7: 4 };
+  R.ligaRang = function () {
+    var r = LIGA_RANG[this.rowIndex];
+    return r === undefined ? 0 : r;
+  };
+  /** Steht der Champ an? Er ist die letzte Zeile der Liga. */
+  R.amChamp = function () {
+    return this.leagueStage >= 0 && this.rowIndex >= 7;
+  };
+
   Object.defineProperty(R, 'levelCap', {
     get: function () {
       // Im Duell gibt es nichts zu steigern: Beide Seiten stehen auf 100,
       // damit allein Aufstellung und Attacken entscheiden.
       if (this.mode === 'legenden') return 100;
-      if (this.leagueStage >= 0) return 78 + this.leagueStage * 4 + this.ascension * 2;
-      var step = 8;
-      return Math.min(100, 8 + (this.regionsCleared() + 1) * step + this.ascension * 2 +
-        (this.levelBonus || 0));
+      // Jeder Orden hebt die Grenze. Nach dem achten steht sie bei 80, und
+      // die Liga legt Rang für Rang nach — der Champ am meisten.
+      var basis = 8 + (Math.min(this.badges, ORDEN_GESAMT) + 1) * ANSTIEG.ordenLevel;
+      if (this.leagueStage >= 0) {
+        basis = 8 + (ORDEN_GESAMT + 1) * ANSTIEG.ordenLevel +
+          (this.ligaRang() + 1) * ANSTIEG.ligaLevel +
+          (this.amChamp() ? ANSTIEG.champLevel : 0);
+      }
+      // Weltreise: Jede durchgespielte Region hebt die Grenze weiter an,
+      // sonst stünde man in der zweiten Region mit Level 80 vor Leiter 1.
+      basis += this.weltRunde * ORDEN_GESAMT * ANSTIEG.ordenLevel;
+      return Math.min(100, basis + (this.levelBonus || 0));
     }
   });
 
   /**
-   * Wirksamer Aufstieg. Im Endlosmodus kommt für jede vollständige Runde durch
-   * alle neun Regionen eine Stufe dazu — sonst würde die Schwierigkeit
-   * einschlafen, sobald die Levelgrenze bei 100 anschlägt.
+   * Wie weit der Weg durch die Region ist: 0 bis 8 Orden, danach die Liga.
+   * Die Güte der Gegner hängt daran — der erste Leiter ist milde gebaut,
+   * der achte nahezu perfekt.
    */
-  R.effectiveAscension = function () {
-    return this.ascension + (this.mode === 'endlos' ? this.loop() : 0);
+  R.fortschritt = function () {
+    if (this.leagueStage >= 0) return ORDEN_GESAMT + 1 + this.ligaRang();
+    return Math.min(this.badges, ORDEN_GESAMT);
   };
 
   /**
-   * Gilt diese einzelne Erschwernis schon? Gefragt wird nach der Regel, nicht
-   * nach der Stufe — welche Stufe sie anschaltet, steht in STUFEN.
+   * Güteaufschlag der Gegner. Innerhalb einer Region steckt der Anstieg
+   * schon in der Nummer des Arenaleiters (world.js); hier kommt nur die
+   * Weltreise dazu, damit die zweite Region nicht leichter wirkt als die
+   * erste, obwohl das Team inzwischen auf 100 steht.
    */
-  R.asc = function (regel) {
-    var ab = REGEL_AB[regel];
-    return ab !== undefined && this.effectiveAscension() >= ab;
-  };
+  R.gegnerGuete = function () { return this.weltRunde * ANSTIEG.weltGuete; };
 
-  /** Die Stufe dieses Runs als Beschreibung. */
-  R.stufe = function () { return STUFEN[Math.min(this.ascension, HOECHSTE_STUFE)] || STUFEN[0]; };
-
-  R.regionsCleared = function () { return this.region; };
+  R.regionsCleared = function () { return this.badges; };
+  R.ordenGesamt = function () { return ORDEN_GESAMT; };
+  /** Wie viele Regionen dieser Modus vorsieht. */
   R.totalRegions = function () {
     var m = MODES[this.mode];
-    return this.mode === 'endlos' ? 99 : Math.min(m.regions, W.REGIONS.length);
+    return Math.min((m && m.regionen) || 1, W.REGIONS.length);
   };
+  /** Die Region dieses Runs — sie wechselt nur auf der Weltreise. */
   R.currentRegion = function () {
-    return W.REGIONS[this.regionOrder[this.region % this.regionOrder.length]];
+    return W.REGIONS[(this.region + this.weltRunde) % W.REGIONS.length];
   };
-  R.loop = function () { return Math.floor(this.region / W.REGIONS.length); };
+  R.loop = function () { return this.weltRunde; };
 
   /**
    * Was die Sammlung mitbringt: Geld, Vorräte und die Chance auf schillernde
@@ -416,7 +453,7 @@
   R.buildMap = function () {
     if (this.leagueStage >= 0) return this.buildLeague();
     if (this.mode === 'legenden') return this.buildDuell();
-    var rng = this.rng.fork('map-' + this.region + '-' + this.seed);
+    var rng = this.rng.fork('map-' + this.region + '-' + this.weltRunde + '-' + this.badges + '-' + this.seed);
     var rows = MODES[this.mode].rows;
     var map = [], r, i;
 
@@ -441,10 +478,11 @@
     // In der ersten Region beginnt der Weg mit zwei Begegnungen: mit einem
     // einzigen Starter endet ein Run sonst, bevor er angefangen hat. Beide
     // Startknoten bieten unterschiedliche Pokémon an — die Wahl zählt.
-    var firstRegion = this.region === 0 && this.leagueStage < 0;
+    var firstRegion = this.badges === 0 && this.weltRunde === 0 && this.leagueStage < 0;
     if (firstRegion) mustHave.push('catch');
-    // Der Rivale taucht in jeder zweiten Region auf — vier Begegnungen pro Run.
-    if (this.leagueStage < 0 && this.region % 2 === 1 && this.rival && this.rival.stage < 4) {
+    // Der Rivale taucht vor jedem zweiten Arenaleiter auf — vier Begegnungen
+    // auf dem Weg durch die Region.
+    if (this.leagueStage < 0 && this.badges % 2 === 1 && this.rival && this.rival.stage < 4) {
       mustHave.push('rival');
     }
     var middleSlots = [];
@@ -675,6 +713,24 @@
 
   R.advanceRegion = function () {
     if (this.leagueStage >= 0) {
+      // Auf der Weltreise ist der Champ nicht das Ende, sondern die Grenze:
+      // Es geht in der nächsten Region weiter, bei null Orden und mit dem
+      // Team, das man hat.
+      if (this.mode === 'endlos' && this.weltRunde + 1 < W.REGIONS.length) {
+        this.weltRunde++;
+        this.badges = 0;
+        this.leagueStage = -1;
+        this.eliteUsed = {};
+        this.regionCatches = 0;
+        this.bossHint = null;
+        this.pendingBlessing = this.makeBlessing(this.rng);
+        this.buildMap();
+        this.history.push({
+          t: 'region',
+          text: 'Weiter in die nächste Region: ' + this.currentRegion().name + '.'
+        });
+        return;
+      }
       this.state = 'victory';
       this.result = 'sieg';
       return;
@@ -687,21 +743,20 @@
       this.result = gewonnen ? 'sieg' : 'flucht';
       return;
     }
-    this.region++;
-    if (this.region >= this.totalRegions()) {
+    this.badges++;
+    if (this.badges >= ORDEN_GESAMT) {
       this.leagueStage = 0;
       this.buildLeague();
-      this.history.push({ t: 'liga', text: 'Die Liga öffnet ihre Tore.' });
+      this.history.push({ t: 'liga', text: 'Alle acht Orden. Die Liga öffnet ihre Tore.' });
     } else {
       this.buildMap();
       this.regionCatches = 0;
       this.bossHint = null;
-      // Neue Runde im Endlosmodus: es gibt einen Segen zur Auswahl.
-      if (this.mode === 'endlos' && this.region > 0 && this.region % W.REGIONS.length === 0) {
-        this.pendingBlessing = this.makeBlessing(this.rng);
-      }
       var reg = this.currentRegion();
-      this.history.push({ t: 'region', text: 'Weiter nach ' + reg.name + '.' });
+      this.history.push({
+        t: 'region',
+        text: 'Orden ' + this.badges + ' von ' + ORDEN_GESAMT + '. Weiter durch ' + reg.name + '.'
+      });
       var ev = this.mod('evPerFloor');
       if (ev) {
         var self = this;
@@ -749,8 +804,7 @@
    * bleibt in seiner Liga.
    */
   R.enemyLevel = function (delta) {
-    var bonus = (this.asc(1) ? 2 : 0) + (this.asc(10) ? 2 : 0);
-    var base = this.teamLevel() + (delta || 0) + bonus;
+    var base = this.teamLevel() + (delta || 0);
     return clamp(Math.round(Math.min(base, this.levelCap)), 2, 100);
   };
 
@@ -773,7 +827,7 @@
   R.biomeFor = function (nodeType) {
     if (!PL.scenery) return 'wiese';
     var region = this.leagueStage >= 0 ? null : this.currentRegion();
-    var seed = PL.util.hashSeed(this.seed + ':' + this.region + ':' + this.rowIndex + ':' +
+    var seed = PL.util.hashSeed(this.seed + ':' + this.region + ':' + this.badges + ':' + this.rowIndex + ':' +
       (this.pos ? this.pos.col : 0) + ':' + nodeType);
     return PL.scenery.pick(region ? region.id : 'liga', nodeType, seed % 100);
   };
@@ -785,8 +839,10 @@
       wild: !!extra.wild,
       trainer: extra.trainer || null,
       relics: this.relics,
-      catchMult: this.mod('catchMult', 1) * (this.asc(5) ? 0.6 : 1),
-      alwaysMega: this.asc(9),
+      catchMult: this.mod('catchMult', 1),
+      // In der Liga verwandelt sich jeder, der kann. Auf dem Weg dorthin
+      // bleibt das den Arenaleitern vorbehalten, die ohnehin klug spielen.
+      alwaysMega: this.leagueStage >= 0,
       nuzlockeLocked: this.nuzlocke && (this.regionCatches || 0) >= 1
     };
   };
@@ -837,14 +893,14 @@
       anyGen: this.leagueStage >= 0,
       level: level,
       onlyLegendary: true,
-      allowRestricted: this.region >= 4,
+      allowRestricted: this.fortschritt() >= 4,
       ignoreLevel: true
     });
     // Kleine Generationen haben wenig Legendäres — dann darf es auch von
     // woanders kommen, bevor gar nichts erscheint.
     if (pool.length < 2) {
       pool = W.encounterPool({ anyGen: true, level: level, onlyLegendary: true,
-        allowRestricted: this.region >= 4, ignoreLevel: true });
+        allowRestricted: this.fortschritt() >= 4, ignoreLevel: true });
     }
     var sp = W.pickEncounter(rng, pool, level, { met: this.met });
     this.noteMet(sp);
@@ -864,7 +920,7 @@
     // sondern schlecht gewürfelt — deshalb wiegt die Gelegenheit schwerer als
     // die Vorlage: geschwächt und eingeschläfert ist der Fang machbar.
     bt.catchMult = (bt.catchMult || 1) * 5;
-    bt.reward = { kind: 'legend', money: 600 + this.region * 260 };
+    bt.reward = { kind: 'legend', money: 600 + this.fortschritt() * 260 };
     return bt;
   };
 
@@ -876,14 +932,14 @@
       gen: this.leagueStage >= 0 ? null : region.gen,
       anyGen: this.leagueStage >= 0 || rng.chance(0.08),
       level: level,
-      allowLegendary: opts.rare && this.region >= 5
+      allowLegendary: opts.rare && this.fortschritt() >= 5
     });
     pool = this.limitToRoster(pool, this.leagueStage >= 0 ? null : region.gen);
     var biome = this.biomeFor(opts.rare ? 'wild' : 'wild');
     var sp = W.pickEncounter(rng, pool, level, { rare: opts.rare, biome: biome, met: this.met });
     this.noteMet(sp);
     var mon = W.buildMon(rng, sp, level + (opts.rare ? 3 : 0), {
-      quality: 0.55 + this.region * 0.03,
+      quality: 0.55 + this.fortschritt() * 0.03,
       shinyOdds: (1 / 400) * this.shinyMult(),
       hiddenChance: 0.12
     });
@@ -905,7 +961,7 @@
     var level = this.enemyLevel(opts.elite ? -1 : (-2 - EASE.level));
     var t = W.trainerTeam(rng, region, level, {
       maxSize: this.matchSize(opts.elite ? 1 : -EASE.size),
-      items: this.asc(6),
+      items: this.fortschritt() >= 3,
       bonus: opts.elite ? 2 : 0,
       quality: (opts.elite ? 0.8 : 0.68) - EASE.quality,
       ivFloor: opts.elite ? 10 : 4,
@@ -966,7 +1022,7 @@
     bt.canCatch = true;
     bt.legendary = true;
     bt.biome = rng.chance(0.5) ? 'ruine' : 'hoehle';
-    bt.reward = { money: 3000 + this.region * 200, kind: 'trainer' };
+    bt.reward = { money: 3000 + this.fortschritt() * 200, kind: 'trainer' };
     return bt;
   };
 
@@ -977,7 +1033,7 @@
    */
   R.makeLegendBoss = function (rng, id) {
     var sp = dex.sp(id);
-    if (!sp) sp = rng.pick(Run.legendenDerGeneration(Math.min(9, this.region + 1)));
+    if (!sp) sp = rng.pick(Run.legendenDerGeneration(this.currentRegion().gen));
     var level = Math.min(100, this.levelCap);
     var mon = W.buildMon(rng, sp, level, {
       quality: 1, ivFloor: 31, hiddenChance: 0.5,
@@ -1015,36 +1071,42 @@
   R.makeBoss = function (rng) {
     this.restBeforeBoss();
     var region = this.currentRegion();
-    // Der erste Arenaleiter darf noch kein Bollwerk sein.
-    var level = this.enemyLevel((this.region === 0 ? 0 : 2) - EASE.level);
-    var t = W.bossTeam(rng, region, level, this.region, {
-      maxSize: this.matchSize((this.asc(3) ? 2 : 1) - EASE.size),
-      items: this.asc(6), ease: EASE.quality
+    // Der erste Arenaleiter darf noch kein Bollwerk sein, der achte schon:
+    // Brock steht sechs Level unter dem Team, Giovanni einen darüber.
+    var level = this.enemyLevel(
+      ANSTIEG.bossVorsprung[Math.min(this.badges, ANSTIEG.bossVorsprung.length - 1)]);
+    var t = W.bossTeam(rng, region, level, this.badges, {
+      maxSize: this.matchSize((this.badges >= 4 ? 2 : 1) - EASE.size),
+      items: this.fortschritt() >= 3, ease: EASE.quality - this.gegnerGuete()
     });
     var bt = new PL.Battle(this.battleOpts({ team: t.team, trainer: t }));
     bt.aiLevel = 3;
     bt.biome = 'arena';
-    bt.reward = { money: 900 + this.region * 320, kind: 'boss' };
+    bt.reward = { money: 900 + this.badges * 320, kind: 'boss' };
     return bt;
   };
 
   R.makeElite = function (rng) {
     this.restBeforeBoss();
-    var level = this.enemyLevel(1 - EASE.level);
-    var t = W.eliteTeam(rng, level, this.leagueStage, this.eliteUsed, {
-      maxSize: this.matchSize((this.asc(3) ? 2 : 1) - EASE.size),
-      ease: EASE.quality
+    // Die Top Vier steht erstmals über dem eigenen Team.
+    var level = this.enemyLevel(ANSTIEG.ligaVorsprung);
+    var t = W.eliteTeam(rng, level, this.currentRegion(), this.ligaRang(), {
+      maxSize: this.matchSize(2 - EASE.size),
+      ease: EASE.quality - this.gegnerGuete()
     });
     var bt = new PL.Battle(this.battleOpts({ team: t.team, trainer: t }));
     bt.aiLevel = 3;
     bt.biome = 'liga';
-    bt.reward = { money: 2200 + this.leagueStage * 400, kind: 'e4' };
+    bt.reward = { money: 2200 + this.ligaRang() * 400, kind: 'e4' };
     return bt;
   };
 
   R.makeChampion = function (rng) {
     this.restBeforeBoss();
-    var t = W.championTeam(rng, this.enemyLevel(2 - EASE.level), { ease: EASE.quality });
+    // Der Champ ist das Schwerste, was der Run zu bieten hat: Er steht höher
+    // als die Top Vier und ist so gut gebaut, wie das Spiel es zulässt.
+    var t = W.championTeam(rng, this.enemyLevel(ANSTIEG.champVorsprung), this.currentRegion(),
+      { ease: Math.max(0, EASE.quality - this.gegnerGuete()) });
     var bt = new PL.Battle(this.battleOpts({ team: t.team, trainer: t }));
     bt.aiLevel = 3;
     bt.biome = 'liga';
@@ -1096,7 +1158,7 @@
       var benchShare = this.mod('benchExp') || 0.25;
       // 1,45 statt 1,08: gemessen lagen Teams beim Aus zwölf Level hinter der
       // Grenze zurück — sie kamen also nie dazu, sich zu entwickeln.
-      var expMult = this.mod('expMult', 1) * 1.45 * (this.asc(7) ? 0.8 : 1);
+      var expMult = this.mod('expMult', 1) * 1.45;
       var alive = this.party.filter(function (m) { return m.hp > 0; });
       var imKampf = (bt.sides[0] && bt.sides[0].used) || {};
       var summe = [];      // je Pokémon ein Eintrag, in Teamreihenfolge
@@ -1177,10 +1239,22 @@
     if (this.hasMod('autoCure')) this.cureTeam();
     if (this.hasMod('moveTutor') && (bt.outcome === 'win' || bt.outcome === 'caught')) res.tutor = true;
     if (bt.reward && /boss|e4|champ/.test(bt.reward.kind) &&
-        (bt.outcome === 'win' || bt.outcome === 'caught') &&
-        (!this.asc(8) || this.hasMod('healAfterBoss'))) {
+        (bt.outcome === 'win' || bt.outcome === 'caught')) {
       this.healTeam(1, true);
       this.restorePP();
+      // Der Notarzt holt zurück, was gefallen ist. Heilen allein tut das
+      // nicht: healTeam lässt besiegte Pokémon liegen, und genau da setzt
+      // das Relikt an.
+      if (this.hasMod('healAfterBoss')) {
+        var self2 = this;
+        this.party.forEach(function (m) {
+          if (m.hp > 0) return;
+          m.hp = Math.max(1, Math.round(mons.maxHP(m) / 2));
+          m.status = null;
+          m.slp = 0;
+          void self2;
+        });
+      }
     }
     // Das Duell merkt sich seinen Ausgang: Er entscheidet, ob ein Meisterball
     // fällig wird und was am Ende auf dem Bildschirm steht.
@@ -1317,7 +1391,7 @@
 
   /** Gewichteter Vorrat für Funde und Läden, passend zum Fortschritt. */
   R.itemPool = function () {
-    var out = [], self = this, deep = this.region + (this.leagueStage >= 0 ? 6 : 0);
+    var out = [], self = this, deep = this.fortschritt();
     function add(id, w) {
       var it = PL.items.get(id);
       // Im Legendären Run wirkt kein Ball außer dem Meisterball, und den gibt
@@ -1426,7 +1500,6 @@
       stock.push(PL.items.tm(tmPool.splice(rng.int(tmPool.length), 1)[0]));
     }
     var discount = opts.discount !== undefined ? opts.discount : this.mod('shopDiscount');
-    if (this.asc(2)) discount -= 0.25;                     // Aufstieg 2: teurere Läden
     var stoneCut = this.mod('stoneDiscount') || 0;
     return {
       kind: 'shop',
@@ -1493,11 +1566,9 @@
   R.doRest = function (id, rng) {
     switch (id) {
       case 'heal':
-        var factor = this.asc(4) ? 0.5 : 1;
-        this.healTeam(factor, true);
+        this.healTeam(1, true);
         this.restorePP();
-        return factor === 1 ? 'Das Team ist wieder vollständig bei Kräften.'
-          : 'Halbe Heilung — mehr gibt der Aufstieg nicht her.';
+        return 'Das Team ist wieder vollständig bei Kräften.';
       case 'train':
         return this.grantExp(Math.round(this.levelCap * 45));
       default:
@@ -1749,10 +1820,11 @@
 
   R.toJSON = function () {
     return {
-      version: this.version, mode: this.mode, seed: this.seed, ascension: this.ascension,
+      version: this.version, mode: this.mode, seed: this.seed,
       nuzlocke: this.nuzlocke, rngState: this.rng.save(), started: this.started,
       party: this.party, box: this.box, bag: this.bag, tms: this.tms || {}, relics: this.relics,
-      money: this.money, region: this.region, regionOrder: this.regionOrder,
+      money: this.money, region: this.region, badges: this.badges,
+      weltRunde: this.weltRunde || 0,
       leagueStage: this.leagueStage, eliteUsed: this.eliteUsed, stats: this.stats,
       history: this.history.slice(-40), map: this.map, pos: this.pos, rowIndex: this.rowIndex,
       bossesBeaten: this.bossesBeaten || 0, tms: this.tms || {}, met: this.met || {},
@@ -1761,7 +1833,7 @@
       levelBonus: this.levelBonus || 0, pendingBlessing: this.pendingBlessing || null,
       legendRegion: this.legendRegion, legendUsed: !!this.legendUsed,
       duellArt: this.duellArt || null, duellErgebnis: this.duellErgebnis || null,
-      stufenFassung: 3,
+      stufenFassung: 4,
       sammelShiny: this.sammelShiny || 1, startRelikte: this.startRelikte || 0,
       bonusReroll: !!this.bonusReroll,
       bossHint: this.bossHint || null,
@@ -1780,16 +1852,16 @@
     run.state = 'map';
     run.pendingLevelUps = [];
     run.history = run.history || [];
-    // Ein Run aus der Zeit der elf Aufstiege trägt noch die alte Zahl, einer
-    // aus der Zeit der sechsten Stufe eine Stufe zu viel. Beides wird beim
-    // Laden geradegezogen, statt still eine Stufe zu erfinden, die es nicht
-    // mehr gibt.
-    if (!data.stufenFassung || data.stufenFassung < 2) run.ascension = Run.stufeAusAltem(run.ascension);
-    run.ascension = Math.max(0, Math.min(HOECHSTE_STUFE, run.ascension || 0));
-    // Ein Legendärer Run aus der Zeit des Strangs lässt sich nicht fortsetzen:
-    // Seine Karte ist eine Reihe aus 125 Kämpfen, den Modus gibt es so nicht
-    // mehr. Lieber ehrlich verwerfen als halb geladen weiterlaufen.
-    if (run.mode === 'legenden' && (!data.stufenFassung || data.stufenFassung < 3)) return null;
+    // Ein laufender Run von vor dem Umbau lässt sich nicht fortsetzen: Damals
+    // führte ein Run durch alle neun Regionen, und »region« zählte, in der
+    // wievielten man stand. Heute steht dort, welche Region man gewählt hat,
+    // und »badges« zählt den Weg durch sie. Eine Karte aus der alten Welt in
+    // die neue zu biegen hieße raten — lieber ehrlich verwerfen. Was zählt,
+    // die Statistik und die Bestenliste, bleibt davon unberührt.
+    if (!data.stufenFassung || data.stufenFassung < 4) return null;
+    run.region = Math.max(0, Math.min(W.REGIONS.length - 1, run.region || 0));
+    run.badges = Math.max(0, run.badges || 0);
+    run.weltRunde = Math.max(0, run.weltRunde || 0);
     // Kurzrun und Boss-Rush sind abgeschafft. Ein Spielstand aus einem der
     // beiden läuft als gewöhnlicher Run weiter: Die Karte, auf der man steht,
     // bleibt stehen, für alles Weitere gelten die Regeln des Standardmodus.

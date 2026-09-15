@@ -14,7 +14,7 @@
   'use strict';
 
   var PL = root.PL;
-  var U = PL.ui, dex = PL.dex, mons = PL.mon, T = PL.t, meta = PL.meta;
+  var U = PL.ui, dex = PL.dex, mons = PL.mon, T = PL.t, meta = PL.meta, W = PL.world;
   var el = U.el, clear = U.clear, $ = U.$;
   var doc = root.document;
 
@@ -343,8 +343,9 @@
         ]));
       } else {
         mid.appendChild(el('span', { className: 'chip chip-region' },
-          U.symText('krone', run.leagueStage >= 0 ? 'Finale'
-            : 'Region ' + (run.region + 1) + '/' + (run.mode === 'endlos' ? '∞' : run.totalRegions()))));
+          U.symText('krone', run.leagueStage >= 0
+            ? (run.amChamp() ? 'Champ' : 'Top Vier ' + (run.ligaRang() + 1))
+            : 'Orden ' + (run.badges + 1) + '/' + PL.Run.ORDEN_GESAMT)));
         mid.appendChild(el('span', { className: 'chip chip-money' }, U.symText('muenze', U.money(run.money))));
       }
       mid.appendChild(el('span', { className: 'chip chip-cap', title: 'Höchstes erreichbares Level' }, [
@@ -354,9 +355,11 @@
       ]));
       // Auf dem Handy bleibt von diesen beiden nur das Zeichen stehen —
       // darum trägt jedes seinen Namen als Hinweis.
-      if (run.ascension && run.mode !== 'legenden') mid.appendChild(el('span', {
-        className: 'chip warn', title: meta.stufenName(run.ascension)
-      }, U.symText('lagerfeuer', meta.stufenName(run.ascension))));
+      // Der Ordensstand steht schon im Chip daneben — hier nur die Region,
+      // sonst steht dieselbe Zahl zweimal in der Leiste und sie wird zu breit.
+      if (run.mode !== 'legenden') mid.appendChild(el('span', {
+        className: 'chip', title: run.currentRegion().motto
+      }, U.symText('orden', run.currentRegion().name)));
       if (run.nuzlocke) mid.appendChild(el('span', {
         className: 'chip warn', title: 'Nuzlocke: Wer fällt, bleibt gefallen'
       }, U.symText('totenkopf', 'Nuzlocke')));
@@ -456,7 +459,8 @@
     var stand = meta.tagesStand();
     var gespielt = !!stand.eigen;
     var unterzeile = gespielt
-      ? (stand.eigen.gewonnen ? 'Heute: Liga bezwungen' : 'Heute: Region ' + stand.eigen.region + ' von 6')
+      ? (stand.eigen.gewonnen ? 'Heute: Liga bezwungen'
+        : 'Heute: ' + stand.eigen.region + ' von ' + PL.Run.ORDEN_GESAMT + ' Orden')
       : 'Für alle derselbe Startwert · noch nicht gespielt';
     return el('button', {
       className: 'tages-banner' + (gespielt ? ' fertig' : ''), type: 'button',
@@ -484,7 +488,7 @@
       el('div', {}, [
         el('strong', {}, U.symText('kette', 'Ein Run wurde dir geschickt')),
         el('div', { className: 'muted small', text:
-          ein.modusName + (ein.aufstieg ? ' · ' + meta.stufenName(ein.aufstieg) : '') +
+          ein.modusName + (ein.heimatName ? ' · ' + ein.heimatName : '') +
           (ein.nuzlocke ? ' · Nuzlocke' : '') + ' · Startwert ' + ein.startwert })
       ]),
       el('div', { className: 'setting-actions' }, [
@@ -568,7 +572,7 @@
     }, { stark: !meta.hasRun() }));
     // Der Legendäre Run steht zwischen den gewöhnlichen Wegen und dem
     // Pokédex — golden, damit man sieht, dass er etwas anderes ist. Anklicken
-    // darf man ihn immer; antreten erst nach Stufe 5.
+    // darf man ihn immer; antreten erst nach drei bezwungenen Regionen.
     var legFrei = meta.legendenFrei();
     var legStand = meta.duellUebersicht();
     eintraege.push(menueZeile('Legendärer Run', function () { show('legenden'); }, {
@@ -577,7 +581,7 @@
       gesperrt: !legFrei,
       unter: legFrei
         ? 'Ein Duell gegen ein legendäres Pok\u00e9mon.'
-        : 'Erst Stufe 5 im normalen Run gewinnen.'
+        : 'Erst drei Regionen ganz durchspielen.'
     }));
     eintraege.push(menueZeile('Pok\u00e9dex', function () { show('dex'); },
       { notiz: d.caught + '/' + d.total }));
@@ -596,7 +600,8 @@
         el('span', { className: 'fuss-teil', text: 'Runs ' + m.runs }),
         el('span', { className: 'fuss-teil', text: 'Siege ' + m.wins }),
         el('span', { className: 'fuss-teil', text: 'Schillernde ' + d.shinies }),
-        el('span', { className: 'fuss-teil', text: meta.stufenName(Math.max(0, m.bestAscension)) })
+        el('span', { className: 'fuss-teil',
+          text: meta.regionenGewonnen() + ' von ' + W.REGIONS.length + ' Regionen' })
       ]),
       profileBar(),
       saveNote()
@@ -882,7 +887,8 @@
         })),
         el('div', { className: 'slot-line muted small' }, [
           el('span', { text: info.mode + (info.nuzlocke ? ' · Nuzlocke' : '') +
-            (info.ascension ? ' · ' + meta.stufenName(info.ascension) : '') }),
+            ' · ' + meta.regionName(info.region || 0) +
+            ' · ' + (info.badges || 0) + '/' + PL.Run.ORDEN_GESAMT }),
           el('span', { text: info.saved ? new Date(info.saved).toLocaleString('de-DE') : 'läuft gerade' })
         ])
       ]);
@@ -1011,19 +1017,19 @@
   }
 
   SCREENS.newrun = function (arg) {
-    var chosen = { mode: 'standard', ascension: 0, nuzlocke: false, starter: null };
-    var maxAsc = meta.maxAscension();
+    var chosen = { mode: 'standard', region: 0, nuzlocke: false, starter: null };
+    var maxRegion = meta.maxRegion();
 
-    // Ein geschickter Run bringt Modus, Aufstieg und Startwert mit. Nur beim
-    // Aufstieg gilt weiter die eigene Freischaltung — sonst könnte ein Link
-    // Stufen öffnen, die man sich nicht erspielt hat.
+    // Ein geschickter Run bringt Modus, Region und Startwert mit. Bei der
+    // Region gilt weiter die eigene Freischaltung — sonst öffnete ein Link
+    // Regionen, die man sich nicht erspielt hat.
     var einladung = arg && arg.einladung;
     if (einladung) {
       // Eine alte Einladung kann einen Modus mitbringen, den es nicht mehr
       // gibt — dann wird daraus ein gewöhnlicher Run.
       chosen.mode = PL.Run.MODES[einladung.modus] && !PL.Run.MODES[einladung.modus].versteckt
         ? einladung.modus : 'standard';
-      chosen.ascension = Math.min(einladung.aufstieg, maxAsc);
+      chosen.region = meta.regionFrei(einladung.heimat || 0) ? (einladung.heimat || 0) : 0;
       chosen.nuzlocke = einladung.nuzlocke;
       chosen.seed = einladung.startwert;
       App.einladung = null;
@@ -1043,26 +1049,54 @@
           chosen.mode = key;
           Array.prototype.forEach.call(modeBox.children, function (c) { c.classList.remove('selected'); });
           btn.classList.add('selected');
-          if (key === 'taeglich') U.toast('Tages-Run: fester Startwert vom ' + meta.heute());
+          if (key === 'taeglich') {
+            U.toast('Tages-Run: ' + meta.regionName(meta.tagesRegion()) +
+              ', fester Startwert vom ' + meta.heute());
+          }
         }
       }, [el('strong', { text: mode.name }), el('span', { text: mode.desc })]);
       modeBox.appendChild(btn);
     });
 
-    // Der Regler, wie er war — nur dass daneben der Name der Stufe steht und
-    // nicht mehr eine Zahl. Fünf Rasten, fünf Schwierigkeiten, sonst nichts:
-    // Der Legendäre Run war einmal die sechste und steht jetzt für sich.
-    var ascLabel = el('span', { className: 'asc-value', text: meta.stufenName(chosen.ascension) });
-    var ascInput = el('input', {
-      type: 'range', min: 0, max: Math.max(0, maxAsc), value: chosen.ascension, className: 'slider',
-      oninput: function () { setzeStufe(+ascInput.value); }
-    });
+    /* Statt eines Schwierigkeitsreglers steht hier die Wahl der Region. Alle
+       neun sind etwa gleich schwer — der Anstieg liegt im Weg durch sie, von
+       ihrem ersten Arenaleiter bis zu ihrem Champ. Freigeschaltet wird der
+       Reihe nach: Wer eine Region durchspielt, öffnet die nächste. */
+    var regionBox = el('div', { className: 'regionen' });
+    if (!meta.regionFrei(chosen.region)) chosen.region = 0;
 
-    function setzeStufe(n) {
-      chosen.ascension = n;
-      ascLabel.textContent = meta.stufenName(n);
-    }
-    setzeStufe(Math.min(chosen.ascension, maxAsc));
+    W.REGIONS.forEach(function (r, i) {
+      var frei = meta.regionFrei(i);
+      var geschafft = meta.regionGewonnen(i);
+      var champ = (W.CHAMPIONS[r.gen - 1] || {}).name || '?';
+      var karte = el('button', {
+        className: 'region-karte' + (frei ? '' : ' locked') +
+          (i === chosen.region ? ' selected' : '') + (geschafft ? ' geschafft' : ''),
+        type: 'button', disabled: !frei,
+        style: '--regionfarbe: ' + r.color,
+        title: frei ? r.motto : 'Spiele zuerst ' + W.REGIONS[i - 1].name + ' ganz durch.',
+        onclick: function () {
+          chosen.region = i;
+          Array.prototype.forEach.call(regionBox.children, function (c) {
+            c.classList.remove('selected');
+          });
+          karte.classList.add('selected');
+        }
+      }, [
+        el('span', { className: 'region-kopf' }, [
+          el('strong', { className: 'region-name', text: r.name }),
+          geschafft ? U.sym('krone', { className: 'region-krone', title: 'schon bezwungen' }) : null,
+          frei ? null : U.sym('schloss', { className: 'lock' })
+        ]),
+        el('span', { className: 'region-motto', text: frei ? r.motto : 'Noch verschlossen.' }),
+        el('span', { className: 'region-leiter' }, r.leaders.map(function (l) {
+          return U.typeChip(l[1], true);
+        })),
+        el('span', { className: 'region-champ' },
+          U.symText('orden', '8 Orden · Top Vier · ' + champ))
+      ]);
+      regionBox.appendChild(karte);
+    });
 
     var nuzBtn = el('button', {
       className: 'toggle' + (chosen.nuzlocke ? ' on' : ''), type: 'button',
@@ -1107,15 +1141,14 @@
       el('h2', { text: 'Neuer Run' }),
       el('section', {}, [el('h3', { text: 'Modus' }), modeBox]),
       el('section', {}, [
-        el('h3', { text: 'Schwierigkeit' }),
+        el('h3', { text: 'Region' }),
         el('p', { className: 'muted', text:
-          'Stufe 1 ist das Spiel, wie es gedacht ist. Jede weitere Stufe schaltet mehrere Regeln auf einmal an — ' +
-          'und die nächste schaltest du frei, indem du auf der davor gewinnst.' }),
-        el('div', { className: 'asc-box' }, [
-          ascInput, ascLabel,
-          maxAsc === 0 ? el('span', { className: 'muted', text:
-            'Höhere Stufen schaltest du frei, indem du Runs gewinnst.' }) : null
-        ]),
+          'Eine Region, ganz gespielt: ihre acht Arenaleiter der Reihe nach, dann ihre Top Vier ' +
+          'und ihr Champ. Die Regionen sind etwa gleich schwer — schwerer wird es innerhalb einer ' +
+          'Region, von Leiter zu Leiter.' }),
+        regionBox,
+        maxRegion === 0 ? el('p', { className: 'muted', text:
+          'Die nächste Region öffnet sich, sobald du diese hier durchgespielt hast.' }) : null,
         nuzBtn
       ]),
       el('section', {}, [
@@ -1189,7 +1222,7 @@
           'Pokédex stehen. Der erste Sieg legt seinen eigenen Ball bereit — jede Legende hat einen, und er ' +
           'fängt nur sie. Fangen kannst du sie also beim zweiten Antreten.' }),
         frei ? null : el('p', { className: 'legenden-sperre', text:
-          'Noch gesperrt: Gewinne zuerst Stufe 5 im normalen Run.' }),
+          'Noch gesperrt: Spiele zuerst drei Regionen ganz durch.' }),
         el('p', { className: 'muted small', text:
           uebersicht.gefangen + ' von ' + PL.Run.legendenGesamt() + ' gefangen · ' +
           uebersicht.besiegt + ' besiegt · ' +
@@ -1236,7 +1269,7 @@
         el('p', { className: 'muted', text:
           liste.length + ' legendäre Pokémon. Wähle eines aus, stelle dein Team zusammen und tritt an.' }),
         frei ? null : el('p', { className: 'legenden-sperre', text:
-          'Noch gesperrt: Gewinne zuerst Stufe 5 im normalen Run.' })
+          'Noch gesperrt: Spiele zuerst drei Regionen ganz durch.' })
       ]),
       gitter,
       el('div', { className: 'newrun-actions' }, [
@@ -1339,7 +1372,7 @@
       }
       startBtn.disabled = !frei || duellWahl.team.length === 0;
       hinweis.textContent = !frei
-        ? 'Gewinne zuerst Stufe 5 im normalen Run, dann steht dir das Duell offen.'
+        ? 'Spiele zuerst drei Regionen ganz durch, dann steht dir das Duell offen.'
         : duellWahl.team.length === 0
           ? (pool.length ? 'Wähle mindestens ein Pokémon aus.'
             : 'Du hast aus dieser Generation noch nichts gefangen — spiel einen normalen Run und komm wieder.')
@@ -1416,7 +1449,6 @@
   function starteDuell(ziel, team, mitBall) {
     App.run = new PL.Run({
       mode: 'legenden',
-      ascension: Math.max(0, meta.load().bestAscension),
       duell: { art: ziel.id, team: team, meisterball: !!mitBall }
     });
     meta.save();
@@ -1427,12 +1459,16 @@
     // Ein geschickter Run bringt seinen Startwert mit; der Tages-Run holt sich
     // seinen aus dem Datum und schlägt alles andere.
     var seed = chosen.seed;
-    if (chosen.mode === 'taeglich') seed = meta.tagesStartwert();
+    if (chosen.mode === 'taeglich') {
+      // Der Tages-Run gibt Startwert und Region vor — für jeden dieselben.
+      seed = meta.tagesStartwert();
+      chosen.region = meta.tagesRegion();
+    }
     // Was die Sammlung und die Wochenaufträge eingebracht haben, kommt hier
     // in den Beutel. Der Tages-Run bekommt bewusst nichts.
     var vorteil = meta.startVorteil(chosen.mode);
     App.run = new PL.Run({
-      mode: chosen.mode, ascension: chosen.ascension, nuzlocke: chosen.nuzlocke,
+      mode: chosen.mode, region: chosen.region, nuzlocke: chosen.nuzlocke,
       starter: chosen.starter, seed: seed, vorteil: vorteil
     });
     App.run.party.forEach(function (m) { meta.noteCaught(m); });
@@ -1632,7 +1668,7 @@
 
   function backToMap() {
     var run = App.run;
-    var before = run.region;
+    var before = run.badges + ':' + run.weltRunde + ':' + run.leagueStage;
     // Vor dem Weitergehen räumt der Automat auf: Sonderbonbons, Vitamine,
     // Tragegegenstände, und wer aus der Box besser ist, kommt ins Team.
     if (AUTO.on) {
@@ -1649,8 +1685,10 @@
       show('scene', { type: 'blessing', scene: blessing });
       return;
     }
-    if (run.region !== before) {
-      U.toast(run.leagueStage >= 0 ? 'Die Pokémon-Liga öffnet ihre Tore!' : 'Neue Region: ' + run.currentRegion().name);
+    if (run.badges + ':' + run.weltRunde + ':' + run.leagueStage !== before) {
+      U.toast(run.leagueStage >= 0
+        ? 'Die Pokémon-Liga von ' + run.currentRegion().name + ' öffnet ihre Tore!'
+        : run.badges + '. Orden! Weiter durch ' + run.currentRegion().name + '.');
     }
     autosave();
     show('map');
@@ -3753,7 +3791,8 @@
     var t = m.totals;
     var rows = [
       ['Runs gestartet', m.runs], ['Runs gewonnen', m.wins],
-      ['Beste Region', m.bestRegion + 1], ['Höchste Stufe', meta.stufenName(Math.max(0, m.bestAscension))],
+      ['Meiste Orden', m.bestOrden || 0],
+      ['Regionen bezwungen', meta.regionenGewonnen() + ' von ' + W.REGIONS.length],
       ['Kämpfe', t.battles], ['Besiegte Pokémon', t.kos], ['Gefangen', t.catches],
       ['Eigene Ausfälle', t.faints], ['Arenaleiter besiegt', t.bosses || 0],
       ['Entwicklungen', t.evolutions], ['Runden gekämpft', t.turns],
@@ -3765,8 +3804,8 @@
           el('span', { className: 'history-date', text: h.date }),
           el('span', { text: (PL.Run.MODES[h.mode] && PL.Run.MODES[h.mode].name) ||
             PL.Run.ALTE_MODI[h.mode] || h.mode }),
-          el('span', { text: meta.stufenName(h.ascension) + (h.nuzlocke ? ' · Nuzlocke' : '') }),
-          el('span', { text: 'Region ' + (h.region + 1) }),
+          el('span', { text: meta.regionName(h.region || 0) + (h.nuzlocke ? ' · Nuzlocke' : '') }),
+          el('span', { text: (h.badges || 0) + ' von ' + PL.Run.ORDEN_GESAMT + ' Orden' }),
           el('span', { text: h.battles + ' Kämpfe' }),
           el('span', { className: 'history-team' }, h.team.map(function (p) {
             return U.sprite(dex.species[p.sp], { shiny: p.shiny, className: 'tiny' });
@@ -4264,7 +4303,7 @@
       faenge: run.stats.catches,
       arten: neueArten,
       entwicklungen: run.stats.evolutions,
-      regionen: run.mode === 'legenden' ? 0 : run.region,
+      regionen: run.mode === 'legenden' ? 0 : (run.badges || 0),
       runs: run.mode === 'legenden' ? 0 : 1,
       bosse: run.bossesBeaten || 0,
       legenden: run.mode === 'legenden' && outcome === 'sieg' ? 1 : 0
@@ -4339,10 +4378,11 @@
     return el('div', { className: 'end-screen ' + (won ? 'won' : 'lost') }, [
       el('h2', { text: won ? 'Champ!' : 'Der Run endet hier.' }),
       el('p', { className: 'muted', text: won
-        ? 'Du hast die Liga bezwungen. Die nächste Stufe wartet.'
+        ? 'Du hast die Liga von ' + run.currentRegion().name + ' bezwungen. ' +
+          'Die nächste Region steht dir jetzt offen.'
         : 'Alle Pokémon sind kampfunfähig. Aber der Pokédex bleibt — und der nächste Versuch beginnt stärker.' }),
       el('div', { className: 'stat-grid' }, [
-        stat('Regionen', run.region + (won ? 1 : 0)),
+        stat('Orden', won ? PL.Run.ORDEN_GESAMT : (run.badges || 0)),
         stat('Kämpfe', run.stats.battles),
         stat('Siege', run.stats.wins),
         stat('Fänge', run.stats.catches),
@@ -4410,7 +4450,7 @@
     if (latteLaeuft) return;
     latteLaeuft = true;
     var treiber = autoPilot().durchlauf({
-      seed: meta.tagesStartwert(), mode: 'taeglich', starter: 'charmander'
+      seed: meta.tagesStartwert(), mode: 'taeglich', region: meta.tagesRegion(), starter: 'charmander'
     });
     function scheibe() {
       var n = 0;
@@ -4419,7 +4459,7 @@
         var run = treiber.run;
         var gewonnen = run.state === 'victory';
         var latte = {
-          region: Math.min(6, run.region + (gewonnen ? 1 : 0)),
+          region: gewonnen ? PL.Run.ORDEN_GESAMT : (run.badges || 0),
           gewonnen: gewonnen,
           kaempfe: run.stats.battles,
           faenge: run.stats.catches

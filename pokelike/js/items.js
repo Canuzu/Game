@@ -449,7 +449,8 @@
     desc: 'Neu gefangene Pokémon kommen zwei Level über dem Durchschnitt an.',
     mods: { catchLevelBonus: 2 } });
   relic('notarzt', { name: 'Notarzt', rarity: 'selten', icon: 'kreuz',
-    desc: 'Nach jedem Arenakampf wird das Team vollständig geheilt.', mods: { healAfterBoss: 1 } });
+    desc: 'Nach jedem Arenakampf kehren besiegte Pokémon mit halber KP zurück.',
+    mods: { healAfterBoss: 1 } });
   relic('kampfgeist', { name: 'Kampfgeist', rarity: 'selten', icon: 'faust',
     desc: 'Nach jedem Sieg im Kampf +1 auf einen zufälligen Wert.',
     mods: { koBoost: 1 }, battle: true });

@@ -28,16 +28,16 @@
   /* Kurzrun und Boss-Rush lassen sich nicht mehr starten; wer einen alten
      Lauf teilt, soll ihn trotzdem beim Namen nennen können. */
   var MODUS_NAME = {
-    standard: 'Standard', endlos: 'Endlos',
+    standard: 'Standard', endlos: 'Weltreise',
     taeglich: 'Tages-Run', legenden: 'Legendärer Run',
     kurz: 'Kurzrun', bossrush: 'Boss-Rush'
   };
 
-  /** "Stufe 3 — Prüfung", auch ohne geladenes Fortschrittsmodul. */
-  function stufenName(n) {
-    var liste = (PL.Run && PL.Run.STUFEN) || [];
-    var i = Math.min(Math.max(0, n | 0), Math.max(0, liste.length - 1));
-    return liste[i] ? 'Stufe ' + (i + 1) + ' — ' + liste[i].name : 'Stufe ' + (i + 1);
+  /** "Kanto", auch ohne geladenes Weltmodul. */
+  function regionName(i) {
+    var liste = (PL.world && PL.world.REGIONS) || [];
+    var r = liste[Math.min(Math.max(0, i | 0), Math.max(0, liste.length - 1))];
+    return r ? r.name : 'Kanto';
   }
 
   /**
@@ -46,20 +46,24 @@
    */
   function ergebnis(run, outcome) {
     var mons = PL.mon;
-    var gesamt = (PL.Run.MODES[run.mode] || {}).regions || 9;
+    // Gezählt werden jetzt Orden, nicht Regionen: acht Arenaleiter, dann
+    // die Liga. Ein gewonnener Run steht auf allen acht.
+    var gesamt = (PL.Run.ORDEN_GESAMT || 8);
     var gewonnen = outcome === 'sieg' || run.state === 'victory';
-    var erreicht = Math.min(gesamt, run.region + (gewonnen ? 1 : 0));
+    var erreicht = Math.min(gesamt, gewonnen ? gesamt : (run.badges || 0));
 
     return {
       v: 1,
       modus: run.mode,
       modusName: MODUS_NAME[run.mode] || run.mode,
       startwert: run.seed,
-      aufstieg: run.ascension || 0,
+      heimat: run.region || 0,
+      heimatName: regionName(run.region || 0),
       nuzlocke: !!run.nuzlocke,
       gewonnen: gewonnen,
       region: erreicht,
       regionen: gesamt,
+      orden: erreicht,
       datum: new Date().toISOString().slice(0, 10),
       kaempfe: run.stats.battles,
       siege: run.stats.wins,
@@ -88,8 +92,8 @@
   function kaestchen(erg) {
     var out = '', i;
     for (i = 0; i < erg.regionen; i++) {
-      if (i < erg.region - 1) out += '🟩';            // durchgespielt
-      else if (i === erg.region - 1) out += erg.gewonnen ? '🟩' : '🟨';
+      if (i < erg.region) out += '🟩';                // Orden geholt
+      else if (i === erg.region && !erg.gewonnen) out += '🟨';   // hier war Schluss
       else out += '⬜';
     }
     return out;
@@ -97,13 +101,13 @@
 
   function alsText(erg) {
     var zeilen = [];
-    var kopf = 'Pokélike+ · ' + erg.modusName;
-    if (erg.aufstieg > 0) kopf += ' · ' + stufenName(erg.aufstieg);
+    var kopf = 'Pokélike+ · ' + (erg.heimatName || regionName(erg.heimat)) +
+      ' · ' + erg.modusName;
     if (erg.nuzlocke) kopf += ' · Nuzlocke';
     zeilen.push(kopf);
     zeilen.push(erg.gewonnen
       ? '👑 Liga bezwungen!'
-      : 'Region ' + erg.region + ' von ' + erg.regionen);
+      : erg.region + ' von ' + erg.regionen + ' Orden');
     zeilen.push(kaestchen(erg));
     if (erg.team.length) {
       zeilen.push(erg.team.slice(0, 3).map(function (m) {
@@ -198,13 +202,13 @@
     g.textAlign = 'left';
     g.fillStyle = erg.gewonnen ? KARTE.gold : KARTE.text;
     g.font = '700 62px system-ui, sans-serif';
-    g.fillText(erg.gewonnen ? 'Liga bezwungen' : 'Region ' + erg.region, rand, y);
+    g.fillText(erg.gewonnen ? 'Liga bezwungen' : erg.region + ' von ' + erg.regionen + ' Orden',
+      rand, y);
     y += 44;
     g.fillStyle = KARTE.leise;
     g.font = '400 26px system-ui, sans-serif';
-    var unter = erg.modusName + (erg.aufstieg ? ' · ' + stufenName(erg.aufstieg) : '') +
-      (erg.nuzlocke ? ' · Nuzlocke' : '') +
-      (erg.gewonnen ? '' : ' · von ' + erg.regionen + ' Regionen');
+    var unter = (erg.heimatName || regionName(erg.heimat)) + ' · ' + erg.modusName +
+      (erg.nuzlocke ? ' · Nuzlocke' : '');
     g.fillText(unter, rand, y);
     y += 56;
 
@@ -213,8 +217,8 @@
     var kb = Math.min(52, Math.floor((B - rand * 2 - luecke * (n - 1)) / n));
     for (var i = 0; i < n; i++) {
       var x = rand + i * (kb + luecke);
-      var geschafft = i < erg.region - 1 || (i === erg.region - 1 && erg.gewonnen);
-      var aktuell = i === erg.region - 1 && !erg.gewonnen;
+      var geschafft = i < erg.region;
+      var aktuell = i === erg.region && !erg.gewonnen;
       g.fillStyle = geschafft ? KARTE.gut : aktuell ? KARTE.gold : '#232838';
       rundesRechteck(g, x, y, kb, kb, 6);
       g.fill();
@@ -306,7 +310,7 @@
    * ------------------------------------------------------------------------ */
 
   function startwertCode(erg) {
-    return [erg.modus, erg.aufstieg || 0, erg.startwert >>> 0].join('-') +
+    return [erg.modus, erg.heimat || 0, erg.startwert >>> 0].join('-') +
       (erg.nuzlocke ? '-n' : '');
   }
 
@@ -332,11 +336,12 @@
   function ausCode(code) {
     var teile = String(code || '').split('-');
     if (teile.length < 3) return null;
-    var modus = teile[0], aufstieg = parseInt(teile[1], 10), startwert = parseInt(teile[2], 10);
-    if (!PL.Run.MODES[modus] || !isFinite(aufstieg) || !isFinite(startwert)) return null;
+    var modus = teile[0], heimat = parseInt(teile[1], 10), startwert = parseInt(teile[2], 10);
+    if (!PL.Run.MODES[modus] || !isFinite(heimat) || !isFinite(startwert)) return null;
     return {
       modus: modus,
-      aufstieg: Math.max(0, Math.min(10, aufstieg)),
+      heimat: Math.max(0, Math.min(8, heimat)),
+      heimatName: regionName(heimat),
       startwert: startwert >>> 0,
       nuzlocke: teile[3] === 'n',
       modusName: MODUS_NAME[modus] || modus
@@ -406,10 +411,12 @@
    */
   function tagesText(erg, latte) {
     var zeilen = ['Pokélike+ Tages-Run · ' + erg.datum];
-    zeilen.push(erg.gewonnen ? '👑 Liga bezwungen!' : 'Region ' + erg.region + ' von ' + erg.regionen);
+    zeilen.push(erg.gewonnen
+      ? '👑 Liga bezwungen!'
+      : erg.region + ' von ' + erg.regionen + ' Orden');
     zeilen.push(kaestchen(erg));
     if (latte) {
-      var lattenText = latte.gewonnen ? 'Liga bezwungen' : 'Region ' + latte.region;
+      var lattenText = latte.gewonnen ? 'Liga bezwungen' : latte.region + ' Orden';
       var besser = erg.gewonnen && !latte.gewonnen ? ' — geschlagen! 🏆'
         : (!erg.gewonnen && !latte.gewonnen && erg.region > latte.region) ? ' — geschlagen! 🏆'
         : (erg.gewonnen && latte.gewonnen) || erg.region === latte.region ? ' — gleichauf'

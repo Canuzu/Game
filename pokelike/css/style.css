@@ -399,8 +399,37 @@ button { font: inherit; color: inherit; }
 .option-list { display: flex; flex-direction: column; gap: .5rem; }
 .slider { flex: 1; min-width: 180px; accent-color: var(--accent); }
 
-.asc-box { display: flex; align-items: center; gap: .8rem; flex-wrap: wrap; margin-bottom: .8rem; }
-.asc-value { font-weight: 600; }
+/* ---------- Die Wahl der Region ------------------------------------------
+ * Neun Karten statt eines Schwierigkeitsreglers. Jede trägt die Farbe ihrer
+ * Region als schmalen Streifen, ihr Motto, die acht Typen ihrer Arenaleiter
+ * in der Reihenfolge, in der man ihnen begegnet, und ihren Champ.
+ * ------------------------------------------------------------------------ */
+
+.regionen {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: .6rem; margin-bottom: .8rem;
+}
+.region-karte {
+  display: flex; flex-direction: column; align-items: stretch; gap: .3rem;
+  padding: .6rem .7rem; border-radius: var(--radius); text-align: left;
+  background: var(--panel); border: 1px solid var(--line);
+  border-left: 4px solid var(--regionfarbe, var(--line));
+  cursor: pointer; position: relative;
+}
+.region-karte:hover:not(:disabled) { border-color: var(--accent); transform: translateY(-2px); }
+.region-karte.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.region-karte.locked { opacity: .45; filter: grayscale(1); cursor: not-allowed; }
+.region-kopf { display: flex; align-items: center; gap: .4rem; }
+.region-name { font-size: 30px; color: var(--regionfarbe, inherit); }
+/* Wer die Region schon bezwungen hat, sieht hier die Krone. */
+.region-krone { margin-left: auto; opacity: .85; }
+.region-motto { font-size: 20px; color: var(--muted); }
+.region-leiter { display: flex; flex-wrap: wrap; gap: .2rem; }
+.region-leiter .type-chip { font-size: 10px; padding: .1rem .3rem; }
+.region-champ { font-size: 20px; color: var(--muted); }
 .choice-row.stillgelegt { opacity: .4; pointer-events: none; }
 .toggle {
   display: flex; align-items: center; gap: .6rem; padding: .6rem .9rem; width: 100%;
@@ -1375,6 +1404,9 @@ button.move-row:hover { border-color: var(--accent); }
   .starter-name { font-size: 20px; }
   .starter-types .type-chip { font-size: 10px; padding: .1rem .28rem; }
   .starter-types { flex-wrap: wrap; justify-content: center; }
+  .regionen { grid-template-columns: 1fr; }
+  .region-karte { padding: .45rem .55rem; }
+  .region-name { font-size: 20px; }
   .lock { top: .15rem; right: .2rem; font-size: 20px; }
 
   /* Der Schalter braucht auf schmalen Schirmen zwei Zeilen, sonst quetscht

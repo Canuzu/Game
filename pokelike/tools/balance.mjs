@@ -5,7 +5,14 @@
  * gewonnen werden. Damit lässt sich eine Änderung an der Schwierigkeit belegen
  * statt schätzen.
  *
- *   node tools/balance.mjs [Anzahl Runs]
+ *   node tools/balance.mjs [Anzahl Runs] [--region=N]
+ *
+ *   --region=N   welche Region gespielt wird, 1 bis 9 (Grundwert 1: Kanto).
+ *                Die Regionen sollen etwa gleich schwer sein — diese Zahl
+ *                ist da, um das nachzuprüfen.
+ *   --starter=X  mit welchem Startpokémon. Wichtig beim Vergleich von
+ *                Regionen: Ein fester Starter misst mit, wie gut sein Typ
+ *                gegen genau diese Liga steht, und nicht nur die Region.
  * ========================================================================== */
 import '../js/run.js';
 import '../js/ai.js';
@@ -47,6 +54,8 @@ function resolve(run, scene) {
       const bt = fight(run, battle);
       const kind = (bt.reward && bt.reward.kind) || 'wild';
       if (/boss|e4|champ|elite/.test(kind)) note(kind, bt.outcome === 'win');
+      // Zusätzlich nach Ordensnummer, um den Anstieg sichtbar zu machen.
+      if (kind === 'boss') note('orden' + run.badges, bt.outcome === 'win');
       if (kind === 'boss' && bt.trainer && bt.trainer.leader) {
         note('leiter:' + bt.trainer.leader + ' (' + bt.sides[1].team.length + ')',
           bt.outcome === 'win');
@@ -61,8 +70,12 @@ function resolve(run, scene) {
   });
 }
 
+const REGION = Number(process.argv.find((a) => a.startsWith('--region='))?.slice(9) || 1) - 1;
+
+const STARTER = process.argv.find((a) => a.startsWith('--starter='))?.slice(10) || 'charmander';
+
 function autoRun(seed) {
-  const run = new PL.Run({ seed, starter: 'charmander',
+  const run = new PL.Run({ seed, starter: STARTER, region: REGION,
     tempo: process.argv.find((a) => a.startsWith('--tempo='))?.slice(8) || 'gemuetlich' });
   let guard = 0;
   while (run.state !== 'gameover' && run.state !== 'victory' && guard++ < 4000) {
@@ -90,8 +103,8 @@ for (let i = 0; i < N; i++) {
   if (run.legendRegion >= 0 && run.region >= run.legendRegion) legenden.gesehen++;
   if (run.legendUsed) legenden.gekaempft++;
   if (run.state === 'victory') victories++;
-  regionSum += run.region;
-  const k = 'Region ' + run.region + ' / Reihe ' + run.rowIndex;
+  regionSum += run.badges;
+  const k = 'Orden ' + run.badges + ' / Reihe ' + run.rowIndex;
   endet[k] = (endet[k] || 0) + 1;
   const team = run.party.length;
   endet['_teamgroesse'] = (endet['_teamgroesse'] || 0) + team;
@@ -121,6 +134,26 @@ if (process.argv.includes('--ende')) {
   console.log();
 }
 
+/* Der Anstieg innerhalb einer Region: Wie oft wird der erste Arenaleiter
+   gewonnen, wie oft der achte, wie oft die Top Vier, wie oft der Champ?
+   Genau das soll ansteigen — und zwischen den Regionen gleich bleiben. */
+if (process.argv.includes('--anstieg')) {
+  for (let o = 0; o < 8; o++) {
+    const k = 'orden' + o;
+    if (!tally[k]) continue;
+    const [w, n] = tally[k];
+    console.log(('  Arenaleiter ' + (o + 1)).padEnd(20),
+      (w / n * 100).toFixed(0).padStart(3) + ' %  (' + w + '/' + n + ')');
+  }
+  ['e4', 'champ'].forEach((k) => {
+    if (!tally[k]) return;
+    const [w, n] = tally[k];
+    console.log(('  ' + (k === 'e4' ? 'Top Vier' : 'Champ')).padEnd(20),
+      (w / n * 100).toFixed(0).padStart(3) + ' %  (' + w + '/' + n + ')');
+  });
+  console.log();
+}
+
 if (process.argv.includes('--leiter')) {
   Object.keys(tally).filter((k) => k.startsWith('leiter:')).sort().forEach((k) => {
     const [w, n] = tally[k];
@@ -143,4 +176,5 @@ for (const k of order) {
 }
 console.log('—'.repeat(34));
 console.log('Gewichtet   ', (weighted / weight).toFixed(1).padStart(5) + ' %');
-console.log('Runs gewonnen:', victories + '/' + N + ' | Ø Region', (regionSum / N).toFixed(1));
+console.log('Runs gewonnen:', victories + '/' + N + ' | Ø Orden', (regionSum / N).toFixed(1) +
+  ' | ' + PL.world.REGIONS[REGION].name + ' | ' + STARTER);

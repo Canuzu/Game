@@ -428,45 +428,63 @@ await page.waitForSelector('.sammlung-screen');
   await page.waitForSelector('.title-screen');
 }
 
-// Die fünf Stufen — der Regler ist wieder nur Schwierigkeit
+// Die neun Regionen — sie haben den Schwierigkeitsregler ersetzt
 await page.evaluate(() => {
   globalThis.PokelikeApp.run = null;
   PL.meta.reset();
   globalThis.PokelikeApp.show('newrun');
 });
-await page.waitForSelector('.asc-box');
+await page.waitForSelector('.regionen');
 {
-  const regler = page.locator('.newrun .slider');
-  check('Die Schwierigkeit hat einen Regler', (await regler.count()) === 1);
-  const beschriftung = await page.locator('.asc-value').innerText();
-  check('Daneben steht der Name der Stufe', beschriftung.trim() === 'Stufe 1 — Reise', beschriftung);
-  check('Ohne einen einzigen Sieg endet der Regler bei der ersten Stufe',
-    (await regler.getAttribute('max')) === '0', await regler.getAttribute('max'));
+  const karten = page.locator('.region-karte');
+  check('Neun Regionen stehen zur Wahl', (await karten.count()) === 9,
+    String(await karten.count()));
+  check('Es gibt keinen Schwierigkeitsregler mehr',
+    (await page.locator('.newrun .slider').count()) === 0);
+
+  const namen = await karten.locator('.region-name').evaluateAll(
+    (ns) => ns.map((n) => n.textContent));
+  check('Sie stehen in der Reihenfolge der Spiele',
+    namen.join(',') === 'Kanto,Johto,Hoenn,Sinnoh,Einall,Kalos,Alola,Galar,Paldea',
+    namen.join(','));
+
+  check('Ohne einen einzigen Sieg ist nur Kanto offen',
+    (await page.locator('.region-karte:not(.locked)').count()) === 1,
+    String(await page.locator('.region-karte:not(.locked)').count()));
+  check('Kanto ist von Anfang an gewählt',
+    await karten.first().evaluate((n) => n.classList.contains('selected')));
+  check('Jede Karte nennt die acht Typen ihrer Arenaleiter',
+    (await karten.first().locator('.type-chip').count()) === 8,
+    String(await karten.first().locator('.type-chip').count()));
+  const champ = await karten.first().locator('.region-champ').innerText();
+  check('… und ihren Champ', champ.indexOf('Blue') >= 0, champ);
+
   const modi = await page.locator('.choice-row .choice').evaluateAll(
     (ns) => ns.map((n) => n.getAttribute('data-modus')));
   check('Drei Modi stehen zur Wahl — der Legendäre Run steht nicht dabei',
     modi.join(',') === 'standard,endlos,taeglich', modi.join(','));
 
+  // Wer Regionen bezwungen hat, darf weiter hinten anfangen.
   await page.evaluate(() => {
     const m = PL.meta.load();
-    m.bestAscension = 4;
+    m.regionenGewonnen = { 0: true, 1: true, 2: true };
     PL.meta.save();
     globalThis.PokelikeApp.show('newrun');
   });
-  await page.waitForSelector('.asc-box');
-  const regler2 = page.locator('.newrun .slider');
-  check('Der Regler endet bei der fünften Stufe',
-    (await regler2.getAttribute('max')) === '4', await regler2.getAttribute('max'));
-  await regler2.fill('2');
-  await regler2.dispatchEvent('input');
-  check('Der Regler nennt die Stufe beim Namen',
-    (await page.locator('.asc-value').innerText()).trim() === 'Stufe 3 — Prüfung',
-    await page.locator('.asc-value').innerText());
-  await regler2.fill('4');
-  await regler2.dispatchEvent('input');
-  check('Die letzte Raste ist die Meisterschaft, kein eigener Weg',
-    (await page.locator('.asc-value').innerText()).indexOf('Meisterschaft') > 0,
-    await page.locator('.asc-value').innerText());
+  await page.waitForSelector('.regionen');
+  check('Drei Siege öffnen vier Regionen',
+    (await page.locator('.region-karte:not(.locked)').count()) === 4,
+    String(await page.locator('.region-karte:not(.locked)').count()));
+  check('Die bezwungenen tragen ihre Krone',
+    (await page.locator('.region-karte.geschafft').count()) === 3,
+    String(await page.locator('.region-karte.geschafft').count()));
+
+  // Eine offene Region lässt sich wählen, eine verschlossene nicht.
+  await page.locator('.region-karte').nth(3).click();
+  check('Sinnoh lässt sich wählen',
+    await page.locator('.region-karte').nth(3).evaluate((n) => n.classList.contains('selected')));
+  check('Paldea bleibt gesperrt',
+    await page.locator('.region-karte').nth(8).evaluate((n) => n.disabled));
 }
 
 // Der Kampf muss auf ein Handy passen — ohne Scrollen, mit allen Aktionen
@@ -683,7 +701,7 @@ await page.waitForSelector('.asc-box');
   const gesperrt = await page.locator('.menue-zeile.gold').innerText();
   check('Im Titelmenü steht der Legendäre Run golden da', gesperrt.indexOf('Legendärer Run') >= 0, gesperrt);
   check('… und sagt kurz, warum er noch zu ist',
-    /Stufe 5/.test(gesperrt), gesperrt);
+    /drei Regionen/.test(gesperrt), gesperrt);
 
   await page.locator('.menue-zeile.gold').click();
   await page.waitForSelector('.gen-grid');
@@ -692,10 +710,10 @@ await page.waitForSelector('.asc-box');
   check('Neun Generationen stehen zur Wahl',
     (await page.locator('.gen-karte').count()) === 9);
 
-  // Mit Stufe 5 im Rücken und ein paar Kanto-Arten im Pokédex
+  // Mit drei bezwungenen Regionen im Rücken und ein paar Kanto-Arten im Pokédex
   await page.evaluate(() => {
     const m = PL.meta.load();
-    m.bestAscension = 4;
+    m.regionenGewonnen = { 0: true, 1: true, 2: true };
     PL.dex.species.filter((s) => s.g === 1 && !s.bo && !s.f).slice(0, 20)
       .forEach((s) => { m.seen[s.i] = 1; m.caught[s.i] = 1; });
     PL.meta.save();
@@ -833,7 +851,7 @@ await page.waitForSelector('.daily-screen');
   await page.waitForSelector('.tages-banner');
   const banner = await page.locator('.tages-banner').innerText();
   check('Der Titel führt zum Tages-Run', banner.indexOf('Tages-Run') >= 0, banner.replace(/\n/g, ' | '));
-  check('… und verrät, wie der Tag ausging', /Region 6|Liga/.test(banner), banner.replace(/\n/g, ' | '));
+  check('… und verrät, wie der Tag ausging', /Orden|Liga/.test(banner), banner.replace(/\n/g, ' | '));
   await page.locator('.tages-banner').click();
   await page.waitForSelector('.daily-screen');
   check('Der Knopf öffnet den Bildschirm', true);
@@ -1324,7 +1342,7 @@ console.log('\nHandy');
      die Angaben darunter — nichts darf mehr überstehen. */
   const leiste = await phone.evaluate(() => {
     const App = globalThis.PokelikeApp;
-    App.run.ascension = 3; App.run.nuzlocke = true; App.run.money = 1234567;
+    App.run.badges = 3; App.run.nuzlocke = true; App.run.money = 1234567;
     App.show('map');
     const bar = document.querySelector('#topbar');
     const mid = document.querySelector('.topbar-mid');

@@ -168,15 +168,19 @@
   function emptyMeta() {
     return {
       version: 1,
-      runs: 0, wins: 0, bestRegion: 0, bestAscension: -1,
+      runs: 0, wins: 0,
+      // Wie viele Orden im besten Run zusammenkamen, und welche Regionen
+      // schon ganz durchgespielt sind. Die zweite Zahl schaltet die nächste
+      // Region frei.
+      bestOrden: 0, regionenGewonnen: {},
       unlocked: {}, achievements: {}, seen: {}, caught: {}, shinies: {},
       taeglich: {},
-      // Beide Marken stehen bewusst auf "noch nicht erledigt": Ein
-      // Spielstand von früher kennt den Schlüssel gar nicht, und load()
-      // übernimmt nur Schlüssel, die dort auch stehen. Stünde hier schon der
-      // Endwert, liefe die Umstellung nie — bei einem frischen Stand ist sie
-      // ohnehin ein Durchlauf über nichts.
-      stufenFassung: 1,
+      // Die Fassung eines frischen Standes ist die heutige — er braucht
+      // keine Umrechnung. Ob eine fällig ist, entscheidet nicht dieser Wert,
+      // sondern die Zahl im Speicher: load() liest sie dort roh ab, gerade
+      // weil Felder, die es in dieser Vorlage nicht mehr gibt, beim
+      // Übertragen verlorengehen würden.
+      stufenFassung: 4,
       legendenReset: false,
       meilensteine: {},          // welche Sammelmarken schon geholt sind
       meisterbaelle: 0,          // die alte Kasse; bleibt nur für alte Stände stehen
@@ -200,9 +204,14 @@
     if (cache) return cache;
     var s = storage(), raw = s && s.getItem(metaKey());
     cache = emptyMeta();
+    // Was im Speicher steht, aber in der leeren Vorlage nicht mehr vorkommt,
+    // wird beim Übertragen fallengelassen. Genau solche Felder braucht die
+    // Umrechnung unten aber noch — deshalb bleibt das Gelesene hier stehen.
+    var alt = {};
     if (raw) {
       try {
         var data = JSON.parse(raw);
+        alt = data;
         Object.keys(cache).forEach(function (k) {
           if (data[k] === undefined) return;
           if (k === 'settings' || k === 'totals') Object.assign(cache[k], data[k]);
@@ -228,11 +237,24 @@
       });
       cache.legendenReset = true;
     }
-    if (cache.stufenFassung !== 2) {
-      // -1 heißt "noch nichts gewonnen" — das bleibt so, sonst schenkte die
-      // Umrechnung jedem frischen Spielstand die zweite Stufe.
-      if (cache.bestAscension >= 0) cache.bestAscension = PL.Run.stufeAusAltem(cache.bestAscension);
-      cache.stufenFassung = 2;
+    if (alt.stufenFassung !== 4 && raw) {
+      // Die fünf Schwierigkeitsstufen gibt es nicht mehr; an ihre Stelle sind
+      // die neun Regionen getreten. Wer damals weit gekommen ist, soll nicht
+      // wieder bei Kanto anfangen müssen: Die erreichte Stufe wird in
+      // freigeschaltete Regionen umgerechnet. -1 hieß "noch nichts gewonnen"
+      // und bleibt bei der einen Region, mit der jeder anfängt.
+      var ausStufe = [2, 3, 5, 7, 9];
+      var frei = alt.bestAscension === undefined || alt.bestAscension < 0
+        ? 1 : (ausStufe[Math.min(4, alt.bestAscension)] || 1);
+      if (!Object.keys(cache.regionenGewonnen || {}).length) {
+        cache.regionenGewonnen = {};
+        for (var rr = 0; rr < frei - 1; rr++) cache.regionenGewonnen[rr] = true;
+      }
+      // Früher zählte bestRegion, wie viele Regionen ein Run geschafft hat.
+      // Heute zählen Orden — die Zahl passt in ihrer Größenordnung, sie
+      // heißt nur anders.
+      if (!cache.bestOrden) cache.bestOrden = alt.bestRegion || 0;
+      cache.stufenFassung = 4;
     }
     return cache;
   }
@@ -284,12 +306,12 @@
   ];
 
   var UNLOCK_TEXT = {
-    region2: 'Erreiche die dritte Region.',
-    region3: 'Erreiche die vierte Region.',
-    region4: 'Erreiche die fünfte Region.',
-    region5: 'Erreiche die sechste Region.',
-    region6: 'Erreiche die siebte Region.',
-    region7: 'Erreiche die achte Region.',
+    region2: 'Hole zwei Orden in einem Run.',
+    region3: 'Hole drei Orden in einem Run.',
+    region4: 'Hole vier Orden in einem Run.',
+    region5: 'Hole fünf Orden in einem Run.',
+    region6: 'Hole sechs Orden in einem Run.',
+    region7: 'Hole sieben Orden in einem Run.',
     catch50: 'Fange insgesamt 50 Pokémon.',
     catch100: 'Fange insgesamt 100 Pokémon.',
     boss10: 'Besiege insgesamt 10 Arenaleiter.',
@@ -305,8 +327,8 @@
   function unlockState(m) {
     m = m || load();
     return {
-      region2: m.bestRegion >= 2, region3: m.bestRegion >= 3, region4: m.bestRegion >= 4,
-      region5: m.bestRegion >= 5, region6: m.bestRegion >= 6, region7: m.bestRegion >= 7,
+      region2: m.bestOrden >= 2, region3: m.bestOrden >= 3, region4: m.bestOrden >= 4,
+      region5: m.bestOrden >= 5, region6: m.bestOrden >= 6, region7: m.bestOrden >= 7,
       catch50: m.totals.catches >= 50, catch100: m.totals.catches >= 100,
       boss10: (m.totals.bosses || 0) >= 10, boss20: (m.totals.bosses || 0) >= 20,
       win1: m.wins >= 1, win2: m.wins >= 2, win3: m.wins >= 3, win4: m.wins >= 4,
@@ -456,6 +478,16 @@
   /** Der Startwert des Tages. Er hängt am Datum, also hat ihn jeder gleich. */
   function tagesStartwert(datum) {
     return PL.util.hashSeed('daily-' + (datum || heute()));
+  }
+
+  /**
+   * Die Region des Tages. Sie steht mit dem Datum fest und ist für jeden
+   * dieselbe — auch für den, der Paldea noch nicht freigeschaltet hat: Der
+   * Tages-Run ist ein Wettlauf unter gleichen Bedingungen, kein Fortschritt.
+   */
+  function tagesRegion(datum) {
+    var anzahl = (PL.world.REGIONS || []).length || 9;
+    return PL.util.hashSeed('daily-region-' + (datum || heute())) % anzahl;
   }
 
   /** Der Stand von heute — leer, wenn der Tag noch frisch ist. */
@@ -693,11 +725,12 @@
   }
 
   /**
-   * Steht das Legenden-Duell offen? Erst wer die fünfte Schwierigkeitsstufe
-   * im gewöhnlichen Run gewonnen hat, darf antreten.
+   * Steht das Legenden-Duell offen? Erst wer drei Regionen ganz durchgespielt
+   * hat, darf antreten.
    */
+  var LEGENDEN_AB = 3;
   function legendenFrei() {
-    return load().bestAscension >= (PL.Run.STUFEN.length - 1);
+    return Object.keys(load().regionenGewonnen || {}).length >= LEGENDEN_AB;
   }
 
   /* ---------- 4c) Wochenaufträge -----------------------------------------------
@@ -897,20 +930,46 @@
     return e && (e.lvl || e.runs) ? e : null;
   }
 
-  /* ---------- 5) Aufstiege ---------------------------------------------------- */
+  /* ---------- 5) Welche Region offensteht -------------------------------------
+   * Es gibt keine Schwierigkeitsstufen mehr. Stattdessen wählt man vor dem
+   * Start eine Region, und man schaltet die nächste frei, indem man die
+   * vorige ganz durchspielt — acht Arenaleiter, Top Vier, Champ.
+   *
+   * Die Regionen sind untereinander etwa gleich schwer. Freigeschaltet wird
+   * also nicht, weil es härter würde, sondern damit man sie der Reihe nach
+   * kennenlernt und jeder Sieg etwas öffnet.
+   * -------------------------------------------------------------------------- */
 
-  // Die Stufen selbst stehen in run.js — dort, wo ihre Regeln wirken.
-  var ASCENSIONS = PL.Run.STUFEN;
-
-  function maxAscension() {
-    var m = load();
-    return Math.min(ASCENSIONS.length - 1, m.bestAscension + 1);
+  /** Steht diese Region offen? Kanto immer, jede weitere nach der vorigen. */
+  function regionFrei(i, m) {
+    m = m || load();
+    if (i <= 0) return true;
+    return !!(m.regionenGewonnen || {})[i - 1];
   }
 
-  /** Name und Kurzfassung einer Stufe, wie sie überall angezeigt werden. */
-  function stufenName(n) {
-    var st = ASCENSIONS[Math.min(Math.max(0, n | 0), ASCENSIONS.length - 1)];
-    return 'Stufe ' + (Math.min(Math.max(0, n | 0), ASCENSIONS.length - 1) + 1) + ' — ' + st.name;
+  /** Die höchste Region, die offensteht. */
+  function maxRegion() {
+    var m = load(), hoechste = 0, i;
+    for (i = 1; i < PL.world.REGIONS.length; i++) {
+      if (regionFrei(i, m)) hoechste = i;
+    }
+    return hoechste;
+  }
+
+  /** Ist diese Region schon einmal ganz durchgespielt worden? */
+  function regionGewonnen(i) {
+    return !!(load().regionenGewonnen || {})[i];
+  }
+
+  /** Wie viele Regionen bezwungen sind. */
+  function regionenGewonnen() {
+    return Object.keys(load().regionenGewonnen || {}).length;
+  }
+
+  /** Name einer Region, wie er überall angezeigt wird. */
+  function regionName(i) {
+    var r = PL.world.REGIONS[Math.min(Math.max(0, i | 0), PL.world.REGIONS.length - 1)];
+    return r ? r.name : 'Kanto';
   }
 
   /* ---------- 6) Statistik und Runs ------------------------------------------- */
@@ -934,13 +993,15 @@
     m.runs++;
     if (outcome === 'sieg') {
       m.wins++;
-      if (run.ascension > m.bestAscension) m.bestAscension = run.ascension;
-      if (run.ascension >= 1) award('ascend1');
-      if (run.ascension >= 4) award('ascend5');
+      // Eine Region ist bezwungen — das schaltet die nächste frei.
+      m.regionenGewonnen = m.regionenGewonnen || {};
+      m.regionenGewonnen[run.region] = true;
+      if (Object.keys(m.regionenGewonnen).length >= 1) award('ascend1');
+      if (Object.keys(m.regionenGewonnen).length >= 5) award('ascend5');
       if (run.nuzlocke) award('nuzlocke');
       if (run.mode === 'taeglich') award('daily');
     }
-    m.bestRegion = Math.max(m.bestRegion, run.region);
+    m.bestOrden = Math.max(m.bestOrden || 0, run.badges || 0);
     m.totals.battles += run.stats.battles;
     m.totals.kos += run.stats.kos;
     m.totals.catches += run.stats.catches;
@@ -951,8 +1012,9 @@
     m.totals.bosses = (m.totals.bosses || 0) + (run.bossesBeaten || 0);
     m.history.unshift({
       date: new Date().toISOString().slice(0, 16).replace('T', ' '),
-      mode: run.mode, ascension: run.ascension, nuzlocke: run.nuzlocke,
-      outcome: outcome, region: run.region, battles: run.stats.battles,
+      mode: run.mode, nuzlocke: run.nuzlocke,
+      outcome: outcome, region: run.region, badges: run.badges || 0,
+      battles: run.stats.battles,
       catches: run.stats.catches, relics: Object.keys(run.relics).length,
       team: run.party.map(function (p) { return { sp: p.sp, lvl: p.lvl, shiny: !!p.shiny }; })
     });
@@ -1021,7 +1083,8 @@
       team: team,
       level: level,
       money: run.money || 0,
-      ascension: run.ascension === undefined ? 0 : run.ascension,
+      region: run.region === undefined ? 0 : run.region,
+      badges: run.badges || 0,
       mode: run.mode || 'klassisch',
       nuzlocke: !!run.nuzlocke,
       battles: (run.stats && run.stats.battles) || 0
@@ -1150,12 +1213,15 @@
     starters: starters, unlockState: unlockState, unlockText: UNLOCK_TEXT,
     achievements: achievements, refreshAchievements: refreshAchievements, award: award,
     reload: reload,
-    heute: heute, tagesStartwert: tagesStartwert, tagesStand: tagesStand,
+    heute: heute, tagesStartwert: tagesStartwert, tagesRegion: tagesRegion,
+    tagesStand: tagesStand,
     setzeMesslatte: setzeMesslatte, setzeTagesErgebnis: setzeTagesErgebnis,
     tagGespielt: tagGespielt,
     noteSeen: noteSeen, noteCaught: noteCaught, noteOwned: noteOwned,
     noteParty: noteParty, dexStats: dexStats,
-    ASCENSIONS: ASCENSIONS, maxAscension: maxAscension, stufenName: stufenName,
+    regionFrei: regionFrei, maxRegion: maxRegion, regionName: regionName,
+    regionGewonnen: regionGewonnen, regionenGewonnen: regionenGewonnen,
+    LEGENDEN_AB: LEGENDEN_AB,
     MEILENSTEINE: MEILENSTEINE, meilensteine: meilensteine,
     pruefeMeilensteine: pruefeMeilensteine, sammelLohn: sammelLohn, sammelStand: sammelStand,
     WOCHENPREIS: WOCHENPREIS,

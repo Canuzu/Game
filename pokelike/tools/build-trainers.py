@@ -70,6 +70,7 @@ STAND_IN = {
     'Marnie': 'gen4/diamond-pearl/Idol',
     'Bede': 'gen5/black-white/Rich_Boy',
     'Raihan': 'gen5/black-white/Ace_Trainer',
+    'Hop': 'gen5/black-white/School_Kid',
     'Leon': 'gen5/black-white/Veteran',
     # Paldea
     'Katy': 'gen5/black-white/Baker',

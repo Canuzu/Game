@@ -51,18 +51,44 @@
                 ['Larry', 'Normal'], ['Ryme', 'Ghost'], ['Tulip', 'Psychic'], ['Grusha', 'Ice']] }
   ];
 
-  var ELITE = [
-    ['Lorelei', 'Ice'], ['Bruno', 'Fighting'], ['Agatha', 'Ghost'], ['Lance', 'Dragon'],
-    ['Will', 'Psychic'], ['Karen', 'Dark'], ['Sidney', 'Dark'], ['Phoebe', 'Ghost'],
-    ['Glacia', 'Ice'], ['Drake', 'Dragon'], ['Aaron', 'Bug'], ['Bertha', 'Ground'],
-    ['Flint', 'Fire'], ['Lucian', 'Psychic'], ['Shauntal', 'Ghost'], ['Marshal', 'Fighting'],
-    ['Grimsley', 'Dark'], ['Caitlin', 'Psychic'], ['Malva', 'Fire'], ['Siebold', 'Water'],
-    ['Wikstrom', 'Steel'], ['Drasna', 'Dragon'], ['Hala', 'Fighting'], ['Olivia', 'Rock'],
-    ['Rika', 'Ground'], ['Poppy', 'Steel'], ['Hassel', 'Dragon'], ['Kahili', 'Flying'],
-    // Galar hat keine Top Vier — hier treten die Halbfinalgegner des
-    // Pokal-Turniers an, damit die Region in der Liga nicht fehlt.
-    ['Marnie', 'Dark'], ['Bede', 'Fairy'], ['Piers', 'Dark']
-  ];
+  /* ---------- Die Liga einer Region ------------------------------------------
+   * Jede Region bringt ihre eigene Top Vier mit, in der Reihenfolge, in der
+   * man ihr in den Spielen gegenübersteht, und dahinter ihren Champ.
+   *
+   * Vier Namen stehen doppelt, und das ist kein Versehen: Koga ist in Kanto
+   * Arenaleiter und in Johto Mitglied der Top Vier, Bruno gehört beiden Ligen
+   * an, Acerola und Larry sind in ihrer eigenen Region beides. So steht es in
+   * den Spielen, und so bleibt es hier.
+   *
+   * Galar ist der eine Sonderfall: Dort gibt es keine Top Vier, sondern ein
+   * Pokal-Turnier. An ihre Stelle treten die Gegner aus dessen Endrunde.
+   * -------------------------------------------------------------------------- */
+
+  var ELITE_VIER = {
+    kanto:  [['Lorelei', 'Ice'], ['Bruno', 'Fighting'], ['Agatha', 'Ghost'], ['Lance', 'Dragon']],
+    johto:  [['Will', 'Psychic'], ['Koga', 'Poison'], ['Bruno', 'Fighting'], ['Karen', 'Dark']],
+    hoenn:  [['Sidney', 'Dark'], ['Phoebe', 'Ghost'], ['Glacia', 'Ice'], ['Drake', 'Dragon']],
+    sinnoh: [['Aaron', 'Bug'], ['Bertha', 'Ground'], ['Flint', 'Fire'], ['Lucian', 'Psychic']],
+    einall: [['Shauntal', 'Ghost'], ['Marshal', 'Fighting'], ['Grimsley', 'Dark'], ['Caitlin', 'Psychic']],
+    kalos:  [['Malva', 'Fire'], ['Siebold', 'Water'], ['Wikstrom', 'Steel'], ['Drasna', 'Dragon']],
+    alola:  [['Hala', 'Fighting'], ['Olivia', 'Rock'], ['Acerola', 'Ghost'], ['Kahili', 'Flying']],
+    galar:  [['Marnie', 'Dark'], ['Bede', 'Fairy'], ['Piers', 'Dark'], ['Hop', 'Normal']],
+    paldea: [['Rika', 'Ground'], ['Poppy', 'Steel'], ['Larry', 'Flying'], ['Hassel', 'Dragon']]
+  };
+
+  /* Alle Mitglieder in einer Liste — für Prüfungen und Übersichten. Jeder
+     Name steht hier nur einmal, auch wenn er zwei Ligen angehört. */
+  var ELITE = (function () {
+    var raus = [], gesehen = {};
+    Object.keys(ELITE_VIER).forEach(function (id) {
+      ELITE_VIER[id].forEach(function (e) {
+        if (gesehen[e[0]]) return;
+        gesehen[e[0]] = true;
+        raus.push(e);
+      });
+    });
+    return raus;
+  })();
 
   var CHAMPIONS = [
     { name: 'Blue', team: ['pidgeot', 'alakazam', 'rhydon', 'gyarados', 'arcanine', 'blastoise'] },
@@ -362,10 +388,15 @@
    * Nur wenn ein Leiter keine hinterlegte Aufstellung hat, wird wie früher
    * eine aus dem Typenpool zusammengestellt.
    */
+  /**
+   * index ist der Orden, um den gekämpft wird: 0 ist der erste Arenaleiter
+   * der Region, 7 der letzte. Früher stand er für die Region und musste erst
+   * auf einen Leiter umgerechnet werden — jetzt läuft ein Run durch eine
+   * einzige Region und trifft ihre acht Leiter der Reihe nach.
+   */
   function bossTeam(rng, region, level, index, opts) {
     var list = region.leaders;
-    var slot = Math.round(index / 8 * (list.length - 1)) + rng.range(-1, 1);
-    var leader = list[clamp(slot, 0, list.length - 1)];
+    var leader = list[clamp(index, 0, list.length - 1)];
     var type = leader[1];
     var roster = PL.leaders ? PL.leaders.team(leader[0]) : null;
     var quality = Math.min(0.88, 0.70 + index * 0.023) - ((opts && opts.ease) || 0);
@@ -419,12 +450,15 @@
    * Arten. Nur wer keine hinterlegte Aufstellung hat, bekommt eine aus dem
    * Typenpool gebaut.
    */
-  function eliteTeam(rng, level, index, used, opts) {
-    var choice, guard = 0;
-    do { choice = rng.pick(ELITE); } while (used && used[choice[0]] && guard++ < 40);
-    if (used) used[choice[0]] = true;
+  /**
+   * Die Top Vier der Region, in der Reihenfolge der Spiele: index 0 bis 3.
+   * Früher wurde aus einem Topf aller Ligen gelost.
+   */
+  function eliteTeam(rng, level, region, index, opts) {
+    var vier = ELITE_VIER[region && region.id] || ELITE_VIER.kanto;
+    var choice = vier[clamp(index, 0, vier.length - 1)];
     var type = choice[1];
-    var roster = PL.leaders ? PL.leaders.team(choice[0]) : null;
+    var roster = PL.leaders ? PL.leaders.team(choice[0], true) : null;
     var quality = 0.9 - ((opts && opts.ease) || 0);
 
     var species;
@@ -466,8 +500,9 @@
     };
   }
 
-  function championTeam(rng, level, opts) {
-    var champ = rng.pick(CHAMPIONS);
+  /** Der Champ der Region — Blue in Kanto, Geeta in Paldea. */
+  function championTeam(rng, level, region, opts) {
+    var champ = CHAMPIONS[region && region.gen ? region.gen - 1 : 0] || CHAMPIONS[0];
     var team = champ.team.map(function (id, i) {
       var sp = fitToLevel(dex.sp(id) || dex.sp('pidgeot'), level);
       var mon = buildMon(rng, sp, level + (i === 5 ? 2 : 0), {
@@ -1038,7 +1073,7 @@
   PL.world = {
     REGIONS: REGIONS,
     TRAINERS: TRAINERS,
-    ELITE: ELITE,
+    ELITE: ELITE, ELITE_VIER: ELITE_VIER,
     CHAMPIONS: CHAMPIONS,
     EVENTS: EVENTS,
     EVENT_AUTO: EVENT_AUTO,
