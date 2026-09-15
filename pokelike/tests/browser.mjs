@@ -1530,6 +1530,16 @@ console.log('\nDer Trainer bleibt auf der Bühne');
   await page.waitForTimeout(3400);
   check('Ein wildes Pokémon bringt keinen Trainer mit',
     (await page.locator('.trainer-dauer').count()) === 0);
+  // Am Rechner bleibt die Anzeige, wie sie war — und der Regler fehlt dort,
+  // weil er nichts bewirken würde.
+  const amPC = await page.evaluate(() => Number(getComputedStyle(document.documentElement)
+    .getPropertyValue('--anzeige-skala')));
+  check('Am Rechner wird nichts skaliert', amPC === 1, String(amPC));
+  await page.evaluate(() => globalThis.PokelikeApp.show('settings'));
+  await page.waitForSelector('.optionen');
+  check('… und der Regler steht dort nicht',
+    (await page.locator('input[aria-label="Größe der Kampfanzeige"]').count()) === 0);
+
   if (SHOT_DIR) await page.screenshot({ path: join(SHOT_DIR, '11-trainer.png') });
   await browser3.close();
 }
@@ -1561,20 +1571,40 @@ console.log('\nDer Trainer bleibt auf der Bühne');
     const lvl = document.querySelector('.mon-frame .frame-head .lvl');
     const rahmen = document.querySelector('.mon-frame').getBoundingClientRect();
     return {
+      skala: Number(getComputedStyle(document.documentElement)
+        .getPropertyValue('--anzeige-skala')),
       anteil: f.width / b.width,
       flaeche: (f.width * f.height) / (b.width * b.height),
       lvlDrin: lvl.getBoundingClientRect().right <= rahmen.right + 1,
       kopfPasst: kopf.scrollWidth <= kopf.clientWidth + 1,
-      typenWeg: getComputedStyle(document.querySelector('.mon-frame .frame-types')).display
+      typen: document.querySelectorAll('.mon-frame .frame-types .type-chip').length
     };
   });
-  check('Die Anzeige nimmt höchstens die halbe Bühnenbreite',
+  check('Auf dem Handy wird die Anzeige verkleinert', mass.skala < 1 && mass.skala > 0,
+    String(mass.skala));
+  check('Sie nimmt höchstens die halbe Bühnenbreite',
     mass.anteil <= 0.5, (mass.anteil * 100).toFixed(0) + ' %');
-  check('… und höchstens ein Fünftel der Fläche',
-    mass.flaeche <= 0.2, (mass.flaeche * 100).toFixed(0) + ' %');
+  check('… und höchstens ein Sechstel der Fläche',
+    mass.flaeche <= 0.166, (mass.flaeche * 100).toFixed(0) + ' %');
   check('Das Level steht vollständig im Rahmen', mass.lvlDrin, JSON.stringify(mass));
   check('Die Kopfzeile läuft nicht über', mass.kopfPasst, JSON.stringify(mass));
-  check('Die Typenplaketten weichen auf dem Handy', mass.typenWeg === 'none', mass.typenWeg);
+  // Verkleinern statt weglassen: Die Typen stehen weiter da, nur kleiner.
+  check('Die Typenplaketten bleiben erhalten', mass.typen >= 1, String(mass.typen));
+
+  // Der Regler in den Einstellungen wirkt sofort und nur auf dem Handy.
+  await phone2.evaluate(() => globalThis.PokelikeApp.show('settings'));
+  await phone2.waitForSelector('.optionen');
+  const regler = phone2.locator('input[aria-label="Größe der Kampfanzeige"]');
+  check('Auf dem Handy gibt es einen Regler dafür', (await regler.count()) === 1);
+  await regler.fill('50');
+  await regler.dispatchEvent('input');
+  const klein = await phone2.evaluate(() => Number(getComputedStyle(document.documentElement)
+    .getPropertyValue('--anzeige-skala')));
+  check('Er stellt die Anzeige sofort kleiner', klein < mass.skala,
+    klein + ' statt ' + mass.skala);
+  check('… und schreibt den Wert in die Einstellungen',
+    await phone2.evaluate(() => PL.meta.settings().anzeige === 0.5),
+    JSON.stringify(await phone2.evaluate(() => PL.meta.settings().anzeige)));
   if (SHOT_DIR) await phone2.screenshot({ path: join(SHOT_DIR, '10-handy-kampf.png') });
   await browser4.close();
 }

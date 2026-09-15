@@ -4134,7 +4134,11 @@
           meta.setSetting('music', v);
           if (PL.audio) { PL.audio.setEnabled(v); if (v) updateMusic(App.screen); }
         })),
-      row('Lautstärke', 'Gilt für Musik und Klänge.', volumeSlider(s))
+      row('Lautstärke', 'Gilt für Musik und Klänge.', volumeSlider(s)),
+      amFinger() ? row('Kampfanzeige',
+        'Wie groß Name, Level und Lebensbalken im Kampf stehen. Gilt nur auf ' +
+        'diesem Gerät — am Rechner bleibt die Anzeige, wie sie ist.',
+        anzeigeSlider(s)) : null
       ]),
       el('div', { className: 'save-zone' }, [
         el('h3', { text: 'Spielstand' }),
@@ -4160,6 +4164,47 @@
       el('p', { className: 'muted small', text: 'Gespeichert wird ausschließlich im Browser dieses Geräts. Es werden keine Daten übertragen; die Pokémon-Bilder kommen von Pokémon Showdown und PokeAPI.' })
     ]);
   };
+
+  /** Wird hier mit dem Finger gespielt? Danach richtet sich die Kampfanzeige. */
+  function amFinger() {
+    try {
+      return !!(root.matchMedia && root.matchMedia('(pointer: coarse)').matches);
+    } catch (e) { return false; }
+  }
+
+  /**
+   * Wie groß die Kampfanzeige steht — als Faktor auf den ganzen Kasten.
+   *
+   * Kleiner setzen ließe sich die Schrift nicht: Der Pixelsatz braucht ein
+   * Vielfaches von 10 px. Skaliert wird deshalb der ganze Kasten, und weil
+   * das nur auf dem Handy nötig ist, hängt es an einer eigenen Zahl, die
+   * am Rechner niemand liest.
+   */
+  var ANZEIGE_GRUND = 0.7;
+  function setzeAnzeige(v) {
+    var doc = root.document;
+    if (!doc || !doc.documentElement) return;
+    doc.documentElement.style.setProperty('--anzeige-handy', String(v));
+  }
+
+  function anzeigeSlider(s) {
+    var wert = s.anzeige === undefined ? ANZEIGE_GRUND : s.anzeige;
+    var zahl = el('span', { className: 'slider-value', text: Math.round(wert * 100) + ' %' });
+    var regler = el('input', {
+      type: 'range', min: '45', max: '100', step: '5',
+      className: 'slider', value: String(Math.round(wert * 100)),
+      'aria-label': 'Größe der Kampfanzeige'
+    });
+    function stellen() {
+      var v = Number(regler.value) / 100;
+      zahl.textContent = Math.round(v * 100) + ' %';
+      setzeAnzeige(v);
+      return v;
+    }
+    regler.addEventListener('input', stellen);
+    regler.addEventListener('change', function () { meta.setSetting('anzeige', stellen()); });
+    return el('div', { className: 'slider-row' }, [regler, zahl]);
+  }
 
   /**
    * Der Lautstärkeregler. Gestellt wird sofort, gespeichert erst, wenn der
@@ -4936,6 +4981,9 @@
 
   function boot() {
     applyTheme();
+    // Die gewählte Größe der Kampfanzeige gilt ab dem ersten Bild, nicht
+    // erst, wenn jemand die Einstellungen öffnet.
+    setzeAnzeige(settings().anzeige === undefined ? ANZEIGE_GRUND : settings().anzeige);
     if (PL.moments) PL.moments.sound = tone;
     if (PL.audio) {
       PL.audio.setVolume(settings().volume === undefined ? 0.5 : settings().volume);

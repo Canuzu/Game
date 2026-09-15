@@ -734,9 +734,26 @@ button { font: inherit; color: inherit; }
   .trainer-dauer { animation: none; opacity: .94; }
 }
 
-.frame-wrap { position: absolute; z-index: 6; width: min(232px, 36%); }
-.frame-enemy { top: 4%; left: 2.5%; }
-.frame-mine { bottom: 4%; right: 2.5%; }
+/* Die Kampfanzeige lässt sich als Ganzes verkleinern.
+ *
+ * Kleiner *setzen* ging nicht: Der Pixelsatz rendert ein Schriftpixel als
+ * ein Zehntel der Schriftgröße, also muss sie ein Vielfaches von 10 px
+ * bleiben — und 10 px wäre ein Bildpunkt je Schriftpixel und damit
+ * unlesbar. Deshalb bleibt die Schrift, wie sie ist, und der ganze Kasten
+ * wird skaliert: Schrift, Balken und Abstände schrumpfen gemeinsam und im
+ * selben Verhältnis.
+ *
+ * Am Schreibtisch steht die Zahl auf 1 und nichts ändert sich. Nur auf
+ * Geräten mit Finger greift --anzeige-handy, das die Einstellungen setzen.
+ * Der Ursprung liegt in der Ecke, in der die Anzeige klebt — sonst rückte
+ * sie beim Verkleinern von ihrem Rand ab. */
+:root { --anzeige-skala: 1; }
+.frame-wrap {
+  position: absolute; z-index: 6; width: min(232px, 36%);
+  transform: scale(var(--anzeige-skala));
+}
+.frame-enemy { top: 4%; left: 2.5%; transform-origin: top left; }
+.frame-mine { bottom: 4%; right: 2.5%; transform-origin: bottom right; }
 /* Die Anzeige soll ablesbar sein, aber der Bühne nicht die Schau stehlen —
    deshalb knapp gesetzt und mit kleiner Schrift. */
 .mon-frame {
@@ -1382,29 +1399,22 @@ button.move-row:hover { border-color: var(--accent); }
   .platform { width: 118px; height: 28px; }
   .slot-enemy .platform { width: 98px; height: 24px; }
 
-  /* Die Anzeigen sitzen auf der Bühne — auf dem Handy standen sie ihr im
-     Weg. Mit 50 % Breite waren sie dort sogar breiter als am Schreibtisch
-     (36 %), und auf einer Bühne von 250 Pixeln Höhe blieb vom Pokémon kaum
-     etwas übrig. Jetzt sind sie schmal, rücken in die Ecken und zeigen nur
-     noch, was im Kampf wirklich zählt: Name, Level, Leben.
-     Die Schrift bleibt bei 20 px — darunter fiele der Pixelsatz auf einen
-     Bildpunkt je Buchstabenpixel zusammen und würde unleserlich. */
-  .frame-wrap { width: min(172px, 48%); }
-  /* Das Geschlechtszeichen ist Zierrat — auf dem Handy kostet es genau die
-     Breite, die dem Namen fehlt. Es steht weiter im Team und im Pokédex. */
-  .mon-frame .frame-head .gender { display: none; }
+  /* Auf dem Handy wird die ganze Anzeige verkleinert, statt ihr Inhalt
+     wegzunehmen. Der Kasten behält damit seine volle Breite und zeigt
+     weiterhin Typen und Geschlecht — er ist nur kleiner. Wie viel kleiner,
+     steht in den Einstellungen; ohne eigene Wahl sind es 70 %.
+
+     Der frühere Weg — schmaler setzen und Inhalt streichen — ging nur
+     halb auf: Die Schrift muss ein Vielfaches von 10 px bleiben, also
+     blieb sie groß, während der Kasten schrumpfte, und die Namen wurden
+     abgeschnitten. Skalieren trifft alles im selben Verhältnis. */
+  :root { --anzeige-skala: var(--anzeige-handy, .7); }
+  .frame-wrap { width: min(232px, 62%); }
   .frame-enemy { top: 2.5%; left: 1.5%; }
   .frame-mine { bottom: 2.5%; right: 1.5%; }
-  .mon-frame { padding: .14rem .3rem; font-size: 20px; line-height: 1.12; }
-  .mon-frame .frame-head strong { font-size: 20px; }
-  .mon-frame .frame-head .lvl { font-size: 20px; }
-  .mon-frame .frame-sub { font-size: 20px; gap: .22rem; margin-top: .1rem; }
-  /* Die Typen stehen schon an den Attackenkacheln und am Pokémon selbst. */
-  .mon-frame .frame-types { display: none; }
-  .mon-frame .hp-bar { height: 5px; }
-  .mon-frame .exp-bar { height: 3px; margin-top: .1rem; }
-  .team-dots { margin-top: .16rem; }
-  .team-dots .dot { width: 5px; height: 5px; }
+  .mon-frame { padding: .2rem .35rem; line-height: 1.16; }
+  .mon-frame .frame-sub { gap: .24rem; margin-top: .12rem; }
+  .mon-frame .frame-types { margin: .1rem 0; }
 
   /* Der Titelträger rückt weiter aus der Mitte und wird kleiner, sonst
      steht er auf dem Pokémon seines Gegenübers. */

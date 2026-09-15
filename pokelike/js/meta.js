@@ -194,7 +194,13 @@
       arten: {},                 // je Art der eigene Bestwert
       totals: { battles: 0, kos: 0, catches: 0, faints: 0, money: 0, turns: 0, evolutions: 0, playtime: 0 },
       history: [],
-      settings: { theme: 'auto', lang: 'de', speed: 'normal', sound: true, music: true, volume: 0.5, confirmRisky: true, figur: 'rot' }
+      settings: {
+        theme: 'auto', lang: 'de', speed: 'normal', sound: true, music: true,
+        volume: 0.5, confirmRisky: true, figur: 'rot',
+        // Wie groß die Kampfanzeige auf Geräten mit Finger steht. Am
+        // Rechner wird die Zahl nicht gelesen.
+        anzeige: 0.7
+      }
     };
   }
 

@@ -1096,9 +1096,26 @@ button { font: inherit; color: inherit; }
   .trainer-dauer { animation: none; opacity: .94; }
 }
 
-.frame-wrap { position: absolute; z-index: 6; width: min(232px, 36%); }
-.frame-enemy { top: 4%; left: 2.5%; }
-.frame-mine { bottom: 4%; right: 2.5%; }
+/* Die Kampfanzeige lässt sich als Ganzes verkleinern.
+ *
+ * Kleiner *setzen* ging nicht: Der Pixelsatz rendert ein Schriftpixel als
+ * ein Zehntel der Schriftgröße, also muss sie ein Vielfaches von 10 px
+ * bleiben — und 10 px wäre ein Bildpunkt je Schriftpixel und damit
+ * unlesbar. Deshalb bleibt die Schrift, wie sie ist, und der ganze Kasten
+ * wird skaliert: Schrift, Balken und Abstände schrumpfen gemeinsam und im
+ * selben Verhältnis.
+ *
+ * Am Schreibtisch steht die Zahl auf 1 und nichts ändert sich. Nur auf
+ * Geräten mit Finger greift --anzeige-handy, das die Einstellungen setzen.
+ * Der Ursprung liegt in der Ecke, in der die Anzeige klebt — sonst rückte
+ * sie beim Verkleinern von ihrem Rand ab. */
+:root { --anzeige-skala: 1; }
+.frame-wrap {
+  position: absolute; z-index: 6; width: min(232px, 36%);
+  transform: scale(var(--anzeige-skala));
+}
+.frame-enemy { top: 4%; left: 2.5%; transform-origin: top left; }
+.frame-mine { bottom: 4%; right: 2.5%; transform-origin: bottom right; }
 /* Die Anzeige soll ablesbar sein, aber der Bühne nicht die Schau stehlen —
    deshalb knapp gesetzt und mit kleiner Schrift. */
 .mon-frame {
@@ -1744,29 +1761,22 @@ button.move-row:hover { border-color: var(--accent); }
   .platform { width: 118px; height: 28px; }
   .slot-enemy .platform { width: 98px; height: 24px; }
 
-  /* Die Anzeigen sitzen auf der Bühne — auf dem Handy standen sie ihr im
-     Weg. Mit 50 % Breite waren sie dort sogar breiter als am Schreibtisch
-     (36 %), und auf einer Bühne von 250 Pixeln Höhe blieb vom Pokémon kaum
-     etwas übrig. Jetzt sind sie schmal, rücken in die Ecken und zeigen nur
-     noch, was im Kampf wirklich zählt: Name, Level, Leben.
-     Die Schrift bleibt bei 20 px — darunter fiele der Pixelsatz auf einen
-     Bildpunkt je Buchstabenpixel zusammen und würde unleserlich. */
-  .frame-wrap { width: min(172px, 48%); }
-  /* Das Geschlechtszeichen ist Zierrat — auf dem Handy kostet es genau die
-     Breite, die dem Namen fehlt. Es steht weiter im Team und im Pokédex. */
-  .mon-frame .frame-head .gender { display: none; }
+  /* Auf dem Handy wird die ganze Anzeige verkleinert, statt ihr Inhalt
+     wegzunehmen. Der Kasten behält damit seine volle Breite und zeigt
+     weiterhin Typen und Geschlecht — er ist nur kleiner. Wie viel kleiner,
+     steht in den Einstellungen; ohne eigene Wahl sind es 70 %.
+
+     Der frühere Weg — schmaler setzen und Inhalt streichen — ging nur
+     halb auf: Die Schrift muss ein Vielfaches von 10 px bleiben, also
+     blieb sie groß, während der Kasten schrumpfte, und die Namen wurden
+     abgeschnitten. Skalieren trifft alles im selben Verhältnis. */
+  :root { --anzeige-skala: var(--anzeige-handy, .7); }
+  .frame-wrap { width: min(232px, 62%); }
   .frame-enemy { top: 2.5%; left: 1.5%; }
   .frame-mine { bottom: 2.5%; right: 1.5%; }
-  .mon-frame { padding: .14rem .3rem; font-size: 20px; line-height: 1.12; }
-  .mon-frame .frame-head strong { font-size: 20px; }
-  .mon-frame .frame-head .lvl { font-size: 20px; }
-  .mon-frame .frame-sub { font-size: 20px; gap: .22rem; margin-top: .1rem; }
-  /* Die Typen stehen schon an den Attackenkacheln und am Pokémon selbst. */
-  .mon-frame .frame-types { display: none; }
-  .mon-frame .hp-bar { height: 5px; }
-  .mon-frame .exp-bar { height: 3px; margin-top: .1rem; }
-  .team-dots { margin-top: .16rem; }
-  .team-dots .dot { width: 5px; height: 5px; }
+  .mon-frame { padding: .2rem .35rem; line-height: 1.16; }
+  .mon-frame .frame-sub { gap: .24rem; margin-top: .12rem; }
+  .mon-frame .frame-types { margin: .1rem 0; }
 
   /* Der Titelträger rückt weiter aus der Mitte und wird kleiner, sonst
      steht er auf dem Pokémon seines Gegenübers. */
@@ -3522,7 +3532,7 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
   var PL = root.PL || (root.PL = {});
 
   // Diese Zeile ersetzt tools/build-single.mjs beim Bauen.
-  var BUILD = '20260915T164514Z-6589033';
+  var BUILD = '20260915T165545Z-65a4b6b';
 
   var TRIED_KEY = 'pokelike.plus.update.versucht';
   var state = { build: BUILD, latest: null, checking: false, stuck: false };
@@ -15016,7 +15026,13 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
       arten: {},                 // je Art der eigene Bestwert
       totals: { battles: 0, kos: 0, catches: 0, faints: 0, money: 0, turns: 0, evolutions: 0, playtime: 0 },
       history: [],
-      settings: { theme: 'auto', lang: 'de', speed: 'normal', sound: true, music: true, volume: 0.5, confirmRisky: true, figur: 'rot' }
+      settings: {
+        theme: 'auto', lang: 'de', speed: 'normal', sound: true, music: true,
+        volume: 0.5, confirmRisky: true, figur: 'rot',
+        // Wie groß die Kampfanzeige auf Geräten mit Finger steht. Am
+        // Rechner wird die Zahl nicht gelesen.
+        anzeige: 0.7
+      }
     };
   }
 
@@ -23639,7 +23655,11 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
           meta.setSetting('music', v);
           if (PL.audio) { PL.audio.setEnabled(v); if (v) updateMusic(App.screen); }
         })),
-      row('Lautstärke', 'Gilt für Musik und Klänge.', volumeSlider(s))
+      row('Lautstärke', 'Gilt für Musik und Klänge.', volumeSlider(s)),
+      amFinger() ? row('Kampfanzeige',
+        'Wie groß Name, Level und Lebensbalken im Kampf stehen. Gilt nur auf ' +
+        'diesem Gerät — am Rechner bleibt die Anzeige, wie sie ist.',
+        anzeigeSlider(s)) : null
       ]),
       el('div', { className: 'save-zone' }, [
         el('h3', { text: 'Spielstand' }),
@@ -23665,6 +23685,47 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
       el('p', { className: 'muted small', text: 'Gespeichert wird ausschließlich im Browser dieses Geräts. Es werden keine Daten übertragen; die Pokémon-Bilder kommen von Pokémon Showdown und PokeAPI.' })
     ]);
   };
+
+  /** Wird hier mit dem Finger gespielt? Danach richtet sich die Kampfanzeige. */
+  function amFinger() {
+    try {
+      return !!(root.matchMedia && root.matchMedia('(pointer: coarse)').matches);
+    } catch (e) { return false; }
+  }
+
+  /**
+   * Wie groß die Kampfanzeige steht — als Faktor auf den ganzen Kasten.
+   *
+   * Kleiner setzen ließe sich die Schrift nicht: Der Pixelsatz braucht ein
+   * Vielfaches von 10 px. Skaliert wird deshalb der ganze Kasten, und weil
+   * das nur auf dem Handy nötig ist, hängt es an einer eigenen Zahl, die
+   * am Rechner niemand liest.
+   */
+  var ANZEIGE_GRUND = 0.7;
+  function setzeAnzeige(v) {
+    var doc = root.document;
+    if (!doc || !doc.documentElement) return;
+    doc.documentElement.style.setProperty('--anzeige-handy', String(v));
+  }
+
+  function anzeigeSlider(s) {
+    var wert = s.anzeige === undefined ? ANZEIGE_GRUND : s.anzeige;
+    var zahl = el('span', { className: 'slider-value', text: Math.round(wert * 100) + ' %' });
+    var regler = el('input', {
+      type: 'range', min: '45', max: '100', step: '5',
+      className: 'slider', value: String(Math.round(wert * 100)),
+      'aria-label': 'Größe der Kampfanzeige'
+    });
+    function stellen() {
+      var v = Number(regler.value) / 100;
+      zahl.textContent = Math.round(v * 100) + ' %';
+      setzeAnzeige(v);
+      return v;
+    }
+    regler.addEventListener('input', stellen);
+    regler.addEventListener('change', function () { meta.setSetting('anzeige', stellen()); });
+    return el('div', { className: 'slider-row' }, [regler, zahl]);
+  }
 
   /**
    * Der Lautstärkeregler. Gestellt wird sofort, gespeichert erst, wenn der
@@ -24441,6 +24502,9 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
 
   function boot() {
     applyTheme();
+    // Die gewählte Größe der Kampfanzeige gilt ab dem ersten Bild, nicht
+    // erst, wenn jemand die Einstellungen öffnet.
+    setzeAnzeige(settings().anzeige === undefined ? ANZEIGE_GRUND : settings().anzeige);
     if (PL.moments) PL.moments.sound = tone;
     if (PL.audio) {
       PL.audio.setVolume(settings().volume === undefined ? 0.5 : settings().volume);
