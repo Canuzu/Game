@@ -79,9 +79,32 @@
     });
   }
 
+  /**
+   * Den Service Worker anmelden. Er legt die Seite einmal ab und bedient sie
+   * danach aus dem eigenen Speicher: Der zweite Besuch ist sofort da, und
+   * ohne Netz lässt sich weiterspielen.
+   *
+   * Angemeldet wird nur dort, wo er auch hingehört: In der Entwicklung liegt
+   * kein sw.js neben der Seite, als Einzeldatei oder lokal geöffnet gibt es
+   * gar keinen, und in einem fremden Rahmen ist es oft verboten. Alle drei
+   * Fälle sind kein Fehler, sondern der Normalfall — deshalb passiert dann
+   * schlicht nichts.
+   */
+  function registriere() {
+    if (isDev() || !online()) return;
+    var nav = root.navigator;
+    if (!nav || !nav.serviceWorker) return;
+    try {
+      nav.serviceWorker.register('sw.js').catch(function () { /* dann eben nicht */ });
+    } catch (e) { /* dann eben nicht */ }
+  }
+
+  registriere();
+
   PL.update = {
     build: BUILD,
     isDev: isDev,
+    registriere: registriere,
     state: function () { return { build: BUILD, latest: state.latest, stuck: state.stuck }; },
     check: check
   };

@@ -64,5 +64,12 @@ if (!fragment) {
   // ins Leere — das stört dort niemanden, iOS nimmt ohnehin das
   // apple-touch-icon aus dem Kopf der Seite.
   copyFileSync(join(ROOT, 'manifest.webmanifest'), join(ROOT, 'dist', 'manifest.webmanifest'));
+  /* Der Service Worker trägt dieselbe Kennung wie die Seite. Dadurch ist er
+     bei jeder Veröffentlichung eine andere Datei, der Browser merkt das von
+     selbst, und das Lager der alten Fassung wird beim Übernehmen geleert. */
+  const swMarke = "var KENNUNG = 'entwicklung';";
+  const sw = readFileSync(join(ROOT, 'sw.js'), 'utf8');
+  if (!sw.includes(swMarke)) throw new Error('Die Baukennung aus sw.js ist nicht auffindbar.');
+  writeFileSync(join(ROOT, 'dist', 'sw.js'), sw.replace(swMarke, "var KENNUNG = '" + build + "';"));
 }
 console.log(out, '(' + (html.length / 1048576).toFixed(2) + ' MB)', '· Fassung ' + build);
