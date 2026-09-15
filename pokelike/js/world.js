@@ -424,7 +424,10 @@
     var leader = list[clamp(index, 0, list.length - 1)];
     var type = leader[1];
     var roster = PL.leaders ? PL.leaders.team(leader[0]) : null;
-    var quality = Math.min(0.88, 0.70 + index * 0.023) - ((opts && opts.ease) || 0);
+    // Wie gut ein Arenaleiter gebaut ist — Werte, Wesen, Attackensatz. Die
+    // frühen waren zu wohlwollend gebaut: Gemessen gewann der Automat die
+    // ersten sechs ausnahmslos. Sie fangen jetzt höher an.
+    var quality = Math.min(0.90, 0.75 + index * 0.021) - ((opts && opts.ease) || 0);
     var evScale = Math.min(0.9, 0.30 + index * 0.08);
 
     var species;

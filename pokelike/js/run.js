@@ -60,14 +60,17 @@
    * Die Zahlen unten sind die Stellschrauben dieses Anstiegs. Sie sind mit
    * tools/balance.mjs eingemessen, nicht geraten. Über 120 Runs in Kanto:
    *
-   *   Arenaleiter 1–6   100 %      Top Vier   79 % je Kampf
-   *   Arenaleiter 7      80 %                 (39 % durch alle vier)
-   *   Arenaleiter 8      78 %      Champ      37 %
+   *   Arenaleiter 1–4  100 %       Arenaleiter 7   63 %
+   *   Arenaleiter 5     98 %       Arenaleiter 8   71 %
+   *   Arenaleiter 6     95 %       Top Vier        70 % je Kampf
    *
-   * Die ersten sechs Leiter gewinnt der Automat immer — sie sollen tragen,
-   * nicht aufhalten. Spürbar wird es ab dem siebten, die Top Vier ist als
-   * Reihe die eigentliche Wand, und der Champ ist der schwerste Einzelkampf
-   * des Spiels.
+   * Die ersten Leiter sollen tragen, nicht aufhalten; spürbar wird es ab
+   * dem fünften, die Top Vier ist als Reihe die eigentliche Wand, und der
+   * Champ ist der schwerste Einzelkampf des Spiels.
+   *
+   * Vorher standen hier 100 % bis zum sechsten Leiter und 80 / 78 % für
+   * die letzten beiden — das war zu milde. Angehoben wurde beides: die
+   * Level (unten) und wie gut die Leiter gebaut sind (world.js).
    *
    * Zur Frage, ob die neun Regionen gleich schwer sind: gemessen ja, soweit
    * das Messgerät es hergibt. Über je 60 bis 100 Runs liegen sie zwischen
@@ -97,7 +100,7 @@
 
   var ANSTIEG = {
     ordenLevel: 8,
-    bossVorsprung: [-6, -6, -5, -5, -4, -4, -3, -2],
+    bossVorsprung: [-6, -6, -5, -4, -4, -3, -2, -2],
     ligaVorsprung: -2,
     champVorsprung: -1,
     ligaLevel: 4, champLevel: 6, weltGuete: 0.04
@@ -109,21 +112,34 @@
   /* ---------- Der Panzer der Legenden -----------------------------------------
    * Ein Duell dauerte gemessen acht Runden und wurde zu 64 % gewonnen;
    * Groudon fiel in knapp sechs. Das war kein Endboss, das war ein
-   * Zwischengegner. Jetzt sind es 21 Runden bei 44 % — dieselbe Messung,
-   * über je fünfzehn Duelle gegen neun Legenden.
+   * Zwischengegner.
+   *
+   * Der erste Versuch, das zu beheben, ging zu weit — und zwar nicht in der
+   * Schwierigkeit, sondern in der Textur. Gemessen trug ein schlecht
+   * passendes Team gegen Zapdos 1,4 % je Treffer ab und gegen Reshiram
+   * 0,7 %, während die Legende die Hälfte der eigenen KP je Schlag nahm:
+   * hundert Treffer brauchen, zwei einstecken. Das ist keine Herausforderung,
+   * das ist eine Wand.
+   *
+   * Jetzt sind es 21 Runden bei 56 % Siegen, 5,6 % je eigenem Treffer und
+   * 33 % eigener KP je gegnerischem — also rund achtzehn Treffer geben und
+   * drei einstecken. Gemessen über je zwölf Duelle gegen neun Legenden.
    *
    *   hp           wie viel mehr KP als gewöhnlich
    *   stat         Aufschlag auf die übrigen Werte
    *   nimmt        wie viel Schaden bei ihr ankommt
    *   macht        wie viel Schaden sie selbst austeilt
    *   typZaehmung  wie stark ein Typvorteil noch durchschlägt
+   *   bodensatz    was ein Treffer mindestens abträgt, als Teil ihrer KP
    *
-   * »nimmt« ist die Hauptschraube: Zusammen mit den KP hält die Legende
-   * jetzt gut das Zwanzigfache aus statt des Dreifachen. »macht« liegt nur
-   * knapp unter eins — sie soll weiter wehtun, bloß nicht in vier Runden
-   * durch sein.
+   * »bodensatz« ist gegen die Wand gerichtet: Er hebt den Boden, ohne die
+   * Decke anzuheben. Ohne ihn hing alles am Typvorteil — 0,7 % gegen 34 %
+   * je nach Aufstellung.
    * -------------------------------------------------------------------------- */
-  var DUELL_PANZER = { hp: 6.5, stat: 1.15, nimmt: 0.30, macht: 0.85, typZaehmung: 0.55 };
+  var DUELL_PANZER = {
+    hp: 6.0, stat: 1.15, nimmt: 0.27, macht: 0.52,
+    typZaehmung: 0.45, bodensatz: 0.028
+  };
 
   var NODE_WEIGHTS = {
     wild: 34, trainer: 30, item: 8, event: 9, shop: 6, catch: 8, relic: 4, elite: 5
@@ -301,9 +317,9 @@
     // nicht damit, dass die Legende fiel, sondern damit, dass das eigene
     // Team aufgebraucht war — nach wenigen Runden. Mehr Vorrat verlängert
     // den Kampf, ohne die Legende zahnlos zu machen: Man muss ihn einteilen.
-    this.addItem('hyperpotion', 4);
-    this.addItem('fullrestore', 2);
-    this.addItem('revive', 2);
+    this.addItem('hyperpotion', 2);
+    this.addItem('fullrestore', 1);
+    this.addItem('revive', 1);
     if (duell.meisterball) this.addItem('masterball', 1);
   };
 
@@ -1062,7 +1078,10 @@
       quality: 1, ivFloor: 31, hiddenChance: 0.5,
       shinyOdds: (1 / W.SCHILLERND.liga) * this.shinyMult()
     });
-    mon.item = 'leftovers';
+    // Keine Überreste. Sie heilen ein Sechzehntel der KP je Runde — bei
+    // einem Boss mit dem Sechsfachen an KP sind das über hundert Punkte,
+    // mehr als ein schlecht passendes Team überhaupt austeilt. Dann geht es
+    // rückwärts, und der Kampf ist nicht schwer, sondern unmöglich.
     mons.addEVs(mon, mon.ivs[1] >= mon.ivs[3] ? 'atk' : 'spa', 252);
     mons.addEVs(mon, 'spe', 252);
     // Sechs gegen eins: Der Aufschlag gleicht aus, dass die andere Seite

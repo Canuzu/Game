@@ -617,6 +617,22 @@
     if (wucht && wucht.macht !== undefined) mal('Bosswucht', wucht.macht);
 
     var dmg = Math.max(1, Math.floor(base * m));
+
+    // Bodensatz: Gegen einen Boss trägt jeder Treffer wenigstens ein Stück
+    // ab. Gemessen kam ein schlecht passendes Team gegen Zapdos auf 1,4 %
+    // je Schlag und gegen Reshiram auf 0,7 % — das ist kein zäher Gegner
+    // mehr, das ist eine Wand, an der man nichts ausrichtet. Ein gut
+    // passendes Team lag bei 34 %, also hilft es nicht, alles anzuheben:
+    // Der Boden muss hoch, nicht die Decke.
+    // Für Attacken, gegen die der Boss immun ist, gilt das nicht — eine
+    // Immunität bleibt eine Immunität.
+    if (panzer && panzer.bodensatz && eff > 0) {
+      var mindest = Math.round(mons.maxHP(def.mon) * panzer.bodensatz);
+      if (mindest > dmg) {
+        dmg = mindest;
+        if (teile) teile.push({ was: 'Bodensatz', faktor: mindest / Math.max(1, Math.floor(base * m)) });
+      }
+    }
     var erg = { dmg: dmg, eff: eff, crit: crit, immune: false, type: moveType, bp: bp };
     if (teile) {
       erg.rechnung = {

@@ -2302,6 +2302,18 @@ section('Ein Run spielt eine Region ganz');
     A.bossVorsprung[0] <= -5, String(A.bossVorsprung[0]));
   check('Der achte steht dicht davor', A.bossVorsprung[7] >= -3,
     String(A.bossVorsprung[7]));
+  // Die Leiter waren zu milde: Gemessen gewann der Automat die ersten sechs
+  // ausnahmslos. Jetzt fallen der fünfte und sechste bei 98 und 95 %, der
+  // siebte und achte bei 63 und 71 %.
+  check('Schon die Mitte der Region zieht an',
+    A.bossVorsprung[4] >= -4, String(A.bossVorsprung[4]));
+
+  // Wie gut ein Leiter gebaut ist, steigt mit seiner Nummer — und fängt
+  // nicht mehr bei einem Anfängerwert an.
+  const guete = (i) => PL.world.bossTeam(PL.rng('q' + i), PL.world.REGIONS[0], 40, i, {})
+    .team.reduce((a, m) => a + m.ivs.reduce((x, y) => x + y, 0), 0);
+  check('Der achte Leiter ist besser gebaut als der erste',
+    guete(7) / 5 > guete(0) / 2, guete(0) + ' vs ' + guete(7));
   // Die Top Vier steht nicht unter dem achten Arenaleiter — und bringt
   // obendrein volle Teams mit, was sie in der Messung klar härter macht.
   check('Die Top Vier steht nicht unter dem achten Arenaleiter',
@@ -2319,11 +2331,43 @@ section('Eine Legende ist ein Bosskampf');
   const P = PL.Run.DUELL_PANZER;
   check('Die Legende hält ein Vielfaches aus', P.hp >= 4, String(P.hp));
   check('… und nimmt deutlich weniger Schaden', P.nimmt <= 0.4, String(P.nimmt));
-  check('… teilt aber nur wenig weniger aus', P.macht >= 0.8 && P.macht < 1, String(P.macht));
-  // Gemessen über je 15 Duelle gegen neun Legenden: vorher 8 Runden bei
-  // 64 % Siegen, jetzt 21 Runden bei 44 %.
-  check('Zusammen ergibt das gut das Zwanzigfache an Zähigkeit',
+  // Sie soll wehtun, aber nicht mit zwei Schlägen durch sein. Gemessen
+  // nimmt ein Treffer jetzt ein Drittel der eigenen KP statt der Hälfte.
+  check('… teilt spürbar weniger aus, als sie könnte',
+    P.macht >= 0.35 && P.macht <= 0.7, String(P.macht));
+  check('Zusammen ergibt das ein Vielfaches an Zähigkeit',
     P.hp / P.nimmt >= 15, (P.hp / P.nimmt).toFixed(1));
+
+  // Der Bodensatz ist der Grund, warum ein Treffer überhaupt zählt: Ohne
+  // ihn trug ein schlecht passendes Team 0,7 % je Schlag ab.
+  check('Jeder Treffer trägt einen Mindestanteil ab',
+    P.bodensatz >= 0.02 && P.bodensatz <= 0.05, String(P.bodensatz));
+  {
+    const r = new PL.Run({ seed: 9, mode: 'legenden',
+      duell: { art: 'zapdos', team: [{ sp: 'caterpie' }] } });
+    const kampf = r.makeLegendBoss(PL.rng('z'), 'zapdos');
+    kampf.start();
+    const boss = kampf.sides[1].team[0];
+    const maxKP = PL.mon.maxHP(boss);
+    // Eine schwache Attacke gegen einen zähen Gegner: ohne Bodensatz wäre
+    // das ein Kratzer, mit ihm ein messbarer Anteil.
+    const schwach = kampf.calcDamage(kampf.sides[0].active, kampf.sides[1].active,
+      PL.dex.move(PL.dex.moves.findIndex((mv) => mv && mv.id === 'tackle')));
+    check('Selbst ein schwacher Treffer trägt den Mindestanteil ab',
+      schwach.dmg >= Math.round(maxKP * P.bodensatz) - 1,
+      schwach.dmg + ' von ' + maxKP + ' (mindestens ' + Math.round(maxKP * P.bodensatz) + ')');
+  }
+
+  // Überreste heilten ein Sechzehntel der aufgeblähten KP je Runde — mehr,
+  // als ein schlecht passendes Team überhaupt austeilte. Dann ging es
+  // rückwärts.
+  {
+    const r2 = new PL.Run({ seed: 9, mode: 'legenden',
+      duell: { art: 'lugia', team: [{ sp: 'snorlax' }] } });
+    const boss2 = r2.makeLegendBoss(PL.rng('l'), 'lugia').sides[1].team[0];
+    check('Eine Legende im Duell heilt sich nicht selbst nach',
+      boss2.item !== 'leftovers', String(boss2.item));
+  }
 
   const run = new PL.Run({ seed: 4, mode: 'legenden',
     duell: { art: 'mewtwo', team: [{ sp: 'dragonite' }, { sp: 'snorlax' }] } });
@@ -2353,10 +2397,16 @@ section('Eine Legende ist ein Bosskampf');
     eq('Ein Pokémon mit nur solchen Attacken behält sie', nurBumm.moves.length, 1);
   }
 
-  // Der Vorrat ist der Grund, warum der Kampf trägt statt kurz zu enden.
-  check('Das Duell bringt Heilmittel für einen langen Kampf mit',
-    (run.bag.hyperpotion || 0) >= 3 && (run.bag.fullrestore || 0) >= 2,
-    JSON.stringify(run.bag));
+  // Der Vorrat ist knapp und gezählt: Er soll den Kampf tragen, aber nicht
+  // entscheiden. Mehr Heilmittel hoben in der Messung die Gewinnquote,
+  // ohne dass ein einziger Treffer sich anders anfühlte — das ist der
+  // falsche Hebel für die Schwierigkeit, aber der richtige für die Länge.
+  check('Das Duell bringt einen abgezählten Vorrat mit',
+    (run.bag.hyperpotion || 0) >= 1 && (run.bag.fullrestore || 0) >= 1 &&
+    (run.bag.revive || 0) >= 1, JSON.stringify(run.bag));
+  check('… aber keinen, mit dem man sich durchheilt',
+    (run.bag.hyperpotion || 0) + (run.bag.fullrestore || 0) +
+    (run.bag.revive || 0) <= 6, JSON.stringify(run.bag));
 }
 
 section('Jeder Titelträger hat sein eigenes Stück');
