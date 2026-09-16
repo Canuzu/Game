@@ -44,7 +44,6 @@
    */
   function stats(mon) {
     var sp = dex.sp(mon.sp), out = [0, 0, 0, 0, 0, 0], i, base, iv, ev, v;
-    var buff = mon.buff || null;
     for (i = 0; i < 6; i++) {
       base = sp.bs[i];
       iv = mon.ivs[i];
@@ -56,10 +55,28 @@
         v = Math.floor((Math.floor((2 * base + iv + ev) * mon.lvl / 100) + 5) *
                        natureMod(mon.nat, PL.STATS[i]));
       }
-      if (buff) v = Math.max(1, Math.round(v * (i === 0 ? (buff.hp || 1) : (buff.stat || 1))));
+      v = mitBuff(mon, i, v);
       out[i] = v;
     }
     return out;
+  }
+
+  /**
+   * Wendet den Bossaufschlag auf einen fertigen Wert an — i ist der Index
+   * des Werts, 0 sind die KP.
+   *
+   * Steht hier für sich, weil es zwei Stellen gibt, die Werte ausrechnen:
+   * diese und die der Mega-Formen in battle.js. Die zweite hatte den
+   * Aufschlag vergessen, und das hatte Folgen: Eine Legende im Duell, die
+   * sich verwandelte, behielt ihre versechsfachten KP, bekam aber das
+   * einfache Maximum — 2046 Leben bei einer Leiste bis 341. Die Leiste
+   * stand auf voll, während man siebzehnhundert unsichtbare Punkte abtrug.
+   * Sie war damit praktisch unbesiegbar.
+   */
+  function mitBuff(mon, i, v) {
+    var buff = mon && mon.buff;
+    if (!buff) return v;
+    return Math.max(1, Math.round(v * (i === 0 ? (buff.hp || 1) : (buff.stat || 1))));
   }
 
   function maxHP(mon) { return stats(mon)[0]; }
@@ -524,7 +541,7 @@
   PL.mon = {
     create: create,
     stats: stats,
-    maxHP: maxHP, ohneSelbstKO: ohneSelbstKO, SELBST_KO: SELBST_KO,
+    maxHP: maxHP, mitBuff: mitBuff, ohneSelbstKO: ohneSelbstKO, SELBST_KO: SELBST_KO,
     natureMod: natureMod,
     buildMoveset: buildMoveset,
     abilityOptions: abilityOptions,

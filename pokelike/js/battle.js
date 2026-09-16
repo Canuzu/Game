@@ -1899,6 +1899,9 @@
     act.megaName = T.form(form);
     act.megaForm = form;
     act.stats = megaStats(act.mon, form.bs);
+    // Hat die Form weniger KP als die Ausgangsform, darf das Leben nicht
+    // über dem neuen Maximum stehenbleiben.
+    if (act.mon.hp > act.stats[0]) act.mon.hp = act.stats[0];
     var primal = /Primal/.test(form.n);
     this.say(this.name(act) + (primal ? ' erwacht als ' : ' mega-entwickelt sich zu ') + act.megaName + '!',
       'mega', { side: act.side.id, primal: primal });
@@ -1947,6 +1950,12 @@
     for (var i = 0; i < 2; i++) this.endGmax(this.sides[i].active, true);
   };
 
+  /**
+   * Die Werte einer Mega- oder Urform. Gerechnet wie gewöhnlich, nur mit
+   * den Basiswerten der Form — und mit demselben Bossaufschlag, den auch
+   * mons.stats anwendet. Ohne ihn behielt eine verwandelte Legende ihre
+   * aufgeblähten Leben, bekam aber das einfache Maximum.
+   */
   function megaStats(mon, base) {
     var out = [], i, iv, ev, v;
     for (i = 0; i < 6; i++) {
@@ -1954,7 +1963,7 @@
       if (i === 0) v = Math.floor((2 * base[i] + iv + ev) * mon.lvl / 100) + mon.lvl + 10;
       else v = Math.floor((Math.floor((2 * base[i] + iv + ev) * mon.lvl / 100) + 5) *
         mons.natureMod(mon.nat, PL.STATS[i]));
-      out.push(v);
+      out.push(mons.mitBuff(mon, i, v));
     }
     return out;
   }

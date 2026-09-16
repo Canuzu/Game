@@ -121,9 +121,18 @@
    * hundert Treffer brauchen, zwei einstecken. Das ist keine Herausforderung,
    * das ist eine Wand.
    *
-   * Jetzt sind es 21 Runden bei 56 % Siegen, 5,6 % je eigenem Treffer und
-   * 33 % eigener KP je gegnerischem — also rund achtzehn Treffer geben und
-   * drei einstecken. Gemessen über je zwölf Duelle gegen neun Legenden.
+   * Gewünscht war danach ausdrücklich: das Doppelte an KP, die Hälfte des
+   * ausgeteilten Schadens. Gemessen über je zwölf Duelle gegen neun
+   * Legenden, gleiches Team, gleiche Seeds:
+   *
+   *                        Runden  Siege  je eigenem  eigene KP je
+   *                                       Treffer     gegnerischem Treffer
+   *   hp 6,0  macht 0,52      16    65 %     8,8 %        36 %
+   *   hp 12,0 macht 0,26      24    95 %     7,0 %        17 %
+   *
+   * Der Kampf wird also länger und deutlich gutmütiger. Länger, aber nicht
+   * doppelt so lang: »bodensatz« ist ein Teil der KP, wächst also mit —
+   * wer ohnehin nur den Mindestschaden trifft, braucht gleich viele Treffer.
    *
    *   hp           wie viel mehr KP als gewöhnlich
    *   stat         Aufschlag auf die übrigen Werte
@@ -137,7 +146,7 @@
    * je nach Aufstellung.
    * -------------------------------------------------------------------------- */
   var DUELL_PANZER = {
-    hp: 6.0, stat: 1.15, nimmt: 0.27, macht: 0.52,
+    hp: 12.0, stat: 1.15, nimmt: 0.27, macht: 0.26,
     typZaehmung: 0.45, bodensatz: 0.028
   };
 
@@ -1079,7 +1088,7 @@
       shinyOdds: (1 / W.SCHILLERND.liga) * this.shinyMult()
     });
     // Keine Überreste. Sie heilen ein Sechzehntel der KP je Runde — bei
-    // einem Boss mit dem Sechsfachen an KP sind das über hundert Punkte,
+    // einem Boss mit dem Zwölffachen an KP sind das über zweihundert Punkte,
     // mehr als ein schlecht passendes Team überhaupt austeilt. Dann geht es
     // rückwärts, und der Kampf ist nicht schwer, sondern unmöglich.
     mons.addEVs(mon, mon.ivs[1] >= mon.ivs[3] ? 'atk' : 'spa', 252);

@@ -3532,7 +3532,7 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
   var PL = root.PL || (root.PL = {});
 
   // Diese Zeile ersetzt tools/build-single.mjs beim Bauen.
-  var BUILD = '20260916T084710Z-4914af8';
+  var BUILD = '20260916T100017Z-f3d3dec';
 
   var TRIED_KEY = 'pokelike.plus.update.versucht';
   var state = { build: BUILD, latest: null, checking: false, stuck: false };
@@ -5258,7 +5258,6 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
    */
   function stats(mon) {
     var sp = dex.sp(mon.sp), out = [0, 0, 0, 0, 0, 0], i, base, iv, ev, v;
-    var buff = mon.buff || null;
     for (i = 0; i < 6; i++) {
       base = sp.bs[i];
       iv = mon.ivs[i];
@@ -5270,10 +5269,28 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
         v = Math.floor((Math.floor((2 * base + iv + ev) * mon.lvl / 100) + 5) *
                        natureMod(mon.nat, PL.STATS[i]));
       }
-      if (buff) v = Math.max(1, Math.round(v * (i === 0 ? (buff.hp || 1) : (buff.stat || 1))));
+      v = mitBuff(mon, i, v);
       out[i] = v;
     }
     return out;
+  }
+
+  /**
+   * Wendet den Bossaufschlag auf einen fertigen Wert an — i ist der Index
+   * des Werts, 0 sind die KP.
+   *
+   * Steht hier für sich, weil es zwei Stellen gibt, die Werte ausrechnen:
+   * diese und die der Mega-Formen in battle.js. Die zweite hatte den
+   * Aufschlag vergessen, und das hatte Folgen: Eine Legende im Duell, die
+   * sich verwandelte, behielt ihre versechsfachten KP, bekam aber das
+   * einfache Maximum — 2046 Leben bei einer Leiste bis 341. Die Leiste
+   * stand auf voll, während man siebzehnhundert unsichtbare Punkte abtrug.
+   * Sie war damit praktisch unbesiegbar.
+   */
+  function mitBuff(mon, i, v) {
+    var buff = mon && mon.buff;
+    if (!buff) return v;
+    return Math.max(1, Math.round(v * (i === 0 ? (buff.hp || 1) : (buff.stat || 1))));
   }
 
   function maxHP(mon) { return stats(mon)[0]; }
@@ -5738,7 +5755,7 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
   PL.mon = {
     create: create,
     stats: stats,
-    maxHP: maxHP, ohneSelbstKO: ohneSelbstKO, SELBST_KO: SELBST_KO,
+    maxHP: maxHP, mitBuff: mitBuff, ohneSelbstKO: ohneSelbstKO, SELBST_KO: SELBST_KO,
     natureMod: natureMod,
     buildMoveset: buildMoveset,
     abilityOptions: abilityOptions,
@@ -9291,6 +9308,9 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
     act.megaName = T.form(form);
     act.megaForm = form;
     act.stats = megaStats(act.mon, form.bs);
+    // Hat die Form weniger KP als die Ausgangsform, darf das Leben nicht
+    // über dem neuen Maximum stehenbleiben.
+    if (act.mon.hp > act.stats[0]) act.mon.hp = act.stats[0];
     var primal = /Primal/.test(form.n);
     this.say(this.name(act) + (primal ? ' erwacht als ' : ' mega-entwickelt sich zu ') + act.megaName + '!',
       'mega', { side: act.side.id, primal: primal });
@@ -9339,6 +9359,12 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
     for (var i = 0; i < 2; i++) this.endGmax(this.sides[i].active, true);
   };
 
+  /**
+   * Die Werte einer Mega- oder Urform. Gerechnet wie gewöhnlich, nur mit
+   * den Basiswerten der Form — und mit demselben Bossaufschlag, den auch
+   * mons.stats anwendet. Ohne ihn behielt eine verwandelte Legende ihre
+   * aufgeblähten Leben, bekam aber das einfache Maximum.
+   */
   function megaStats(mon, base) {
     var out = [], i, iv, ev, v;
     for (i = 0; i < 6; i++) {
@@ -9346,7 +9372,7 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
       if (i === 0) v = Math.floor((2 * base[i] + iv + ev) * mon.lvl / 100) + mon.lvl + 10;
       else v = Math.floor((Math.floor((2 * base[i] + iv + ev) * mon.lvl / 100) + 5) *
         mons.natureMod(mon.nat, PL.STATS[i]));
-      out.push(v);
+      out.push(mons.mitBuff(mon, i, v));
     }
     return out;
   }
@@ -12247,9 +12273,18 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
    * hundert Treffer brauchen, zwei einstecken. Das ist keine Herausforderung,
    * das ist eine Wand.
    *
-   * Jetzt sind es 21 Runden bei 56 % Siegen, 5,6 % je eigenem Treffer und
-   * 33 % eigener KP je gegnerischem — also rund achtzehn Treffer geben und
-   * drei einstecken. Gemessen über je zwölf Duelle gegen neun Legenden.
+   * Gewünscht war danach ausdrücklich: das Doppelte an KP, die Hälfte des
+   * ausgeteilten Schadens. Gemessen über je zwölf Duelle gegen neun
+   * Legenden, gleiches Team, gleiche Seeds:
+   *
+   *                        Runden  Siege  je eigenem  eigene KP je
+   *                                       Treffer     gegnerischem Treffer
+   *   hp 6,0  macht 0,52      16    65 %     8,8 %        36 %
+   *   hp 12,0 macht 0,26      24    95 %     7,0 %        17 %
+   *
+   * Der Kampf wird also länger und deutlich gutmütiger. Länger, aber nicht
+   * doppelt so lang: »bodensatz« ist ein Teil der KP, wächst also mit —
+   * wer ohnehin nur den Mindestschaden trifft, braucht gleich viele Treffer.
    *
    *   hp           wie viel mehr KP als gewöhnlich
    *   stat         Aufschlag auf die übrigen Werte
@@ -12263,7 +12298,7 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
    * je nach Aufstellung.
    * -------------------------------------------------------------------------- */
   var DUELL_PANZER = {
-    hp: 6.0, stat: 1.15, nimmt: 0.27, macht: 0.52,
+    hp: 12.0, stat: 1.15, nimmt: 0.27, macht: 0.26,
     typZaehmung: 0.45, bodensatz: 0.028
   };
 
@@ -13205,7 +13240,7 @@ body.automat-da .scene-actions { padding-right: calc(3.8rem + env(safe-area-inse
       shinyOdds: (1 / W.SCHILLERND.liga) * this.shinyMult()
     });
     // Keine Überreste. Sie heilen ein Sechzehntel der KP je Runde — bei
-    // einem Boss mit dem Sechsfachen an KP sind das über hundert Punkte,
+    // einem Boss mit dem Zwölffachen an KP sind das über zweihundert Punkte,
     // mehr als ein schlecht passendes Team überhaupt austeilt. Dann geht es
     // rückwärts, und der Kampf ist nicht schwer, sondern unmöglich.
     mons.addEVs(mon, mon.ivs[1] >= mon.ivs[3] ? 'atk' : 'spa', 252);

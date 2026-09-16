@@ -2362,9 +2362,9 @@ section('Eine Legende ist ein Bosskampf');
   check('Die Legende hält ein Vielfaches aus', P.hp >= 4, String(P.hp));
   check('… und nimmt deutlich weniger Schaden', P.nimmt <= 0.4, String(P.nimmt));
   // Sie soll wehtun, aber nicht mit zwei Schlägen durch sein. Gemessen
-  // nimmt ein Treffer jetzt ein Drittel der eigenen KP statt der Hälfte.
+  // nimmt ein Treffer jetzt ein Sechstel der eigenen KP statt der Hälfte.
   check('… teilt spürbar weniger aus, als sie könnte',
-    P.macht >= 0.35 && P.macht <= 0.7, String(P.macht));
+    P.macht >= 0.2 && P.macht <= 0.7, String(P.macht));
   check('Zusammen ergibt das ein Vielfaches an Zähigkeit',
     P.hp / P.nimmt >= 15, (P.hp / P.nimmt).toFixed(1));
 
@@ -2407,6 +2407,43 @@ section('Eine Legende ist ein Bosskampf');
   check('Der Panzer hebt die KP wirklich an',
     PL.mon.maxHP(geg) > PL.mon.maxHP(roh) * 4,
     PL.mon.maxHP(geg) + ' gegen ' + PL.mon.maxHP(roh));
+
+  /* Der Fehler, der die Duelle unmöglich machte: Mega- und Urformen rechnen
+     ihre Werte aus den Basiswerten der Form neu — und vergaßen dabei den
+     Bossaufschlag. Primal-Kyogre behielt seine 4092 Leben, bekam aber das
+     Maximum der ungepanzerten Form: 341. Die Leiste stand auf 1200 % und
+     rührte sich über 3751 Punkte nicht. Gemessen ging das Duell danach
+     0 von 12 Mal an den Spieler, mit der Behebung 12 von 12.
+
+     Geprüft wird gegen dasselbe Pokémon ohne Panzer: Nach der Verwandlung
+     muss der Aufschlag noch genauso draufliegen wie davor. */
+  ['kyogre', 'groudon', 'mewtwo', 'rayquaza'].forEach((art) => {
+    const bau = (panzer) => {
+      const mon = PL.mon.create(PL.dex.sp(art), 100, PL.rng('v' + art),
+        { ivs: [31, 31, 31, 31, 31, 31], nat: 0 });
+      if (panzer) mon.buff = P;
+      PL.mon.heal(mon);
+      const gegner = PL.mon.create(PL.dex.sp('dragonite'), 100, PL.rng('g'));
+      const kv = new PL.Battle({ teams: [[mon], [gegner]] });
+      kv.start();
+      return { kampf: kv, akt: kv.sides[0].active };
+    };
+    const hart = bau(true), weich = bau(false);
+    if (!hart.kampf.canMega(hart.akt)) return;
+    hart.kampf.megaEvolve(hart.akt);
+    weich.kampf.megaEvolve(weich.akt);
+
+    check('Verwandelt trägt ' + art + ' den Panzer auf den KP',
+      hart.akt.stats[0] >= weich.akt.stats[0] * (P.hp * 0.9),
+      weich.akt.stats[0] + ' → ' + hart.akt.stats[0] + ' (mal ' +
+      (hart.akt.stats[0] / weich.akt.stats[0]).toFixed(1) + ')');
+    check('… und auf den übrigen Werten',
+      hart.akt.stats[1] >= weich.akt.stats[1] * (P.stat * 0.9),
+      weich.akt.stats[1] + ' → ' + hart.akt.stats[1]);
+    check('… und steht nie über dem eigenen Maximum',
+      hart.akt.mon.hp <= hart.akt.stats[0],
+      hart.akt.mon.hp + ' von ' + hart.akt.stats[0]);
+  });
 
   // Der Fehler, der die Duelle wirklich kurz machte: Die Legende hatte
   // Attacken im Set, die sie selbst besiegen. Xerneas sprengte sich in der
