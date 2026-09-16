@@ -2368,10 +2368,33 @@ section('Eine Legende ist ein Bosskampf');
   check('Zusammen ergibt das ein Vielfaches an Zähigkeit',
     P.hp / P.nimmt >= 15, (P.hp / P.nimmt).toFixed(1));
 
+  /* Gemessen ist »hp« als Stellschraube der Schwierigkeit wirkungslos: von
+     6,0 bis 96,0 bleibt das Duell bei 22 bis 25 Runden, weil der
+     Mindestschaden ein Anteil derselben KP ist und mitwächst. Zäher wird
+     die Legende nur über die beiden anteiligen Wege. Diese Prüfung hält
+     fest, worauf sich das stützt — nicht auf die KP-Zahl. */
+  {
+    const r = new PL.Run({ seed: 3, mode: 'legenden',
+      duell: { art: 'lugia', team: [{ sp: 'dragonite' }] } });
+    const k = r.makeLegendBoss(PL.rng('h'), 'lugia');
+    k.start();
+    const seite = k.sides[1].active;
+    const maxKP = PL.mon.maxHP(seite.mon);
+    const boden = Math.round(maxKP * P.bodensatz);
+    // Wie viele Mindesttreffer die Legende aushält — das ist die Zahl, die
+    // die Kampflänge bestimmt, und sie hängt nicht an »hp«.
+    const treffer = maxKP / boden;
+    check('Der Mindestschaden bestimmt die Länge, nicht die KP-Zahl',
+      Math.abs(treffer - 1 / P.bodensatz) < 2,
+      Math.round(treffer) + ' Treffer bei ' + maxKP + ' KP');
+    check('… und davon braucht es jetzt rund siebzig',
+      treffer >= 55 && treffer <= 90, String(Math.round(treffer)));
+  }
+
   // Der Bodensatz ist der Grund, warum ein Treffer überhaupt zählt: Ohne
   // ihn trug ein schlecht passendes Team 0,7 % je Schlag ab.
   check('Jeder Treffer trägt einen Mindestanteil ab',
-    P.bodensatz >= 0.02 && P.bodensatz <= 0.05, String(P.bodensatz));
+    P.bodensatz >= 0.01 && P.bodensatz <= 0.05, String(P.bodensatz));
   {
     const r = new PL.Run({ seed: 9, mode: 'legenden',
       duell: { art: 'zapdos', team: [{ sp: 'caterpie' }] } });

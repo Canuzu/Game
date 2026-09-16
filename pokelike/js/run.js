@@ -122,17 +122,30 @@
    * das ist eine Wand.
    *
    * Gewünscht war danach ausdrücklich: das Doppelte an KP, die Hälfte des
-   * ausgeteilten Schadens. Gemessen über je zwölf Duelle gegen neun
-   * Legenden, gleiches Team, gleiche Seeds:
+   * ausgeteilten Schadens. »macht« halbiert brachte gemessen 16 auf 24
+   * Runden und 65 % auf 95 % Siege — der Kampf wurde länger und deutlich
+   * gutmütiger.
    *
-   *                        Runden  Siege  je eigenem  eigene KP je
-   *                                       Treffer     gegnerischem Treffer
-   *   hp 6,0  macht 0,52      16    65 %     8,8 %        36 %
-   *   hp 12,0 macht 0,26      24    95 %     7,0 %        17 %
+   * »hp« dagegen ist als Stellschraube wirkungslos, und das ist der
+   * wichtigste Befund hier. Gemessen über je zwölf Duelle gegen neun
+   * Legenden, nur diese eine Zahl verändert:
    *
-   * Der Kampf wird also länger und deutlich gutmütiger. Länger, aber nicht
-   * doppelt so lang: »bodensatz« ist ein Teil der KP, wächst also mit —
-   * wer ohnehin nur den Mindestschaden trifft, braucht gleich viele Treffer.
+   *   hp    6,0   22 Runden   97 % Siege
+   *   hp   12,0   24 Runden   95 %
+   *   hp   24,0   25 Runden   93 %
+   *   hp   48,0   24 Runden   91 %
+   *   hp   96,0   25 Runden   89 %
+   *
+   * Eine Versechzehnfachung der KP ändert die Kampflänge um drei Runden.
+   * Der Grund: Gemessen liegen praktisch alle Treffer gegen die Legende auf
+   * dem Mindestschaden — und der ist ein Anteil der KP, wächst also mit.
+   * Mehr KP heißt zugleich mehr Schaden je Treffer; beides kürzt sich weg.
+   *
+   * Wer die Legende wirklich zäher will, muss deshalb die beiden anteiligen
+   * Wege senken, nicht die KP: »nimmt« und »bodensatz«. Beide halbiert
+   * ergibt doppelt so viel wirksames Leben — gemessen Lugia 29 auf 49
+   * Runden, Mewtwo 34 auf 41, Xerneas 27 auf 36. Dialga und Solgaleo
+   * bleiben bei 7: Gegen einen klaren Typvorteil fällt auch dieser Panzer.
    *
    *   hp           wie viel mehr KP als gewöhnlich
    *   stat         Aufschlag auf die übrigen Werte
@@ -146,8 +159,8 @@
    * je nach Aufstellung.
    * -------------------------------------------------------------------------- */
   var DUELL_PANZER = {
-    hp: 12.0, stat: 1.15, nimmt: 0.27, macht: 0.26,
-    typZaehmung: 0.45, bodensatz: 0.028
+    hp: 24.0, stat: 1.15, nimmt: 0.14, macht: 0.26,
+    typZaehmung: 0.45, bodensatz: 0.014
   };
 
   var NODE_WEIGHTS = {
