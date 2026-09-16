@@ -153,6 +153,16 @@
    *   macht        wie viel Schaden sie selbst austeilt
    *   typZaehmung  wie stark ein Typvorteil noch durchschlägt
    *   bodensatz    was ein Treffer mindestens abträgt, als Teil ihrer KP
+   *   erwachen     ab welchem Anteil ihrer KP sie ihre Gestalt wechselt
+   *   erwachenSchub  wie viel sie dabei auf alle Werte außer den KP legt
+   *   gestaltSchub   dasselbe für Deoxys, auf den Wert seiner Gestalt
+   *
+   * Das Erwachen kostet die Legende unterm Strich etwas: Sie kämpft die
+   * erste Hälfte in ihrer Grundform statt sofort verwandelt, und das holt
+   * kein späterer Schub ganz zurück. Gemessen 87 % Siege auf der
+   * Gegenseite vorher, 94 % ohne Schub, 89 % mit 1,5 — darüber sättigt es.
+   * Kyogre ist der deutlichste Fall: Sein Urzeit-Wetter setzt jetzt erst
+   * zur Halbzeit ein.
    *
    * »bodensatz« ist gegen die Wand gerichtet: Er hebt den Boden, ohne die
    * Decke anzuheben. Ohne ihn hing alles am Typvorteil — 0,7 % gegen 34 %
@@ -160,7 +170,12 @@
    * -------------------------------------------------------------------------- */
   var DUELL_PANZER = {
     hp: 24.0, stat: 1.15, nimmt: 0.14, macht: 0.26,
-    typZaehmung: 0.45, bodensatz: 0.014
+    typZaehmung: 0.45, bodensatz: 0.014,
+    // Erwachen: Unter der Hälfte ihrer KP nimmt die Legende ihre Mega- oder
+    // Urform an und legt ein Viertel auf alle Werte außer den KP drauf.
+    // Deoxys hat keine solche Form, dafür drei Gestalten — es nimmt eine
+    // zufällige an und steigert den Wert, für den sie steht, um die Hälfte.
+    erwachen: 0.5, erwachenSchub: 1.5, gestaltSchub: 1.5
   };
 
   var NODE_WEIGHTS = {
@@ -1215,92 +1230,102 @@
       var beaten = enemies.filter(function (m) { return m.hp <= 0; });
       this.stats.kos += beaten.length;
 
-      /* Erfahrung bekommt das ganze Team — jedes Mitglied, in jedem Kampf.
-         Wer auf dem Feld stand, bekommt den vollen Anteil, der Rest den
-         Bankanteil (ein Viertel, mit dem EP-Teiler drei Fünftel). Auch wer
-         am Boden liegt, geht nicht leer aus: Ein Kampf, der schiefgeht,
-         wirft ein Pokémon sonst doppelt zurück.
+      /* Im Legenden-Duell gibt es weder Erfahrung noch Fleißpunkte noch
+         Entwicklungen. Das Duell ist ein einzelner Kampf gegen einen Gegner
+         mit dem Vierundzwanzigfachen an KP — er würfe so viel ab, dass ein
+         mitgebrachtes Team in einem Anlauf durch seine Entwicklungen liefe.
+         Und eine Entwicklung trägt sich dauerhaft in den Pokédex ein
+         (app.js ruft dafür meta.noteOwned): Man könnte den Dex also am
+         eigentlichen Spiel vorbei füllen. Genau das soll nicht gehen. */
+      if (this.mode !== 'legenden') {
 
-         Wer im Kampf auf dem Feld stand, weiß die Kampfseite selbst — sie
-         merkt sich jeden Auftritt unter `used`. Vorher hing das an einer
-         Markierung am Pokémon, die nie zurückgesetzt wurde: Nach dem ersten
-         Kampf galt damit jedes Teammitglied für immer als Teilnehmer, und
-         der EP-Teiler tat gar nichts. */
-      var benchShare = this.mod('benchExp') || 0.25;
-      // 1,45 statt 1,08: gemessen lagen Teams beim Aus zwölf Level hinter der
-      // Grenze zurück — sie kamen also nie dazu, sich zu entwickeln.
-      var expMult = this.mod('expMult', 1) * 1.45;
-      var alive = this.party.filter(function (m) { return m.hp > 0; });
-      var imKampf = (bt.sides[0] && bt.sides[0].used) || {};
-      var summe = [];      // je Pokémon ein Eintrag, in Teamreihenfolge
-      this.party.forEach(function (m) {
-        summe.push({ mon: m, amount: 0, capped: m.lvl >= self.levelCap });
-      });
-      beaten.forEach(function (loser) {
-        var sp = dex.sp(loser.sp);
-        self.party.forEach(function (m, idx) {
-          var participated = !!imKampf[idx];
-          var amount = mons.expGain(m, sp, loser.lvl, {
-            mult: expMult * (participated ? 1 : benchShare) / Math.max(1, alive.length * 0.6),
-            targetLevel: self.levelCap
+        /* Erfahrung bekommt das ganze Team — jedes Mitglied, in jedem Kampf.
+           Wer auf dem Feld stand, bekommt den vollen Anteil, der Rest den
+           Bankanteil (ein Viertel, mit dem EP-Teiler drei Fünftel). Auch wer
+           am Boden liegt, geht nicht leer aus: Ein Kampf, der schiefgeht,
+           wirft ein Pokémon sonst doppelt zurück.
+
+           Wer im Kampf auf dem Feld stand, weiß die Kampfseite selbst — sie
+           merkt sich jeden Auftritt unter `used`. Vorher hing das an einer
+           Markierung am Pokémon, die nie zurückgesetzt wurde: Nach dem ersten
+           Kampf galt damit jedes Teammitglied für immer als Teilnehmer, und
+           der EP-Teiler tat gar nichts. */
+        var benchShare = this.mod('benchExp') || 0.25;
+        // 1,45 statt 1,08: gemessen lagen Teams beim Aus zwölf Level hinter der
+        // Grenze zurück — sie kamen also nie dazu, sich zu entwickeln.
+        var expMult = this.mod('expMult', 1) * 1.45;
+        var alive = this.party.filter(function (m) { return m.hp > 0; });
+        var imKampf = (bt.sides[0] && bt.sides[0].used) || {};
+        var summe = [];      // je Pokémon ein Eintrag, in Teamreihenfolge
+        this.party.forEach(function (m) {
+          summe.push({ mon: m, amount: 0, capped: m.lvl >= self.levelCap });
+        });
+        beaten.forEach(function (loser) {
+          var sp = dex.sp(loser.sp);
+          self.party.forEach(function (m, idx) {
+            var participated = !!imKampf[idx];
+            var amount = mons.expGain(m, sp, loser.lvl, {
+              mult: expMult * (participated ? 1 : benchShare) / Math.max(1, alive.length * 0.6),
+              targetLevel: self.levelCap
+            });
+            var was = mons.stats(m);
+            var gain = mons.gainExp(m, amount, { levelCap: self.levelCap });
+            summe[idx].amount += gain.gained;
+            if (gain.levels.length) {
+              res.levelUps.push({ mon: m, levels: gain.levels, learned: gain.learned,
+                before: was, after: mons.stats(m) });
+            }
           });
-          var was = mons.stats(m);
-          var gain = mons.gainExp(m, amount, { levelCap: self.levelCap });
-          summe[idx].amount += gain.gained;
-          if (gain.levels.length) {
-            res.levelUps.push({ mon: m, levels: gain.levels, learned: gain.learned,
-              before: was, after: mons.stats(m) });
+        });
+        res.exp = summe.filter(function (e) { return e.amount > 0 || e.capped; });
+
+        // Mehrere Gegner können dasselbe Pokémon zweimal aufsteigen lassen —
+        // für die Anzeige zählt nur ein Eintrag je Pokémon.
+        var merged = [];
+        res.levelUps.forEach(function (up) {
+          var prev = null, j;
+          for (j = 0; j < merged.length; j++) if (merged[j].mon === up.mon) { prev = merged[j]; break; }
+          if (!prev) { merged.push(up); return; }
+          prev.levels = prev.levels.concat(up.levels);
+          prev.learned = (prev.learned || []).concat(up.learned || []);
+          prev.after = up.after;
+        });
+        res.levelUps = merged;
+
+        if (bt.reward && /boss|e4|champ/.test(bt.reward.kind)) {
+          this.bossesBeaten = (this.bossesBeaten || 0) + 1;
+        }
+        if (bt.reward) {
+          // Nicht jede Belohnungsart bringt Geld — ohne diese Null würde aus
+          // einem fehlenden Betrag ein NaN, und der Geldbeutel wäre für den
+          // Rest des Runs kaputt.
+          res.money = Math.round((bt.reward.money || 0) * this.mod('moneyMult', 1));
+          this.giveMoney(res.money);
+        } else if (bt.wild) {
+          res.money = Math.round((25 + this.levelCap * 7) * this.mod('moneyMult', 1));
+          this.giveMoney(res.money);
+        }
+
+        // Fleißpunkte: ein Grundstock für jeden Sieg, mehr mit passendem Relikt
+        var evb = 2 + this.mod('evPerBattle');
+        this.party.forEach(function (m) {
+          if (m.hp <= 0) return;
+          var st = mons.stats(m), best = 1, k;
+          for (k = 1; k < 6; k++) if (st[k] > st[best]) best = k;
+          mons.addEVs(m, PL.STATS[self.rng.chance(0.6) ? best : 1 + self.rng.int(5)], evb);
+        });
+
+        // Entwicklungen prüfen
+        this.party.forEach(function (m) {
+          var evo = mons.autoEvolution(m, self.mod('evoEarly'));
+          if (evo) {
+            var from = mons.name(m), fromSp = m.sp;
+            mons.evolve(m, evo.to, self.rng);
+            self.stats.evolutions++;
+            res.evolutions.push({ mon: m, from: from, fromSp: fromSp, to: mons.name(m) });
           }
         });
-      });
-      res.exp = summe.filter(function (e) { return e.amount > 0 || e.capped; });
-
-      // Mehrere Gegner können dasselbe Pokémon zweimal aufsteigen lassen —
-      // für die Anzeige zählt nur ein Eintrag je Pokémon.
-      var merged = [];
-      res.levelUps.forEach(function (up) {
-        var prev = null, j;
-        for (j = 0; j < merged.length; j++) if (merged[j].mon === up.mon) { prev = merged[j]; break; }
-        if (!prev) { merged.push(up); return; }
-        prev.levels = prev.levels.concat(up.levels);
-        prev.learned = (prev.learned || []).concat(up.learned || []);
-        prev.after = up.after;
-      });
-      res.levelUps = merged;
-
-      if (bt.reward && /boss|e4|champ/.test(bt.reward.kind)) {
-        this.bossesBeaten = (this.bossesBeaten || 0) + 1;
       }
-      if (bt.reward) {
-        // Nicht jede Belohnungsart bringt Geld — ohne diese Null würde aus
-        // einem fehlenden Betrag ein NaN, und der Geldbeutel wäre für den
-        // Rest des Runs kaputt.
-        res.money = Math.round((bt.reward.money || 0) * this.mod('moneyMult', 1));
-        this.giveMoney(res.money);
-      } else if (bt.wild) {
-        res.money = Math.round((25 + this.levelCap * 7) * this.mod('moneyMult', 1));
-        this.giveMoney(res.money);
-      }
-
-      // Fleißpunkte: ein Grundstock für jeden Sieg, mehr mit passendem Relikt
-      var evb = 2 + this.mod('evPerBattle');
-      this.party.forEach(function (m) {
-        if (m.hp <= 0) return;
-        var st = mons.stats(m), best = 1, k;
-        for (k = 1; k < 6; k++) if (st[k] > st[best]) best = k;
-        mons.addEVs(m, PL.STATS[self.rng.chance(0.6) ? best : 1 + self.rng.int(5)], evb);
-      });
-
-      // Entwicklungen prüfen
-      this.party.forEach(function (m) {
-        var evo = mons.autoEvolution(m, self.mod('evoEarly'));
-        if (evo) {
-          var from = mons.name(m), fromSp = m.sp;
-          mons.evolve(m, evo.to, self.rng);
-          self.stats.evolutions++;
-          res.evolutions.push({ mon: m, from: from, fromSp: fromSp, to: mons.name(m) });
-        }
-      });
     }
 
     // Zwischen den Kämpfen erholt sich das Team ein Stück — wie viel,

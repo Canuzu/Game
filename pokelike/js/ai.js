@@ -532,7 +532,10 @@
     // Verwandeln: fast immer richtig, sobald es möglich ist. Mega geht vor —
     // die Mega-Form ist in jedem Wert stärker und hält den ganzen Kampf,
     // Gigadynamax nur drei Runden.
-    if (level >= 2 || bt.alwaysMega) {
+    // Eine Legende im Duell wartet: Sie verwandelt sich erst, wenn ihr Leben
+    // unter die Schwelle fällt — darum kümmert sich die Kampf-Engine selbst.
+    var wartet = me.mon.buff && me.mon.buff.erwachen;
+    if ((level >= 2 || bt.alwaysMega) && !wartet) {
       if (bt.canMega(me)) action.mega = true;
       else if (bt.canGmax(me)) action.gmax = true;
     }

@@ -1519,9 +1519,13 @@
       this.doAction(side, action);
       this.checkFaints();
       if (this.ended) break;
+      // Noch in derselben Runde: Wer unter seine Schwelle gefallen ist,
+      // erwacht sofort — und schlägt gleich mit der neuen Gestalt zurück.
+      this.pruefeErwachen();
     }
 
     if (!this.ended) this.endOfTurn();
+    if (!this.ended) this.pruefeErwachen();
     this.resolveSelfSwitch();
     if (!this.ended) this.checkEnd();
     return this.log.slice(start);
@@ -1887,9 +1891,17 @@
     return this.canTransform(act) && !!this.gmaxFormFor(act);
   };
 
-  B.megaEvolve = function (act) {
-    var form = this.canMega(act) ? this.megaFormFor(act) : null;
-    if (!form) return false;
+  /**
+   * Eine Gestalt annehmen: Werte, Typen, Fähigkeit und Bild wechseln.
+   * Mega-Form, Urform und die Gestalten von Deoxys gehen denselben Weg —
+   * `form` braucht dafür nur n, t, bs, a und pid.
+   *
+   * `schub` hebt die Werte außer den KP zusätzlich an. Die KP bleiben, wie
+   * sie sind: Eine Verwandlung mitten im Kampf darf die Leiste nicht
+   * zurücksetzen, sonst wäre der bereits abgetragene Schaden geschenkt.
+   */
+  B.nimmForm = function (act, form, schub) {
+    var vorher = act.stats[0], i;
     act.mega = true;
     act.side.megaUsed++;
     act.mon.form = 'mega';
@@ -1899,14 +1911,90 @@
     act.megaName = T.form(form);
     act.megaForm = form;
     act.stats = megaStats(act.mon, form.bs);
+    if (schub && schub !== 1) {
+      for (i = 1; i < 6; i++) act.stats[i] = Math.max(1, Math.round(act.stats[i] * schub));
+    }
+    act.stats[0] = vorher;
     // Hat die Form weniger KP als die Ausgangsform, darf das Leben nicht
     // über dem neuen Maximum stehenbleiben.
     if (act.mon.hp > act.stats[0]) act.mon.hp = act.stats[0];
+    this.onSwitchInEffects(act);
+  };
+
+  B.megaEvolve = function (act) {
+    var form = this.canMega(act) ? this.megaFormFor(act) : null;
+    if (!form) return false;
+    this.nimmForm(act, form, 1);
     var primal = /Primal/.test(form.n);
     this.say(this.name(act) + (primal ? ' erwacht als ' : ' mega-entwickelt sich zu ') + act.megaName + '!',
       'mega', { side: act.side.id, primal: primal });
-    this.onSwitchInEffects(act);
     return true;
+  };
+
+  /* ---------- Das Erwachen der Legenden ---------------------------------------
+   * Eine Legende im Duell verwandelt sich nicht zu Beginn, sondern wenn es
+   * eng wird: Fällt sie unter die Hälfte ihrer KP, nimmt sie ihre Mega- oder
+   * Urform an und legt dabei noch etwas zu. Das macht den zweiten Teil des
+   * Kampfes zu einem eigenen Abschnitt, statt die stärkste Gestalt schon in
+   * der ersten Runde zu zeigen.
+   *
+   * Deoxys hat keine Mega-Form, dafür drei Gestalten. Es nimmt eine
+   * zufällige davon an und steigert den Wert, für den sie steht — die
+   * Angriffsform ihre beiden Angriffswerte, die Verteidigungsform ihre
+   * beiden Verteidigungen, die Initiativform ihr Tempo.
+   * -------------------------------------------------------------------------- */
+
+  var DEOXYS_GESTALTEN = [
+    { id: 'deoxysattack', dn: 'Deoxys Angriffsform', werte: [1, 3] },
+    { id: 'deoxysdefense', dn: 'Deoxys Verteidigungsform', werte: [2, 4] },
+    { id: 'deoxysspeed', dn: 'Deoxys Initiativeform', werte: [5] }
+  ];
+
+  /** Die Gestalt, die diese Legende beim Erwachen annimmt — oder null. */
+  B.erwachenForm = function (act) {
+    if (!act || act.mega || act.gmax || act.mon.hp <= 0) return null;
+    if (PL.util.toID(act.species.id) === 'deoxys') {
+      var wahl = DEOXYS_GESTALTEN[this.rng.int(DEOXYS_GESTALTEN.length)];
+      var sp = dex.sp(wahl.id);
+      if (!sp) return null;
+      return { n: sp.n, dn: wahl.dn, t: sp.t, bs: sp.bs,
+        a: (sp.ab && sp.ab[0]) || act.abilityName, pid: sp.pid, werte: wahl.werte };
+    }
+    return this.megaFormFor(act);
+  };
+
+  /**
+   * Prüft nach jedem Schaden, ob eine Legende unter ihre Schwelle gefallen
+   * ist, und lässt sie dann erwachen. Einmal je Kampf: `erwacht` bleibt
+   * auch dann gesetzt, wenn es gar keine Gestalt gibt — sonst liefe die
+   * Prüfung jede Runde neu über einen Fall, der nie eintritt.
+   */
+  B.pruefeErwachen = function () {
+    for (var i = 0; i < 2; i++) {
+      var act = this.sides[i].active;
+      if (!act || act.erwacht || act.mon.hp <= 0) continue;
+      var panzer = act.mon.buff;
+      if (!panzer || !panzer.erwachen) continue;
+      if (this.hpFraction(act) >= panzer.erwachen) continue;
+      act.erwacht = true;
+      var form = this.erwachenForm(act);
+      if (!form) continue;
+      var name = this.name(act);
+      if (form.werte) {
+        // Deoxys: erst die Gestalt, dann der Wert, für den sie steht.
+        this.nimmForm(act, form, 1);
+        var schub = panzer.gestaltSchub || 1;
+        form.werte.forEach(function (k) {
+          act.stats[k] = Math.max(1, Math.round(act.stats[k] * schub));
+        });
+        this.say(name + ' wechselt die Gestalt — ' + act.megaName + '!',
+          'mega', { side: act.side.id, primal: true });
+      } else {
+        this.nimmForm(act, form, panzer.erwachenSchub || 1);
+        this.say(name + ' ist in die Enge getrieben und erwacht als ' + act.megaName + '!',
+          'mega', { side: act.side.id, primal: true });
+      }
+    }
   };
 
   /* Gigadynamax lässt Werte und Typen, wie sie sind, und leiht dafür drei

@@ -2468,6 +2468,123 @@ section('Eine Legende ist ein Bosskampf');
       hart.akt.mon.hp + ' von ' + hart.akt.stats[0]);
   });
 
+  /* Das Erwachen: Eine Legende zeigt ihre stärkste Gestalt nicht in der
+     ersten Runde, sondern wenn es eng wird — unter der Hälfte ihrer KP.
+     Gemessen kostet das Siegquote auf der Gegenseite, weil die erste
+     Hälfte gegen die Grundform läuft: 87 % vorher, 89 % mit dem Schub von
+     1,5, 94 % ohne ihn. */
+  check('Es gibt eine Schwelle fürs Erwachen',
+    P.erwachen > 0 && P.erwachen <= 0.6, String(P.erwachen));
+  check('… und einen Schub, der sie danach stärker macht',
+    P.erwachenSchub > 1, String(P.erwachenSchub));
+  {
+    const re = new PL.Run({ seed: 11, mode: 'legenden',
+      duell: { art: 'kyogre', team: [{ sp: 'dragonite' }] } });
+    const ke = re.makeLegendBoss(PL.rng('erw'), 'kyogre');
+    ke.start();
+    const boss = ke.sides[1].active;
+
+    ke.pruefeErwachen();
+    check('Bei vollem Leben erwacht nichts', !boss.mega, String(!!boss.mega));
+
+    // Knapp über der Schwelle: immer noch nicht.
+    boss.mon.hp = Math.ceil(boss.stats[0] * (P.erwachen + 0.02));
+    ke.pruefeErwachen();
+    check('Knapp über der Schwelle auch nicht', !boss.mega,
+      Math.round(100 * ke.hpFraction(boss)) + ' %');
+
+    const vorher = boss.stats.slice();
+    boss.mon.hp = Math.floor(boss.stats[0] * (P.erwachen - 0.02));
+    const leben = boss.mon.hp;
+    ke.pruefeErwachen();
+    check('Unter der Schwelle erwacht sie', !!boss.mega, String(boss.megaName));
+    check('… als Urform', /Primal|Proto/.test(boss.megaForm.n), String(boss.megaForm.n));
+    check('… und wird dabei stärker',
+      boss.stats[1] > vorher[1] && boss.stats[3] > vorher[3],
+      vorher[1] + '→' + boss.stats[1] + ', ' + vorher[3] + '→' + boss.stats[3]);
+    // Die Leiste darf beim Erwachen nicht zurückspringen: Der schon
+    // abgetragene Schaden bleibt abgetragen.
+    eq('Das Erwachen setzt die KP nicht zurück', boss.mon.hp, leben);
+    eq('… und auch das Maximum nicht', boss.stats[0], vorher[0]);
+    // Ein zweiter Durchlauf darf nichts mehr tun — sonst stapelte sich der
+    // Schub Runde für Runde.
+    const nachErstem = boss.stats.slice();
+    const verwandlungen = boss.side.megaUsed;
+    boss.mon.hp = 1;
+    ke.pruefeErwachen();
+    ke.pruefeErwachen();
+    eq('Erwacht wird nur einmal', boss.side.megaUsed, verwandlungen);
+    check('… und der Schub stapelt sich nicht',
+      boss.stats.every((v, i) => v === nachErstem[i]),
+      nachErstem.join('/') + ' → ' + boss.stats.join('/'));
+  }
+
+  /* Deoxys hat keine Mega-Form. Es nimmt eine zufällige seiner drei
+     Gestalten an und steigert den Wert, für den sie steht. */
+  {
+    const gesehen = {};
+    for (let i = 0; i < 24; i++) {
+      const rd = new PL.Run({ seed: 500 + i * 3, mode: 'legenden',
+        duell: { art: 'deoxys', team: [{ sp: 'dragonite' }] } });
+      const kd = rd.makeLegendBoss(PL.rng('deo' + i), 'deoxys');
+      kd.start();
+      const d = kd.sides[1].active;
+      const vor = d.stats.slice();
+      d.mon.hp = Math.floor(d.stats[0] * (P.erwachen - 0.05));
+      kd.pruefeErwachen();
+      if (!d.mega) continue;
+      gesehen[d.megaForm.n] = (gesehen[d.megaForm.n] || 0) + 1;
+      // Der Wert, für den die Gestalt steht, muss gestiegen sein.
+      const gestiegen = d.megaForm.werte.every((k) => d.stats[k] > vor[k]);
+      if (!gestiegen) {
+        check('Deoxys steigert den Wert seiner Gestalt', false,
+          d.megaForm.n + ': ' + vor.join('/') + ' → ' + d.stats.join('/'));
+        break;
+      }
+    }
+    check('Deoxys steigert den Wert seiner Gestalt', true, 'in allen 24 Proben');
+    eq('Deoxys kennt drei Gestalten', Object.keys(gesehen).length, 3);
+    check('… und wählt sie zufällig',
+      Object.values(gesehen).every((v) => v >= 3),
+      JSON.stringify(gesehen));
+  }
+
+  /* Im Legenden-Duell gibt es keine Erfahrung — sonst liefe ein
+     mitgebrachtes Team in einem Anlauf durch seine Entwicklungen, und die
+     tragen sich dauerhaft in den Pokédex ein. */
+  {
+    const rl = new PL.Run({ seed: 5, mode: 'legenden',
+      duell: { art: 'lugia', team: [{ sp: 'charmeleon' }, { sp: 'dragonair' }] } });
+    const vor = rl.party.map((m) => ({ exp: m.exp, lvl: m.lvl, sp: m.sp, evs: m.evs.slice() }));
+    const kl = rl.makeLegendBoss(PL.rng('exp'), 'lugia');
+    kl.start();
+    kl.sides[1].team[0].hp = 0;
+    kl.outcome = 'win';
+    const erg = rl.finishBattle(kl);
+    eq('Das Duell wirft keine Erfahrung ab', erg.exp.length, 0);
+    eq('… keine Aufstiege', erg.levelUps.length, 0);
+    eq('… und keine Entwicklungen', erg.evolutions.length, 0);
+    check('Die mitgebrachten Pokémon bleiben unangetastet',
+      rl.party.every((m, i) => m.exp === vor[i].exp && m.lvl === vor[i].lvl &&
+        m.sp === vor[i].sp && m.evs.every((v, k) => v === vor[i].evs[k])),
+      rl.party.map((m) => PL.mon.name(m) + ' Lv' + m.lvl).join(', '));
+  }
+
+  // Der gewöhnliche Run darf davon nichts abbekommen.
+  {
+    const rn = new PL.Run({ seed: 5, region: 0, starter: 'charmander' });
+    const vorExp = rn.party[0].exp;
+    const feind = PL.mon.create(PL.dex.sp('rattata'), 12, PL.rng('rt'));
+    const kn2 = new PL.Battle({ teams: [rn.party, [feind]] });
+    kn2.start();
+    feind.hp = 0;
+    kn2.outcome = 'win';
+    const erg2 = rn.finishBattle(kn2);
+    check('Im gewöhnlichen Run fließt weiter Erfahrung',
+      erg2.exp.length > 0 && rn.party[0].exp > vorExp,
+      (rn.party[0].exp - vorExp) + ' Punkte');
+  }
+
   // Der Fehler, der die Duelle wirklich kurz machte: Die Legende hatte
   // Attacken im Set, die sie selbst besiegen. Xerneas sprengte sich in der
   // zweiten Runde in die Luft und schenkte den Kampf her.
