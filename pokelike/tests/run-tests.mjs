@@ -974,6 +974,36 @@ section('Formen und Bilder');
       /GIGA/.test(first(dex.sp('charizard'), { pid: dex.gmax.charizard.pid })));
     check('Ohne Form bleibt es die Grundform',
       /GLURAK/.test(first(dex.sp('charizard'))));
+
+    /* --- Blickrichtung vor Farbe ---
+       Ein gefangenes Shiny im eigenen Team steht mit dem Rücken zum
+       Betrachter. Vorher fragte die Auswahl zuerst nach »schillernd« und
+       erst dann nach »hinten« — und lieferte damit die schillernde
+       Vorderansicht: Das eigene Shiny schaute in die Kamera. */
+    const nr = dex.sp('gyarados').num;
+    globalThis.PL_SPRITES = {
+      f: {}, b: {}, s: {}, sb: {}
+    };
+    globalThis.PL_SPRITES.f[nr] = 'VORNE';
+    globalThis.PL_SPRITES.b[nr] = 'HINTEN';
+    globalThis.PL_SPRITES.s[nr] = 'SCHILLERND-VORNE';
+    globalThis.PL_SPRITES.sb[nr] = 'SCHILLERND-HINTEN';
+    const g = dex.sp('gyarados');
+    check('Ein schillerndes Pokémon im eigenen Team steht mit dem Rücken',
+      /SCHILLERND-HINTEN/.test(first(g, { shiny: true, back: true })),
+      first(g, { shiny: true, back: true }).slice(0, 60));
+    check('Der Gegner zeigt weiter seine schillernde Vorderansicht',
+      /SCHILLERND-VORNE/.test(first(g, { shiny: true })));
+    check('Ein gewöhnliches eigenes Pokémon bleibt bei der Rückansicht',
+      /HINTEN/.test(first(g, { back: true })));
+
+    // Fehlt die schillernde Rückansicht, wiegt die Richtung schwerer als
+    // die Farbe: lieber blass und richtig herum als schillernd und verkehrt.
+    delete globalThis.PL_SPRITES.sb[nr];
+    check('Ohne schillernde Rückansicht kommt die gewöhnliche',
+      /HINTEN/.test(first(g, { shiny: true, back: true })),
+      first(g, { shiny: true, back: true }).slice(0, 60));
+
     globalThis.PL_SPRITES = echte;
   }
 
@@ -2572,10 +2602,11 @@ section('Schillernde Pokémon');
   check('Alle Quoten stehen an einer Stelle',
     ['wild', 'trainer', 'geschenk', 'arena', 'liga'].every((k) => S[k] > 0),
     JSON.stringify(S));
-  // Gemessen über je 60 Runs: vorher 0,08 Schillernde je Run, jetzt 0,23 —
-  // etwa jeder vierte Run bringt eines statt jedem zwölften.
-  check('Ein wilder Fund schillert häufiger als 1:120', S.wild <= 120, '1:' + S.wild);
-  check('… aber nicht beliebig oft', S.wild >= 50, '1:' + S.wild);
+  // Gemessen über je 60 Runs: 1:200 brachte 0,08 Schillernde je Run — zu
+  // selten —, 1:80 dann 0,23 — zu oft. Jetzt liegt die Quote dazwischen und
+  // bringt 0,13 je Run, also etwa jeder achte Run eines.
+  check('Ein wilder Fund schillert häufiger als 1:150', S.wild <= 150, '1:' + S.wild);
+  check('… aber nicht beliebig oft', S.wild >= 90, '1:' + S.wild);
   check('Gegner schillern seltener als eigene Funde', S.trainer > S.wild,
     S.trainer + ' vs ' + S.wild);
   check('Arenaleiter und Liga sind die Ausnahme — dort lohnt das Hinsehen',

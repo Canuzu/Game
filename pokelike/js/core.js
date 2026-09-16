@@ -414,8 +414,21 @@
   function embedded(num, opts) {
     var store = root.PL_SPRITES;
     if (!store) return null;
-    var set = opts.shiny ? store.s : opts.back ? store.b : store.f;
-    var data = (set && set[num]) || (store.f && store.f[num]);
+    // Die Reihenfolge der Fragen zählt. Vorher stand hier
+    //   opts.shiny ? store.s : opts.back ? store.b : store.f
+    // und damit gewann »schillernd« immer: Ein gefangenes Shiny im eigenen
+    // Team bekam die schillernde Vorderansicht und schaute in die Kamera,
+    // statt vom Betrachter weg zu stehen. Erst die Blickrichtung, dann die
+    // Farbe.
+    var set = opts.back
+      ? (opts.shiny ? store.sb : store.b)
+      : (opts.shiny ? store.s : store.f);
+    var data = set && set[num];
+    // Fehlt der gesuchte Satz, wiegt die Richtung schwerer als die Farbe:
+    // ein Pokémon, das falsch herum steht, fällt sofort auf, ein blasseres
+    // erst beim Hinsehen.
+    if (!data && opts.back && store.b) data = store.b[num];
+    if (!data && store.f) data = store.f[num];
     return data ? 'data:image/png;base64,' + data : null;
   }
 

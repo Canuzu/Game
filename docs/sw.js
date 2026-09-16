@@ -27,7 +27,7 @@
  * ========================================================================== */
 
 /* Diese Zeile ersetzt tools/build-single.mjs beim Bauen. */
-var KENNUNG = '20260915T172807Z-8780420';
+var KENNUNG = '20260916T084710Z-4914af8';
 
 var LAGER = 'pokelike-' + KENNUNG;
 /* Das Verzeichnis, in dem der Helfer zuständig ist — z. B. »/Game/«. */

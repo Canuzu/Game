@@ -19,10 +19,15 @@ const BASE = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/p
 const MAX = 1025;
 const PARALLEL = 16;
 
+/* Vier Sätze, weil alle vier gebraucht werden. Der vierte fehlte lange, und
+   das fiel auf: Ein gefangenes Shiny im eigenen Team hat keine schillernde
+   Rückansicht, wenn keine eingebettet ist — es bekam die Vorderansicht und
+   schaute in die Kamera. */
 const sets = [
-  { key: 'f', path: '' },          // vorne
-  { key: 'b', path: 'back/' },     // hinten
-  { key: 's', path: 'shiny/' }     // schillernd
+  { key: 'f', path: '' },              // vorne
+  { key: 'b', path: 'back/' },         // hinten
+  { key: 's', path: 'shiny/' },        // schillernd, vorne
+  { key: 'sb', path: 'back/shiny/' }   // schillernd, hinten
 ];
 
 async function fetchOne(url, tries = 3) {

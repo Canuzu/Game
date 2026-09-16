@@ -73,20 +73,25 @@
    * Fund sein, den man in einem Run erleben kann — nicht einer, den man nie
    * sieht. Relikte und der Sammlungslohn multiplizieren zusätzlich.
    *
+   * Die Zahlen sind eingemessen, nicht geschätzt. Über je 60 Runs brachte
+   * 1:200 in der Wildnis 0,08 Schillernde je Run — zu selten —, 1:80 dann
+   * 0,23 — zu oft. Jetzt steht hier die Mitte zwischen beidem, gerechnet
+   * über die Wahrscheinlichkeit und nicht über den Nenner.
+   *
    * Gegner schillern seltener als eigene Funde: Ein schillernder Arenaleiter
    * ist ein Anblick, aber man nimmt ihn nicht mit.
    * -------------------------------------------------------------------------- */
 
   var SCHILLERND = {
-    wild: 80,        // was einem auf der Route begegnet
-    trainer: 160,    // im Team eines gewöhnlichen Trainers
-    geschenk: 120,   // Ereignisse, Eier, Segen
-    arena: 50,       // im Team eines Arenaleiters
-    liga: 40,        // Top Vier und Champ
-    gegnerWild: 160, // gewöhnliche Gegner ohne eigene Angabe
-    gegnerArena: 50,
-    gegnerLiga: 40,
-    gegnerChamp: 25
+    wild: 115,       // was einem auf der Route begegnet
+    trainer: 230,    // im Team eines gewöhnlichen Trainers
+    geschenk: 170,   // Ereignisse, Eier, Segen
+    arena: 70,       // im Team eines Arenaleiters
+    liga: 55,        // Top Vier und Champ
+    gegnerWild: 230, // gewöhnliche Gegner ohne eigene Angabe
+    gegnerArena: 70,
+    gegnerLiga: 57,
+    gegnerChamp: 35
   };
 
   var ELITE_VIER = {
