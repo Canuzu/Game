@@ -76,6 +76,7 @@ let html = rd('index.html');
 html = html.replace('<link rel="stylesheet" href="deck.css">', () => `<style>\n${css}\n</style>`);
 html = html.replace('<script src="data.js"></script>', () => `<script>\n${dataJs}</script>`);
 html = html.replace('<script src="deck.js"></script>', () => `<script>\n${rd('deck.js')}\n</script>`);
+html = html.replace('href="assets/img/icon-180.png"', () => `href="${dataUri('assets/img/icon-180.png')}"`);
 if (/src="(data|deck)\.js"|href="deck\.css"/.test(html)) throw new Error('Einbetten fehlgeschlagen');
 
 const out = path.join(here, '..', 'Sponsoringvorgespraech.html');

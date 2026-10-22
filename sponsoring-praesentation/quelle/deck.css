@@ -703,3 +703,34 @@ body.lite .k-sweep{display:none}
 .s-tester .app{transition:opacity .8s var(--soft) .35s,transform 1.1s var(--out) .35s}
 .s-tester.st0 .app{opacity:0;transform:translateY(80px) scale(.96)}
 .s-tester.st0 .seg{transform:scaleY(0)}
+
+/* ========================================================================
+   Tablet & Handy
+   ======================================================================== */
+#viewport{touch-action:none}              /* kein Zoomen/Scrollen beim Wischen auf der Bühne */
+body{touch-action:manipulation}
+#stage{-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+.st-touch,.st-rotate,.st-nojs{display:none}
+.st-rotate .ico{width:26px;height:26px;vertical-align:-7px;margin-right:8px;color:var(--red)}
+.st-nojs{margin-top:22px;font:400 17px/1.6 var(--sans);color:var(--ink-2);background:#fff;border-radius:16px;padding:18px 22px;box-shadow:0 10px 30px -18px rgba(0,0,0,.35);text-align:left}
+.st-nojs b{display:block;color:var(--red);font-size:18px;margin-bottom:6px}
+/* Ohne JavaScript (Schnellvorschau): toter Startknopf weg, Erklärung her */
+html:not(.js) #st-go,html:not(.js) .st-keys{display:none}
+html:not(.js) .st-nojs{display:block}
+@media (pointer:coarse){
+  html.js .st-keys{display:none}
+  html.js .st-touch{display:block}
+  #hud{bottom:calc(14px + env(safe-area-inset-bottom));left:calc(14px + env(safe-area-inset-left));padding:6px 8px 6px 14px}
+  #hud button{width:44px;height:44px;font-size:18px}
+  #hud .ico{width:22px;height:22px}
+  #hud .hud-t{max-width:30vw}
+}
+@media (pointer:coarse) and (orientation:portrait){
+  html.js .st-rotate{display:block}
+}
+@media (max-width:560px){
+  .st-logo{width:190px;height:190px}
+  #st-go{padding:16px 34px;font-size:19px}
+  .st-card p{font-size:14px}
+}
+#hud button[hidden]{display:none}

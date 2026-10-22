@@ -2,8 +2,16 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Sponsoringvorgespräch · Swiss Life Select</title>
+<!-- Als App auf dem Home-Bildschirm (iPhone/iPad/Android): Vollbild ohne Browserleisten -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Sponsoring">
+<meta name="theme-color" content="#F3F3F4">
+<link rel="apple-touch-icon" href="data:image/png;base64,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Er9ee2nfb0IjMxSId9mfnzXv9LhJV1P+eNhcQNVKUcv+o6Uw98jPlkOBSkrlNYtCO7RTW1L3Hzr1xntCwy0KhOVQkA/kOD97vnyiV7Vda93IZRoFixwaWULBnc+hkSk0OTQsocmhYQlNDg1LaHJoWEKTw2aIi4tbvXr1bw7ExsZWqFChRYsWTzzxhMgF5J9Ulou1atWq9u3b33KLzdYrf//991u3bn3uuecKF85kavS77747ZsyY8+fPO20vX778p59+2rJlS5GjyDFycG/27t177Nixs2fP+vr6Vq5cmW/M9ho1apQuXVrkMhhDVatWvXAh44HU27Zta9gwL15r8t133/F/nTp1wsPDhbeYPXv2U09lPHb33nvvxSRYdTt06FDnzp35aSEhIfXr109OTt6zZ09Kyh/vZmjVqtV//5vDz8/MrluJiYl56623Pv/88zNnLN9BxI+fOXOmyE2sXbtWMgMsW7YsD8ihbqpLcE2GDx8uPADGQDa+/fbbpKSkYFePsD1x4kTjxo1Pnz797LPPvvfee8rAMBqnT58+fvx4jho8eLDIaWSrtrJkyZJy5cpNmTIFZmAV161bl5iY+Pvvvy9dunTAgD/m2qSm5vrjde688051ydq2bStyH7169WI09+nTx2n72LFjGdMeMgM8+uijsnHPPfcEWzzcuGPHjjCD3zh58mSj67n99tvff//9gwcPsvcvf/mLyGl471Z27NjRrFkz7FtYWNiGDRtq1qxp7nD//ffDG34bpkXkMqKjo+fPn3/33XczyEQe4sknn8Tfy3bXrl3nzJkjsoivv/76559/hmfFihUz712+fPkjjzxCY8aMGb175+niTe/dyt///neYQaNv375mZoB69erBdDylMvi5CkKc559/XuQ5brvtNtVm9Ius40EHrPZOm3btzRDwXuQtvHQrR48eXb9+vWw/9NBDVt06depErmWMm/IfMJyqTVAschr/+9//ZEMG+HkJL8mxe/du1S5TpoybngRK7jvYHX5+fqodEZHDb/k7efJkQkKCbAfn+esWvHQrRk+xcePGW2+91arnoEGDRL7GJcPbTP39c1hUVDlgUFCQyHN4+WPItlWbwKJLly435Ns7gVSQyK5Ro0ZWHeLj4+lA9lSoUKFKlSqVLWv5GHKEpl27rr2hx71Uc/my5WNkPMf+/fsDAgJwwU7b+UWy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">
+<script>document.documentElement.classList.add('js');</script>
 <style>
 /* ==========================================================================
    Sponsoringvorgespräch · Swiss Life Select
@@ -711,6 +719,37 @@ body.lite .k-sweep{display:none}
 .s-tester.st0 .app{opacity:0;transform:translateY(80px) scale(.96)}
 .s-tester.st0 .seg{transform:scaleY(0)}
 
+/* ========================================================================
+   Tablet & Handy
+   ======================================================================== */
+#viewport{touch-action:none}              /* kein Zoomen/Scrollen beim Wischen auf der Bühne */
+body{touch-action:manipulation}
+#stage{-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+.st-touch,.st-rotate,.st-nojs{display:none}
+.st-rotate .ico{width:26px;height:26px;vertical-align:-7px;margin-right:8px;color:var(--red)}
+.st-nojs{margin-top:22px;font:400 17px/1.6 var(--sans);color:var(--ink-2);background:#fff;border-radius:16px;padding:18px 22px;box-shadow:0 10px 30px -18px rgba(0,0,0,.35);text-align:left}
+.st-nojs b{display:block;color:var(--red);font-size:18px;margin-bottom:6px}
+/* Ohne JavaScript (Schnellvorschau): toter Startknopf weg, Erklärung her */
+html:not(.js) #st-go,html:not(.js) .st-keys{display:none}
+html:not(.js) .st-nojs{display:block}
+@media (pointer:coarse){
+  html.js .st-keys{display:none}
+  html.js .st-touch{display:block}
+  #hud{bottom:calc(14px + env(safe-area-inset-bottom));left:calc(14px + env(safe-area-inset-left));padding:6px 8px 6px 14px}
+  #hud button{width:44px;height:44px;font-size:18px}
+  #hud .ico{width:22px;height:22px}
+  #hud .hud-t{max-width:30vw}
+}
+@media (pointer:coarse) and (orientation:portrait){
+  html.js .st-rotate{display:block}
+}
+@media (max-width:560px){
+  .st-logo{width:190px;height:190px}
+  #st-go{padding:16px 34px;font-size:19px}
+  .st-card p{font-size:14px}
+}
+#hud button[hidden]{display:none}
+
 </style>
 </head>
 <body class="mode-sport">
@@ -1089,7 +1128,14 @@ body.lite .k-sweep{display:none}
   <div class="st-card">
     <svg class="st-logo" viewBox="0 0 460 460"></svg>
     <button id="st-go" type="button">Präsentation starten</button>
-    <p>Weiter mit <kbd>→</kbd> <kbd>Leertaste</kbd> oder dem Presenter-Klicker · <kbd>F</kbd> Vollbild · <kbd>E</kbd> Einstellungen · <kbd>?</kbd> Hilfe</p>
+    <p class="st-keys">Weiter mit <kbd>→</kbd> <kbd>Leertaste</kbd> oder dem Presenter-Klicker · <kbd>F</kbd> Vollbild · <kbd>E</kbd> Einstellungen · <kbd>?</kbd> Hilfe</p>
+    <p class="st-touch">Rechts tippen oder nach links wischen = weiter · links tippen = zurück<br>Menü (Übersicht, Einstellungen): auf den unteren Rand tippen</p>
+    <p class="st-rotate"><svg class="ico" viewBox="0 0 48 48"><rect x="15" y="6" width="18" height="30" rx="3"/><path d="M9 30a17 17 0 0 0 26 11M35 41l2-5M35 41l-5-1"/></svg>Am besten im Querformat präsentieren</p>
+    <div class="st-nojs">
+      <b>Diese Vorschau kann die Präsentation nicht abspielen.</b>
+      Die Datei wurde in einer Schnellvorschau geöffnet (z.&nbsp;B. Dateien-App, Mail oder Chat), die keine Animationen ausführt.
+      Bitte im Browser öffnen: am Computer per Doppelklick in Chrome, Edge oder Safari – auf iPhone und iPad über den Web-Link der Präsentation.
+    </div>
   </div>
 </div>
 
@@ -1267,7 +1313,10 @@ function fit() {
   stage.style.transform = `translate(-50%,-50%) scale(${scale})`;
 }
 addEventListener('resize', fit);
+addEventListener('orientationchange', () => setTimeout(fit, 250));
+if (window.visualViewport) visualViewport.addEventListener('resize', fit);
 fit();
+const coarse = matchMedia('(pointer:coarse)').matches; // Tablet/Handy
 const toStage = (e) => { const r = stage.getBoundingClientRect(); return [(e.clientX - r.left) / scale, (e.clientY - r.top) / scale]; };
 
 /* ------------------------------------------------------------------------
@@ -1321,11 +1370,14 @@ function setWatermark(id) {
 }
 
 let mouseT = 0;
-addEventListener('pointermove', () => {
+function showHud(ms = 2600) {
   document.body.classList.add('mouse');
   clearTimeout(mouseT);
-  mouseT = setTimeout(() => document.body.classList.remove('mouse'), 2600);
-});
+  mouseT = setTimeout(() => document.body.classList.remove('mouse'), ms);
+}
+addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse') showHud(); });
+// Touch: jedes Tippen blendet die Bedienleiste (Übersicht, Einstellungen …) für ein paar Sekunden ein
+addEventListener('pointerdown', (e) => { if (e.pointerType !== 'mouse') showHud(4000); });
 
 /* ------------------------------------------------------------------------
    Bilder (inkl. eigener Fotos aus IndexedDB)
@@ -2395,6 +2447,10 @@ function placeBrand(s, animateFromTitle) {
   }
 }
 
+function prefetch(i) { // Fotos der aktuellen und der beiden nächsten Folien vorab dekodieren
+  for (let k = i; k <= Math.min(N - 1, i + 2); k++) $$('img', slides[k]).forEach((im) => { if (im.decode && !im._dec) { im._dec = 1; im.decode().catch(() => {}); } });
+}
+
 function resetSlide(s) {
   s.classList.remove('quick');
   $$('[data-s]', s).forEach((x) => x.classList.remove('in'));
@@ -2421,6 +2477,7 @@ function show(i, st = 0, opts = {}) {
     anim.onfinish = done; anim.oncancel = done;
   }
   cur = i; step = st;
+  if (coarse) prefetch(i);
   resetSlide(next);
   next.classList.toggle('quick', dir < 0);
   next.classList.add('active');
@@ -2570,13 +2627,22 @@ function perfProbe() {
 if (store.get('lite', false)) document.body.classList.add('lite');
 $('#st-go').addEventListener('click', (e) => { e.stopPropagation(); startDeck(); });
 
+const fsElement = () => document.fullscreenElement || document.webkitFullscreenElement;
+const fsSupported = !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
 function fullscreen(on) {
   try {
-    if (on ?? !document.fullscreenElement) document.documentElement.requestFullscreen?.().catch(() => {});
-    else document.exitFullscreen?.().catch(() => {});
-  } catch { /* nicht erlaubt */ }
+    const de = document.documentElement;
+    if (on ?? !fsElement()) {
+      if (de.requestFullscreen) de.requestFullscreen().catch(() => {});
+      else if (de.webkitRequestFullscreen) de.webkitRequestFullscreen(); // ältere iPad-Safari
+    } else if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+  } catch { /* nicht erlaubt (z. B. iPhone) */ }
 }
-document.addEventListener('fullscreenchange', () => document.body.classList.toggle('fs', !!document.fullscreenElement));
+['fullscreenchange', 'webkitfullscreenchange'].forEach((ev) => document.addEventListener(ev, () => document.body.classList.toggle('fs', !!fsElement())));
+// Knöpfe ausblenden, die das Gerät nicht kann (Vollbild auf dem iPhone, zweites Fenster auf dem Handy)
+if (!fsSupported) $('#hud [data-act="fullscreen"]').hidden = true;
+if (coarse && Math.min(screen.width, screen.height) < 600) $('#hud [data-act="presenter"]').hidden = true;
 
 function panel(id, on) {
   const p = $('#' + id);
@@ -2622,9 +2688,17 @@ addEventListener('keydown', (e) => {
 });
 
 const isUI = (t) => t.closest('a,button,input,textarea,select,label,.sphere,.panel-ui,#hud');
+let lastTap = { type: 'mouse', x: 0 };
+stage.addEventListener('pointerdown', (e) => { lastTap = { type: e.pointerType, x: e.clientX, y: e.clientY, hud: document.body.classList.contains('mouse') }; });
 stage.addEventListener('click', (e) => {
   if (ovOn || !started() || isUI(e.target)) return;
   if ($('#blank').classList.contains('on')) { $('#blank').classList.remove('on'); return; }
+  if (lastTap.type !== 'mouse') {
+    // Touch: unterer Rand = nur Menü zeigen, linkes Drittel = zurück, sonst weiter
+    if (lastTap.y > innerHeight * 0.84) return;
+    if (lastTap.x < innerWidth / 3) prev(); else next();
+    return;
+  }
   next();
 });
 stage.addEventListener('contextmenu', (e) => { if (ovOn) return; e.preventDefault(); prev(); });
@@ -2635,7 +2709,10 @@ addEventListener('wheel', (e) => {
   if (Math.abs(wheelAcc) > 70 && performance.now() - wheelT > 650) { wheelT = performance.now(); wheelAcc > 0 ? next() : prev(); wheelAcc = 0; }
 }, { passive: true });
 let touch = null;
-addEventListener('touchstart', (e) => { touch = [e.touches[0].clientX, e.touches[0].clientY]; }, { passive: true });
+addEventListener('touchstart', (e) => {
+  // Wischen nur auf der Bühne – nicht in Menüs, Eingabefeldern oder auf der drehbaren Kugel
+  touch = e.touches.length === 1 && !isUI(e.target) && !ovOn ? [e.touches[0].clientX, e.touches[0].clientY] : null;
+}, { passive: true });
 addEventListener('touchend', (e) => {
   if (!touch || !started()) return;
   const dx = e.changedTouches[0].clientX - touch[0], dy = e.changedTouches[0].clientY - touch[1];
@@ -2780,8 +2857,10 @@ window.__deck = { next, prev, go, overview: () => overview(!ovOn), get cur() { r
   loadCustomImages();
   // Standortpunkte vorab berechnen (sonst stockt die Deutschlandkarte beim ersten Öffnen)
   setTimeout(() => hooks.premium.prebuild(), 300);
-  // alle Fotos vorab dekodieren, damit der erste Folienwechsel nicht hakt
-  $$('img').forEach((im) => { if (im.decode) im.decode().catch(() => {}); });
+  // Fotos vorab dekodieren, damit der erste Folienwechsel nicht hakt.
+  // Tablet/Handy: nur die nächsten Folien (schont den Arbeitsspeicher, sonst lädt Safari die Seite neu)
+  if (!coarse) $$('img').forEach((im) => { if (im.decode) im.decode().catch(() => {}); });
+  else prefetch(0);
   const m = /^#(\d+)(?:\.(\d+))?/.exec(location.hash);
   if (m) {
     $('#start').classList.add('gone');

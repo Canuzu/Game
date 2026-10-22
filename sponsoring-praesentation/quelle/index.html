@@ -2,8 +2,16 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Sponsoringvorgespräch · Swiss Life Select</title>
+<!-- Als App auf dem Home-Bildschirm (iPhone/iPad/Android): Vollbild ohne Browserleisten -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Sponsoring">
+<meta name="theme-color" content="#F3F3F4">
+<link rel="apple-touch-icon" href="assets/img/icon-180.png">
+<script>document.documentElement.classList.add('js');</script>
 <link rel="stylesheet" href="deck.css">
 </head>
 <body class="mode-sport">
@@ -382,7 +390,14 @@
   <div class="st-card">
     <svg class="st-logo" viewBox="0 0 460 460"></svg>
     <button id="st-go" type="button">Präsentation starten</button>
-    <p>Weiter mit <kbd>→</kbd> <kbd>Leertaste</kbd> oder dem Presenter-Klicker · <kbd>F</kbd> Vollbild · <kbd>E</kbd> Einstellungen · <kbd>?</kbd> Hilfe</p>
+    <p class="st-keys">Weiter mit <kbd>→</kbd> <kbd>Leertaste</kbd> oder dem Presenter-Klicker · <kbd>F</kbd> Vollbild · <kbd>E</kbd> Einstellungen · <kbd>?</kbd> Hilfe</p>
+    <p class="st-touch">Rechts tippen oder nach links wischen = weiter · links tippen = zurück<br>Menü (Übersicht, Einstellungen): auf den unteren Rand tippen</p>
+    <p class="st-rotate"><svg class="ico" viewBox="0 0 48 48"><rect x="15" y="6" width="18" height="30" rx="3"/><path d="M9 30a17 17 0 0 0 26 11M35 41l2-5M35 41l-5-1"/></svg>Am besten im Querformat präsentieren</p>
+    <div class="st-nojs">
+      <b>Diese Vorschau kann die Präsentation nicht abspielen.</b>
+      Die Datei wurde in einer Schnellvorschau geöffnet (z.&nbsp;B. Dateien-App, Mail oder Chat), die keine Animationen ausführt.
+      Bitte im Browser öffnen: am Computer per Doppelklick in Chrome, Edge oder Safari – auf iPhone und iPad über den Web-Link der Präsentation.
+    </div>
   </div>
 </div>
 

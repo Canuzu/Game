@@ -118,7 +118,10 @@ function fit() {
   stage.style.transform = `translate(-50%,-50%) scale(${scale})`;
 }
 addEventListener('resize', fit);
+addEventListener('orientationchange', () => setTimeout(fit, 250));
+if (window.visualViewport) visualViewport.addEventListener('resize', fit);
 fit();
+const coarse = matchMedia('(pointer:coarse)').matches; // Tablet/Handy
 const toStage = (e) => { const r = stage.getBoundingClientRect(); return [(e.clientX - r.left) / scale, (e.clientY - r.top) / scale]; };
 
 /* ------------------------------------------------------------------------
@@ -172,11 +175,14 @@ function setWatermark(id) {
 }
 
 let mouseT = 0;
-addEventListener('pointermove', () => {
+function showHud(ms = 2600) {
   document.body.classList.add('mouse');
   clearTimeout(mouseT);
-  mouseT = setTimeout(() => document.body.classList.remove('mouse'), 2600);
-});
+  mouseT = setTimeout(() => document.body.classList.remove('mouse'), ms);
+}
+addEventListener('pointermove', (e) => { if (e.pointerType === 'mouse') showHud(); });
+// Touch: jedes Tippen blendet die Bedienleiste (Übersicht, Einstellungen …) für ein paar Sekunden ein
+addEventListener('pointerdown', (e) => { if (e.pointerType !== 'mouse') showHud(4000); });
 
 /* ------------------------------------------------------------------------
    Bilder (inkl. eigener Fotos aus IndexedDB)
@@ -1246,6 +1252,10 @@ function placeBrand(s, animateFromTitle) {
   }
 }
 
+function prefetch(i) { // Fotos der aktuellen und der beiden nächsten Folien vorab dekodieren
+  for (let k = i; k <= Math.min(N - 1, i + 2); k++) $$('img', slides[k]).forEach((im) => { if (im.decode && !im._dec) { im._dec = 1; im.decode().catch(() => {}); } });
+}
+
 function resetSlide(s) {
   s.classList.remove('quick');
   $$('[data-s]', s).forEach((x) => x.classList.remove('in'));
@@ -1272,6 +1282,7 @@ function show(i, st = 0, opts = {}) {
     anim.onfinish = done; anim.oncancel = done;
   }
   cur = i; step = st;
+  if (coarse) prefetch(i);
   resetSlide(next);
   next.classList.toggle('quick', dir < 0);
   next.classList.add('active');
@@ -1421,13 +1432,22 @@ function perfProbe() {
 if (store.get('lite', false)) document.body.classList.add('lite');
 $('#st-go').addEventListener('click', (e) => { e.stopPropagation(); startDeck(); });
 
+const fsElement = () => document.fullscreenElement || document.webkitFullscreenElement;
+const fsSupported = !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
 function fullscreen(on) {
   try {
-    if (on ?? !document.fullscreenElement) document.documentElement.requestFullscreen?.().catch(() => {});
-    else document.exitFullscreen?.().catch(() => {});
-  } catch { /* nicht erlaubt */ }
+    const de = document.documentElement;
+    if (on ?? !fsElement()) {
+      if (de.requestFullscreen) de.requestFullscreen().catch(() => {});
+      else if (de.webkitRequestFullscreen) de.webkitRequestFullscreen(); // ältere iPad-Safari
+    } else if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+    else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+  } catch { /* nicht erlaubt (z. B. iPhone) */ }
 }
-document.addEventListener('fullscreenchange', () => document.body.classList.toggle('fs', !!document.fullscreenElement));
+['fullscreenchange', 'webkitfullscreenchange'].forEach((ev) => document.addEventListener(ev, () => document.body.classList.toggle('fs', !!fsElement())));
+// Knöpfe ausblenden, die das Gerät nicht kann (Vollbild auf dem iPhone, zweites Fenster auf dem Handy)
+if (!fsSupported) $('#hud [data-act="fullscreen"]').hidden = true;
+if (coarse && Math.min(screen.width, screen.height) < 600) $('#hud [data-act="presenter"]').hidden = true;
 
 function panel(id, on) {
   const p = $('#' + id);
@@ -1473,9 +1493,17 @@ addEventListener('keydown', (e) => {
 });
 
 const isUI = (t) => t.closest('a,button,input,textarea,select,label,.sphere,.panel-ui,#hud');
+let lastTap = { type: 'mouse', x: 0 };
+stage.addEventListener('pointerdown', (e) => { lastTap = { type: e.pointerType, x: e.clientX, y: e.clientY, hud: document.body.classList.contains('mouse') }; });
 stage.addEventListener('click', (e) => {
   if (ovOn || !started() || isUI(e.target)) return;
   if ($('#blank').classList.contains('on')) { $('#blank').classList.remove('on'); return; }
+  if (lastTap.type !== 'mouse') {
+    // Touch: unterer Rand = nur Menü zeigen, linkes Drittel = zurück, sonst weiter
+    if (lastTap.y > innerHeight * 0.84) return;
+    if (lastTap.x < innerWidth / 3) prev(); else next();
+    return;
+  }
   next();
 });
 stage.addEventListener('contextmenu', (e) => { if (ovOn) return; e.preventDefault(); prev(); });
@@ -1486,7 +1514,10 @@ addEventListener('wheel', (e) => {
   if (Math.abs(wheelAcc) > 70 && performance.now() - wheelT > 650) { wheelT = performance.now(); wheelAcc > 0 ? next() : prev(); wheelAcc = 0; }
 }, { passive: true });
 let touch = null;
-addEventListener('touchstart', (e) => { touch = [e.touches[0].clientX, e.touches[0].clientY]; }, { passive: true });
+addEventListener('touchstart', (e) => {
+  // Wischen nur auf der Bühne – nicht in Menüs, Eingabefeldern oder auf der drehbaren Kugel
+  touch = e.touches.length === 1 && !isUI(e.target) && !ovOn ? [e.touches[0].clientX, e.touches[0].clientY] : null;
+}, { passive: true });
 addEventListener('touchend', (e) => {
   if (!touch || !started()) return;
   const dx = e.changedTouches[0].clientX - touch[0], dy = e.changedTouches[0].clientY - touch[1];
@@ -1631,8 +1662,10 @@ window.__deck = { next, prev, go, overview: () => overview(!ovOn), get cur() { r
   loadCustomImages();
   // Standortpunkte vorab berechnen (sonst stockt die Deutschlandkarte beim ersten Öffnen)
   setTimeout(() => hooks.premium.prebuild(), 300);
-  // alle Fotos vorab dekodieren, damit der erste Folienwechsel nicht hakt
-  $$('img').forEach((im) => { if (im.decode) im.decode().catch(() => {}); });
+  // Fotos vorab dekodieren, damit der erste Folienwechsel nicht hakt.
+  // Tablet/Handy: nur die nächsten Folien (schont den Arbeitsspeicher, sonst lädt Safari die Seite neu)
+  if (!coarse) $$('img').forEach((im) => { if (im.decode) im.decode().catch(() => {}); });
+  else prefetch(0);
   const m = /^#(\d+)(?:\.(\d+))?/.exec(location.hash);
   if (m) {
     $('#start').classList.add('gone');
