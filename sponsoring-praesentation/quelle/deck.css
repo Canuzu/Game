@@ -20,19 +20,22 @@
   --soft:cubic-bezier(.4,0,.2,1);
 }
 *,*::before,*::after{box-sizing:border-box}
-html,body{margin:0;height:100%;overflow:hidden;background:#d9d9dc}
+html,body{margin:0;height:100%;overflow:hidden}
+html{background:radial-gradient(120% 120% at 50% 40%,#e7e7ea 0%,#cfcfd3 100%) #d9d9dc}
+body{background:transparent}
 body{font-family:var(--sans);color:var(--ink);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;user-select:none;-webkit-user-select:none}
 input,textarea,select,button{font:inherit;color:inherit}
 input,textarea{user-select:text;-webkit-user-select:text}
 
-#viewport{position:fixed;inset:0;background:radial-gradient(120% 120% at 50% 40%,#e7e7ea 0%,#cfcfd3 100%)}
+/* Kein eigener Hintergrund und nicht fixed: so entsteht keine zusätzliche bildschirmgroße Grafikebene */
+#viewport{position:absolute;inset:0;overflow:hidden}
 #stage{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform-origin:50% 50%;overflow:hidden;background:var(--paper);box-shadow:0 30px 120px rgba(0,0,0,.18)}
 body.fs #stage{box-shadow:none}
 
 .ico{width:44px;height:44px;flex:none;fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round}
 
 /* ---------- Hintergrund: helle Facetten wie im Swiss-Life-Select-Master ---------- */
-#bg{position:absolute;inset:-30px;transition:transform 1.2s var(--out);will-change:transform}
+#bg{position:absolute;inset:-30px}
 #bg svg{width:100%;height:100%;display:block}
 #watermark{position:absolute;inset:0;pointer-events:none;overflow:hidden}
 /* Band als eigene GPU-Ebene: Gleiten und »Atmen« nur über transform/opacity, kein Neuzeichnen */
@@ -40,12 +43,14 @@ body.fs #stage{box-shadow:none}
 #wm-b{width:100%;height:100%;will-change:transform;animation:wmBreath 14s ease-in-out infinite}
 #wm-svg{display:block;width:100%;height:100%;overflow:visible}
 @keyframes wmBreath{50%{transform:rotate(2.2deg) translate(6px,-4px) scale(1.02)}}
-#spot{position:absolute;left:-700px;top:-700px;width:1400px;height:1400px;border-radius:50%;pointer-events:none;background:radial-gradient(closest-side,rgba(255,255,255,.42),rgba(255,255,255,0));transform:translate(1340px,320px);transition:transform .9s var(--out),opacity .6s;will-change:transform}
 
 /* ---------- Folien ---------- */
 #slides{position:absolute;inset:0}
 .slide{position:absolute;left:0;top:0;width:1920px;height:1080px;visibility:hidden;pointer-events:none;transform-origin:0 0}
 .slide.active,.slide.leaving{visibility:visible}
+/* Unsichtbare Folien »schlafen«: kein Stil, kein Layout, keine Grafikebenen */
+.slide{content-visibility:hidden}
+.slide.active,.slide.leaving,#stage.ov .slide{content-visibility:visible}
 .slide.active{pointer-events:auto}
 .slide.leaving{pointer-events:none;z-index:1}
 .slide.active{z-index:2}
@@ -117,8 +122,9 @@ body.fs #stage{box-shadow:none}
 
 #progress{position:absolute;left:0;right:0;bottom:0;height:5px;z-index:30;background:rgba(0,0,0,.04)}
 #progress i{display:block;height:100%;width:100%;transform-origin:0 50%;transform:scaleX(var(--p,0));background:linear-gradient(90deg,var(--red-dk),var(--red));transition:transform 1s var(--out)}
-#blank{position:absolute;inset:0;z-index:90;background:#000;opacity:0;pointer-events:none;transition:opacity .5s}
-#blank.on{opacity:1;pointer-events:auto}
+#blank{position:absolute;inset:0;z-index:90;background:#000;display:none}
+#blank.on{display:block;animation:blankIn .5s both}
+@keyframes blankIn{from{opacity:0}}
 #blank.white{background:#fff}
 
 /* ========================================================================
@@ -271,7 +277,7 @@ body.fs #stage{box-shadow:none}
 .vw-word .lt{opacity:0;transform:translateY(20px);transform-box:fill-box}
 .vw-glow{position:absolute;left:-30px;top:-157px;width:440px;height:500px;border-radius:50%;background:radial-gradient(closest-side,rgba(216,32,52,.16),rgba(216,32,52,0));opacity:0;transition:opacity 1.2s}
 .vw-ring{position:absolute;left:90px;top:-7px;width:200px;height:200px;border-radius:50%;border:3px solid var(--red);opacity:0;will-change:transform,opacity}
-.vw-trails{position:absolute;inset:0;pointer-events:none;z-index:5}
+.vw-trails{position:absolute;left:0;top:0;width:0;height:0;overflow:visible;pointer-events:none;z-index:5}
 .vw-trails i{position:absolute;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:var(--red);opacity:0;will-change:transform,opacity}
 
 /* Endzustand (Schritt 3) – Ziele per CSS, die Flüge selbst per Web Animations */
@@ -306,13 +312,16 @@ body.fs #stage{box-shadow:none}
    7 · Best-Select-System
    ======================================================================== */
 .s-best .col-l{width:640px}
-.sphere{position:absolute;left:930px;top:80px;width:900px;height:920px;cursor:grab}
+/* Echte 3D-Szene: die Grafikkarte dreht die Kugel selbst (CSS 3D + Web Animations), kein JavaScript pro Bild */
+.sphere{position:absolute;left:930px;top:80px;width:900px;height:920px;cursor:grab;perspective:1000px;perspective-origin:50% 50%}
 .sphere:active{cursor:grabbing}
-.sphere-rot{position:absolute;left:50%;top:50%;width:0;height:0}
-.tag{position:absolute;left:0;top:0;font:600 21px/1 var(--sans);color:var(--ink-2);white-space:nowrap;padding:9px 15px;border-radius:30px;background:#fff;box-shadow:0 6px 14px -8px rgba(0,0,0,.3),0 0 0 1px rgba(0,0,0,.05);will-change:transform,opacity;transform-origin:50% 50%;transition:background .3s,color .3s}
+.sphere-rot,.sphere-spin{position:absolute;left:50%;top:50%;width:0;height:0;transform-style:preserve-3d}
+.sphere-spin{left:0;top:0}
+/* doppelt groß gesetzt und verkleinert: bleibt auch vorne in der Kugel gestochen scharf */
+.tag{position:absolute;left:0;top:0;transform-origin:0 0;font:600 42px/1 var(--sans);color:var(--ink-2);white-space:nowrap;padding:18px 30px;border-radius:60px;background:#fff;box-shadow:0 12px 28px -16px rgba(0,0,0,.3),0 0 0 2px rgba(0,0,0,.05);backface-visibility:hidden;will-change:transform,opacity;transition:background .3s,color .3s}
 .tag:hover{background:var(--red);color:#fff}
 .tag.me{color:#fff;background:var(--red);font-weight:700}
-.sphere-core{position:absolute;left:50%;top:50%;width:190px;height:190px;margin:-95px 0 0 -95px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#fff,#f0f0f2);box-shadow:0 30px 70px -20px rgba(0,0,0,.3),0 0 0 1px rgba(0,0,0,.04);z-index:1000;display:grid;place-items:center}
+.sphere-core{position:absolute;left:-95px;top:-95px;width:190px;height:190px;border-radius:50%;background:radial-gradient(circle at 40% 35%,#fff,#f0f0f2);box-shadow:0 30px 70px -20px rgba(0,0,0,.3),0 0 0 1px rgba(0,0,0,.04);display:grid;place-items:center;transform:translateZ(0)}
 .sphere-core svg{width:150px;height:130px;overflow:visible}
 
 /* ========================================================================
@@ -525,13 +534,15 @@ body.fs #stage{box-shadow:none}
    14 · Kanzlei
    ======================================================================== */
 .k-img{position:absolute;inset:0;overflow:hidden}
-.k-img img{width:100%;height:100%;object-fit:cover;transform:scale(1.14) translateX(-1.5%);transform-origin:60% 50%}
-.s-kanzlei.active .k-img img{animation:kenburns 14s cubic-bezier(.25,.6,.3,1) forwards}
+/* Foto und Verlauf zoomen gemeinsam als eine Ebene; der Lichtstreif ist nur ein schmales Band */
+.k-zoom{position:absolute;inset:0;transform:scale(1.14) translateX(-1.5%);transform-origin:60% 50%;will-change:transform}
+.k-zoom img{display:block;width:100%;height:100%;object-fit:cover}
+.s-kanzlei.active .k-zoom{animation:kenburns 14s cubic-bezier(.25,.6,.3,1) forwards}
 @keyframes kenburns{to{transform:scale(1.0) translateX(0)}}
 .k-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,12,22,.72) 0%,rgba(8,12,22,.35) 34%,rgba(8,12,22,0) 58%),linear-gradient(0deg,rgba(8,12,22,.45),rgba(8,12,22,0) 30%)}
-.k-sweep{position:absolute;inset:-20%;background:linear-gradient(115deg,transparent 40%,rgba(255,240,220,.22) 50%,transparent 60%);transform:translateX(-70%);pointer-events:none}
+.k-sweep{position:absolute;left:-800px;top:-260px;width:620px;height:1600px;background:linear-gradient(90deg,rgba(255,240,220,0),rgba(255,240,220,.22) 50%,rgba(255,240,220,0));transform:rotate(16deg);pointer-events:none;visibility:hidden}
 .s-kanzlei.active .k-sweep{animation:sweep 3.2s ease-in-out .9s 1 both}
-@keyframes sweep{to{transform:translateX(70%)}}
+@keyframes sweep{from{transform:translateX(0) rotate(16deg);visibility:visible}to{transform:translateX(3500px) rotate(16deg);visibility:hidden}}
 .k-kick{position:absolute;left:150px;top:120px;color:#fff}
 .k-h{position:absolute;left:150px;top:166px;width:1400px;color:#fff;font-size:84px;text-shadow:0 4px 40px rgba(0,0,0,.25)}
 .k-pin{position:absolute;left:150px;bottom:70px;display:flex;align-items:center;gap:18px;padding:18px 30px 18px 20px;border-radius:18px;background:rgba(10,14,24,.55);color:#fff;box-shadow:0 0 0 1px rgba(255,255,255,.25)}
@@ -578,7 +589,7 @@ body.fs #stage{box-shadow:none}
    ======================================================================== */
 .sch-k{position:absolute;left:150px;top:120px}
 .sch-h{position:absolute;left:150px;top:166px;font-size:72px;white-space:nowrap;transform-origin:0 0;transition:transform 1.25s var(--inout)}
-.cyc{position:absolute;inset:0;width:1920px;height:1080px;overflow:visible}
+.cyc{position:absolute;left:660px;top:328px;width:600px;height:600px;overflow:visible}
 .cyc .base{fill:none;stroke:#d3d3d8;stroke-width:3;stroke-dasharray:2 12;stroke-linecap:round;opacity:0;transition:opacity .8s}
 .cyc .prog{fill:none;stroke:var(--red);stroke-width:5;stroke-linecap:round}
 .cyc{will-change:transform}
@@ -620,7 +631,7 @@ body.fs #stage{box-shadow:none}
    Übersicht
    ======================================================================== */
 #stage.ov{background:#2a2b2f}
-#stage.ov #bg,#stage.ov #watermark,#stage.ov #spot,#stage.ov #brand,#stage.ov #progress{opacity:0;transition:opacity .4s}
+#stage.ov #bg,#stage.ov #watermark,#stage.ov #brand,#stage.ov #progress{opacity:0;transition:opacity .4s}
 #stage.ov .slide{visibility:visible;pointer-events:auto;cursor:pointer;background:var(--paper);border-radius:14px;overflow:hidden;box-shadow:0 0 0 0 transparent,0 30px 60px rgba(0,0,0,.45);transition:box-shadow .3s}
 #stage.ov .slide *{pointer-events:none}
 #stage.ov .slide:hover{box-shadow:0 0 0 14px #fff,0 30px 60px rgba(0,0,0,.45)}
@@ -681,8 +692,6 @@ body:not(.mouse){cursor:none}
 }
 /* Leistungsmodus (Taste L oder automatisch bei schwacher Hardware): Dauer-Effekte aus */
 body.lite #wm-b,body.lite .ph.in,body.lite .bank-i,body.lite .sticker.in,body.lite .hub-core.in::after,body.lite .eu.hl .eu-ring{animation:none!important}
-body.lite #spot{display:none}
-body.lite #bg{transition:none}
 body.lite .k-sweep{display:none}
 #toast{position:fixed;left:50%;bottom:28px;z-index:120;transform:translate(-50%,20px);opacity:0;padding:12px 20px;border-radius:30px;background:rgba(20,20,24,.9);color:#fff;font:600 15px var(--sans);pointer-events:none;transition:opacity .35s,transform .35s}
 #toast.on{opacity:1;transform:translate(-50%,0)}

@@ -172,17 +172,6 @@ function setWatermark(id) {
 }
 
 let mouseT = 0;
-let ptr = null, ptrRaf = 0;
-stage.addEventListener('pointermove', (e) => {
-  ptr = toStage(e);
-  if (ptrRaf) return;
-  ptrRaf = requestAnimationFrame(() => { // höchstens ein Stil-Update pro Bild
-    ptrRaf = 0;
-    const [x, y] = ptr;
-    $('#spot').style.transform = `translate(${x.toFixed(0)}px,${y.toFixed(0)}px)`;
-    $('#bg').style.transform = `translate(${((x / W - 0.5) * -18).toFixed(1)}px,${((y / H - 0.5) * -12).toFixed(1)}px)`;
-  });
-});
 addEventListener('pointermove', () => {
   document.body.classList.add('mouse');
   clearTimeout(mouseT);
@@ -555,7 +544,7 @@ hooks.premium = (() => {
   }
   addEventListener('resize', () => { if (on && dots) draw(99); });
   return {
-    prebuild: build,
+    prebuild() { s.style.contentVisibility = 'visible'; build(); s.style.contentVisibility = ''; },
     step() { build(); on = true; cancelAnimationFrame(raf); t0 = performance.now() - (reduce ? 9000 : 0); raf = requestAnimationFrame(frame); },
     leave() { on = false; cancelAnimationFrame(raf); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height); },
     final() { build(); on = true; cancelAnimationFrame(raf); draw(99); },
@@ -713,48 +702,86 @@ hooks.bestselect = (() => {
   const s = $('#bestselect');
   logoSVG($('.sphere-core svg', s), { vb: 'full' });
   const P = ['Allianz', 'Allianz Global Investors', 'Alte Oldenburger', 'Augsburger Aktienbank', 'Agila', 'AXA', 'ARAG', 'Alte Leipziger', 'Hanseatic Bank', 'HanseMerkur', 'HDI', 'HEK', 'Helvetia', 'Baden-Badener', 'Basler', 'Barmenia', 'BavariaDirekt', 'Bayerische Beamtenkrankenkasse', 'IDEAL', 'INTER', 'InterRisk', 'J.P. Morgan Asset Management', 'LBN', 'die Bayerische', 'BGV', 'BHW', 'BKK Pfalz', 'Canada Life', 'Care Concept', 'LKH', 'Mobil Krankenkasse', 'Münchener Hypothekenbank', 'Münchener Verein', 'neue leben', 'Commerzbank', 'Commerz Real', 'C-Quadrat', 'Die Continentale', 'D.A.S.', 'Nordland', 'Nordvers', 'Nürnberger', 'OVAG', 'P&P Gruppe', 'DBV', 'Deurag', 'DEVK', 'Dialog', 'Die Dortmunder', 'DKV', 'Postbank', 'PVAG', 'RREEF', 'Roland', 'Salus BKK', 'Santander', 'Domicil', 'DSL Bank', 'DWS', 'ebase', 'energie-BKK', 'ERGO', 'Schleswiger', 'SKG Bank', 'Signal Iduna', 'Die Stuttgarter', 'Swiss Life', 'Europa', 'Europace', 'FondsDepot Bank', 'Franklin Templeton', 'Frankfurt-Trust', 'Die Techniker', 'Uelzener', 'UKV', 'Universa', 'Verti', 'VHV', 'Generali', 'Gothaer', 'Grundeigentümer-Versicherung', 'Die Haftpflichtkasse', 'Hallesche', 'Die Hannoversche', 'Volkswohl Bund', 'Wertinvestition', 'Wüstenrot', 'WWK', 'Zurich'];
-  const rot = $('.sphere-rot', s);
+  const rot = $('.sphere-rot', s), spin = $('.sphere-spin', s), sph = $('.sphere', s);
   const n = P.length, RAD = 385, GA = Math.PI * (3 - Math.sqrt(5));
+  const AX = -0.22, AXD = (AX * 180) / Math.PI, PERIOD = 33000, SAMPLES = 36;
   const tags = P.map((name, i) => {
     const y = 1 - (2 * (i + 0.5)) / n, r = Math.sqrt(1 - y * y), th = i * GA;
-    const t = h('span', 'tag' + (name === 'Swiss Life' ? ' me' : ''), name.replace(/&/g, '&amp;'), rot);
-    return { t, x: Math.cos(th) * r * RAD * 1.28, y: y * RAD, z: Math.sin(th) * r * RAD, w: 0, zb: -1 };
+    const t = h('span', 'tag' + (name === 'Swiss Life' ? ' me' : ''), name.replace(/&/g, '&amp;'), spin);
+    return { t, x: Math.cos(th) * r * RAD * 1.28, y: y * RAD, z: Math.sin(th) * r * RAD };
   });
-  let ay = 0, ax = -0.22, vy = 0.0032, vx = 0, raf = 0, drag = null, intro = 0;
-  const measure = () => tags.forEach((o) => { o.w = o.t.offsetWidth; });
-  const sph = $('.sphere', s);
-  sph.addEventListener('pointerdown', (e) => { drag = { x: e.clientX, y: e.clientY }; sph.setPointerCapture(e.pointerId); e.stopPropagation(); });
+  // Jede Karte bekommt eine eigene Endlos-Animation: Gegendrehung (schaut immer nach vorn)
+  // und Deckkraft nach Tiefe – alles vorab berechnet, läuft danach komplett auf der Grafikkarte.
+  let anims = [], introAnim = null;
+  function build() {
+    if (anims.length) return;
+    const cx = Math.cos(AX), sx = Math.sin(AX);
+    anims.push(spin.animate([
+      { transform: `rotateX(${AXD}deg) rotateY(0deg)` },
+      { transform: `rotateX(${AXD}deg) rotateY(360deg)` },
+    ], { duration: PERIOD, iterations: Infinity, easing: 'linear' }));
+    for (const o of tags) {
+      const base = `translate3d(${o.x.toFixed(1)}px,${o.y.toFixed(1)}px,${o.z.toFixed(1)}px)`;
+      const kf = [];
+      for (let k = 0; k <= SAMPLES; k++) {
+        const a = (k / SAMPLES) * Math.PI * 2;
+        const z1 = -o.x * Math.sin(a) + o.z * Math.cos(a);
+        const z2 = o.y * sx + z1 * cx;
+        const depth = (z2 + RAD) / (2 * RAD);
+        const f = { offset: k / SAMPLES, opacity: +(0.12 + depth * 0.88).toFixed(3) };
+        if (k === 0 || k === SAMPLES) f.transform = `${base} rotateY(${-k / SAMPLES * 360}deg) rotateX(${-AXD}deg) scale(.44) translate(-50%,-50%)`;
+        kf.push(f);
+      }
+      anims.push(o.t.animate(kf, { duration: PERIOD, iterations: Infinity, easing: 'linear' }));
+    }
+    anims.forEach((a) => { a.currentTime = 0; });
+  }
+  const all = (fn) => anims.forEach(fn);
+  // Ziehen dreht die Kugel; beim Loslassen läuft sie mit Schwung weiter und beruhigt sich
+  let drag = null, vel = 0, decay = 0;
+  sph.addEventListener('pointerdown', (e) => {
+    if (!anims.length) return;
+    drag = { x: e.clientX, t: performance.now() }; vel = 0; cancelAnimationFrame(decay);
+    all((a) => a.pause()); sph.setPointerCapture(e.pointerId); e.stopPropagation();
+  });
   sph.addEventListener('pointermove', (e) => {
     if (!drag) return;
-    vy = (e.clientX - drag.x) * 0.00012 / scale * 10; vx = -(e.clientY - drag.y) * 0.00012 / scale * 10;
-    drag = { x: e.clientX, y: e.clientY };
+    const now = performance.now(), dx = (e.clientX - drag.x) / scale;
+    const dt = (dx / 900) * PERIOD; // 900 px Ziehen = eine Umdrehung
+    const ct = ((anims[0].currentTime + dt) % PERIOD + PERIOD) % PERIOD;
+    all((a) => { a.currentTime = ct; });
+    vel = dt / Math.max(8, now - drag.t);
+    drag = { x: e.clientX, t: now };
   });
-  sph.addEventListener('pointerup', () => { drag = null; });
+  const release = () => {
+    if (!drag) return;
+    drag = null;
+    let rate = clamp(vel, -40, 40);
+    all((a) => { a.playbackRate = rate || 1; a.play(); });
+    const t0 = performance.now(), r0 = rate || 1;
+    const settle = (now) => {
+      const k = clamp((now - t0) / 1400, 0, 1);
+      rate = lerp(r0, 1, E.outCubic(k));
+      all((a) => { a.playbackRate = rate; });
+      if (k < 1) decay = requestAnimationFrame(settle);
+    };
+    decay = requestAnimationFrame(settle);
+  };
+  sph.addEventListener('pointerup', release);
+  sph.addEventListener('pointercancel', release);
   sph.addEventListener('click', (e) => e.stopPropagation());
-  function frame(now) {
-    if (!intro) intro = now;
-    const k = E.outCubic(clamp((now - intro) / 1600, 0, 1));
-    ay += vy + (1 - k) * 0.05; ax += vx;
-    ax = clamp(ax, -1.1, 1.1);
-    if (!drag) { vy += (0.0032 - vy) * 0.02; vx *= 0.94; }
-    const cy = Math.cos(ay), sy = Math.sin(ay), cx = Math.cos(ax), sx = Math.sin(ax);
-    for (const o of tags) {
-      const x1 = o.x * cy + o.z * sy, z1 = -o.x * sy + o.z * cy;
-      const y2 = o.y * cx - z1 * sx, z2 = o.y * sx + z1 * cx;
-      const f = 1000 / (1000 - z2), rr = lerp(0.35, 1, k);
-      const depth = (z2 + RAD) / (2 * RAD);
-      // nur transform/opacity (GPU); Tiefenebene nur bei echtem Wechsel neu setzen
-      o.t.style.transform = `translate(${(x1 * f * rr - o.w / 2).toFixed(1)}px,${(y2 * f * rr - 20).toFixed(1)}px) scale(${(f * 0.88).toFixed(3)})`;
-      o.t.style.opacity = ((0.12 + depth * 0.88) * k).toFixed(3);
-      const zb = Math.round(depth * 12);
-      if (zb !== o.zb) { o.zb = zb; o.t.style.zIndex = z2 > 0 ? 1100 + zb : 900 + zb; }
-    }
-    raf = requestAnimationFrame(frame);
-  }
   return {
-    step() { measure(); cancelAnimationFrame(raf); intro = 0; raf = requestAnimationFrame(frame); },
-    leave() { cancelAnimationFrame(raf); },
-    final() { measure(); cancelAnimationFrame(raf); intro = performance.now() - 5000; frame(performance.now()); cancelAnimationFrame(raf); },
+    step() {
+      build(); cancelAnimationFrame(decay);
+      all((a) => { a.playbackRate = 1; a.play(); });
+      if (introAnim) introAnim.cancel();
+      introAnim = rot.animate([
+        { transform: 'scale(.35) rotateY(-70deg)' },
+        { transform: 'scale(1) rotateY(0deg)' },
+      ], { duration: 1700, easing: 'cubic-bezier(.16,1,.3,1)' });
+    },
+    leave() { all((a) => a.pause()); if (introAnim) introAnim.cancel(); },
+    final() { build(); all((a) => a.pause()); },
   };
 })();
 

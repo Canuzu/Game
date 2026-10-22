@@ -43,7 +43,6 @@
 
   <div id="bg" aria-hidden="true"></div>
   <div id="watermark" aria-hidden="true"><div id="wm-g"><div id="wm-b"><svg id="wm-svg" viewBox="124 42 212 210"><defs><linearGradient id="wm-grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#D82034" stop-opacity=".9"/><stop offset="1" stop-color="#8B1C34" stop-opacity=".55"/></linearGradient></defs><path id="wm-p" fill="url(#wm-grad)"/></svg></div></div></div>
-  <div id="spot" aria-hidden="true"></div>
 
   <main id="slides">
 
@@ -196,8 +195,10 @@
         <p class="hint" data-s="0" data-a="fade" style="--d:1.6s">Tipp: Kugel mit der Maus drehen</p>
       </div>
       <div class="sphere" data-s="0" data-a="zoom" style="--d:.25s">
-        <div class="sphere-core"><svg viewBox="0 0 460 460"></svg></div>
-        <div class="sphere-rot"></div>
+        <div class="sphere-rot">
+          <div class="sphere-core"><svg viewBox="0 0 460 460"></svg></div>
+          <div class="sphere-spin"></div>
+        </div>
       </div>
     </section>
 
@@ -331,9 +332,7 @@
 
     <!-- 14 · Kanzlei -->
     <section class="slide s-kanzlei" id="kanzlei" data-title="Unsere Kanzlei" data-chapter="3" data-logo="tab" data-wm="off">
-      <div class="k-img"><img data-img="koeln-ausblick" alt=""></div>
-      <div class="k-shade"></div>
-      <div class="k-sweep"></div>
+      <div class="k-img"><div class="k-zoom"><img data-img="koeln-ausblick" alt=""><div class="k-shade"></div></div><div class="k-sweep"></div></div>
       <div class="kicker k-kick" data-s="0" data-a="left" style="--d:.4s">III · Unser Sponsoringkonzept</div>
       <h2 class="hl k-h split" data-s="0" style="--d:.6s">Oder ihr besucht uns in unserer Kanzlei über <span data-bind="ort"></span> …</h2>
       <div class="k-pin" data-s="0" data-a="up" style="--d:1.6s"><svg class="ico"><use href="#i-pin"/></svg><span><b data-bind="kanzleiName"></b><span data-bind="adresse"></span></span></div>
@@ -351,7 +350,7 @@
     <section class="slide s-schritte" id="schritte" data-title="Weitere Vorgehensweise in 5 Schritten" data-chapter="4" data-steps="6">
       <div class="kicker sch-k" data-s="1" data-a="left">IV · Wie geht es weiter?</div>
       <h2 class="hl sch-h split" data-s="0" style="--d:.15s">Weitere Vorgehensweise in 5&nbsp;Schritten</h2>
-      <svg class="cyc" viewBox="0 0 1920 1080"></svg>
+      <svg class="cyc" viewBox="660 328 600 600"></svg>
       <div class="cyc-nodes"></div>
     </section>
 
