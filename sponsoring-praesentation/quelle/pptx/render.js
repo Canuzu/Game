@@ -54,6 +54,45 @@ async function main() {
     }
   }
 
+  // ---------- Folie »Institute / Vergleichsportale«: Logo-Bögen, Schriftzug, Illustrationen ----------
+  const contours = logo.red.split(/(?=M)/);
+  const hole = contours.find((c) => c.includes('Q'));
+  const bbox = (d) => {
+    const n = d.match(/-?\d*\.?\d+/g).map(Number); let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (let q = 0; q + 1 < n.length; q += 2) { x0 = Math.min(x0, n[q]); x1 = Math.max(x1, n[q]); y0 = Math.min(y0, n[q + 1]); y1 = Math.max(y1, n[q + 1]); }
+    return [x0, y0, x1, y1];
+  };
+  const hb = bbox(hole), hc = [(hb[0] + hb[2]) / 2, (hb[1] + hb[3]) / 2];
+  await page.setContent('<html><body></body></html>');
+  const owner = await page.evaluate(([cs, hc]) => {
+    const ctx = document.createElement('canvas').getContext('2d');
+    return cs.map((d) => ctx.isPointInPath(new Path2D(d), hc[0], hc[1]));
+  }, [contours.filter((c) => c !== hole), hc]);
+  const pieces = contours.filter((c) => c !== hole).map((d, i) => ({ d: owner[i] ? d + hole : d, b: bbox(d) })).sort((a, b) => a.b[1] - b.b[1]);
+  const meta = [];
+  for (let i = 0; i < pieces.length; i++) {
+    const [x0, y0, x1, y1] = pieces[i].b, pad = 1;
+    const vb = [x0 - pad, y0 - pad, x1 - x0 + 2 * pad, y1 - y0 + 2 * pad];
+    const w = Math.round(vb[2] * 8), h = Math.round(vb[3] * 8);
+    await page.setViewportSize({ width: w, height: h });
+    await page.setContent(`<html><body style="margin:0;background:transparent"><svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb.join(' ')}" width="${w}" height="${h}"><path fill="#D82034" fill-rule="evenodd" d="${pieces[i].d}"/></svg></body></html>`);
+    await page.screenshot({ path: path.join(out, `bogen-${i + 1}.png`), omitBackground: true, clip: { x: 0, y: 0, width: w, height: h } });
+    meta.push(vb);
+  }
+  fs.writeFileSync(path.join(out, 'boegen.json'), JSON.stringify(meta));
+  await logoPage('schriftzug', { ribbon: false, vb: '12 252 436 166', w: 1600 });
+  const ills = [...html.matchAll(/<svg class="vw-ill" viewBox="0 0 300 170" aria-hidden="true">([\s\S]*?)<\/svg>/g)].map((m) => m[1]);
+  for (let i = 0; i < ills.length; i++) {
+    for (const [suffix, col] of [['rot', '#D82034'], ['grau', '#B4B4BA']]) {
+      await page.setViewportSize({ width: 1200, height: 680 });
+      await page.setContent(`<html><body style="margin:0;background:transparent"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 170" width="1200" height="680" fill="none" stroke="${col}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">${ills[i]}</svg></body></html>`);
+      await page.screenshot({ path: path.join(out, `illu-${'ab'[i]}-${suffix}.png`), omitBackground: true, clip: { x: 0, y: 0, width: 1200, height: 680 } });
+    }
+  }
+  await page.setViewportSize({ width: 880, height: 1000 });
+  await page.setContent('<html><body style="margin:0;background:transparent"><div style="width:880px;height:1000px;border-radius:50%;background:radial-gradient(closest-side,rgba(216,32,52,.16),rgba(216,32,52,0))"></div></body></html>');
+  await page.screenshot({ path: path.join(out, 'glow.png'), omitBackground: true, clip: { x: 0, y: 0, width: 880, height: 1000 } });
+
   // ---------- Ausschnitte aus der Präsentation ----------
   await page.setViewportSize({ width: 1920, height: 1080 });
   await page.goto(deckUrl + '#1');

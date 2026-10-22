@@ -113,6 +113,10 @@ def box(slide, x, y, w, h, fill=None, line=None, lw=2, shape=MSO_SHAPE.RECTANGLE
     if name:
         s.name = name
     s.text_frame.text = ''
+    etree.SubElement(s._element.spPr, qn('a:effectLst'))  # kein Theme-Schatten; shadow() ersetzt das bei Bedarf
+    st = s._element.find(qn('p:style'))
+    if st is not None:
+        st.find(qn('a:effectRef')).set('idx', '0')
     return s
 
 
@@ -289,45 +293,75 @@ notes(s, 'Swiss Life Select in Deutschland: über 35 Jahre Erfahrung, 1,6 Millio
 # ======================================================================
 # 6–8 · Institute / Vergleichsportale → Swiss Life Select
 # ======================================================================
-POS_A = {'A1': (432, 470), 'A2': (432, 590), 'A3': (432, 705), 'B1': (1132, 452), 'B2': (1132, 590), 'B3': (1132, 705)}
-POS_B = {'A1': (540, 500), 'A2': (1030, 500), 'B1': (780, 660)}
+import json
 ITEMS = {'A1': ('pin', 'persönliche Beratung'), 'A2': ('advisor', 'Service & dauerhafte Betreuung'), 'A3': ('x', 'begrenzte Produktpalette'),
          'B1': ('doc', 'große Produktpalette mit hohem Digitalisierungsgrad'), 'B2': ('x', 'kein Service & dauerhafte Betreuung'),
          'B3': ('x', 'keine persönliche Beratung')}
+START = {'A1': (220, 600), 'A2': (220, 690), 'A3': (220, 780), 'B1': (1180, 600), 'B2': (1180, 690), 'B3': (1180, 780)}
+FINAL = {'A1': (155, 748), 'A2': (700, 748), 'B1': (1245, 748)}
+ORDER = ['A1', 'A2', 'B1']  # jede Stärke trägt einen Bogen des Bandes (oben → unten)
+BOEGEN = json.load(open(os.path.join(R, 'boegen.json')))
+LBX, LBY, LK = 770, 322, 380 / 436
 
 
-def v_item(slide, k, pos, col, txtcol):
+def vw_row(slide, k, pos, final=False):
     ic, t = ITEMS[k]
     x, y = pos
-    icon(slide, ic, col, x, y - 28, 56, f'!!vi{k}')
-    text(slide, x + 76, y - 40, 364, 80, t, 29, bold=True, color=txtcol, anchor=MSO_ANCHOR.MIDDLE, name=f'!!vt{k}')
+    con = k in ('A3', 'B2', 'B3')
+    bg = box(slide, x, y, 520, 78, fill=WHITE if final else (RGBColor(0xFD, 0xF0, 0xF2) if con else RGBColor(0xF5, 0xF5, 0xF7)),
+             shape=MSO_SHAPE.ROUNDED_RECTANGLE, radius=16, name=f'!!rb{k}')
+    if final:
+        shadow(bg, 50, 26, 30, '8B1C34')
+    box(slide, x + 14, y + 14, 50, 50, fill=RED if (con or final) else PINK, shape=MSO_SHAPE.OVAL, name=f'!!rc{k}')
+    icon(slide, ic, 'weiss' if (con or final) else 'rot', x + 24, y + 24, 30, f'!!ri{k}')
+    text(slide, x + 82, y, 420, 78, t, 25, bold=True, color=RED_DK if con else INK, anchor=MSO_ANCHOR.MIDDLE, name=f'!!rt{k}')
+
+
+def bogen(slide, n, final):
+    vx, vy, vw, vh = BOEGEN[n]
+    w, h = vw * LK, vh * LK
+    fx, fy = LBX + (vx - 12) * LK, LBY + (vy - 40) * LK
+    if final:
+        pic(slide, os.path.join(R, f'bogen-{n + 1}.png'), fx, fy, w, h, name=f'!!bogen{n}')
+    else:  # klein und verdreht hinter dem Symbol der zugehörigen Stärke
+        rx, ry = START[ORDER[n]]
+        f = 0.12
+        pic(slide, os.path.join(R, f'bogen-{n + 1}.png'), rx + 39 - w * f / 2, ry + 39 - h * f / 2, w * f, h * f, name=f'!!bogen{n}', rot=240)
 
 
 for stage in range(3):
-    s = new('vergleich', 1500 if stage == 2 else 1100)
+    s = new('vergleich', 1800 if stage == 2 else 1000)
     kicker(s, 'I · Wir stellen uns vor')
     if stage < 2:
         title(s, 'Institute oder Vergleichsportale?', 70)
-        for nm, x in [('A', 310), ('B', 1010)]:
-            box(s, x, 320, 600, 600, line=RED, lw=2.6, shape=MSO_SHAPE.OVAL, name=f'!!kreis{nm}')
-        text(s, 310, 262, 600, 44, 'Institute', 32, bold=True, align=PP_ALIGN.CENTER, name='!!labA')
-        text(s, 1010, 262, 600, 44, 'Vergleichsportale', 32, bold=True, align=PP_ALIGN.CENTER, name='!!labB')
+        for nm, cx, t, sub in [('a', 160, 'Institute', 'BANKEN · VERSICHERER · BAUSPARKASSEN'), ('b', 1120, 'Vergleichsportale', 'ONLINE-VERGLEICHSRECHNER')]:
+            card = box(s, cx, 288, 640, 642, shape=MSO_SHAPE.ROUNDED_RECTANGLE, radius=26, name=f'!!karte{nm}')
+            alpha_fill(card, WHITE, 80)
+            shadow(card, 80, 40, 22)
+            pic(s, os.path.join(R, f'illu-{nm}-{"rot" if stage == 0 else "grau"}.png'), cx + 170, 310, 300, 170, name=f'!!illu{nm}')
+            text(s, cx, 494, 640, 46, t, 36, bold=True, align=PP_ALIGN.CENTER, name=f'!!kt{nm}')
+            text(s, cx, 544, 640, 26, sub, 16, bold=True, color=MUTE, align=PP_ALIGN.CENTER, spacing=200, name=f'!!ks{nm}')
+        o = box(s, 905, 554, 110, 110, fill=WHITE, shape=MSO_SHAPE.OVAL, name='!!oder')
+        shadow(o, 40, 20, 30)
+        text(s, 905, 554, 110, 110, 'oder', 34, font=SERIF, italic=True, color=RED, align=PP_ALIGN.CENTER, anchor=MSO_ANCHOR.MIDDLE, name='!!odert')
+        for n in range(3):
+            bogen(s, n, False)
         for k in ITEMS:
             if k in ('A3', 'B2', 'B3') and stage == 0:
                 continue
-            v_item(s, k, POS_A[k], 'rot', INK)
+            vw_row(s, k, START[k])
     else:
         title(s, 'Swiss Life Select – das Beste aus beiden Welten', 70)
-        for nm in 'AB':
-            e = box(s, 400, 290, 1120, 660, fill=RED, shape=MSO_SHAPE.OVAL, name=f'!!kreis{nm}')
-            shadow(e, 60, 26, 25, '8B1C34')
-        pic(s, os.path.join(R, 'band-weiss.png'), 910, 322, 100, name='Band')
-        for k, pos in POS_B.items():
-            v_item(s, k, pos, 'weiss', WHITE)
+        pic(s, os.path.join(R, 'glow.png'), 740, 165, 440, 500, name='Lichtschein')
+        for n in range(3):
+            bogen(s, n, True)
+        pic(s, os.path.join(R, 'schriftzug.png'), LBX, LBY + (252 - 40) * LK, 436 * LK, 166 * LK, name='Schriftzug')
+        for k in ORDER:
+            vw_row(s, k, FINAL[k], final=True)
     corner_logo(s)
     notes(s, ['Frage in die Runde: Wo holt ihr euch heute Finanzrat? Institute (Banken, Versicherer) beraten persönlich, Vergleichsportale bieten große Auswahl.',
               'Die Kehrseite: Institute haben eine begrenzte Produktpalette, Vergleichsportale keine persönliche Beratung und keine dauerhafte Betreuung.',
-              'Swiss Life Select verbindet das Beste aus beiden Welten: persönliche Beratung, Service und dauerhafte Betreuung – und eine große Produktpalette mit hohem Digitalisierungsgrad.'][stage])
+              'Swiss Life Select verbindet das Beste aus beiden Welten: Aus den drei Stärken – persönliche Beratung, Service und dauerhafte Betreuung, große Produktpalette mit hohem Digitalisierungsgrad – setzt sich unser Logo zusammen.'][stage])
 
 # ======================================================================
 # 9 · Finanzierungen

@@ -565,77 +565,111 @@ hooks.premium = (() => {
 /* ---------- 5 · Institute / Vergleichsportale → Verschmelzung ---------- */
 hooks.vergleich = (() => {
   const s = $('#vergleich');
-  logoSVG($('.v-brand svg', s), { word: false, white: 'all', vb: 'ribbon' });
-  const A = { A1: [432, 470], A2: [432, 590], A3: [432, 705], B1: [1132, 452], B2: [1132, 590], B3: [1132, 705] };
-  const B = { A1: [540, 500], A2: [1030, 500], B1: [780, 660] };
-  const items = $$('.v-item', s);
-  items.forEach((it) => { const [x, y] = A[it.dataset.k]; it.style.left = x + 'px'; it.style.top = y + 'px'; });
-  const gA = $('.gA', s), gB = $('.gB', s), gC = $('.gC', s), goo = $('.v-goo', s), fin = $('.v-final', s), rings = $$('.v-ring', s);
   const h1 = $('.v-h1', s), h2 = $('.v-h2', s);
-  let anims = [], raf = 0;
-  const stopAll = () => { anims.forEach((a) => a.cancel()); anims = []; cancelAnimationFrame(raf); };
-  // Metaball-Verbindung zweier Kreise (nach Varun Vachhar) – »flüssiges« Verschmelzen ohne teuren Weichzeichner
-  function metaball(c1, c2, r1, r2, v = 0.5, handle = 2.4) {
-    const d = Math.hypot(c2[0] - c1[0], c2[1] - c1[1]);
-    if (d > r1 + r2 * 2.5 || d <= Math.abs(r1 - r2)) return '';
-    let u1 = 0, u2 = 0;
-    if (d < r1 + r2) {
-      u1 = Math.acos((r1 * r1 + d * d - r2 * r2) / (2 * r1 * d));
-      u2 = Math.acos((r2 * r2 + d * d - r1 * r1) / (2 * r2 * d));
-    }
-    const ab = Math.atan2(c2[1] - c1[1], c2[0] - c1[0]), spread = Math.acos((r1 - r2) / d);
-    const a1 = ab + u1 + (spread - u1) * v, a2 = ab - u1 - (spread - u1) * v;
-    const a3 = ab + Math.PI - u2 - (Math.PI - u2 - spread) * v, a4 = ab - Math.PI + u2 + (Math.PI - u2 - spread) * v;
-    const vec = (c, a, r) => [c[0] + r * Math.cos(a), c[1] + r * Math.sin(a)];
-    const p1 = vec(c1, a1, r1), p2 = vec(c1, a2, r1), p3 = vec(c2, a3, r2), p4 = vec(c2, a4, r2);
-    const d2 = Math.min(v * handle, Math.hypot(p3[0] - p1[0], p3[1] - p1[1]) / (r1 + r2)) * Math.min(1, (d * 2) / (r1 + r2));
-    const h1_ = vec(p1, a1 - Math.PI / 2, r1 * d2), h2_ = vec(p2, a2 + Math.PI / 2, r1 * d2);
-    const h3 = vec(p3, a3 + Math.PI / 2, r2 * d2), h4 = vec(p4, a4 - Math.PI / 2, r2 * d2);
-    const f = (q) => q[0].toFixed(1) + ',' + q[1].toFixed(1);
-    return `M${f(p1)}C${f(h1_)} ${f(h3)} ${f(p3)}A${r2},${r2} 0 ${d > r1 ? 1 : 0} 0 ${f(p4)}C${f(h4)} ${f(h2_)} ${f(p2)}Z`;
+  const rows = {};
+  $$('.vw-row', s).forEach((r) => { rows[r.dataset.k] = r; });
+  // Zeilen in den Karten (Start) und ihre Plätze unter dem Logo (Ziel)
+  const START = { A1: [220, 600], A2: [220, 690], A3: [220, 780], B1: [1180, 600], B2: [1180, 690], B3: [1180, 780] };
+  const FINAL = { A1: [155, 748], A2: [700, 748], B1: [1245, 748] };
+  for (const [k, [x, y]] of Object.entries(START)) { rows[k].style.left = x + 'px'; rows[k].style.top = y + 'px'; }
+  for (const [k, [x, y]] of Object.entries(FINAL)) {
+    rows[k].style.setProperty('--fx', x - START[k][0] + 'px');
+    rows[k].style.setProperty('--fy', y - START[k][1] + 'px');
   }
-  function setGoo(k) { // k: 0 = getrennt, 1 = verschmolzen
-    const e = E.inOutCubic(k);
-    const ax = lerp(610, 800, e), bx = lerp(1310, 1120, e), r = lerp(300, 336, e);
-    gA.setAttribute('cx', ax.toFixed(1)); gA.setAttribute('cy', 620); gA.setAttribute('r', r.toFixed(1));
-    gB.setAttribute('cx', bx.toFixed(1)); gB.setAttribute('cy', 620); gB.setAttribute('r', r.toFixed(1));
-    gC.setAttribute('d', metaball([ax, 620], [bx, 620], r, r, lerp(0.35, 0.6, e)));
-  }
+
+  // Das rote Band in seine drei Bögen zerlegen; das Schweizerkreuz gehört zum Bogen, der es umschließt
+  const LB = { x: 770, y: 322 }, K = 380 / 436;
+  const contours = L.red.split(/(?=M)/);
+  const hole = contours.find((c) => c.includes('Q'));
+  const box = (d) => {
+    const n = d.match(/-?\d*\.?\d+/g).map(Number); let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (let q = 0; q + 1 < n.length; q += 2) { x0 = Math.min(x0, n[q]); x1 = Math.max(x1, n[q]); y0 = Math.min(y0, n[q + 1]); y1 = Math.max(y1, n[q + 1]); }
+    return [x0, y0, x1, y1];
+  };
+  const hb = box(hole), hc = [(hb[0] + hb[2]) / 2, (hb[1] + hb[3]) / 2];
+  const tctx = document.createElement('canvas').getContext('2d');
+  const pieces = contours.filter((c) => c !== hole).map((d) => ({ d, b: box(d) })).sort((a, b) => a.b[1] - b.b[1]);
+  pieces.forEach((pc) => { if (tctx.isPointInPath(new Path2D(pc.d), hc[0], hc[1])) pc.d += hole; });
+  const ORDER = ['A1', 'A2', 'B1']; // oben → unten: persönliche Beratung, Betreuung, Produktpalette
+  const pieceEls = $$('.vw-piece', s);
+  const flights = pieces.map((pc, idx) => {
+    const svg = pieceEls[idx];
+    svg.setAttribute('viewBox', '12 40 436 380');
+    svg.innerHTML = `<path fill-rule="evenodd" d="${pc.d}"/>`;
+    const cx = ((pc.b[0] + pc.b[2]) / 2 - 12) * K, cy = ((pc.b[1] + pc.b[3]) / 2 - 40) * K;
+    svg.style.transformOrigin = `${cx.toFixed(1)}px ${cy.toFixed(1)}px`;
+    const row = ORDER[idx], [rx, ry] = START[row];
+    const sx = rx + 14 + 25, sy = ry + 39; // Mitte des Symbols in der Zeile
+    return { svg, row, dx: sx - (LB.x + cx), dy: sy - (LB.y + cy), px: LB.x + cx, py: LB.y + cy };
+  });
+  logoSVG($('.vw-word', s), { ribbon: false, letters: true, vb: '12 40 436 380' });
+  const trails = $('.vw-trails', s);
+  const logo = $('.vw-logo', s), rings = $$('.vw-ring', s);
+
+  let anims = [], tm = [];
+  const stopAll = () => { anims.forEach((a) => a.cancel()); anims = []; tm.forEach(clearTimeout); tm = []; trails.innerHTML = ''; };
+  const EZ = 'cubic-bezier(.65,0,.35,1)';
+
   function fuse(instant) {
     stopAll();
-    s.classList.add('fused');
     h1.classList.add('out'); h2.classList.add('in');
-    items.forEach((it) => {
-      const k = it.dataset.k;
-      if (!B[k]) return;
-      const dx = B[k][0] - A[k][0], dy = B[k][1] - A[k][1];
-      it.style.transitionDelay = instant ? '0s' : (k === 'B1' ? '.75s' : '.55s');
-      it.style.transform = `translate(${dx}px,${dy}px)`;
+    if (instant) {
+      s.classList.add('instant', 'fused');
+      requestAnimationFrame(() => requestAnimationFrame(() => s.classList.remove('instant')));
+      return;
+    }
+    s.classList.add('fused');
+    // 1) Stärken heben ab und gleiten auf ihre Plätze
+    ORDER.forEach((k, n) => {
+      const fx = FINAL[k][0] - START[k][0], fy = FINAL[k][1] - START[k][1];
+      anims.push(rows[k].animate([
+        { transform: 'translate(0,0) scale(1)' },
+        { transform: 'translate(0,-14px) scale(1.04)', offset: 0.2 },
+        { transform: `translate(${fx * 0.55}px,${fy * 0.55 - 70}px) scale(1.05)`, offset: 0.6 },
+        { transform: `translate(${fx}px,${fy}px) scale(1)` },
+      ], { duration: 1250, delay: 380 + n * 140, easing: EZ, fill: 'backwards' }));
     });
-    rings.forEach((r) => anims.push(r.animate([{ opacity: 1 }, { opacity: 0 }], { duration: instant ? 1 : 500, fill: 'both' })));
-    if (instant) { setGoo(1); goo.style.opacity = 0; fin.style.opacity = 1; fin.style.transform = 'none'; return; }
-    fin.style.opacity = ''; fin.style.transform = '';
-    const t0 = performance.now() + 150, DUR = 1250;
-    const tick = (now) => {
-      const k = clamp((now - t0) / DUR, 0, 1);
-      setGoo(k);
-      goo.style.opacity = now < t0 + 1500 ? Math.min(1, Math.max(0, (now - t0) / 190)) : Math.max(0, 1 - (now - t0 - 1500) / 500);
-      if (now < t0 + 2000) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    anims.push(fin.animate([{ opacity: 0, transform: 'scale(.78,.98)' }, { opacity: 1, transform: 'scale(1)' }], { duration: 900, delay: 1150, easing: 'cubic-bezier(.34,1.3,.64,1)', fill: 'both' }));
+    // 2) Jede Stärke gibt ihren Bogen frei – die Bögen fliegen zusammen und bilden das Logo
+    flights.forEach((f, n) => {
+      const delay = 520 + n * 230, dur = 1150;
+      const mx = f.dx * 0.42, my = f.dy * 0.42 - 240;
+      const path = [
+        { transform: `translate(${f.dx}px,${f.dy}px) scale(.12) rotate(-120deg)`, opacity: 0 },
+        { opacity: 1, offset: 0.12 },
+        { transform: `translate(${mx}px,${my}px) scale(.72) rotate(-30deg)`, offset: 0.58 },
+        { transform: 'translate(0,0) scale(1) rotate(0deg)', opacity: 1 },
+      ];
+      anims.push(f.svg.animate(path, { duration: dur, delay, easing: 'cubic-bezier(.5,0,.2,1)', fill: 'backwards' }));
+      // Leuchtspur
+      for (let t = 0; t < 6; t++) {
+        const dot = h('i', null, null, trails);
+        dot.style.left = f.px + 'px'; dot.style.top = f.py + 'px';
+        const sc = 1 - t * 0.13;
+        anims.push(dot.animate([
+          { transform: `translate(${f.dx}px,${f.dy}px) scale(${sc})`, opacity: 0 },
+          { opacity: 0.55 - t * 0.07, offset: 0.15 },
+          { transform: `translate(${mx}px,${my}px) scale(${sc})`, offset: 0.58 },
+          { opacity: 0.4 - t * 0.05, offset: 0.9 },
+          { transform: `translate(0,0) scale(${sc * 0.4})`, opacity: 0 },
+        ], { duration: dur, delay: delay + 40 + t * 38, easing: 'cubic-bezier(.5,0,.2,1)', fill: 'both' }));
+      }
+    });
+    // 3) Logo rastet ein: Puls und zwei Ringwellen
+    const lock = 520 + 2 * 230 + 1150;
+    anims.push(logo.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.08)', offset: 0.35 }, { transform: 'scale(1)' }], { duration: 650, delay: lock - 40, easing: 'cubic-bezier(.3,1.4,.5,1)' }));
+    rings.forEach((r, n) => anims.push(r.animate([
+      { transform: 'scale(.55)', opacity: 0.7 },
+      { transform: `scale(${2.3 + n * 0.8})`, opacity: 0 },
+    ], { duration: 1100 + n * 300, delay: lock + n * 160, easing: 'cubic-bezier(.16,1,.3,1)' })));
   }
   function unfuse() {
     stopAll();
-    goo.style.opacity = 0; fin.style.opacity = ''; fin.style.transform = '';
     s.classList.remove('fused');
     h1.classList.remove('out'); h2.classList.remove('in');
-    items.forEach((it) => { it.style.transform = ''; it.style.transitionDelay = ''; });
   }
-  setGoo(0);
   return {
     step(_, n, dir, silent) { if (n >= 2) { if (!s.classList.contains('fused')) fuse(silent); } else unfuse(); },
-    leave() { unfuse(); },
+    leave() { s.classList.add('instant'); unfuse(); requestAnimationFrame(() => s.classList.remove('instant')); },
     final() { fuse(true); },
   };
 })();
