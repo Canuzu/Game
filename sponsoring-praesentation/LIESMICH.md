@@ -21,9 +21,12 @@ Präsentation für Sponsoring-Vorgespräche mit Vereinen, Chören und anderen Gr
 | `O` | Übersicht aller Folien (anklicken springt hin) |
 | `R` | Referentenansicht mit Notizen, Timer und Vorschau (zweites Fenster) |
 | `E` | Einstellungen inkl. **eigene Fotos austauschen** |
+| `L` | Leistungsmodus an/aus – schaltet Dauer-Effekte ab (bei schwacher Hardware automatisch) |
 | `B` / `W` | Bildschirm schwarz / weiß |
 | Zahl + `Enter` | zu Folie springen |
 | `?` | Hilfe |
+
+**Tipp für flüssige Animationen:** in Chrome oder Edge präsentieren (nicht in einer Vorschau oder einem eingebetteten Viewer) und in den Browser-Einstellungen die Hardwarebeschleunigung eingeschaltet lassen. Laptops sollten am Netzteil hängen, im Akkubetrieb drosseln viele Geräte die Grafik.
 
 Die Antworten auf der Folie „Und jetzt ihr?“ kann man direkt in die Felder tippen. Sie werden pro Verein im Browser gespeichert.
 

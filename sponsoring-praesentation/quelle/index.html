@@ -42,8 +42,7 @@
 <div id="stage">
 
   <div id="bg" aria-hidden="true"></div>
-  <svg id="watermark" viewBox="0 0 1920 1080" aria-hidden="true"><g id="wm-g"><path id="wm-p" fill="url(#wm-grad)"/></g>
-    <defs><linearGradient id="wm-grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#D82034" stop-opacity=".9"/><stop offset="1" stop-color="#8B1C34" stop-opacity=".55"/></linearGradient></defs></svg>
+  <div id="watermark" aria-hidden="true"><div id="wm-g"><div id="wm-b"><svg id="wm-svg" viewBox="124 42 212 210"><defs><linearGradient id="wm-grad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#D82034" stop-opacity=".9"/><stop offset="1" stop-color="#8B1C34" stop-opacity=".55"/></linearGradient></defs><path id="wm-p" fill="url(#wm-grad)"/></svg></div></div></div>
   <div id="spot" aria-hidden="true"></div>
 
   <main id="slides">
@@ -96,7 +95,12 @@
         </div>
       </div>
       <div class="eu-wrap" data-s="0" data-a="fade" style="--d:.2s">
-        <svg class="eu" viewBox="0 0 900 820"></svg>
+        <div class="eu">
+          <svg class="eu-l eu-base" viewBox="0 0 900 820"></svg>
+          <svg class="eu-l eu-red" viewBox="0 0 900 820"></svg>
+          <svg class="eu-l eu-arcs" viewBox="0 0 900 820"></svg>
+          <i class="eu-ring"></i>
+        </div>
         <div class="eu-legend" data-s="1" data-a="up" style="--d:1.4s"><i></i>Swiss Life in Europa <span>· Hauptsitz Zürich</span></div>
       </div>
     </section>
@@ -119,6 +123,7 @@
       </div>
       <div class="de-wrap" data-s="0" data-a="fade" style="--d:.15s">
         <svg class="de" viewBox="0 0 586 793"></svg>
+        <canvas class="de-dots" width="650" height="880"></canvas>
       </div>
     </section>
 
@@ -127,16 +132,9 @@
       <div class="kicker" data-s="0" data-a="left">I · Wir stellen uns vor</div>
       <h2 class="hl v-h v-h1 split" data-s="0" style="--d:.1s">Institute oder Vergleichsportale?</h2>
       <h2 class="hl v-h v-h2 split" style="--d:.5s">Swiss Life Select – das Beste aus beiden Welten</h2>
+      <svg class="v-svg v-goo-svg" viewBox="0 0 1920 1080"><g class="v-goo"><path class="gC"/><circle class="gA" r="300"/><circle class="gB" r="300"/></g></svg>
+      <div class="v-final"></div>
       <svg class="v-svg" viewBox="0 0 1920 1080">
-        <defs>
-          <filter id="goo" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="24" result="b"/>
-            <feColorMatrix in="b" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 36 -16"/>
-          </filter>
-          <radialGradient id="v-red" cx="40%" cy="35%" r="75%"><stop offset="0" stop-color="#E2334A"/><stop offset="1" stop-color="#B8162B"/></radialGradient>
-        </defs>
-        <g class="v-goo" filter="url(#goo)"><circle class="gA" r="300"/><circle class="gB" r="300"/></g>
-        <ellipse class="v-final" cx="960" cy="620" rx="560" ry="330"/>
         <circle class="v-ring vA" cx="610" cy="620" r="300"/>
         <circle class="v-ring vB" cx="1310" cy="620" r="300"/>
       </svg>
@@ -344,8 +342,9 @@
 
   <div id="brand" aria-hidden="true"><svg viewBox="0 0 460 460"></svg></div>
   <div id="wipe" aria-hidden="true">
+    <div class="w-c w-in"></div>
+    <div class="w-c w-out"></div>
     <svg class="w-rib" viewBox="0 0 460 460" preserveAspectRatio="xMidYMid slice"><path/></svg>
-    <div class="w-fill"></div>
     <div class="w-label"><span class="w-n"></span><span class="w-t"></span></div>
   </div>
   <div id="progress"><i></i></div>
@@ -398,6 +397,7 @@
     <kbd>O</kbd><span>Übersicht aller Folien</span>
     <kbd>R</kbd><span>Referentenansicht mit Notizen und Timer (zweites Fenster)</span>
     <kbd>E</kbd><span>Einstellungen: Vereinsname, Vereinsart, Berater, Bilder</span>
+    <kbd>L</kbd><span>Leistungsmodus an/aus (für schwächere Laptops – Dauer-Effekte aus)</span>
     <kbd>B</kbd><span>Bildschirm schwarz</span>
     <kbd>W</kbd><span>Bildschirm weiß</span>
     <kbd>Pos1 / Ende</kbd><span>Erste / letzte Folie</span>
@@ -408,6 +408,7 @@
 </aside>
 
 <div id="overview" hidden><div class="ov-grid"></div></div>
+<div id="toast" role="status"></div>
 
 <script src="data.js"></script>
 <script src="deck.js"></script>

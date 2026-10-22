@@ -164,16 +164,24 @@ function setWatermark(id) {
   const p = WM[id];
   if (!p) { g.style.opacity = 0; return; }
   const [x, y, s, r, o] = p;
-  g.style.transform = `translate(${x}px,${y}px) rotate(${r}deg) scale(${s})`;
+  // Die Ebene zeigt nur den Bandausschnitt (ab Logo-Punkt 124/42) – Versatz mitdrehen und -skalieren
+  const a = (r * Math.PI) / 180, ox = 124 * s, oy = 42 * s;
+  const tx = x + ox * Math.cos(a) - oy * Math.sin(a), ty = y + ox * Math.sin(a) + oy * Math.cos(a);
+  g.style.transform = `translate(${tx.toFixed(1)}px,${ty.toFixed(1)}px) rotate(${r}deg) scale(${s})`;
   g.style.opacity = o;
 }
 
 let mouseT = 0;
+let ptr = null, ptrRaf = 0;
 stage.addEventListener('pointermove', (e) => {
-  const [x, y] = toStage(e);
-  stage.style.setProperty('--mx', x + 'px');
-  stage.style.setProperty('--my', y + 'px');
-  $('#bg').style.transform = `translate(${(x / W - 0.5) * -18}px,${(y / H - 0.5) * -12}px)`;
+  ptr = toStage(e);
+  if (ptrRaf) return;
+  ptrRaf = requestAnimationFrame(() => { // höchstens ein Stil-Update pro Bild
+    ptrRaf = 0;
+    const [x, y] = ptr;
+    $('#spot').style.transform = `translate(${x.toFixed(0)}px,${y.toFixed(0)}px)`;
+    $('#bg').style.transform = `translate(${((x / W - 0.5) * -18).toFixed(1)}px,${((y / H - 0.5) * -12).toFixed(1)}px)`;
+  });
 });
 addEventListener('pointermove', () => {
   document.body.classList.add('mouse');
@@ -320,6 +328,15 @@ function setStep(s, n, dir, silent = false) {
   if (hk && hk.step) hk.step(s, n, dir, silent);
 }
 
+/* Canvas nur so groß rendern, wie er wirklich angezeigt wird (spart Zeichen- und Übertragungsarbeit) */
+function fitCanvas(cv, ctx, w = W, h = H, q = 1) {
+  const k = clamp(scale * (window.devicePixelRatio || 1), 0.5, 1) * q; // q < 1: bewusst niedrigere Auflösung für weiche Teilchen
+  const bw = Math.round(w * k), bh = Math.round(h * k);
+  if (cv.width !== bw || cv.height !== bh) { cv.width = bw; cv.height = bh; }
+  ctx.setTransform(k, 0, 0, k, 0, 0);
+  return k;
+}
+
 /* ---------- 1 · Titel: Partikel formen das Swiss-Life-Band ---------- */
 hooks.titel = (() => {
   const s = $('#titel');
@@ -336,41 +353,58 @@ hooks.titel = (() => {
     const c = off.getContext('2d');
     c.setTransform(BOX.k, 0, 0, BOX.k, BOX.x, BOX.y);
     c.fill(new Path2D(L.red), 'evenodd');
-    const d = c.getImageData(0, 0, W, H).data, out = [], R = rng(7), stp = 3;
-    for (let y = 0; y < H; y += stp) for (let x = 0; x < W; x += stp) {
+    const d = c.getImageData(0, 0, W, H).data, out = [], R = rng(7), stp = 3.4;
+    for (let yy = 0; yy < H; yy += stp) for (let xx = 0; xx < W; xx += stp) {
+      const x = Math.round(xx), y = Math.round(yy);
       if (d[(y * W + x) * 4 + 3] > 140) {
         const a = R() * Math.PI * 2, rad = 700 + R() * 900;
         const sx = 960 + Math.cos(a) * rad, sy = 330 + Math.sin(a) * rad * 0.62;
         const sw = (R() - 0.5) * 900;
-        out.push({ tx: x + (R() - 0.5) * 1.6, ty: y + (R() - 0.5) * 1.6, sx, sy, cx: (sx + x) / 2 - Math.sin(a) * sw, cy: (sy + y) / 2 + Math.cos(a) * sw * 0.6, d: R() * 0.75 + Math.hypot(x - 1040, y - 160) / 1400 * 0.25, sz: 1.6 + R() * 1.5, sh: R() });
+        out.push({ tx: x + (R() - 0.5) * 1.6, ty: y + (R() - 0.5) * 1.6, sx, sy, cx: (sx + x) / 2 - Math.sin(a) * sw, cy: (sy + y) / 2 + Math.cos(a) * sw * 0.6, d: R() * 0.75 + Math.hypot(x - 1040, y - 160) / 1400 * 0.25, sz: 1.9 + R() * 1.6, sh: R() });
       }
     }
     return out;
   }
   function makeDust() {
     const R = rng(11); dust = [];
-    for (let i = 0; i < 150; i++) dust.push({ x: 300 + R() * 1320, y: 40 + R() * 940, vx: (R() - 0.5) * 0.25, vy: -0.08 - R() * 0.25, r: 0.8 + R() * 2.2, a: 0.08 + R() * 0.22, ph: R() * 6.28 });
+    for (let i = 0; i < 110; i++) dust.push({ x: 300 + R() * 1320, y: 40 + R() * 940, vx: (R() - 0.5) * 0.25, vy: -0.08 - R() * 0.25, r: 0.8 + R() * 2.2, a: 0.08 + R() * 0.22, ph: R() * 6.28 });
   }
+  // Partikel nach Farbe und Deckkraft bündeln: wenige Füllvorgänge statt tausender Einzelfarben
+  const BUCKETS = 6, COLS = ['#D82034', '#E8465A'];
+  let skip = 0;
   function frame(now) {
+    raf = requestAnimationFrame(frame);
     const t = (now - t0) / 1000;
+    if (t > 3.2 && lite()) { cancelAnimationFrame(raf); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height); return; } // Leistungsmodus: kein Staub
+    if (t > 3.2 && (skip ^= 1)) return; // nach dem Intro reicht der Staub mit halber Bildrate
+    const k0 = fitCanvas(cv, ctx, W, H, t > 3.2 ? 0.5 : 0.75);
     ctx.clearRect(0, 0, W, H);
     const DUR = 1.25;
     if (t < 2.6) {
       const fade = t > 1.9 ? 1 - (t - 1.9) / 0.7 : 1;
+      const paths = [];
+      for (let c = 0; c < 2; c++) for (let b = 0; b < BUCKETS; b++) paths.push(new Path2D());
       for (const p of pts) {
         const k = clamp((t - p.d) / DUR, 0, 1);
         if (k <= 0) continue;
         const e = E.outCubic(k), ie = 1 - e;
         const x = ie * ie * p.sx + 2 * ie * e * p.cx + e * e * p.tx;
         const y = ie * ie * p.sy + 2 * ie * e * p.cy + e * e * p.ty;
-        const r = p.sh > 0.85 ? 232 : 216, gb = p.sh > 0.85 ? 70 : 32;
-        ctx.fillStyle = `rgba(${r},${gb},${gb + 20},${(0.25 + 0.75 * k) * fade})`;
         const sz = p.sz * (1 + (1 - k) * 1.4);
-        ctx.fillRect(x - sz / 2, y - sz / 2, sz, sz);
+        paths[(p.sh > 0.85 ? BUCKETS : 0) + Math.min(BUCKETS - 1, (k * BUCKETS) | 0)].rect(x - sz / 2, y - sz / 2, sz, sz);
       }
+      for (let c = 0; c < 2; c++) {
+        ctx.fillStyle = COLS[c];
+        for (let b = 0; b < BUCKETS; b++) {
+          ctx.globalAlpha = (0.25 + 0.75 * ((b + 0.5) / BUCKETS)) * fade;
+          ctx.fill(paths[c * BUCKETS + b]);
+        }
+      }
+      ctx.globalAlpha = 1;
     }
     const da = clamp((t - 1.4) / 1.5, 0, 1);
     if (da > 0) {
+      const dp = [new Path2D(), new Path2D(), new Path2D()];
       for (const p of dust) {
         const dx = p.x - mouse.x, dy = p.y - mouse.y, dd = dx * dx + dy * dy;
         if (dd < 22000) { const f = (22000 - dd) / 22000 * 0.9; p.vx += dx / Math.sqrt(dd + 1) * f; p.vy += dy / Math.sqrt(dd + 1) * f; }
@@ -378,11 +412,14 @@ hooks.titel = (() => {
         p.x += p.vx + Math.sin(now / 1700 + p.ph) * 0.15; p.y += p.vy;
         if (p.y < -10) { p.y = 1090; p.x = 300 + Math.random() * 1320; }
         if (p.x < -10 || p.x > 1930) p.x = 960;
-        ctx.fillStyle = `rgba(216,32,52,${p.a * da})`;
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.283); ctx.fill();
+        const path = dp[Math.min(2, ((p.a - 0.08) / 0.22 * 3) | 0)];
+        path.moveTo(p.x + p.r, p.y); path.arc(p.x, p.y, p.r, 0, 6.283);
       }
+      ctx.fillStyle = '#D82034';
+      dp.forEach((path, i) => { ctx.globalAlpha = (0.1 + i * 0.07) * da; ctx.fill(path); });
+      ctx.globalAlpha = 1;
     }
-    raf = requestAnimationFrame(frame);
+    void k0;
   }
   return {
     enter() {
@@ -403,49 +440,51 @@ hooks.titel = (() => {
 /* ---------- 3 · Swiss Life: Europakarte ---------- */
 hooks.swisslife = (() => {
   const s = $('#swisslife');
-  const svg = $('.eu', s);
+  const eu = $('.eu', s), base = $('.eu-base', s), red = $('.eu-red', s), arcsSvg = $('.eu-arcs', s);
   const E_ = D.europe;
   const [zx, zy] = E_.zurich;
-  const gC = el('g', {}, svg), gA = el('g', {}, svg);
+  red.style.transformOrigin = `${(zx / 9).toFixed(2)}% ${(zy / 8.2).toFixed(2)}%`;
+  const ring = $('.eu-ring', s);
+  ring.style.left = (zx / 9).toFixed(2) + '%'; ring.style.top = (zy / 8.2).toFixed(2) + '%';
   const hl = [];
   E_.countries.forEach((c) => {
-    const p = el('path', { d: c.d, class: 'c' + (c.hl ? ' h' : '') + (c.hl && ['703', '203', '040'].includes(c.id) ? ' lt' : '') }, gC);
-    const dist = Math.hypot(c.c[0] - zx, c.c[1] - zy);
-    p.style.setProperty('--d', (dist / 900).toFixed(3) + 's');
-    if (c.hl) { p.style.setProperty('--d2', (0.15 + dist / 520).toFixed(3) + 's'); hl.push({ c, dist }); }
+    el('path', { d: c.d }, base);
+    if (c.hl) {
+      el('path', { d: c.d, class: ['703', '203', '040'].includes(c.id) ? 'lt' : '' }, red);
+      hl.push({ c, dist: Math.hypot(c.c[0] - zx, c.c[1] - zy) });
+    }
   });
   hl.sort((a, b) => a.dist - b.dist);
   const arcs = hl.filter((x) => x.dist > 40 && x.c.id !== '438').map(({ c, dist }) => {
     const [x, y] = c.c, mx = (zx + x) / 2, my = (zy + y) / 2 - dist * 0.35;
-    const path = el('path', { class: 'arc', d: `M${zx},${zy} Q${mx},${my} ${x},${y}` }, gA);
-    const dot = el('circle', { class: 'arc-dot', r: 5, cx: x, cy: y }, gA);
+    const path = el('path', { class: 'arc', d: `M${zx},${zy} Q${mx},${my} ${x},${y}` }, arcsSvg);
+    const dot = el('circle', { class: 'arc-dot', r: 5, cx: x, cy: y }, arcsSvg);
+    dot.style.transformBox = 'fill-box'; dot.style.transformOrigin = '50% 50%';
     return { path, dot, dist };
   });
-  el('circle', { class: 'hq-ring', cx: zx, cy: zy, r: 12 }, gA);
-  el('circle', { class: 'hq', cx: zx, cy: zy, r: 7 }, gA);
-  const lab = el('text', { class: 'hq-l', x: zx + 16, y: zy + 30 }, gA); lab.textContent = 'ZÜRICH';
+  el('circle', { class: 'hq', cx: zx, cy: zy, r: 7 }, arcsSvg);
+  const lab = el('text', { class: 'hq-l', x: zx + 16, y: zy + 30 }, arcsSvg); lab.textContent = 'ZÜRICH';
   let anims = [];
+  const stop = () => { anims.forEach((a) => a.cancel()); anims = []; };
   const playArcs = () => {
-    anims.forEach((a) => a.cancel()); anims = [];
+    stop();
     arcs.forEach(({ path, dot, dist }) => {
       const len = path.getTotalLength();
-      path.style.strokeDasharray = `4 5`;
-      const delay = 250 + dist * 1.4;
-      anims.push(path.animate([{ opacity: 0, clipPath: 'none', strokeDashoffset: len }, { opacity: 0.9, strokeDashoffset: 0 }], { duration: 1100, delay, easing: 'cubic-bezier(.16,1,.3,1)', fill: 'both' }));
+      const delay = 350 + dist * 1.4;
+      anims.push(path.animate([{ opacity: 0, strokeDashoffset: len }, { opacity: 0.9, strokeDashoffset: 0 }], { duration: 1100, delay, easing: 'cubic-bezier(.16,1,.3,1)', fill: 'both' }));
       anims.push(dot.animate([{ opacity: 0, transform: 'scale(0)' }, { opacity: 1, transform: 'scale(1)' }], { duration: 500, delay: delay + 700, easing: 'cubic-bezier(.34,1.56,.64,1)', fill: 'both' }));
-      dot.style.transformBox = 'fill-box'; dot.style.transformOrigin = '50% 50%';
     });
   };
   return {
-    step(_, n, dir, silent) {
-      svg.classList.add('on');
-      const was = svg.classList.contains('hl');
-      svg.classList.toggle('hl', n >= 1);
+    step(_, n) {
+      requestAnimationFrame(() => eu.classList.add('on'));
+      const was = eu.classList.contains('hl');
+      eu.classList.toggle('hl', n >= 1);
       if (n >= 1 && !was) playArcs();
-      if (n < 1) { anims.forEach((a) => a.cancel()); anims = []; }
+      if (n < 1) stop();
     },
-    leave() { svg.classList.remove('on', 'hl'); anims.forEach((a) => a.cancel()); anims = []; },
-    final() { svg.classList.add('on', 'hl'); arcs.forEach(({ path, dot }) => { path.style.opacity = 0.9; dot.style.opacity = 1; }); },
+    leave() { eu.classList.remove('on', 'hl'); stop(); arcs.forEach(({ path, dot }) => { path.style.opacity = ''; dot.style.opacity = ''; }); },
+    final() { eu.classList.add('on', 'hl'); arcs.forEach(({ path, dot }) => { path.style.opacity = 0.9; dot.style.opacity = 1; }); },
   };
 })();
 
@@ -453,16 +492,17 @@ hooks.swisslife = (() => {
 hooks.premium = (() => {
   const s = $('#premium');
   const svg = $('.de', s);
+  const cv = $('.de-dots', s), ctx = cv.getContext('2d');
   const states = {};
   D.germany.states.forEach((st) => { states[st.id] = el('path', { d: st.d, class: 'st' }, svg); });
-  const gD = el('g', {}, svg);
-  let built = false;
-  // Gewichtung grob nach Bevölkerung / Vertriebsdichte
+  const CW = 650, CH = 880, SC = Math.min(CW / 586, CH / 793), OY = (CH - 793 * SC) / 2;
+  let dots = null, raf = 0, t0 = 0, on = false;
+  // Gewichtung grob nach Bevölkerung / Vertriebsdichte (Symbolpunkte, keine echten Adressen)
   const WEIGHTS = { nw: 82, by: 44, bw: 40, ni: 26, he: 28, sn: 18, rp: 15, be: 12, hh: 7, sh: 8, th: 7, st: 6, bb: 6, mv: 4, sl: 4, hb: 3 };
   function build() {
-    if (built) return; built = true;
+    if (dots) return;
+    dots = [];
     const R = rng(1857);
-    let order = 0;
     for (const [id, n] of Object.entries(WEIGHTS)) {
       const p = states[id]; if (!p) continue;
       const bb = p.getBBox();
@@ -479,19 +519,46 @@ hooks.premium = (() => {
         const spread = R() < 0.6 ? 18 : 55;
         const pt = new DOMPoint(c.x + (R() - 0.5) * spread * 2, c.y + (R() - 0.5) * spread * 2);
         if (!p.isPointInFill(pt)) continue;
-        const d = (0.35 + R() * 2.0).toFixed(2) + 's';
-        const r = 3.4 + R() * 1.4;
-        const g = el('g', {}, gD);
-        el('circle', { class: 'rip', cx: pt.x.toFixed(1), cy: pt.y.toFixed(1), r: r + 1, style: `--d:${d}` }, g);
-        el('circle', { class: 'dot', cx: pt.x.toFixed(1), cy: pt.y.toFixed(1), r: r.toFixed(1), style: `--d:${d}` }, g);
-        placed++; order++;
+        dots.push({ x: pt.x, y: pt.y, d: 0.35 + R() * 2.0, r: 3.4 + R() * 1.4 });
+        placed++;
       }
     }
   }
+  const back = (t) => { const c1 = 2.2, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); };
+  function draw(t) {
+    const k = fitCanvas(cv, ctx, CW, CH);
+    ctx.clearRect(0, 0, CW, CH);
+    ctx.setTransform(k * SC, 0, 0, k * SC, 0, k * OY);
+    ctx.fillStyle = '#D82034'; ctx.strokeStyle = '#D82034'; ctx.lineWidth = 1.2;
+    let busy = false;
+    const landed = new Path2D(); // fertig gelandete Punkte in einem Rutsch füllen
+    for (const p of dots) {
+      const u = t - p.d;
+      if (u <= 0) { busy = true; continue; }
+      if (u >= 1) { landed.moveTo(p.x + p.r, p.y); landed.arc(p.x, p.y, p.r, 0, 6.283); continue; }
+      busy = true;
+      const a = Math.min(1, u / 0.35), m = Math.min(1, u / 0.75), e = back(m);
+      const y = p.y - 46 * (1 - e), r = p.r * (0.4 + 0.6 * e);
+      ctx.globalAlpha = 0.92 * a;
+      ctx.beginPath(); ctx.arc(p.x, y, Math.max(0.1, r), 0, 6.283); ctx.fill();
+      const q = E.outCubic(u); // Welle beim Aufsetzen
+      ctx.globalAlpha = 0.7 * (1 - q);
+      ctx.beginPath(); ctx.arc(p.x, p.y, (p.r + 1) * (0.3 + 2.7 * q), 0, 6.283); ctx.stroke();
+    }
+    ctx.globalAlpha = 0.92;
+    ctx.fill(landed);
+    ctx.globalAlpha = 1;
+    return busy;
+  }
+  function frame(now) {
+    if (draw((now - t0) / 1000)) raf = requestAnimationFrame(frame);
+  }
+  addEventListener('resize', () => { if (on && dots) draw(99); });
   return {
-    step() { build(); requestAnimationFrame(() => svg.classList.add('on')); },
-    leave() { svg.classList.remove('on'); },
-    final() { build(); svg.classList.add('on'); },
+    prebuild: build,
+    step() { build(); on = true; cancelAnimationFrame(raf); t0 = performance.now() - (reduce ? 9000 : 0); raf = requestAnimationFrame(frame); },
+    leave() { on = false; cancelAnimationFrame(raf); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height); },
+    final() { build(); on = true; cancelAnimationFrame(raf); draw(99); },
   };
 })();
 
@@ -503,10 +570,37 @@ hooks.vergleich = (() => {
   const B = { A1: [540, 500], A2: [1030, 500], B1: [780, 660] };
   const items = $$('.v-item', s);
   items.forEach((it) => { const [x, y] = A[it.dataset.k]; it.style.left = x + 'px'; it.style.top = y + 'px'; });
-  const gA = $('.gA', s), gB = $('.gB', s), fin = $('.v-final', s), rings = $$('.v-ring', s);
+  const gA = $('.gA', s), gB = $('.gB', s), gC = $('.gC', s), goo = $('.v-goo', s), fin = $('.v-final', s), rings = $$('.v-ring', s);
   const h1 = $('.v-h1', s), h2 = $('.v-h2', s);
-  let anims = [];
-  const stopAll = () => { anims.forEach((a) => a.cancel()); anims = []; };
+  let anims = [], raf = 0;
+  const stopAll = () => { anims.forEach((a) => a.cancel()); anims = []; cancelAnimationFrame(raf); };
+  // Metaball-Verbindung zweier Kreise (nach Varun Vachhar) – »flüssiges« Verschmelzen ohne teuren Weichzeichner
+  function metaball(c1, c2, r1, r2, v = 0.5, handle = 2.4) {
+    const d = Math.hypot(c2[0] - c1[0], c2[1] - c1[1]);
+    if (d > r1 + r2 * 2.5 || d <= Math.abs(r1 - r2)) return '';
+    let u1 = 0, u2 = 0;
+    if (d < r1 + r2) {
+      u1 = Math.acos((r1 * r1 + d * d - r2 * r2) / (2 * r1 * d));
+      u2 = Math.acos((r2 * r2 + d * d - r1 * r1) / (2 * r2 * d));
+    }
+    const ab = Math.atan2(c2[1] - c1[1], c2[0] - c1[0]), spread = Math.acos((r1 - r2) / d);
+    const a1 = ab + u1 + (spread - u1) * v, a2 = ab - u1 - (spread - u1) * v;
+    const a3 = ab + Math.PI - u2 - (Math.PI - u2 - spread) * v, a4 = ab - Math.PI + u2 + (Math.PI - u2 - spread) * v;
+    const vec = (c, a, r) => [c[0] + r * Math.cos(a), c[1] + r * Math.sin(a)];
+    const p1 = vec(c1, a1, r1), p2 = vec(c1, a2, r1), p3 = vec(c2, a3, r2), p4 = vec(c2, a4, r2);
+    const d2 = Math.min(v * handle, Math.hypot(p3[0] - p1[0], p3[1] - p1[1]) / (r1 + r2)) * Math.min(1, (d * 2) / (r1 + r2));
+    const h1_ = vec(p1, a1 - Math.PI / 2, r1 * d2), h2_ = vec(p2, a2 + Math.PI / 2, r1 * d2);
+    const h3 = vec(p3, a3 + Math.PI / 2, r2 * d2), h4 = vec(p4, a4 - Math.PI / 2, r2 * d2);
+    const f = (q) => q[0].toFixed(1) + ',' + q[1].toFixed(1);
+    return `M${f(p1)}C${f(h1_)} ${f(h3)} ${f(p3)}A${r2},${r2} 0 ${d > r1 ? 1 : 0} 0 ${f(p4)}C${f(h4)} ${f(h2_)} ${f(p2)}Z`;
+  }
+  function setGoo(k) { // k: 0 = getrennt, 1 = verschmolzen
+    const e = E.inOutCubic(k);
+    const ax = lerp(610, 800, e), bx = lerp(1310, 1120, e), r = lerp(300, 336, e);
+    gA.setAttribute('cx', ax.toFixed(1)); gA.setAttribute('cy', 620); gA.setAttribute('r', r.toFixed(1));
+    gB.setAttribute('cx', bx.toFixed(1)); gB.setAttribute('cy', 620); gB.setAttribute('r', r.toFixed(1));
+    gC.setAttribute('d', metaball([ax, 620], [bx, 620], r, r, lerp(0.35, 0.6, e)));
+  }
   function fuse(instant) {
     stopAll();
     s.classList.add('fused');
@@ -518,21 +612,27 @@ hooks.vergleich = (() => {
       it.style.transitionDelay = instant ? '0s' : (k === 'B1' ? '.75s' : '.55s');
       it.style.transform = `translate(${dx}px,${dy}px)`;
     });
-    const o = { duration: instant ? 1 : 1250, easing: 'cubic-bezier(.65,0,.35,1)', fill: 'both' };
     rings.forEach((r) => anims.push(r.animate([{ opacity: 1 }, { opacity: 0 }], { duration: instant ? 1 : 500, fill: 'both' })));
-    anims.push(gA.animate([{ transform: 'translate(610px,620px) scale(1)', opacity: 0 }, { opacity: 1, offset: 0.15 }, { transform: 'translate(800px,620px) scale(1.12)', opacity: 1 }], { ...o, delay: instant ? 0 : 150 }));
-    anims.push(gB.animate([{ transform: 'translate(1310px,620px) scale(1)', opacity: 0 }, { opacity: 1, offset: 0.15 }, { transform: 'translate(1120px,620px) scale(1.12)', opacity: 1 }], { ...o, delay: instant ? 0 : 150 }));
-    anims.push(fin.animate([{ opacity: 0, transform: 'scale(.78,.98)' }, { opacity: 1, transform: 'scale(1)' }], { duration: instant ? 1 : 900, delay: instant ? 0 : 1150, easing: 'cubic-bezier(.34,1.3,.64,1)', fill: 'both' }));
-    const gooOut = [{ opacity: 1 }, { opacity: 0 }];
-    anims.push($('.v-goo', s).animate(gooOut, { duration: instant ? 1 : 500, delay: instant ? 0 : 1500, fill: 'both' }));
+    if (instant) { setGoo(1); goo.style.opacity = 0; fin.style.opacity = 1; fin.style.transform = 'none'; return; }
+    fin.style.opacity = ''; fin.style.transform = '';
+    const t0 = performance.now() + 150, DUR = 1250;
+    const tick = (now) => {
+      const k = clamp((now - t0) / DUR, 0, 1);
+      setGoo(k);
+      goo.style.opacity = now < t0 + 1500 ? Math.min(1, Math.max(0, (now - t0) / 190)) : Math.max(0, 1 - (now - t0 - 1500) / 500);
+      if (now < t0 + 2000) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    anims.push(fin.animate([{ opacity: 0, transform: 'scale(.78,.98)' }, { opacity: 1, transform: 'scale(1)' }], { duration: 900, delay: 1150, easing: 'cubic-bezier(.34,1.3,.64,1)', fill: 'both' }));
   }
   function unfuse() {
     stopAll();
+    goo.style.opacity = 0; fin.style.opacity = ''; fin.style.transform = '';
     s.classList.remove('fused');
     h1.classList.remove('out'); h2.classList.remove('in');
     items.forEach((it) => { it.style.transform = ''; it.style.transitionDelay = ''; });
   }
-  gA.style.transform = 'translate(610px,620px)'; gB.style.transform = 'translate(1310px,620px)';
+  setGoo(0);
   return {
     step(_, n, dir, silent) { if (n >= 2) { if (!s.classList.contains('fused')) fuse(silent); } else unfuse(); },
     leave() { unfuse(); },
@@ -584,9 +684,10 @@ hooks.bestselect = (() => {
   const tags = P.map((name, i) => {
     const y = 1 - (2 * (i + 0.5)) / n, r = Math.sqrt(1 - y * y), th = i * GA;
     const t = h('span', 'tag' + (name === 'Swiss Life' ? ' me' : ''), name.replace(/&/g, '&amp;'), rot);
-    return { t, x: Math.cos(th) * r * RAD * 1.28, y: y * RAD, z: Math.sin(th) * r * RAD };
+    return { t, x: Math.cos(th) * r * RAD * 1.28, y: y * RAD, z: Math.sin(th) * r * RAD, w: 0, zb: -1 };
   });
   let ay = 0, ax = -0.22, vy = 0.0032, vx = 0, raf = 0, drag = null, intro = 0;
+  const measure = () => tags.forEach((o) => { o.w = o.t.offsetWidth; });
   const sph = $('.sphere', s);
   sph.addEventListener('pointerdown', (e) => { drag = { x: e.clientX, y: e.clientY }; sph.setPointerCapture(e.pointerId); e.stopPropagation(); });
   sph.addEventListener('pointermove', (e) => {
@@ -608,17 +709,18 @@ hooks.bestselect = (() => {
       const y2 = o.y * cx - z1 * sx, z2 = o.y * sx + z1 * cx;
       const f = 1000 / (1000 - z2), rr = lerp(0.35, 1, k);
       const depth = (z2 + RAD) / (2 * RAD);
-      o.t.style.transform = `translate(${(x1 * f * rr).toFixed(1)}px,${(y2 * f * rr).toFixed(1)}px) translate(-50%,-50%) scale(${(f * 0.88).toFixed(3)})`;
-      o.t.style.opacity = (0.12 + depth * 0.88) * k;
-      o.t.style.zIndex = z2 > 0 ? 1100 + Math.round(z2) : 900 + Math.round(z2 / 2);
-      o.t.style.filter = depth < 0.35 ? `blur(${((0.35 - depth) * 5).toFixed(1)}px)` : 'none';
+      // nur transform/opacity (GPU); Tiefenebene nur bei echtem Wechsel neu setzen
+      o.t.style.transform = `translate(${(x1 * f * rr - o.w / 2).toFixed(1)}px,${(y2 * f * rr - 20).toFixed(1)}px) scale(${(f * 0.88).toFixed(3)})`;
+      o.t.style.opacity = ((0.12 + depth * 0.88) * k).toFixed(3);
+      const zb = Math.round(depth * 12);
+      if (zb !== o.zb) { o.zb = zb; o.t.style.zIndex = z2 > 0 ? 1100 + zb : 900 + zb; }
     }
     raf = requestAnimationFrame(frame);
   }
   return {
-    step() { cancelAnimationFrame(raf); intro = 0; raf = requestAnimationFrame(frame); },
+    step() { measure(); cancelAnimationFrame(raf); intro = 0; raf = requestAnimationFrame(frame); },
     leave() { cancelAnimationFrame(raf); },
-    final() { cancelAnimationFrame(raf); intro = performance.now() - 5000; frame(performance.now()); cancelAnimationFrame(raf); },
+    final() { measure(); cancelAnimationFrame(raf); intro = performance.now() - 5000; frame(performance.now()); cancelAnimationFrame(raf); },
   };
 })();
 
@@ -633,6 +735,8 @@ hooks.hub = (() => {
     [270, 'columns', 'dbb beamtenbund', 'und tarifunion'], [320, 'houseup', 'Immobilien Einkommen', ''],
   ];
   const svg = $('.hub-lines', s), box = $('.hub-nodes', s);
+  const pbox = h('div', 'hub-pulses', null, s);
+  s.insertBefore(pbox, box);
   const lines = [], pulses = [];
   NODES.forEach(([deg, ic, t, sub], i) => {
     const a = (deg * Math.PI) / 180, x = C[0] + Math.cos(a) * RX, y = C[1] + Math.sin(a) * RY;
@@ -643,31 +747,30 @@ hooks.hub = (() => {
     const L_ = Math.hypot(x1 - x0, y1 - y0);
     ln.style.strokeDasharray = L_; ln.style.strokeDashoffset = L_;
     lines.push({ ln, L: L_, i });
-    pulses.push({ c: el('circle', { class: 'pulse', r: 5, cx: x0, cy: y0, opacity: 0 }, svg), x0, y0, x1, y1, ph: i / NODES.length });
+    pulses.push({ c: h('i', 'pulse', null, pbox), x0, y0, x1, y1, ph: i / NODES.length });
     const n = h('div', 'hub-node', `<div class="hn-i"><svg class="ico"><use href="#i-${ic}"/></svg></div><div class="hn-t">${t}${sub ? `<small>${sub}</small>` : ''}</div>`, box);
     n.style.left = x + 'px'; n.style.top = y + 'px';
     if (deg === 270) n.classList.add('top');
     n.style.setProperty('--d', (0.75 + i * 0.09).toFixed(2) + 's');
   });
-  let raf = 0, anims = [], t0 = 0;
-  function frame(now) {
-    const t = (now - t0) / 1000;
-    pulses.forEach((p) => {
-      const k = ((t * 0.32 + p.ph) % 1);
-      const e = E.inOutCubic(k);
-      p.c.setAttribute('cx', lerp(p.x0, p.x1, e)); p.c.setAttribute('cy', lerp(p.y0, p.y1, e));
-      p.c.setAttribute('opacity', t < 2 ? 0 : Math.sin(k * Math.PI) * 0.9);
-    });
-    raf = requestAnimationFrame(frame);
+  let anims = [], pulseAnims = [];
+  // Datenpunkte laufen als eigene GPU-Ebenen (transform/opacity) – kein Neuzeichnen der Linien
+  function startPulses() {
+    pulseAnims.forEach((a) => a.cancel());
+    pulseAnims = pulses.map((p) => p.c.animate([
+      { transform: `translate(${p.x0.toFixed(1)}px,${p.y0.toFixed(1)}px)`, opacity: 0 },
+      { opacity: 0.9, offset: 0.5 },
+      { transform: `translate(${p.x1.toFixed(1)}px,${p.y1.toFixed(1)}px)`, opacity: 0 },
+    ], { duration: 3125, delay: 2000, iterationStart: p.ph, iterations: Infinity, easing: 'cubic-bezier(.65,0,.35,1)' }));
   }
   return {
     step() {
       anims.forEach((a) => a.cancel());
       anims = lines.map(({ ln, L: l, i }) => ln.animate([{ strokeDashoffset: l }, { strokeDashoffset: 0 }], { duration: 900, delay: 500 + i * 90, easing: 'cubic-bezier(.16,1,.3,1)', fill: 'both' }));
       requestAnimationFrame(() => $$('.hub-node', s).forEach((n) => n.classList.add('in')));
-      cancelAnimationFrame(raf); t0 = performance.now(); raf = requestAnimationFrame(frame);
+      startPulses();
     },
-    leave() { cancelAnimationFrame(raf); anims.forEach((a) => a.cancel()); anims = []; $$('.hub-node', s).forEach((n) => n.classList.remove('in')); },
+    leave() { pulseAnims.forEach((a) => a.cancel()); pulseAnims = []; anims.forEach((a) => a.cancel()); anims = []; $$('.hub-node', s).forEach((n) => n.classList.remove('in')); },
     final() { lines.forEach(({ ln }) => { ln.style.strokeDashoffset = 0; }); $$('.hub-node', s).forEach((n) => n.classList.add('in')); },
   };
 })();
@@ -903,9 +1006,12 @@ hooks.schritte = (() => {
   ];
   const angs = [-90, -18, 54, 126, 198];
   const base = el('circle', { class: 'base', cx: C[0], cy: C[1], r: R }, svg);
-  const prog = el('path', { class: 'prog' }, svg);
-  const cg = el('circle', { class: 'comet-g', r: 22 }, svg);
-  const cm = el('circle', { class: 'comet', r: 9 }, svg);
+  const CIRC = 2 * Math.PI * R;
+  const prog = el('circle', { class: 'prog', cx: C[0], cy: C[1], r: R, transform: `rotate(-90 ${C[0]} ${C[1]})`, 'stroke-dasharray': CIRC.toFixed(1), 'stroke-dashoffset': CIRC.toFixed(1) }, svg);
+  // Komet als eigene GPU-Ebene: ein Arm, der sich um die Kreismitte dreht
+  const arm = h('div', 'cyc-arm', '<i class="comet-g"></i><i class="comet"></i>', s);
+  arm.style.left = C[0] + 'px'; arm.style.top = C[1] + 'px'; arm.style.setProperty('--R', R + 'px');
+  const cm = arm;
   let nodes = [], labels = [], ang = -90, raf = 0;
   function build() {
     box.innerHTML = ''; nodes = []; labels = [];
@@ -922,18 +1028,10 @@ hooks.schritte = (() => {
     });
   }
   build();
-  function arc(a1) {
-    const a0 = -90;
-    if (a1 <= a0 + 0.01) return '';
-    const p = (a) => [C[0] + Math.cos((a * Math.PI) / 180) * R, C[1] + Math.sin((a * Math.PI) / 180) * R];
-    const [x0, y0] = p(a0), [x1, y1] = p(a1);
-    return `M${x0},${y0} A${R},${R} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${x1},${y1}`;
-  }
   function setAng(a) {
     ang = a;
-    prog.setAttribute('d', arc(a));
-    const x = C[0] + Math.cos((a * Math.PI) / 180) * R, y = C[1] + Math.sin((a * Math.PI) / 180) * R;
-    cm.setAttribute('cx', x); cm.setAttribute('cy', y); cg.setAttribute('cx', x); cg.setAttribute('cy', y);
+    prog.style.strokeDashoffset = (CIRC * (1 - (a + 90) / 360)).toFixed(1);
+    arm.style.transform = `rotate(${a.toFixed(2)}deg)`;
   }
   function tweenTo(a1, ms) {
     cancelAnimationFrame(raf);
@@ -962,7 +1060,7 @@ hooks.schritte = (() => {
       const active = n - 1; // 0..4
       nodes.forEach((nd, i) => { nd.classList.toggle('cur', i === active); nd.classList.toggle('done', i < active); });
       labels.forEach((l, i) => { l.classList.toggle('cur', i === active); l.classList.toggle('done', i < active); l.classList.toggle('vis', n >= 1); });
-      cm.style.opacity = cg.style.opacity = n >= 1 ? 1 : 0;
+      cm.style.opacity = n >= 1 ? 1 : 0;
       const target = n >= 1 ? angs[active] : -90;
       if (silent) setAng(target); else tweenTo(target, n <= 1 ? 600 : 1000);
     },
@@ -982,34 +1080,47 @@ hooks.finale = (() => {
     for (let i = 0; i < n; i++) {
       const a = -Math.PI / 2 + (Math.random() - 0.5) * spread, v = power * (0.45 + Math.random() * 0.75);
       const cross = Math.random() < 0.12;
-      parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, w: cross ? 16 : 8 + Math.random() * 10, h: cross ? 16 : 5 + Math.random() * 7, r: Math.random() * 6.28, vr: (Math.random() - 0.5) * 0.35, c: COLS[(Math.random() * COLS.length) | 0], cross, t: Math.random() * 6.28, life: 1 });
+      parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, w: cross ? 16 : 8 + Math.random() * 10, h: cross ? 16 : 5 + Math.random() * 7, r: Math.random() * 6.28, vr: (Math.random() - 0.5) * 0.35, ci: (Math.random() * COLS.length) | 0, cross, t: Math.random() * 6.28, life: 1 });
     }
   }
   function frame() {
-    ctx.clearRect(0, 0, W, H);
-    parts.forEach((p) => {
+    const k = fitCanvas(cv, ctx, W, H, 0.75);
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    for (const p of parts) {
       p.vx *= 0.985; p.vy = p.vy * 0.985 + 0.32; p.x += p.vx + Math.sin(p.t) * 1.2; p.y += p.vy; p.r += p.vr; p.t += 0.08;
       if (p.y > H + 40) p.life = 0;
-      ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.r); ctx.scale(1, Math.abs(Math.cos(p.t)) * 0.8 + 0.2);
-      if (p.cross) {
-        ctx.fillStyle = '#D82034'; ctx.fillRect(-8, -8, 16, 16);
-        ctx.fillStyle = '#fff'; ctx.fillRect(-1.8, -5.5, 3.6, 11); ctx.fillRect(-5.5, -1.8, 11, 3.6);
-      } else { ctx.fillStyle = p.c; ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); }
-      ctx.restore();
-    });
+    }
+    // nach Farbe gebündelt zeichnen; Drehung/Kippen direkt als Matrix (kein save/restore)
+    for (let ci = 0; ci <= COLS.length; ci++) {
+      ctx.fillStyle = ci < COLS.length ? COLS[ci] : '#D82034';
+      for (const p of parts) {
+        if (ci < COLS.length ? (p.cross || p.ci !== ci) : !p.cross) continue;
+        const c = Math.cos(p.r), sn = Math.sin(p.r), sy = Math.abs(Math.cos(p.t)) * 0.8 + 0.2;
+        ctx.setTransform(c * k, sn * k, -sn * sy * k, c * sy * k, p.x * k, p.y * k);
+        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h);
+      }
+    }
+    ctx.fillStyle = '#fff';
+    for (const p of parts) {
+      if (!p.cross) continue;
+      const c = Math.cos(p.r), sn = Math.sin(p.r), sy = Math.abs(Math.cos(p.t)) * 0.8 + 0.2;
+      ctx.setTransform(c * k, sn * k, -sn * sy * k, c * sy * k, p.x * k, p.y * k);
+      ctx.fillRect(-1.8, -5.5, 3.6, 11); ctx.fillRect(-5.5, -1.8, 11, 3.6);
+    }
     parts = parts.filter((p) => p.life > 0);
-    if (parts.length) raf = requestAnimationFrame(frame); else ctx.clearRect(0, 0, W, H);
+    if (parts.length) raf = requestAnimationFrame(frame); else { ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height); }
   }
   function go() {
     cancelAnimationFrame(raf); parts = [];
-    burst(300, 1100, 160, 1.0, 34); burst(1620, 1100, 160, 1.0, 34);
-    later(() => burst(960, 1120, 220, 1.4, 38), 350);
-    later(() => { burst(560, 1100, 90, 0.8, 30); burst(1360, 1100, 90, 0.8, 30); }, 900);
+    burst(300, 1100, 110, 1.0, 34); burst(1620, 1100, 110, 1.0, 34);
+    later(() => burst(960, 1120, 150, 1.4, 38), 350);
+    later(() => { burst(560, 1100, 60, 0.8, 30); burst(1360, 1100, 60, 0.8, 30); }, 900);
     raf = requestAnimationFrame(frame);
   }
   return {
     step(_, n, dir, silent) { if (n >= 1 && dir > 0 && !silent) go(); if (n < 1) { parts = []; } },
-    leave() { cancelAnimationFrame(raf); parts = []; ctx.clearRect(0, 0, W, H); },
+    leave() { cancelAnimationFrame(raf); parts = []; ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height); },
     final() {},
   };
 })();
@@ -1026,24 +1137,28 @@ function chapterWipe(ch, swap) {
     const [n, t] = CHAPTERS[ch] || ['', ''];
     $('.w-n', wipe).textContent = n; $('.w-t', wipe).textContent = t;
     wipe.style.visibility = 'visible';
-    const fill = $('.w-fill', wipe), rib = $('.w-rib', wipe), ln = $('.w-n', wipe), lt = $('.w-t', wipe);
-    const IN = 650, HOLD = 950, OUT = 700;
-    fill.animate([{ clipPath: 'circle(0% at 0% 100%)' }, { clipPath: 'circle(150% at 0% 100%)' }], { duration: IN, easing: 'cubic-bezier(.7,0,.3,1)', fill: 'forwards' });
+    const cin = $('.w-in', wipe), cout = $('.w-out', wipe), rib = $('.w-rib', wipe), ln = $('.w-n', wipe), lt = $('.w-t', wipe);
+    const IN = 650, HOLD = 950, OUT = 700, FULL = 4.6; // Kreis (Ø 1000 px) deckt bei 4,6-facher Größe die ganze Bühne
+    cout.style.visibility = 'hidden';
+    cin.style.visibility = 'visible';
+    cin.animate([{ transform: 'scale(0)' }, { transform: `scale(${FULL})` }], { duration: IN, easing: 'cubic-bezier(.7,0,.3,1)', fill: 'forwards' });
     rib.animate([
       { transform: 'translate(-1500px,900px) rotate(-30deg) scale(.7)' },
       { transform: 'translate(-80px,40px) rotate(-8deg) scale(1)', offset: 0.45 },
       { transform: 'translate(1600px,-1000px) rotate(16deg) scale(1.3)' },
     ], { duration: IN + HOLD + OUT, easing: 'cubic-bezier(.45,0,.25,1)', fill: 'forwards' });
     const lab = { duration: 700, easing: 'cubic-bezier(.16,1,.3,1)', fill: 'forwards' };
-    ln.animate([{ opacity: 0, transform: 'translateY(40px)', filter: 'blur(10px)' }, { opacity: 0.9, transform: 'none', filter: 'blur(0)' }], { ...lab, delay: IN - 250 });
-    lt.animate([{ opacity: 0, transform: 'translateY(40px)', filter: 'blur(10px)' }, { opacity: 1, transform: 'none', filter: 'blur(0)' }], { ...lab, delay: IN - 120 });
+    ln.animate([{ opacity: 0, transform: 'translateY(40px)' }, { opacity: 0.9, transform: 'none' }], { ...lab, delay: IN - 250 });
+    lt.animate([{ opacity: 0, transform: 'translateY(40px)' }, { opacity: 1, transform: 'none' }], { ...lab, delay: IN - 120 });
     setTimeout(swap, IN + 30);
     setTimeout(() => {
       ln.animate([{ opacity: 0.9 }, { opacity: 0, transform: 'translateY(-30px)' }], { duration: 400, fill: 'forwards' });
       lt.animate([{ opacity: 1 }, { opacity: 0, transform: 'translateY(-30px)' }], { duration: 400, fill: 'forwards' });
-      fill.animate([{ clipPath: 'circle(150% at 100% 0%)' }, { clipPath: 'circle(0% at 100% 0%)' }], { duration: OUT, easing: 'cubic-bezier(.7,0,.3,1)', fill: 'forwards' });
+      cout.style.visibility = 'visible';
+      cin.style.visibility = 'hidden';
+      cout.animate([{ transform: `scale(${FULL})` }, { transform: 'scale(0)' }], { duration: OUT, easing: 'cubic-bezier(.7,0,.3,1)', fill: 'forwards' });
     }, IN + HOLD);
-    setTimeout(() => { wipe.style.visibility = 'hidden'; done(); }, IN + HOLD + OUT + 20);
+    setTimeout(() => { wipe.style.visibility = 'hidden'; cout.style.visibility = 'hidden'; wipe.getAnimations({ subtree: true }).forEach((a) => a.cancel()); done(); }, IN + HOLD + OUT + 20);
   });
 }
 
@@ -1215,7 +1330,34 @@ function startDeck() {
   $('#start').classList.add('gone');
   fullscreen(true);
   if (cur < 0) show(0, 0); else { const c = cur; cur = -1; show(c, step, { dir: 1 }); }
+  perfProbe();
 }
+
+/* Leistungsmodus: misst die ersten Sekunden; ruckelt es deutlich, werden Dauer-Effekte abgeschaltet */
+let toastT = 0;
+function toast(msg) {
+  const t = $('#toast');
+  t.textContent = msg; t.classList.add('on');
+  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 3200);
+}
+function setLite(on, auto) {
+  document.body.classList.toggle('lite', on);
+  if (!auto) store.set('lite', on);
+  toast(on ? 'Leistungsmodus an – Dauer-Effekte aus (L zum Umschalten)' : 'Leistungsmodus aus – alle Effekte an (L)');
+}
+const lite = () => document.body.classList.contains('lite');
+function perfProbe() {
+  if (store.get('lite', null) !== null) return; // eigene Wahl hat Vorrang
+  let n = 0, slow = 0, last = 0;
+  const f = (now) => {
+    if (last && n > 10) { if (now - last > 34) slow++; }
+    last = now;
+    if (++n < 300) requestAnimationFrame(f);
+    else if (slow / (n - 11) > 0.3 && !lite()) setLite(true, true);
+  };
+  requestAnimationFrame(f);
+}
+if (store.get('lite', false)) document.body.classList.add('lite');
 $('#st-go').addEventListener('click', (e) => { e.stopPropagation(); startDeck(); });
 
 function fullscreen(on) {
@@ -1264,6 +1406,7 @@ addEventListener('keydown', (e) => {
     case 'e': case 'E': case 's': case 'S': panel('settings'); break;
     case 'r': case 'R': presenter.open(); break;
     case '?': case 'h': case 'H': panel('help'); break;
+    case 'l': case 'L': setLite(!lite()); break;
     default:
   }
 });
@@ -1425,6 +1568,10 @@ window.__deck = { next, prev, go, overview: () => overview(!ovOn), get cur() { r
   try { await document.fonts.ready; } catch { /* egal */ }
   $$('.split').forEach(splitText);
   loadCustomImages();
+  // Standortpunkte vorab berechnen (sonst stockt die Deutschlandkarte beim ersten Öffnen)
+  setTimeout(() => hooks.premium.prebuild(), 300);
+  // alle Fotos vorab dekodieren, damit der erste Folienwechsel nicht hakt
+  $$('img').forEach((im) => { if (im.decode) im.decode().catch(() => {}); });
   const m = /^#(\d+)(?:\.(\d+))?/.exec(location.hash);
   if (m) {
     $('#start').classList.add('gone');
