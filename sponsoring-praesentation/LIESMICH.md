@@ -2,6 +2,10 @@
 
 Präsentation für Sponsoring-Vorgespräche mit Vereinen, Chören und anderen Gruppen.
 
+**Online (auch für iPhone, iPad, Android):** https://canuzu.github.io/Game/sponsoring/ – in Safari bzw. Chrome öffnen; über „Zum Home-Bildschirm“ läuft sie wie eine App im Vollbild. Die Seite ist für jeden mit dem Link erreichbar, aber für Suchmaschinen gesperrt.
+
+> Auf iPhone/iPad öffnet ein Antippen der *gespeicherten* HTML-Datei nur eine Schnellvorschau ohne Animationen – dort immer den Link verwenden.
+
 | Datei | Wofür |
 |---|---|
 | **`Sponsoringvorgespraech.html`** | Die Hauptfassung mit allen Animationen. Eine einzige Datei, läuft offline per Doppelklick in Chrome, Edge oder Safari. |
@@ -25,6 +29,8 @@ Präsentation für Sponsoring-Vorgespräche mit Vereinen, Chören und anderen Gr
 | `B` / `W` | Bildschirm schwarz / weiß |
 | Zahl + `Enter` | zu Folie springen |
 | `?` | Hilfe |
+
+**Tablet & Handy:** rechts tippen oder nach links wischen = weiter · links tippen = zurück · unteren Rand antippen = Menü (Übersicht, Einstellungen, Vollbild) · Bluetooth-Klicker funktionieren ebenfalls.
 
 **Tipp für flüssige Animationen:** in Chrome oder Edge präsentieren (nicht in einer Vorschau oder einem eingebetteten Viewer) und in den Browser-Einstellungen die Hardwarebeschleunigung eingeschaltet lassen. Laptops sollten am Netzteil hängen, im Akkubetrieb drosseln viele Geräte die Grafik.
 

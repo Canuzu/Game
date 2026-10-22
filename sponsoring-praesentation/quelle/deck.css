@@ -714,6 +714,7 @@ body{touch-action:manipulation}
 .st-rotate .ico{width:26px;height:26px;vertical-align:-7px;margin-right:8px;color:var(--red)}
 .st-nojs{margin-top:22px;font:400 17px/1.6 var(--sans);color:var(--ink-2);background:#fff;border-radius:16px;padding:18px 22px;box-shadow:0 10px 30px -18px rgba(0,0,0,.35);text-align:left}
 .st-nojs b{display:block;color:var(--red);font-size:18px;margin-bottom:6px}
+.st-nojs a{color:var(--red);font-weight:700;word-break:break-all}
 /* Ohne JavaScript (Schnellvorschau): toter Startknopf weg, Erklärung her */
 html:not(.js) #st-go,html:not(.js) .st-keys{display:none}
 html:not(.js) .st-nojs{display:block}
