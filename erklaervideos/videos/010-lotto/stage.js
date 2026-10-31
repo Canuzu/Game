@@ -6,6 +6,7 @@ function STAGE(c) {
     { from: 'why', fn: c => kRule(c, { at: T('why'), tag: 'MUSTER-FALLE', big: '1-2-3-4-5-6', bigColor: th.a, sub: 'FÜHLT SICH FALSCH AN, IST ES NICHT', lines: [['JEDE KOMBINATION: 1 ZU 13.983.816', '#fff']] }) },
     { from: 'diff', fn: c => kRule(c, { at: T('diff'), tag: 'ECHTER UNTERSCHIED', big: 'GEWINN TEILEN', bigColor: th.y, sub: 'VIELE TIPPEN GEBURTSTAGE (BIS 31)', lines: [['SELTENE ZAHLEN = WENIGER TEILEN', th.b]] }) },
     { from: 'rule', fn: c => kRule(c, { at: T('rule'), tag: 'FAUSTREGEL', big: 'GLEICHE CHANCE', bigColor: th.b, sub: 'EGAL WIE HÜBSCH DIE ZAHLEN SIND' }) },
+    { from: 'payout', fn: c => kRule(c, { at: T('payout'), tag: 'AUSZAHLUNG', big: '≈ 50 %', bigColor: th.a, sub: 'DER EINSÄTZE KOMMEN ALS GEWINN ZURÜCK', lines: [] }) },
     { from: 'note', fn: c => kRule(c, { at: T('note'), tag: 'SECHS RICHTIGE', big: '1 : 14 MIO.', bigColor: th.a, sub: '13.983.816 MÖGLICHKEITEN' }) },
     { from: 'cta', fn: c => kCta(c, { at: T('cta'), lines: [['WELCHE ZAHLEN', '#fff', 112], ['TIPPST DU?', th.y, 130]], chips: [['1 – 6', 'a'], ['ZUFALL', 'b']] }) },
   ]);
@@ -28,7 +29,7 @@ function main(c) {
   o += G(grid, { s: Math.min(1, kk), px: 540, py: 900, o: Math.min(1, kk) });
   if (t > T('r3', 2.6)) o += G(PILL(540, 500, 'GENAU GLEICH ✓', { size: 56, fill: th.y, ink: th.dark, px: 40 }), { s: pop(t, T('r3', 2.6)), px: 540, py: 500 });
   const cv = 1 - ramp(t, T('setup', 1.4), T('setup', 1.8));
-  if (cv > .01) o += G(TX(270, 880, '🔢', { size: 200 }) + TX(810, 880, '🎲', { size: 200 }) + TX(540, 860, 'VS', { size: 100, w: 900, fill: th.y }), { s: pop(t, T('hook', 1.0)), px: 540, py: 820, o: cv });
+  if (cv > .01) o += G(TX(270, 880, '🔢', { size: 200 }) + TX(810, 880, '🎲', { size: 200 }) + TX(540, 860, 'VS', { size: 100, w: 900, fill: th.y }), { s: pop(t, T('hook', .3)), px: 540, py: 820, o: cv });
   const g = pop(t, T('guess', .5)) * (1 - ramp(t, T('setup'), T('setup', .3)));
   if (g > .01) o += G(PILL(540, 1100, 'KLAR: ZUFALL!', { size: 80, fill: th.y, ink: th.dark, px: 44 }), { s: g, px: 540, py: 1100, rot: -4, o: Math.min(1, g) });
   const go = pop(t, T('go', .02), .35) * (1 - ramp(t, B.go.t1 + .35, B.go.t1 + .6));

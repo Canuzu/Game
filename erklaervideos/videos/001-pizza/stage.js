@@ -7,12 +7,16 @@ function STAGE(c) {
   const { t, th, B } = c; let out = '';
   const x1 = id => 1 - ramp(t, B[id].t0 - .15, B[id].t0 + .25);    // Gruppe verlässt Bühne vor Beat id
   const x2 = id => ramp(t, B[id].t0, B[id].t0 + .4);               // Gruppe kommt ab Beat id
-  const g1 = x1('why'), g2 = x2('why') * x1('ratio'), g3 = x2('ratio') * x1('rule'), g4 = x2('rule') * x1('cta'), g5 = x2('cta');
+  const g1 = x1('why'), g2 = x2('why') * x1('ratio'), g3 = x2('ratio') * x1('rule'), g4 = x2('rule') * x1('more'), g5 = x2('cta');
+  const gm = x2('more') * x1('tip'), gt = x2('tip') * x1('note'), gn = x2('note') * x1('cta');
   if (g1 > .01) out += G(scene1(c), { o: g1 });
   if (g2 > .01) out += G(scene2(c), { o: g2 });
   if (g3 > .01) out += G(scene3(c), { o: g3 });
   if (g4 > .01) out += G(scene4(c), { o: g4 });
   if (g5 > .01) out += G(scene5(c), { o: g5 });
+  if (gm > .01) out += G(kRule(c, { at: B.more.t0, tag: 'NOCH EIN BEISPIEL', big: '30 > 2 × 20', bigColor: th.b, sub: '707 STATT 628 cm²', lines: [['GROSS GEWINNT ÖFTER, ALS MAN DENKT', th.y]] }), { o: gm });
+  if (gt > .01) out += G(kRule(c, { at: B.tip.t0, tag: 'TIPP', big: 'PREIS PRO cm²', bigColor: th.y, sub: 'BEIM BESTELLEN VERGLEICHEN' }), { o: gt });
+  if (gn > .01) out += G(kRule(c, { at: B.note.t0, tag: 'ANNAHME', big: 'RUNDE PIZZEN', bigColor: th.a, sub: 'GLEICHER BELAG AUF DER GANZEN FLÄCHE' }), { o: gn });
   return out;
 }
 

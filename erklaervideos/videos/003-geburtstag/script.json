@@ -3,8 +3,8 @@
  "series": "ALLTAGSDUELL",
  "theme": "indigo",
  "topic": "Geburtstagsparadox: Wie viele Leute, bis zwei am selben Tag Geburtstag haben?",
- "voice": "de-DE-KillianNeural",
- "rate": "+24%",
+ "voice": "de-DE-FlorianMultilingualNeural",
+ "rate": "+22%",
  "beats": [
   {
    "id": "hook",
@@ -25,8 +25,8 @@
     ]
    ],
    "pause": 0.12,
-   "rate": "+28%",
-   "pitch": "+9Hz"
+   "rate": "+26%",
+   "pitch": "+7Hz"
   },
   {
    "id": "guess",
@@ -94,8 +94,8 @@
     ]
    ],
    "pause": 0.4,
-   "rate": "+26%",
-   "pitch": "+8Hz"
+   "rate": "+24%",
+   "pitch": "+6Hz"
   },
   {
    "id": "why",
@@ -157,6 +157,21 @@
    ]
   },
   {
+   "id": "you",
+   "mood": "think",
+   "text": "Aber Achtung: Dass jemand mit *dir* Geburtstag hat, ist bei dreiundzwanzig Leuten nur etwa sechs Prozent wahrscheinlich.",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     1.2
+    ]
+   ]
+  },
+  {
    "id": "rule",
    "mood": "think",
    "text": "Faustregel: Wenn du *Paare* zählst, passieren Zufälle viel öfter, als du denkst.",
@@ -196,10 +211,11 @@
      0.5
     ]
    ],
-   "rate": "+26%",
-   "pitch": "+8Hz"
+   "rate": "+24%",
+   "pitch": "+6Hz"
   }
  ],
- "pitch": "+6Hz",
- "gap": 0.14
+ "pitch": "+4Hz",
+ "gap": 0.14,
+ "tail": 1.8
 }

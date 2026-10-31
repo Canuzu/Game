@@ -3,8 +3,8 @@
  "series": "ALLTAGSDUELL",
  "theme": "indigo",
  "topic": "30 Prozent plus 20 Prozent Rabatt oder 50 Prozent auf einmal?",
- "voice": "de-DE-KillianNeural",
- "rate": "+24%",
+ "voice": "de-DE-FlorianMultilingualNeural",
+ "rate": "+22%",
  "beats": [
   {
    "id": "hook",
@@ -25,8 +25,8 @@
     ]
    ],
    "pause": 0.12,
-   "rate": "+28%",
-   "pitch": "+9Hz"
+   "rate": "+26%",
+   "pitch": "+7Hz"
   },
   {
    "id": "guess",
@@ -124,8 +124,8 @@
     ]
    ],
    "pause": 0.3,
-   "rate": "+26%",
-   "pitch": "+8Hz"
+   "rate": "+24%",
+   "pitch": "+6Hz"
   },
   {
    "id": "win",
@@ -138,8 +138,8 @@
     ]
    ],
    "pause": 0.4,
-   "rate": "+26%",
-   "pitch": "+8Hz"
+   "rate": "+24%",
+   "pitch": "+6Hz"
   },
   {
    "id": "why",
@@ -226,10 +226,10 @@
      0.5
     ]
    ],
-   "rate": "+26%",
-   "pitch": "+8Hz"
+   "rate": "+24%",
+   "pitch": "+6Hz"
   }
  ],
- "pitch": "+6Hz",
+ "pitch": "+4Hz",
  "gap": 0.14
 }

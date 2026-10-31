@@ -24,13 +24,16 @@ async def tts_all():
     for b in S["beats"]:
         mp3 = f"{work}/{b['id']}.mp3"
         if os.path.exists(mp3) and os.path.getsize(mp3) > 1000 and not os.environ.get("REDO"): continue
-        for attempt in range(4):
+        nwords = len(plain(b["text"]).split())
+        for attempt in range(5):
             try:
                 await edge_tts.Communicate(plain(b["text"]), b.get("voice", S["voice"]), rate=b.get("rate", S.get("rate","+0%")),
                                            pitch=b.get("pitch", S.get("pitch","+0Hz")), proxy=os.environ.get("HTTPS_PROXY")).save(mp3)
+                d = float(subprocess.run(["ffprobe","-v","error","-show_entries","format=duration","-of","csv=p=0",mp3],capture_output=True,text=True).stdout or 0)
+                if d < nwords * 0.20: raise RuntimeError(f"Clip zu kurz ({d:.1f}s für {nwords} Wörter)")
                 break
             except Exception as e:
-                if attempt == 3: raise
+                if attempt == 4: raise
                 await asyncio.sleep(2 ** attempt)
 asyncio.run(tts_all())
 

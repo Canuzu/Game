@@ -3,8 +3,8 @@
  "series": "ALLTAGSDUELL",
  "theme": "indigo",
  "topic": "Lotto: eins bis sechs oder sechs Zufallszahlen?",
- "voice": "de-DE-KillianNeural",
- "rate": "+24%",
+ "voice": "de-DE-FlorianMultilingualNeural",
+ "rate": "+22%",
  "beats": [
   {
    "id": "hook",
@@ -25,8 +25,8 @@
     ]
    ],
    "pause": 0.12,
-   "rate": "+28%",
-   "pitch": "+9Hz"
+   "rate": "+26%",
+   "pitch": "+7Hz"
   },
   {
    "id": "guess",
@@ -105,8 +105,8 @@
     ]
    ],
    "pause": 0.4,
-   "rate": "+26%",
-   "pitch": "+8Hz"
+   "rate": "+24%",
+   "pitch": "+6Hz"
   },
   {
    "id": "why",
@@ -161,6 +161,21 @@
    ]
   },
   {
+   "id": "payout",
+   "mood": "think",
+   "text": "Und noch etwas: Lotto zahlt im Schnitt nur etwa die *Hälfte* der Einsätze wieder aus.",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     1.2
+    ]
+   ]
+  },
+  {
    "id": "note",
    "mood": "watch",
    "text": "Sechs Richtige schaffst du übrigens nur mit etwa *eins zu vierzehn Millionen*.",
@@ -189,10 +204,10 @@
      0.5
     ]
    ],
-   "rate": "+26%",
-   "pitch": "+8Hz"
+   "rate": "+24%",
+   "pitch": "+6Hz"
   }
  ],
- "pitch": "+6Hz",
+ "pitch": "+4Hz",
  "gap": 0.14
 }

@@ -7,6 +7,7 @@ function STAGE(c) {
     { from: 'hook', fn: main },
     { from: 'why', fn: c => kRule(c, { at: T('why'), tag: 'VERDOPPELN', big: '2⁴² × 0,1 mm', bigColor: th.b, sub: '≈ 440.000 KILOMETER', lines: [['MOND: 384.400 KM', th.y]] }) },
     { from: 'why2', fn: c => kRule(c, { at: T('why2'), tag: 'DIE LETZTEN ZWEI', big: '75 %', bigColor: th.a, sub: 'DER ENDHÖHE KOMMEN AUS FALTUNG 41 UND 42' }) },
+    { from: 'fifty', fn: c => kRule(c, { at: T('fifty'), tag: '50 FALTUNGEN', big: '113 MIO. KM', bigColor: th.y, sub: '¾ DES WEGS ZUR SONNE', lines: [] }) },
     { from: 'real', fn: c => kRule(c, { at: T('real'), tag: 'IN ECHT', big: '≈ 7 MAL', bigColor: th.a, sub: 'DANN IST SCHLUSS', lines: [['DAS PAPIER WIRD ZU DICK', '#fff']] }) },
     { from: 'rule', fn: c => kRule(c, { at: T('rule'), tag: 'FAUSTREGEL', big: 'VERDOPPELN', bigColor: th.y, sub: 'WIRKT LANGSAM, DANN GEWALTIG', lines: [['42 FALTUNGEN = MOND', th.b]] }) },
     { from: 'cta', fn: c => kCta(c, { at: T('cta'), lines: [['WIE OFT HÄTTEST', '#fff', 104], ['DU GESCHÄTZT?', th.y, 120]], chips: [['< 100', 'a'], ['> 1.000', 'b']] }) },
@@ -29,7 +30,7 @@ function main(c) {
     PILL(540, baseY + 60, '(LOG-SKALA)', { size: 26, fill: th.card, ink: th.mute, px: 16 }), { s: kk, px: 540, py: 800, o: Math.min(1, kk) });
   if (t > T('go')) o += G(PILL(300, 620, Math.floor(n(t) + .001) + '× GEFALTET', { size: 52, fill: th.y, ink: th.dark, px: 34 }), { s: pop(t, T('go', .3)), px: 300, py: 620 });
   const cv = 1 - ramp(t, T('setup', 1.4), T('setup', 1.8));
-  if (cv > .01) o += G(TX(270, 880, '📄', { size: 200 }) + TX(810, 880, '🌕', { size: 200 }) + TX(540, 860, '→', { size: 110, w: 900, fill: th.y }), { s: pop(t, T('hook', 1.0)), px: 540, py: 820, o: cv });
+  if (cv > .01) o += G(TX(270, 880, '📄', { size: 200 }) + TX(810, 880, '🌕', { size: 200 }) + TX(540, 860, '→', { size: 110, w: 900, fill: th.y }), { s: pop(t, T('hook', .3)), px: 540, py: 820, o: cv });
   const g = pop(t, T('guess', .5)) * (1 - ramp(t, T('setup'), T('setup', .3)));
   if (g > .01) o += G(PILL(540, 1100, 'KLAR: TAUSENDE!', { size: 76, fill: th.y, ink: th.dark, px: 44 }), { s: g, px: 540, py: 1100, rot: -4, o: Math.min(1, g) });
   const go = pop(t, T('go', .02), .35) * (1 - ramp(t, B.go.t1 + .35, B.go.t1 + .6));

@@ -6,6 +6,7 @@ function STAGE(c) {
     { from: 'why2', fn: c => kRule(c, { at: T('why2'), tag: 'MASSE BLEIBT MASSE', big: '1 g = 1 g', bigColor: th.y, sub: 'EIS WIRD ZU GLEICH VIEL WASSER' }) },
     { from: 'twist', fn: c => kRule(c, { at: T('twist'), tag: 'ABER', big: 'EIS AN LAND', bigColor: th.a, sub: 'SCHMILZT INS MEER → MEERESSPIEGEL STEIGT', lines: [['GLETSCHER, EISSCHILD', th.b]] }) },
     { from: 'rule', fn: c => kRule(c, { at: T('rule'), tag: 'FAUSTREGEL', big: 'SCHWIMMT = EGAL', bigColor: th.y, sub: 'PEGEL BLEIBT GLEICH', lines: [['EIS VON LAND: PEGEL STEIGT', th.a]] }) },
+    { from: 'fun', fn: c => kRule(c, { at: T('fun'), tag: 'FUN FACT', big: '+ 9 %', bigColor: th.y, sub: 'WASSER DEHNT SICH BEIM GEFRIEREN AUS', lines: [['VOLLE FLASCHEN PLATZEN', th.a]] }) },
     { from: 'note', fn: c => kRule(c, { at: T('note'), tag: 'GENAU GENOMMEN', big: 'KLEINE DETAILS', bigColor: th.b, sub: 'Z. B. SALZ IM MEERWASSER', lines: [['IM GLAS ZUHAUSE: KEIN UNTERSCHIED', '#fff']] }) },
     { from: 'cta', fn: c => kCta(c, { at: T('cta'), lines: [['LÄUFT DAS', '#fff', 120], ['GLAS ÜBER?', th.y, 120]], chips: [['JA', 'a'], ['NEIN', 'b']] }) },
   ]);
@@ -25,7 +26,7 @@ function main(c) {
     `<line x1="${gx - gw / 2 - 90}" y1="${level}" x2="${gx + gw / 2 + 90}" y2="${level}" stroke="${th.y}" stroke-width="6" stroke-dasharray="16 12"/>` + PILL(gx + gw / 2 + 150, level - 36, 'PEGEL', { size: 34, fill: th.y, ink: th.dark, px: 22 }), { s: Math.min(1, k), px: 540, py: 950, o: Math.min(1, k) });
   if (m > .02 && m < .98) for (let i = 0; i < 3; i++) { const a = ((t * 1.4 + i * .33) % 1); o += `<circle cx="${gx - 40 + i * 40}" cy="${level + 20 + a * 200}" r="${8 - a * 4}" fill="#BFEFFF" opacity="${1 - a}"/>`; }
   const cv = 1 - ramp(t, T('setup', 1.2), T('setup', 1.6));
-  if (cv > .01) o += G(TX(270, 880, '🧊', { size: 200 }) + TX(810, 880, '🥤', { size: 200 }) + TX(540, 860, '=?', { size: 110, w: 900, fill: th.y }), { s: pop(t, T('hook', 1.0)), px: 540, py: 820, o: cv });
+  if (cv > .01) o += G(TX(270, 880, '🧊', { size: 200 }) + TX(810, 880, '🥤', { size: 200 }) + TX(540, 860, '=?', { size: 110, w: 900, fill: th.y }), { s: pop(t, T('hook', .3)), px: 540, py: 820, o: cv });
   const g = pop(t, T('guess', .5)) * (1 - ramp(t, T('setup'), T('setup', .3)));
   if (g > .01) o += G(PILL(540, 1100, 'KLAR: ÜBERLAUFEN!', { size: 68, fill: th.y, ink: th.dark, px: 44 }), { s: g, px: 540, py: 1100, rot: -4, o: Math.min(1, g) });
   const go = pop(t, T('go', .02), .35) * (1 - ramp(t, B.go.t1 + .35, B.go.t1 + .6));

@@ -3,8 +3,8 @@
  "series": "ALLTAGSDUELL",
  "theme": "indigo",
  "topic": "Eine große Pizza oder zwei kleine: Was ist mehr Pizza?",
- "voice": "de-DE-KillianNeural",
- "rate": "+24%",
+ "voice": "de-DE-FlorianMultilingualNeural",
+ "rate": "+22%",
  "beats": [
   {
    "id": "hook",
@@ -25,8 +25,8 @@
    ],
    "pause": 0.12,
    "mood": "wave",
-   "rate": "+28%",
-   "pitch": "+9Hz"
+   "rate": "+26%",
+   "pitch": "+7Hz"
   },
   {
    "id": "guess",
@@ -89,8 +89,8 @@
    "text": "Boom! Die große: *a:achthundertvier* Quadratzentimeter. Die zwei kleinen zusammen: nur *b:siebenhundertsechzig*.",
    "pause": 0.35,
    "mood": "watch",
-   "rate": "+26%",
-   "pitch": "+8Hz"
+   "rate": "+24%",
+   "pitch": "+6Hz"
   },
   {
    "id": "win",
@@ -107,8 +107,8 @@
    ],
    "pause": 0.4,
    "mood": "cheer",
-   "rate": "+26%",
-   "pitch": "+8Hz"
+   "rate": "+24%",
+   "pitch": "+6Hz"
   },
   {
    "id": "why",
@@ -184,6 +184,36 @@
    "mood": "think"
   },
   {
+   "id": "more",
+   "mood": "watch",
+   "text": "Noch ein Beispiel: Zwei Pizzen mit zwanzig Zentimetern haben zusammen weniger Fläche als *eine* mit dreißig.",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     1.2
+    ]
+   ]
+  },
+  {
+   "id": "tip",
+   "mood": "cheer",
+   "text": "Mein Tipp: Vergleiche beim Bestellen den Preis pro *Quadratzentimeter*.",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     1.2
+    ]
+   ]
+  },
+  {
    "id": "note",
    "text": "Gerechnet haben wir mit runden Pizzen und gleichem Belag auf der *ganzen* Fläche.",
    "sfx": [
@@ -208,11 +238,11 @@
     ]
    ],
    "mood": "cheer",
-   "rate": "+26%",
-   "pitch": "+8Hz"
+   "rate": "+24%",
+   "pitch": "+6Hz"
   }
  ],
  "tail": 2.4,
- "pitch": "+6Hz",
+ "pitch": "+4Hz",
  "gap": 0.14
 }

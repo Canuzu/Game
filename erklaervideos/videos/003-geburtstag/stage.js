@@ -5,6 +5,7 @@ function STAGE(c) {
     { from: 'hook', fn: main },
     { from: 'why', fn: pairs },
     { from: 'big', fn: big },
+    { from: 'you', fn: c => kRule(c, { at: T('you'), tag: 'ABER ACHTUNG', big: '6 %', bigColor: th.a, sub: 'DASS JEMAND MIT DIR GEBURTSTAG HAT', lines: [['BEI 23 PERSONEN', th.y]] }) },
     { from: 'rule', fn: c => kRule(c, { at: T('rule'), tag: 'FAUSTREGEL', big: 'PAARE ZÄHLEN', bigColor: th.b, sub: 'ANZAHL PAARE = n × (n − 1) ÷ 2', lines: [['23 PERSONEN → 253 PAARE', '#fff']] }) },
     { from: 'note', fn: c => kRule(c, { at: T('note'), tag: 'ANNAHME', big: '365 TAGE', bigColor: th.a, sub: 'KEIN SCHALTJAHR, ALLE TAGE GLEICH LIKELY'.replace('LIKELY', 'WAHRSCHEINLICH') }) },
     { from: 'cta', fn: c => kCta(c, { at: T('cta'), lines: [['TEILST DU', '#fff', 130], ['DEINEN', th.a, 120], ['GEBURTSTAG?', th.b, 110]], chips: [['JA!', 'a'], ['NEIN', 'b']] }) },
@@ -26,7 +27,7 @@ function main(c) {
     o += G(`<circle cx="${x}" cy="${y}" r="34" fill="${colors[i % 4]}" opacity=".95"/><circle cx="${x - 11}" cy="${y - 7}" r="5" fill="${th.dark}"/><circle cx="${x + 11}" cy="${y - 7}" r="5" fill="${th.dark}"/><path d="M${x - 13} ${y + 8} Q${x} ${y + 20} ${x + 13} ${y + 8}" fill="none" stroke="${th.dark}" stroke-width="4" stroke-linecap="round"/>`, { s: Math.min(1, k) , px: x, py: y, o: Math.min(1, k) });
   }
   const cv = 1 - ramp(t, T('setup', 2.0), T('setup', 2.4));
-  if (cv > .01) o += G(TX(330, 900, '🎂', { size: 230 }) + TX(750, 900, '🎂', { size: 230 }) + TX(540, 880, '=?', { size: 130, w: 900, fill: th.y }), { s: pop(t, T('hook', 1.0)), px: 540, py: 820, o: cv });
+  if (cv > .01) o += G(TX(330, 900, '🎂', { size: 230 }) + TX(750, 900, '🎂', { size: 230 }) + TX(540, 880, '=?', { size: 130, w: 900, fill: th.y }), { s: pop(t, T('hook', .3)), px: 540, py: 820, o: cv });
   const g = pop(t, T('guess', .5)) * (1 - ramp(t, T('setup'), T('setup', .3)));
   if (g > .01) o += G(PILL(540, 1100, 'KLAR: 183!', { size: 90, fill: th.y, ink: th.dark, px: 50 }), { s: g, px: 540, py: 1100, rot: -4, o: Math.min(1, g) });
   const go = pop(t, T('go', .02), .35) * (1 - ramp(t, B.go.t1 + .35, B.go.t1 + .6));

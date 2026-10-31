@@ -4,6 +4,7 @@ function STAGE(c) {
     { from: 'hook', fn: main },
     { from: 'why', fn: c => kRule(c, { at: T('why'), tag: 'DER TRICK', big: 'ER WEISS ES', bigColor: th.a, sub: 'ER ÖFFNET NIE DIE AUTO-TÜR', lines: [['SEINE WAHL IST KEIN ZUFALL', '#fff']] }) },
     { from: 'why2', fn: c => kChain(c, { at: T('why2'), title: 'WO STECKT DAS AUTO?', steps: [['1/3', th.a], ['2/3', th.b], ['100 %', th.y]], arrows: ['DEINE TÜR', 'ANDERE TÜREN'], notes: [['2/3 LANDEN BEI DER ÜBRIGEN TÜR', '#fff']] }) },
+    { from: 'hundred', fn: c => kRule(c, { at: T('hundred'), tag: '100 TÜREN', big: '99 %', bigColor: th.b, sub: 'WENN DU WECHSELST', lines: [['MODERATOR ÖFFNET 98 ZIEGEN', th.y]] }) },
     { from: 'test', fn: c => kRule(c, { at: T('test'), tag: 'SELBST TESTEN', big: '2 VON 3', bigColor: th.b, sub: 'GEWINNEN DIE WECHSLER', lines: [['100 RUNDEN MIT FREUNDEN', th.y]] }) },
     { from: 'rule', fn: c => kRule(c, { at: T('rule'), tag: 'FAUSTREGEL', big: 'NEUES WISSEN', bigColor: th.y, sub: 'ÄNDERT DIE WAHRSCHEINLICHKEIT', lines: [['ABER NICHT GLEICHMÄSSIG', th.a]] }) },
     { from: 'cta', fn: c => kCta(c, { at: T('cta'), lines: [['HÄTTEST DU', '#fff', 120], ['GEWECHSELT?', th.y, 120]], chips: [['BLEIBEN', 'a'], ['WECHSELN', 'b']] }) },
@@ -22,7 +23,7 @@ function main(c) {
   const A = t => 33.3, Bv = t => tw(t, [[T('r3', 2.0), 33.3], [T('r4', 3.0), 66.7]]);
   let o = kTitle(c, [['TÜR WECHSELN', th.a, 118], ['ODER BLEIBEN?', th.b, 118]], T('setup', 1.8));
   o += kCards(c, { labels: ['BLEIBEN', 'WECHSELN'], units: ['%', '%'], vals: [A, Bv], fmt: [v => nf(v, 1), v => nf(v, 1)], showAt: T('setup', 2.1), win: { side: 1, at: T('result', .1), text: 'WECHSELN GEWINNT ✓' }, bumps: [1e9, T('result', 1.2)] });
-  const k = pop(t, T('hook', .6)), xs = [190, 540, 890], y = 640;
+  const k = pop(t, T('hook', .15)), xs = [190, 540, 890], y = 640;
   const open3 = ramp(t, T('r2', 1.4), T('r2', 2.0)), open2 = ramp(t, T('result', 1.6), T('result', 2.2));
   o += G([door(xs[0], y, 1, th, { glow: t > T('r1', .3) ? th.a : null }), door(xs[1], y, 2, th, { open: open2, content: '🚗', glow: t > T('r4', .3) ? th.b : null }), door(xs[2], y, 3, th, { open: open3, content: '🐐' })].join(''), { s: Math.min(1, k), px: 540, py: 850, o: Math.min(1, k) });
   const pill = (txt, x, at, col, yy = 1160) => G(PILL(x, yy, txt, { size: 40, fill: col, ink: th.dark }), { s: pop(t, at), px: x, py: yy });

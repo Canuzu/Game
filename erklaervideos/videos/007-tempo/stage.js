@@ -6,6 +6,8 @@ function STAGE(c) {
     { from: 'why', fn: c => kCols(c, { max: 60, H: 560, baseY: 1130, w: 190, cols: [[100, th.a, '100', 60, 150], [130, th.b, '130', 46.15, 400], [160, th.y, '160', 37.5, 650], [200, '#fff', '200', 30, 900]].map(([v, col, lab, min, x], i) => ({ x, color: col, label: lab + ' KM/H', val: t => min * ramp(t, T('why', .3 + i * .3), T('why', 1.2 + i * .3)), fmt: v => nf(v, 0) + ' MIN', at: T('why', .2 + i * .3) })) }) },
     { from: 'cost', fn: c => kRule(c, { at: T('cost'), tag: 'LUFTWIDERSTAND', big: 'v × v', bigColor: th.a, sub: 'DOPPELTES TEMPO = VIERFACHER WIDERSTAND', lines: [['130 STATT 100: +69 %', th.y]] }) },
     { from: 'rule', fn: c => kRule(c, { at: T('rule'), tag: 'FAUSTREGEL', big: '13 MIN', bigColor: th.b, sub: 'GESPART AUF 100 KM', lines: [['DAFÜR DEUTLICH MEHR SPRIT', th.a]] }) },
+    { from: 'extra', fn: c => kRule(c, { at: T('extra'), tag: 'BEI 200 KM', big: '28 MIN', bigColor: th.b, sub: 'GESPART MIT 130 STATT 100', lines: [] }) },
+    { from: 'tip', fn: c => kRule(c, { at: T('tip'), tag: 'TIPP', big: '10 MIN PUFFER', bigColor: th.y, sub: 'STATT ZU RASEN', lines: [] }) },
     { from: 'note', fn: c => kRule(c, { at: T('note'), tag: 'ANNAHME', big: 'FREIE FAHRT', bigColor: th.a, sub: 'KEIN STAU, KEINE PAUSEN, KEIN LIMIT' }) },
     { from: 'cta', fn: c => kCta(c, { at: T('cta'), lines: [['SCHNELL', th.a, 140], ['ODER', '#fff', 100], ['ENTSPANNT?', th.b, 130]], chips: [['130', 'a'], ['100', 'b']] }) },
   ]);
@@ -27,7 +29,7 @@ function main(c) {
   const m = Math.floor(sim(t)), sec = Math.floor((sim(t) - m) * 60);
   if (t > T('go', .1)) o += G(PILL(540, 600, `${m}:${String(sec).padStart(2, '0')} MIN`, { size: 80, fill: th.y, ink: th.dark, px: 46 }), { s: pop(t, T('go', .1)), px: 540, py: 600 });
   const cv = 1 - ramp(t, T('setup', 1.0), T('setup', 1.4));
-  if (cv > .01) o += G(TX(270, 880, '🚗', { size: 200 }) + TX(810, 880, '🏎️', { size: 200 }) + TX(540, 860, 'VS', { size: 100, w: 900, fill: th.y }), { s: pop(t, T('hook', 1.0)), px: 540, py: 820, o: cv });
+  if (cv > .01) o += G(TX(270, 880, '🚗', { size: 200 }) + TX(810, 880, '🏎️', { size: 200 }) + TX(540, 860, 'VS', { size: 100, w: 900, fill: th.y }), { s: pop(t, T('hook', .3)), px: 540, py: 820, o: cv });
   const g = pop(t, T('guess', .5)) * (1 - ramp(t, T('setup'), T('setup', .3)));
   if (g > .01) o += G(PILL(540, 1100, 'KLAR: VIEL SCHNELLER!', { size: 64, fill: th.y, ink: th.dark, px: 40 }), { s: g, px: 540, py: 1100, rot: -4, o: Math.min(1, g) });
   const go = pop(t, T('go', .02), .35) * (1 - ramp(t, B.go.t1 + .35, B.go.t1 + .6));

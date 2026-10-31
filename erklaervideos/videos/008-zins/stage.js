@@ -3,6 +3,7 @@ function STAGE(c) {
   return SCENES(c, [
     { from: 'hook', fn: main },
     { from: 'why', fn: c => kChain(c, { at: T('why'), title: 'ZINSEN AUF ZINSEN', steps: [['1.000 €', '#fff'], ['1.050 €', th.b], ['1.102 €', th.a]], arrows: ['+5 %', '+5 % AUF 1.050'], notes: [['JEDES JAHR EIN GRÖSSERER SOCKEL', '#fff']] }) },
+    { from: 'early', fn: c => kRule(c, { at: T('early'), tag: 'NOCH LÄNGER', big: '7.040 €', bigColor: th.b, sub: 'NACH 40 JAHREN BEI 5 % ZINSEN', lines: [] }) },
     { from: 'rule', fn: c => kRule(c, { at: T('rule'), tag: '72ER-REGEL', big: '72 ÷ 5', bigColor: th.b, sub: '≈ 14 JAHRE', lines: [['ZINSSATZ IN PROZENT', '#fff']] }) },
     { from: 'rule2', fn: c => kRule(c, { at: T('rule2'), tag: 'VERDOPPLUNG', big: '14 JAHRE', bigColor: th.y, sub: 'BEI 5 % ZINSEN', lines: [['1.000 € → 2.000 €', th.b]] }) },
     { from: 'note', fn: c => kRule(c, { at: T('note'), tag: 'ACHTUNG', big: 'NUR BEISPIEL', bigColor: th.a, sub: 'ZINSEN SCHWANKEN, INFLATION FRISST', lines: [['KEINE ANLAGEBERATUNG', th.y]] }) },
@@ -18,7 +19,7 @@ function main(c) {
   o += kCols(c, { max: 4400, H: 520, baseY: 1150, w: 280, cols: [{ x: 270, color: th.a, label: 'OHNE', fmt: v => nf(v) + ' €', val: A, at: T('setup', 3.6) }, { x: 810, color: th.b, label: 'MIT', fmt: v => nf(v) + ' €', val: Bv, at: T('setup', 3.8) }] });
   if (t > T('go')) o += G(PILL(540, 690, 'JAHR ' + Math.floor(yr(t) + .001), { size: 84, fill: th.y, ink: th.dark, px: 46 }), { s: pop(t, T('go', .3)), px: 540, py: 690, o: Math.min(1, pop(t, T('go', .3))) });
   const cv = 1 - ramp(t, T('setup', 3.0), T('setup', 3.4));
-  if (cv > .01) o += G(TX(270, 880, '🐖', { size: 200 }) + TX(810, 880, '🌱', { size: 200 }) + TX(540, 860, 'VS', { size: 100, w: 900, fill: th.y }), { s: pop(t, T('hook', 1.0)), px: 540, py: 820, o: cv });
+  if (cv > .01) o += G(TX(270, 880, '🐖', { size: 200 }) + TX(810, 880, '🌱', { size: 200 }) + TX(540, 860, 'VS', { size: 100, w: 900, fill: th.y }), { s: pop(t, T('hook', .3)), px: 540, py: 820, o: cv });
   const g = pop(t, T('guess', .5)) * (1 - ramp(t, T('setup'), T('setup', .3)));
   if (g > .01) o += G(PILL(540, 1100, 'KLAR: KLEINER UNTERSCHIED', { size: 56, fill: th.y, ink: th.dark, px: 40 }), { s: g, px: 540, py: 1100, rot: -4, o: Math.min(1, g) });
   const go = pop(t, T('go', .02), .35) * (1 - ramp(t, B.go.t1 + .35, B.go.t1 + .6));
