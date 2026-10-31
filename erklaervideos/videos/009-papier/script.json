@@ -4,19 +4,29 @@
  "theme": "indigo",
  "topic": "Papier falten bis zum Mond: wie oft?",
  "voice": "de-DE-KillianNeural",
- "rate": "+8%",
+ "rate": "+24%",
  "beats": [
   {
    "id": "hook",
    "mood": "wave",
-   "text": "Ein Blatt Papier ist *a:null Komma eins* Millimeter dick. Wie oft musst du es falten, um den *b:Mond* zu erreichen?",
+   "text": "Wie oft musst du ein Blatt Papier falten, um den *b:Mond* zu erreichen? Wetten, du schätzt viel zu hoch?",
    "sfx": [
     [
+     "riser",
+     0.0
+    ],
+    [
      "pop",
-     0.2
+     0.6
+    ],
+    [
+     "pop",
+     1.5
     ]
    ],
-   "pause": 0.3
+   "pause": 0.12,
+   "rate": "+28%",
+   "pitch": "+9Hz"
   },
   {
    "id": "guess",
@@ -95,7 +105,9 @@
      3.0
     ]
    ],
-   "pause": 0.4
+   "pause": 0.4,
+   "rate": "+26%",
+   "pitch": "+8Hz"
   },
   {
    "id": "f4",
@@ -114,19 +126,21 @@
   {
    "id": "result",
    "mood": "cheer",
-   "text": "Zweiundvierzig Mal falten. Dann bist du *über dem Mond*.",
+   "text": "Boom! Zweiundvierzig Mal falten. Dann bist du *über dem Mond*.",
    "sfx": [
     [
      "ding",
      0.1
     ]
    ],
-   "pause": 0.4
+   "pause": 0.4,
+   "rate": "+26%",
+   "pitch": "+8Hz"
   },
   {
    "id": "why",
    "mood": "think",
-   "text": "Warum reichen zweiundvierzig? Weil jede Faltung die Dicke *verdoppelt*.",
+   "text": "Aber warte, jetzt kommt der Trick! Warum reichen zweiundvierzig? Weil jede Faltung die Dicke *verdoppelt*.",
    "sfx": [
     [
      "whoosh",
@@ -192,8 +206,12 @@
      "pop",
      0.5
     ]
-   ]
+   ],
+   "rate": "+26%",
+   "pitch": "+8Hz"
   }
  ],
- "tail": 1.6
+ "tail": 1.6,
+ "pitch": "+6Hz",
+ "gap": 0.14
 }

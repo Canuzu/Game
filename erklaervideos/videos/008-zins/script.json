@@ -1,18 +1,206 @@
-{"id":"008-zins","series":"ALLTAGSDUELL","theme":"indigo","topic":"Zinseszins: 1000 Euro, 5 Prozent, 30 Jahre","voice":"de-DE-KillianNeural","rate":"+8%",
-"beats":[
-{"id":"hook","mood":"wave","text":"Tausend Euro, fünf Prozent Zinsen, dreißig Jahre. Einmal *a:ohne* Zinseszins und einmal *b:mit*.","sfx":[["pop",0.2]],"pause":0.3},
-{"id":"guess","mood":"think","text":"Klar, nur ein *kleiner* Unterschied.","sfx":[["pop",0.2]]},
-{"id":"setup","mood":"neutral","text":"Links bekommst du jedes Jahr fünfzig Euro. Immer auf die *ersten* tausend.","sfx":[["whoosh",0.0]]},
-{"id":"setup2","mood":"neutral","text":"Rechts wird alles neu verzinst. Auch die Zinsen vom letzten Jahr.","sfx":[["pop",0.1]]},
-{"id":"go","mood":"cheer","text":"Los geht's!","sfx":[["pop",0.05]],"pause":0.2},
-{"id":"y10","mood":"watch","text":"Nach zehn Jahren: links *eintausendfünfhundert*, rechts eintausendsechshundertneunundzwanzig.","ticks":true,"pause":0.4},
-{"id":"y20","mood":"watch","text":"Nach zwanzig Jahren: links zweitausend, rechts schon *zweitausendsechshundertdreiundfünfzig*.","ticks":true,"pause":0.4},
-{"id":"y30","mood":"cheer","text":"Nach dreißig Jahren: links zweitausendfünfhundert, rechts *viertausenddreihundertzweiundzwanzig*.","ticks":true,"sfx":[["ding",3.6]],"pause":0.5},
-{"id":"result","mood":"cheer","text":"Der Zinseszins bringt über *eintausendachthundert* Euro extra.","sfx":[["ding",0.1]],"pause":0.4},
-{"id":"why","mood":"think","text":"Warum? Die Zinsen verdienen selbst wieder *Zinsen*.","sfx":[["whoosh",0.0]]},
-{"id":"why2","mood":"think","text":"Jedes Jahr wächst der Betrag, auf den du Zinsen bekommst.","sfx":[["pop",0.8],["pop",2.2]]},
-{"id":"rule","mood":"think","text":"Faustregel: Teile *zweiundsiebzig* durch den Zinssatz. Dann weißt du ungefähr, in wie vielen Jahren sich das Geld verdoppelt.","sfx":[["whoosh",0.0],["pop",3.0]]},
-{"id":"rule2","mood":"watch","text":"Bei fünf Prozent sind das etwa *vierzehn* Jahre.","sfx":[["whoosh",0.0],["ding",1.4]]},
-{"id":"note","mood":"neutral","text":"Das ist nur ein Rechenbeispiel. Echte Zinsen schwanken, und die Inflation frisst einen Teil.","sfx":[["whoosh",0.0]]},
-{"id":"cta","mood":"cheer","text":"Wann hast du angefangen zu *sparen*? Schreib's in die Kommentare.","sfx":[["whoosh",0.0],["pop",0.5]]}
-]}
+{
+ "id": "008-zins",
+ "series": "ALLTAGSDUELL",
+ "theme": "indigo",
+ "topic": "Zinseszins: 1000 Euro, 5 Prozent, 30 Jahre",
+ "voice": "de-DE-KillianNeural",
+ "rate": "+24%",
+ "beats": [
+  {
+   "id": "hook",
+   "mood": "wave",
+   "text": "Tausend Euro, dreißig Jahre. *a:Ohne* oder *b:mit* Zinseszins? Der Unterschied ist krass.",
+   "sfx": [
+    [
+     "riser",
+     0.0
+    ],
+    [
+     "pop",
+     0.6
+    ],
+    [
+     "pop",
+     1.5
+    ]
+   ],
+   "pause": 0.12,
+   "rate": "+28%",
+   "pitch": "+9Hz"
+  },
+  {
+   "id": "guess",
+   "mood": "think",
+   "text": "Klar, nur ein *kleiner* Unterschied.",
+   "sfx": [
+    [
+     "pop",
+     0.2
+    ]
+   ]
+  },
+  {
+   "id": "setup",
+   "mood": "neutral",
+   "text": "Links bekommst du jedes Jahr fünfzig Euro. Immer auf die *ersten* tausend.",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "setup2",
+   "mood": "neutral",
+   "text": "Rechts wird alles neu verzinst. Auch die Zinsen vom letzten Jahr.",
+   "sfx": [
+    [
+     "pop",
+     0.1
+    ]
+   ]
+  },
+  {
+   "id": "go",
+   "mood": "cheer",
+   "text": "Los geht's!",
+   "sfx": [
+    [
+     "pop",
+     0.05
+    ]
+   ],
+   "pause": 0.2
+  },
+  {
+   "id": "y10",
+   "mood": "watch",
+   "text": "Nach zehn Jahren: links *eintausendfünfhundert*, rechts eintausendsechshundertneunundzwanzig.",
+   "ticks": true,
+   "pause": 0.4
+  },
+  {
+   "id": "y20",
+   "mood": "watch",
+   "text": "Nach zwanzig Jahren: links zweitausend, rechts schon *zweitausendsechshundertdreiundfünfzig*.",
+   "ticks": true,
+   "pause": 0.4
+  },
+  {
+   "id": "y30",
+   "mood": "cheer",
+   "text": "Nach dreißig Jahren: links zweitausendfünfhundert, rechts *viertausenddreihundertzweiundzwanzig*.",
+   "ticks": true,
+   "sfx": [
+    [
+     "ding",
+     3.6
+    ]
+   ],
+   "pause": 0.5,
+   "rate": "+26%",
+   "pitch": "+8Hz"
+  },
+  {
+   "id": "result",
+   "mood": "cheer",
+   "text": "Boom! Der Zinseszins bringt über *eintausendachthundert* Euro extra.",
+   "sfx": [
+    [
+     "ding",
+     0.1
+    ]
+   ],
+   "pause": 0.4,
+   "rate": "+26%",
+   "pitch": "+8Hz"
+  },
+  {
+   "id": "why",
+   "mood": "think",
+   "text": "Aber warte, jetzt kommt der Trick! Warum? Die Zinsen verdienen selbst wieder *Zinsen*.",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "why2",
+   "mood": "think",
+   "text": "Jedes Jahr wächst der Betrag, auf den du Zinsen bekommst.",
+   "sfx": [
+    [
+     "pop",
+     0.8
+    ],
+    [
+     "pop",
+     2.2
+    ]
+   ]
+  },
+  {
+   "id": "rule",
+   "mood": "think",
+   "text": "Faustregel: Teile *zweiundsiebzig* durch den Zinssatz. Dann weißt du ungefähr, in wie vielen Jahren sich das Geld verdoppelt.",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     3.0
+    ]
+   ]
+  },
+  {
+   "id": "rule2",
+   "mood": "watch",
+   "text": "Bei fünf Prozent sind das etwa *vierzehn* Jahre.",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "ding",
+     1.4
+    ]
+   ]
+  },
+  {
+   "id": "note",
+   "mood": "neutral",
+   "text": "Das ist nur ein Rechenbeispiel. Echte Zinsen schwanken, und die Inflation frisst einen Teil.",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "cta",
+   "mood": "cheer",
+   "text": "Wann hast du angefangen zu *sparen*? Schreib's in die Kommentare.",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     0.5
+    ]
+   ],
+   "rate": "+26%",
+   "pitch": "+8Hz"
+  }
+ ],
+ "pitch": "+6Hz",
+ "gap": 0.14
+}

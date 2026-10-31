@@ -1,19 +1,213 @@
-{"id":"004-cent","series":"ALLTAGSDUELL","theme":"indigo","topic":"100.000 Euro sofort oder ein Cent, der sich 30 Tage lang verdoppelt?","voice":"de-DE-KillianNeural","rate":"+8%",
-"beats":[
-{"id":"hook","mood":"wave","text":"Hunderttausend Euro *a:sofort*. Oder *b:ein Cent*, der sich dreißig Tage lang jeden Tag verdoppelt?","sfx":[["pop",0.2]],"pause":0.3},
-{"id":"guess","mood":"think","text":"Klar, die *hunderttausend*. Ein Cent ist ja nichts.","sfx":[["pop",0.2]]},
-{"id":"setup","mood":"neutral","text":"Links bekommst du das Geld *direkt* auf die Hand.","sfx":[["whoosh",0.0]]},
-{"id":"setup2","mood":"neutral","text":"Rechts startest du mit einem Cent. Und jeden Tag wird der Betrag *doppelt* so groß.","sfx":[["pop",0.1]]},
-{"id":"go","mood":"cheer","text":"Los geht's!","sfx":[["pop",0.05]],"pause":0.2},
-{"id":"d10","mood":"watch","text":"Tag zehn. Gerade mal *fünf Euro* und zwölf Cent.","ticks":true,"pause":0.5},
-{"id":"d20","mood":"watch","text":"Tag zwanzig. Gut *fünftausend* Euro. Die Hunderttausend sind noch weit weg.","ticks":true,"pause":0.5},
-{"id":"d24","mood":"watch","text":"Tag vierundzwanzig. Knapp *vierundachtzigtausend*.","ticks":true,"pause":0.4},
-{"id":"d25","mood":"cheer","text":"Und Tag fünfundzwanzig: *hundertsiebenundsechzigtausend*. Rechts überholt!","ticks":true,"sfx":[["ding",1.2]],"pause":0.5},
-{"id":"d30","mood":"cheer","text":"Tag dreißig: über *fünf Millionen* Euro.","ticks":true,"sfx":[["ding",1.6]],"pause":0.6},
-{"id":"result","mood":"cheer","text":"Der eine Cent schlägt die hunderttausend Euro um mehr als das *Fünfzigfache*.","sfx":[["ding",0.1]],"pause":0.4},
-{"id":"why","mood":"think","text":"Warum? Jeder Tag verdoppelt *alles*, was schon da ist.","sfx":[["whoosh",0.0]]},
-{"id":"why2","mood":"think","text":"Die letzten *fünf* Tage bringen über neunzig Prozent vom Endbetrag.","sfx":[["whoosh",0.0],["pop",1.5]]},
-{"id":"rule","mood":"think","text":"Faustregel: Was sich *verdoppelt*, wirkt lange harmlos. Und dann explodiert es.","sfx":[["whoosh",0.0],["pop",2.2]]},
-{"id":"note","mood":"neutral","text":"Unser Kopf denkt in Schritten, nicht in *Verdopplungen*. Deshalb unterschätzen wir das so oft.","sfx":[["whoosh",0.0]]},
-{"id":"cta","mood":"cheer","text":"Was hättest du *genommen*? Schreib's in die Kommentare.","sfx":[["whoosh",0.0],["pop",0.5]]}
-]}
+{
+ "id": "004-cent",
+ "series": "ALLTAGSDUELL",
+ "theme": "indigo",
+ "topic": "100.000 Euro sofort oder ein Cent, der sich 30 Tage lang verdoppelt?",
+ "voice": "de-DE-KillianNeural",
+ "rate": "+24%",
+ "beats": [
+  {
+   "id": "hook",
+   "mood": "wave",
+   "text": "*a:Hunderttausend* Euro sofort. Oder ein einziger *b:Cent*? Wetten, du wählst falsch?",
+   "sfx": [
+    [
+     "riser",
+     0.0
+    ],
+    [
+     "pop",
+     0.6
+    ],
+    [
+     "pop",
+     1.5
+    ]
+   ],
+   "pause": 0.12,
+   "rate": "+28%",
+   "pitch": "+9Hz"
+  },
+  {
+   "id": "guess",
+   "mood": "think",
+   "text": "Klar, die *hunderttausend*. Ein Cent ist ja nichts.",
+   "sfx": [
+    [
+     "pop",
+     0.2
+    ]
+   ]
+  },
+  {
+   "id": "setup",
+   "mood": "neutral",
+   "text": "Links bekommst du das Geld *direkt* auf die Hand.",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "setup2",
+   "mood": "neutral",
+   "text": "Rechts startest du mit einem Cent. Und jeden Tag wird der Betrag *doppelt* so groß.",
+   "sfx": [
+    [
+     "pop",
+     0.1
+    ]
+   ]
+  },
+  {
+   "id": "go",
+   "mood": "cheer",
+   "text": "Los geht's!",
+   "sfx": [
+    [
+     "pop",
+     0.05
+    ]
+   ],
+   "pause": 0.2
+  },
+  {
+   "id": "d10",
+   "mood": "watch",
+   "text": "Tag zehn. Gerade mal *fünf Euro* und zwölf Cent.",
+   "ticks": true,
+   "pause": 0.5
+  },
+  {
+   "id": "d20",
+   "mood": "watch",
+   "text": "Tag zwanzig. Gut *fünftausend* Euro. Die Hunderttausend sind noch weit weg.",
+   "ticks": true,
+   "pause": 0.5
+  },
+  {
+   "id": "d24",
+   "mood": "watch",
+   "text": "Tag vierundzwanzig. Knapp *vierundachtzigtausend*.",
+   "ticks": true,
+   "pause": 0.4
+  },
+  {
+   "id": "d25",
+   "mood": "cheer",
+   "text": "Und Tag fünfundzwanzig: *hundertsiebenundsechzigtausend*. Rechts überholt!",
+   "ticks": true,
+   "sfx": [
+    [
+     "ding",
+     1.2
+    ]
+   ],
+   "pause": 0.5,
+   "rate": "+26%",
+   "pitch": "+8Hz"
+  },
+  {
+   "id": "d30",
+   "mood": "cheer",
+   "text": "Tag dreißig: über *fünf Millionen* Euro.",
+   "ticks": true,
+   "sfx": [
+    [
+     "ding",
+     1.6
+    ]
+   ],
+   "pause": 0.6,
+   "rate": "+26%",
+   "pitch": "+8Hz"
+  },
+  {
+   "id": "result",
+   "mood": "cheer",
+   "text": "Boom! Der eine Cent schlägt die hunderttausend Euro um mehr als das *Fünfzigfache*.",
+   "sfx": [
+    [
+     "ding",
+     0.1
+    ]
+   ],
+   "pause": 0.4,
+   "rate": "+26%",
+   "pitch": "+8Hz"
+  },
+  {
+   "id": "why",
+   "mood": "think",
+   "text": "Aber warte, jetzt kommt der Trick! Warum? Jeder Tag verdoppelt *alles*, was schon da ist.",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "why2",
+   "mood": "think",
+   "text": "Die letzten *fünf* Tage bringen über neunzig Prozent vom Endbetrag.",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     1.5
+    ]
+   ]
+  },
+  {
+   "id": "rule",
+   "mood": "think",
+   "text": "Faustregel: Was sich *verdoppelt*, wirkt lange harmlos. Und dann explodiert es.",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     2.2
+    ]
+   ]
+  },
+  {
+   "id": "note",
+   "mood": "neutral",
+   "text": "Unser Kopf denkt in Schritten, nicht in *Verdopplungen*. Deshalb unterschätzen wir das so oft.",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "cta",
+   "mood": "cheer",
+   "text": "Was hättest du *genommen*? Schreib's in die Kommentare.",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     0.5
+    ]
+   ],
+   "rate": "+26%",
+   "pitch": "+8Hz"
+  }
+ ],
+ "pitch": "+6Hz",
+ "gap": 0.14
+}

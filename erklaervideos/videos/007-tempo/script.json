@@ -4,19 +4,29 @@
  "theme": "indigo",
  "topic": "100 Kilometer mit 100 oder 130 km/h: wie viel Zeit sparst du?",
  "voice": "de-DE-KillianNeural",
- "rate": "+8%",
+ "rate": "+24%",
  "beats": [
   {
    "id": "hook",
    "mood": "wave",
-   "text": "Hundert Kilometer fahren. Mit *a:hundert* oder mit *b:hundertdreißig* Stundenkilometern?",
+   "text": "*a:Hundert* oder *b:hundertdreißig*? Wie viel Zeit sparst du wirklich? Die Antwort ist krass.",
    "sfx": [
     [
+     "riser",
+     0.0
+    ],
+    [
      "pop",
-     0.2
+     0.6
+    ],
+    [
+     "pop",
+     1.5
     ]
    ],
-   "pause": 0.3
+   "pause": 0.12,
+   "rate": "+28%",
+   "pitch": "+9Hz"
   },
   {
    "id": "guess",
@@ -95,24 +105,28 @@
      1.5
     ]
    ],
-   "pause": 0.5
+   "pause": 0.5,
+   "rate": "+26%",
+   "pitch": "+8Hz"
   },
   {
    "id": "result",
    "mood": "cheer",
-   "text": "Der ganze Unterschied: *dreizehn* Minuten und einundfünfzig Sekunden.",
+   "text": "Boom! Der ganze Unterschied: *dreizehn* Minuten und einundfünfzig Sekunden.",
    "sfx": [
     [
      "ding",
      0.1
     ]
    ],
-   "pause": 0.4
+   "pause": 0.4,
+   "rate": "+26%",
+   "pitch": "+8Hz"
   },
   {
    "id": "why",
    "mood": "think",
-   "text": "Warum so wenig? Schneller fahren spart immer *weniger* Zeit.",
+   "text": "Aber warte, jetzt kommt der Trick! Warum so wenig? Schneller fahren spart immer *weniger* Zeit.",
    "sfx": [
     [
      "whoosh",
@@ -189,8 +203,12 @@
      "pop",
      0.5
     ]
-   ]
+   ],
+   "rate": "+26%",
+   "pitch": "+8Hz"
   }
  ],
- "tail": 1.2
+ "tail": 1.2,
+ "pitch": "+6Hz",
+ "gap": 0.14
 }

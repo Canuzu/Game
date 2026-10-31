@@ -26,8 +26,8 @@ async def tts_all():
         if os.path.exists(mp3) and os.path.getsize(mp3) > 1000 and not os.environ.get("REDO"): continue
         for attempt in range(4):
             try:
-                await edge_tts.Communicate(plain(b["text"]), S["voice"], rate=S.get("rate","+0%"),
-                                           pitch=S.get("pitch","+0Hz"), proxy=os.environ.get("HTTPS_PROXY")).save(mp3)
+                await edge_tts.Communicate(plain(b["text"]), b.get("voice", S["voice"]), rate=b.get("rate", S.get("rate","+0%")),
+                                           pitch=b.get("pitch", S.get("pitch","+0Hz")), proxy=os.environ.get("HTTPS_PROXY")).save(mp3)
                 break
             except Exception as e:
                 if attempt == 3: raise
@@ -36,15 +36,15 @@ asyncio.run(tts_all())
 
 # ---------- 2. Clips trimmen, Timeline ----------
 clips = {}
-t = S.get("lead", 0.4)
+t = S.get("lead", 0.05)
 for b in S["beats"]:
     wav = f"{work}/{b['id']}.wav"
     run("ffmpeg","-y","-i",f"{work}/{b['id']}.mp3","-af",
-        "silenceremove=1:0:-48dB,areverse,silenceremove=1:0:-48dB,areverse","-ar",str(SR),"-ac","1",wav)
+        "silenceremove=1:0:-42dB,areverse,silenceremove=1:0:-42dB,areverse","-ar",str(SR),"-ac","1",wav)
     clips[b["id"]] = load(wav)
     d = len(clips[b["id"]]) / SR
     b["t0"], b["t1"] = round(t, 3), round(t + d, 3)
-    t = b["t1"] + b.get("pause", 0.28)
+    t = b["t1"] + b.get("pause", S.get("gap", 0.14))
 total = round(t + S.get("tail", 0.9), 3)
 
 # ---------- 3. Wort-Timing (Whisper je Beat, sonst proportional) ----------
@@ -94,7 +94,10 @@ def whoosh():
 def ding():
     n = int(.9*SR); x = np.arange(n)/SR
     return (np.sin(2*np.pi*1318.5*x) + .5*np.sin(2*np.pi*1975.5*x)) * env(n, .003, 5.5) * .30
-SFX = {"pop": pop(), "tick": tick(), "whoosh": whoosh(), "ding": ding()}
+def riser():
+    n = int(.55*SR); x = np.arange(n)/SR; f = 300 + 1500*(x/.55)**2
+    return np.sin(2*np.pi*np.cumsum(f)/SR) * np.minimum(x/.15, 1) * np.minimum((.55-x)/.05, 1) * .22
+SFX = {"pop": pop(), "tick": tick(), "whoosh": whoosh(), "ding": ding(), "riser": riser()}
 
 N = int(total * SR) + SR
 voice = np.zeros(N, np.float32); fx = np.zeros(N, np.float32)

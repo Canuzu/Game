@@ -4,23 +4,29 @@
  "theme": "indigo",
  "topic": "Eine große Pizza oder zwei kleine: Was ist mehr Pizza?",
  "voice": "de-DE-KillianNeural",
- "rate": "+8%",
+ "rate": "+24%",
  "beats": [
   {
    "id": "hook",
-   "text": "Eine *a:große* Pizza oder *b:zwei kleine*? Was ist mehr Pizza?",
+   "text": "Wetten, du liegst gleich falsch? Eine *a:große* Pizza oder *b:zwei kleine*: Was ist mehr?",
    "sfx": [
     [
-     "pop",
-     0.15
+     "riser",
+     0.0
     ],
     [
      "pop",
-     0.3
+     0.6
+    ],
+    [
+     "pop",
+     1.5
     ]
    ],
-   "pause": 0.35,
-   "mood": "wave"
+   "pause": 0.12,
+   "mood": "wave",
+   "rate": "+28%",
+   "pitch": "+9Hz"
   },
   {
    "id": "guess",
@@ -80,13 +86,15 @@
   },
   {
    "id": "result",
-   "text": "Die große: *a:achthundertvier* Quadratzentimeter. Die zwei kleinen zusammen: nur *b:siebenhundertsechzig*.",
+   "text": "Boom! Die große: *a:achthundertvier* Quadratzentimeter. Die zwei kleinen zusammen: nur *b:siebenhundertsechzig*.",
    "pause": 0.35,
-   "mood": "watch"
+   "mood": "watch",
+   "rate": "+26%",
+   "pitch": "+8Hz"
   },
   {
    "id": "win",
-   "text": "Die große Pizza *a:gewinnt*. Mit vierundvierzig Quadratzentimetern mehr.",
+   "text": "Und zack! Die große Pizza *a:gewinnt*. Mit vierundvierzig Quadratzentimetern mehr.",
    "sfx": [
     [
      "ding",
@@ -98,11 +106,13 @@
     ]
    ],
    "pause": 0.4,
-   "mood": "cheer"
+   "mood": "cheer",
+   "rate": "+26%",
+   "pitch": "+8Hz"
   },
   {
    "id": "why",
-   "text": "Warum? Weil es auf die *Fläche* ankommt. Nicht auf den Durchmesser.",
+   "text": "Aber warte, jetzt kommt der Trick! Warum? Weil es auf die *Fläche* ankommt. Nicht auf den Durchmesser.",
    "sfx": [
     [
      "whoosh",
@@ -197,8 +207,12 @@
      0.5
     ]
    ],
-   "mood": "cheer"
+   "mood": "cheer",
+   "rate": "+26%",
+   "pitch": "+8Hz"
   }
  ],
- "tail": 2.4
+ "tail": 2.4,
+ "pitch": "+6Hz",
+ "gap": 0.14
 }

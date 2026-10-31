@@ -1,18 +1,203 @@
-{"id":"006-eis","series":"ALLTAGSDUELL","theme":"indigo","topic":"Eiswürfel im Glas: steigt der Wasserstand beim Schmelzen?","voice":"de-DE-KillianNeural","rate":"+8%",
-"beats":[
-{"id":"hook","mood":"wave","text":"Ein Glas Wasser mit einem *a:Eiswürfel*, randvoll. Was passiert, wenn das Eis *b:schmilzt*?","sfx":[["pop",0.2]],"pause":0.3},
-{"id":"guess","mood":"think","text":"Klar, das Glas *läuft über*.","sfx":[["pop",0.2]]},
-{"id":"setup","mood":"neutral","text":"Wasser dehnt sich beim Gefrieren aus. Also braucht das Eis *mehr Platz*.","sfx":[["whoosh",0.0]]},
-{"id":"setup2","mood":"neutral","text":"Aber schwimmt das Eis nicht oben? Wir schauen genau hin.","sfx":[["pop",0.1]]},
-{"id":"go","mood":"cheer","text":"Los geht's!","sfx":[["pop",0.05]],"pause":0.2},
-{"id":"r1","mood":"watch","text":"Der Eiswürfel schwimmt. Gut *neunzig Prozent* davon stecken unter Wasser.","sfx":[["pop",0.3]],"pause":0.4},
-{"id":"r2","mood":"watch","text":"Er verdrängt genau so viel Wasser, wie er *wiegt*.","ticks":true,"pause":0.4},
-{"id":"r3","mood":"think","text":"Schmilzt er, wird er zu genau dieser *Wassermenge*.","ticks":true,"pause":1.0},
-{"id":"result","mood":"cheer","text":"Der Wasserstand bleibt *gleich*. Das Glas läuft nicht über.","sfx":[["ding",0.1]],"pause":0.4},
-{"id":"why","mood":"think","text":"Warum? Das Schmelzwasser füllt *genau* die Lücke, die das Eis vorher verdrängt hat.","sfx":[["whoosh",0.0]]},
-{"id":"why2","mood":"think","text":"Der kleine Teil über der Oberfläche spielt keine Rolle. Er wiegt dasselbe, ist also im Schmelzwasser schon *mitgezählt*.","sfx":[["whoosh",0.0],["pop",2.6]]},
-{"id":"twist","mood":"cheer","text":"Anders ist es bei Eis an *Land*. Schmilzt Gletschereis ins Meer, steigt der Meeresspiegel.","sfx":[["whoosh",0.0],["ding",3.0]]},
-{"id":"rule","mood":"think","text":"Faustregel: Schwimmendes Eis ändert den Pegel *nicht*. Eis, das ins Wasser rutscht, schon.","sfx":[["whoosh",0.0],["pop",2.4]]},
-{"id":"note","mood":"neutral","text":"Streng genommen gibt es winzige Unterschiede, etwa durch Salz im Meerwasser. Fürs Glas zuhause gilt: *kein* Unterschied.","sfx":[["whoosh",0.0]]},
-{"id":"cta","mood":"cheer","text":"Hättest du *Überlaufen* getippt? Schreib's in die Kommentare.","sfx":[["whoosh",0.0],["pop",0.5]]}
-]}
+{
+ "id": "006-eis",
+ "series": "ALLTAGSDUELL",
+ "theme": "indigo",
+ "topic": "Eiswürfel im Glas: steigt der Wasserstand beim Schmelzen?",
+ "voice": "de-DE-KillianNeural",
+ "rate": "+24%",
+ "beats": [
+  {
+   "id": "hook",
+   "mood": "wave",
+   "text": "Ein *a:Eiswürfel* im Glas, randvoll! Läuft es über, wenn das Eis *b:schmilzt*?",
+   "sfx": [
+    [
+     "riser",
+     0.0
+    ],
+    [
+     "pop",
+     0.6
+    ],
+    [
+     "pop",
+     1.5
+    ]
+   ],
+   "pause": 0.12,
+   "rate": "+28%",
+   "pitch": "+9Hz"
+  },
+  {
+   "id": "guess",
+   "mood": "think",
+   "text": "Klar, das Glas *läuft über*.",
+   "sfx": [
+    [
+     "pop",
+     0.2
+    ]
+   ]
+  },
+  {
+   "id": "setup",
+   "mood": "neutral",
+   "text": "Wasser dehnt sich beim Gefrieren aus. Also braucht das Eis *mehr Platz*.",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "setup2",
+   "mood": "neutral",
+   "text": "Aber schwimmt das Eis nicht oben? Wir schauen genau hin.",
+   "sfx": [
+    [
+     "pop",
+     0.1
+    ]
+   ]
+  },
+  {
+   "id": "go",
+   "mood": "cheer",
+   "text": "Los geht's!",
+   "sfx": [
+    [
+     "pop",
+     0.05
+    ]
+   ],
+   "pause": 0.2
+  },
+  {
+   "id": "r1",
+   "mood": "watch",
+   "text": "Der Eiswürfel schwimmt. Gut *neunzig Prozent* davon stecken unter Wasser.",
+   "sfx": [
+    [
+     "pop",
+     0.3
+    ]
+   ],
+   "pause": 0.4
+  },
+  {
+   "id": "r2",
+   "mood": "watch",
+   "text": "Er verdrängt genau so viel Wasser, wie er *wiegt*.",
+   "ticks": true,
+   "pause": 0.4
+  },
+  {
+   "id": "r3",
+   "mood": "think",
+   "text": "Schmilzt er, wird er zu genau dieser *Wassermenge*.",
+   "ticks": true,
+   "pause": 1.0
+  },
+  {
+   "id": "result",
+   "mood": "cheer",
+   "text": "Boom! Der Wasserstand bleibt *gleich*. Das Glas läuft nicht über.",
+   "sfx": [
+    [
+     "ding",
+     0.1
+    ]
+   ],
+   "pause": 0.4,
+   "rate": "+26%",
+   "pitch": "+8Hz"
+  },
+  {
+   "id": "why",
+   "mood": "think",
+   "text": "Aber warte, jetzt kommt der Trick! Warum? Das Schmelzwasser füllt *genau* die Lücke, die das Eis vorher verdrängt hat.",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "why2",
+   "mood": "think",
+   "text": "Der kleine Teil über der Oberfläche spielt keine Rolle. Er wiegt dasselbe, ist also im Schmelzwasser schon *mitgezählt*.",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     2.6
+    ]
+   ]
+  },
+  {
+   "id": "twist",
+   "mood": "cheer",
+   "text": "Anders ist es bei Eis an *Land*. Schmilzt Gletschereis ins Meer, steigt der Meeresspiegel.",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "ding",
+     3.0
+    ]
+   ]
+  },
+  {
+   "id": "rule",
+   "mood": "think",
+   "text": "Faustregel: Schwimmendes Eis ändert den Pegel *nicht*. Eis, das ins Wasser rutscht, schon.",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     2.4
+    ]
+   ]
+  },
+  {
+   "id": "note",
+   "mood": "neutral",
+   "text": "Streng genommen gibt es winzige Unterschiede, etwa durch Salz im Meerwasser. Fürs Glas zuhause gilt: *kein* Unterschied.",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "cta",
+   "mood": "cheer",
+   "text": "Hättest du *Überlaufen* getippt? Schreib's in die Kommentare.",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     0.5
+    ]
+   ],
+   "rate": "+26%",
+   "pitch": "+8Hz"
+  }
+ ],
+ "pitch": "+6Hz",
+ "gap": 0.14
+}

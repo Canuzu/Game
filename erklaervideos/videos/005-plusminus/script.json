@@ -1,18 +1,202 @@
-{"id":"005-plusminus","series":"ALLTAGSDUELL","theme":"indigo","topic":"Plus 20 Prozent, minus 20 Prozent: wieder bei 100?","voice":"de-DE-KillianNeural","rate":"+8%",
-"beats":[
-{"id":"hook","mood":"wave","text":"Ein Preis steigt um *a:zwanzig* Prozent. Dann sinkt er um *b:zwanzig* Prozent. Bist du wieder bei hundert?","sfx":[["pop",0.2]],"pause":0.3},
-{"id":"guess","mood":"think","text":"Klar, *plus* und *minus* heben sich auf.","sfx":[["pop",0.2]]},
-{"id":"setup","mood":"neutral","text":"Wir starten mit *hundert Euro*.","sfx":[["whoosh",0.0]]},
-{"id":"setup2","mood":"neutral","text":"Erst kommt ein Aufschlag. Dann ein Rabatt. Beide Male zwanzig Prozent.","sfx":[["pop",0.1]]},
-{"id":"go","mood":"cheer","text":"Los geht's!","sfx":[["pop",0.05]],"pause":0.2},
-{"id":"up","mood":"watch","text":"Plus zwanzig Prozent. Aus hundert werden *hundertzwanzig* Euro.","ticks":true,"pause":0.5},
-{"id":"down","mood":"think","text":"Jetzt minus zwanzig Prozent. Aber zwanzig Prozent wovon? Von *hundertzwanzig*.","ticks":true,"pause":0.4},
-{"id":"down2","mood":"watch","text":"Das sind vierundzwanzig Euro. Also bleiben nur *sechsundneunzig* Euro.","ticks":true,"pause":0.5},
-{"id":"result","mood":"cheer","text":"Du landest *vier Euro* unter dem Start. Nicht bei hundert.","sfx":[["ding",0.1]],"pause":0.4},
-{"id":"why","mood":"think","text":"Warum? Der Rabatt bezieht sich auf einen *größeren* Betrag als der Aufschlag.","sfx":[["whoosh",0.0]]},
-{"id":"why2","mood":"think","text":"Zwanzig Prozent von hundertzwanzig sind mehr als zwanzig Prozent von hundert.","sfx":[["pop",0.8],["pop",2.6]]},
-{"id":"total","mood":"cheer","text":"Insgesamt hast du *vier* Prozent verloren.","sfx":[["whoosh",0.0],["ding",1.4]]},
-{"id":"rule","mood":"think","text":"Faustregel: Plus und minus mit gleichen Prozenten *heben sich nie auf*. Du landest immer darunter.","sfx":[["whoosh",0.0],["pop",2.4]]},
-{"id":"rule2","mood":"watch","text":"Und je größer die Prozente, desto größer die Lücke. Bei fünfzig Prozent bleiben nur *fünfundsiebzig*.","sfx":[["whoosh",0.0],["ding",3.6]]},
-{"id":"cta","mood":"cheer","text":"Wo hat dich *Prozentrechnung* schon mal überrascht? Schreib's in die Kommentare.","sfx":[["whoosh",0.0],["pop",0.5]]}
-]}
+{
+ "id": "005-plusminus",
+ "series": "ALLTAGSDUELL",
+ "theme": "indigo",
+ "topic": "Plus 20 Prozent, minus 20 Prozent: wieder bei 100?",
+ "voice": "de-DE-KillianNeural",
+ "rate": "+24%",
+ "beats": [
+  {
+   "id": "hook",
+   "mood": "wave",
+   "text": "*a:Plus* zwanzig Prozent, *b:minus* zwanzig Prozent. Wetten, du bist nicht wieder bei hundert?",
+   "sfx": [
+    [
+     "riser",
+     0.0
+    ],
+    [
+     "pop",
+     0.6
+    ],
+    [
+     "pop",
+     1.5
+    ]
+   ],
+   "pause": 0.12,
+   "rate": "+28%",
+   "pitch": "+9Hz"
+  },
+  {
+   "id": "guess",
+   "mood": "think",
+   "text": "Klar, *plus* und *minus* heben sich auf.",
+   "sfx": [
+    [
+     "pop",
+     0.2
+    ]
+   ]
+  },
+  {
+   "id": "setup",
+   "mood": "neutral",
+   "text": "Wir starten mit *hundert Euro*.",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "setup2",
+   "mood": "neutral",
+   "text": "Erst kommt ein Aufschlag. Dann ein Rabatt. Beide Male zwanzig Prozent.",
+   "sfx": [
+    [
+     "pop",
+     0.1
+    ]
+   ]
+  },
+  {
+   "id": "go",
+   "mood": "cheer",
+   "text": "Los geht's!",
+   "sfx": [
+    [
+     "pop",
+     0.05
+    ]
+   ],
+   "pause": 0.2
+  },
+  {
+   "id": "up",
+   "mood": "watch",
+   "text": "Plus zwanzig Prozent. Aus hundert werden *hundertzwanzig* Euro.",
+   "ticks": true,
+   "pause": 0.5
+  },
+  {
+   "id": "down",
+   "mood": "think",
+   "text": "Jetzt minus zwanzig Prozent. Aber zwanzig Prozent wovon? Von *hundertzwanzig*.",
+   "ticks": true,
+   "pause": 0.4
+  },
+  {
+   "id": "down2",
+   "mood": "watch",
+   "text": "Das sind vierundzwanzig Euro. Also bleiben nur *sechsundneunzig* Euro.",
+   "ticks": true,
+   "pause": 0.5
+  },
+  {
+   "id": "result",
+   "mood": "cheer",
+   "text": "Boom! Du landest *vier Euro* unter dem Start. Nicht bei hundert.",
+   "sfx": [
+    [
+     "ding",
+     0.1
+    ]
+   ],
+   "pause": 0.4,
+   "rate": "+26%",
+   "pitch": "+8Hz"
+  },
+  {
+   "id": "why",
+   "mood": "think",
+   "text": "Aber warte, jetzt kommt der Trick! Warum? Der Rabatt bezieht sich auf einen *größeren* Betrag als der Aufschlag.",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "why2",
+   "mood": "think",
+   "text": "Zwanzig Prozent von hundertzwanzig sind mehr als zwanzig Prozent von hundert.",
+   "sfx": [
+    [
+     "pop",
+     0.8
+    ],
+    [
+     "pop",
+     2.6
+    ]
+   ]
+  },
+  {
+   "id": "total",
+   "mood": "cheer",
+   "text": "Und jetzt der Hammer: Insgesamt hast du *vier* Prozent verloren.",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "ding",
+     1.4
+    ]
+   ]
+  },
+  {
+   "id": "rule",
+   "mood": "think",
+   "text": "Faustregel: Plus und minus mit gleichen Prozenten *heben sich nie auf*. Du landest immer darunter.",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     2.4
+    ]
+   ]
+  },
+  {
+   "id": "rule2",
+   "mood": "watch",
+   "text": "Und je größer die Prozente, desto größer die Lücke. Bei fünfzig Prozent bleiben nur *fünfundsiebzig*.",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "ding",
+     3.6
+    ]
+   ]
+  },
+  {
+   "id": "cta",
+   "mood": "cheer",
+   "text": "Wo hat dich *Prozentrechnung* schon mal überrascht? Schreib's in die Kommentare.",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     0.5
+    ]
+   ],
+   "rate": "+26%",
+   "pitch": "+8Hz"
+  }
+ ],
+ "pitch": "+6Hz",
+ "gap": 0.14
+}
