@@ -1,7 +1,6 @@
 // Szenen für Folge 1: eine große Pizza (Ø 32) gegen zwei kleine (Ø 22)
 const PX = 15, A_BIG = Math.PI * 16 * 16, A_S = Math.PI * 11 * 11;
 const BIG = { x: 285, y: 900, r: 16 * PX }, SM = [{ x: 795, y: 725, r: 11 * PX }, { x: 795, y: 1075, r: 11 * PX }];
-const bump = (t, t0, amp = .16, d = .45) => t < t0 ? 1 : 1 + amp * Math.max(0, 1 - (t - t0) / d) * Math.cos((t - t0) * 14);
 const fadeIn = (t, a, d = .4) => ramp(t, a, a + d), fadeOut = (t, a, d = .4) => 1 - ramp(t, a, a + d);
 
 function STAGE(c) {

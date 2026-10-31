@@ -1,23 +1,204 @@
 {
-  "id": "001-pizza",
-  "series": "ALLTAGSDUELL",
-  "theme": "indigo",
-  "topic": "Eine große Pizza oder zwei kleine: Was ist mehr Pizza?",
-  "voice": "de-DE-KillianNeural",
-  "rate": "+8%",
-  "beats": [
-    {"id":"hook",   "text":"Eine *a:große* Pizza oder *b:zwei kleine*? Was ist mehr Pizza?", "sfx":[["pop",0.15],["pop",0.3]], "pause":0.35},
-    {"id":"guess",  "text":"Klar, *b:zwei kleine*. Ist ja eine mehr.", "sfx":[["pop",0.2]]},
-    {"id":"setup",  "text":"Die große hat *a:zweiunddreißig* Zentimeter. Die kleinen jeweils *b:zweiundzwanzig*.", "sfx":[["whoosh",0.1],["pop",1.7]]},
-    {"id":"rules",  "text":"Gleicher Teig, gleicher Belag. Wir zählen nur die *Fläche*.", "sfx":[["whoosh",0.0]]},
-    {"id":"go",     "text":"Los geht's!", "sfx":[["pop",0.05]], "pause":0.15},
-    {"id":"race",   "text":"Zentimeter für Zentimeter wächst die Fläche.", "ticks":true, "pause":3.0},
-    {"id":"result", "text":"Die große: *a:achthundertvier* Quadratzentimeter. Die zwei kleinen zusammen: nur *b:siebenhundertsechzig*.", "pause":0.35},
-    {"id":"win",    "text":"Die große Pizza *a:gewinnt*. Mit vierundvierzig Quadratzentimetern mehr.", "sfx":[["ding",0.05],["pop",1.9]], "pause":0.4},
-    {"id":"why",    "text":"Warum? Weil es auf die *Fläche* ankommt. Nicht auf den Durchmesser.", "sfx":[["whoosh",0.0],["pop",0.6]]},
-    {"id":"square", "text":"Verdoppelst du den Durchmesser, *vervierfacht* sich die Fläche.", "sfx":[["pop",1.1],["pop",1.6],["pop",2.1],["ding",3.0]], "pause":0.4},
-    {"id":"ratio",  "text":"Deshalb hat die kleine Pizza nicht mal *halb* so viel Fläche wie die große.", "sfx":[["whoosh",0.0],["pop",1.6]]},
-    {"id":"rule",   "text":"Faustregel: Zwei kleine Pizzen sind so viel wie eine große mit *eins Komma vier* mal dem Durchmesser.", "sfx":[["whoosh",0.0],["pop",1.2],["ding",3.4]]},
-    {"id":"cta",    "text":"Welche Pizza bestellst du? *Schreib's* in die Kommentare.", "sfx":[["whoosh",0.0],["pop",0.5]]}
-  ]
+ "id": "001-pizza",
+ "series": "ALLTAGSDUELL",
+ "theme": "indigo",
+ "topic": "Eine große Pizza oder zwei kleine: Was ist mehr Pizza?",
+ "voice": "de-DE-KillianNeural",
+ "rate": "+8%",
+ "beats": [
+  {
+   "id": "hook",
+   "text": "Eine *a:große* Pizza oder *b:zwei kleine*? Was ist mehr Pizza?",
+   "sfx": [
+    [
+     "pop",
+     0.15
+    ],
+    [
+     "pop",
+     0.3
+    ]
+   ],
+   "pause": 0.35,
+   "mood": "wave"
+  },
+  {
+   "id": "guess",
+   "text": "Klar, *b:zwei kleine*. Ist ja eine mehr.",
+   "sfx": [
+    [
+     "pop",
+     0.2
+    ]
+   ],
+   "mood": "think"
+  },
+  {
+   "id": "setup",
+   "text": "Die große hat *a:zweiunddreißig* Zentimeter. Die kleinen jeweils *b:zweiundzwanzig*.",
+   "sfx": [
+    [
+     "whoosh",
+     0.1
+    ],
+    [
+     "pop",
+     1.7
+    ]
+   ],
+   "mood": "neutral"
+  },
+  {
+   "id": "rules",
+   "text": "Gleicher Teig, gleicher Belag. Wir zählen nur die *Fläche*.",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ],
+   "mood": "neutral"
+  },
+  {
+   "id": "go",
+   "text": "Los geht's!",
+   "sfx": [
+    [
+     "pop",
+     0.05
+    ]
+   ],
+   "pause": 0.15,
+   "mood": "cheer"
+  },
+  {
+   "id": "race",
+   "text": "Zentimeter für Zentimeter wächst die Fläche.",
+   "ticks": true,
+   "pause": 3.0,
+   "mood": "watch"
+  },
+  {
+   "id": "result",
+   "text": "Die große: *a:achthundertvier* Quadratzentimeter. Die zwei kleinen zusammen: nur *b:siebenhundertsechzig*.",
+   "pause": 0.35,
+   "mood": "watch"
+  },
+  {
+   "id": "win",
+   "text": "Die große Pizza *a:gewinnt*. Mit vierundvierzig Quadratzentimetern mehr.",
+   "sfx": [
+    [
+     "ding",
+     0.05
+    ],
+    [
+     "pop",
+     1.9
+    ]
+   ],
+   "pause": 0.4,
+   "mood": "cheer"
+  },
+  {
+   "id": "why",
+   "text": "Warum? Weil es auf die *Fläche* ankommt. Nicht auf den Durchmesser.",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     0.6
+    ]
+   ],
+   "mood": "think"
+  },
+  {
+   "id": "square",
+   "text": "Verdoppelst du den Durchmesser, *vervierfacht* sich die Fläche.",
+   "sfx": [
+    [
+     "pop",
+     1.1
+    ],
+    [
+     "pop",
+     1.6
+    ],
+    [
+     "pop",
+     2.1
+    ],
+    [
+     "ding",
+     3.0
+    ]
+   ],
+   "pause": 0.4,
+   "mood": "neutral"
+  },
+  {
+   "id": "ratio",
+   "text": "Deshalb hat die kleine Pizza nicht mal *halb* so viel Fläche wie die große.",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     1.6
+    ]
+   ],
+   "mood": "neutral"
+  },
+  {
+   "id": "rule",
+   "text": "Faustregel: Zwei kleine Pizzen sind so viel wie eine große mit *eins Komma vier* mal dem Durchmesser.",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     1.2
+    ],
+    [
+     "ding",
+     3.4
+    ]
+   ],
+   "mood": "think"
+  },
+  {
+   "id": "note",
+   "text": "Gerechnet haben wir mit runden Pizzen und gleichem Belag auf der *ganzen* Fläche.",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ],
+   "mood": "neutral"
+  },
+  {
+   "id": "cta",
+   "text": "Welche Pizza bestellst du? *Schreib's* in die Kommentare.",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     0.5
+    ]
+   ],
+   "mood": "cheer"
+  }
+ ],
+ "tail": 2.4
 }

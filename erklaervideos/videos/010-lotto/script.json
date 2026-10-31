@@ -1,0 +1,18 @@
+{"id":"010-lotto","series":"ALLTAGSDUELL","theme":"indigo","topic":"Lotto: eins bis sechs oder sechs Zufallszahlen?","voice":"de-DE-KillianNeural","rate":"+8%",
+"beats":[
+{"id":"hook","mood":"wave","text":"Lotto, sechs aus neunundvierzig. Tippst du *a:eins, zwei, drei, vier, fünf, sechs*? Oder *b:sechs zufällige Zahlen*?","sfx":[["pop",0.2]],"pause":0.3},
+{"id":"guess","mood":"think","text":"Klar, die *zufälligen*. Eins bis sechs kommt nie.","sfx":[["pop",0.2]]},
+{"id":"setup","mood":"neutral","text":"Beide Tipps haben dieselbe Ausgangslage. Wir rechnen die *Chance* aus.","sfx":[["whoosh",0.0]]},
+{"id":"setup2","mood":"neutral","text":"Bei sechs aus neunundvierzig gibt es *dreizehn Millionen* neunhundertdreiundachtzigtausend achthundertsechzehn mögliche Ziehungen.","sfx":[["pop",0.1]]},
+{"id":"go","mood":"cheer","text":"Los geht's!","sfx":[["pop",0.05]],"pause":0.2},
+{"id":"r1","mood":"watch","text":"Jede dieser Kombinationen ist *genau gleich* wahrscheinlich.","ticks":true,"pause":0.4},
+{"id":"r2","mood":"watch","text":"Die Chance für eins bis sechs: eins zu *dreizehn Millionen* und ein bisschen.","ticks":true,"pause":0.4},
+{"id":"r3","mood":"watch","text":"Die Chance für deine zufälligen Zahlen: *genau dieselbe*.","ticks":true,"pause":0.5},
+{"id":"result","mood":"cheer","text":"Kein Unterschied. Die Kugeln haben *kein Gedächtnis*.","sfx":[["ding",0.1]],"pause":0.4},
+{"id":"why","mood":"think","text":"Warum fühlt sich eins bis sechs trotzdem falsch an? Weil wir überall *Muster* sehen.","sfx":[["whoosh",0.0]]},
+{"id":"why2","mood":"think","text":"Aber die Maschine kennt keine Muster. Sie zieht einfach sechs Kugeln.","sfx":[["pop",0.8]]},
+{"id":"diff","mood":"neutral","text":"Ein echter Unterschied: Viele Leute tippen *Geburtstage*, also Zahlen bis einunddreißig. Dann teilst du dir einen Gewinn eher.","sfx":[["whoosh",0.0],["pop",2.6]]},
+{"id":"rule","mood":"think","text":"Faustregel: Jede Kombination hat die *gleiche* Chance. Egal, wie hübsch sie aussieht.","sfx":[["whoosh",0.0],["pop",2.2]]},
+{"id":"note","mood":"watch","text":"Sechs Richtige schaffst du übrigens nur mit etwa *eins zu vierzehn Millionen*.","sfx":[["whoosh",0.0],["ding",2.6]]},
+{"id":"cta","mood":"cheer","text":"Welche Zahlen *tippst* du? Schreib's in die Kommentare.","sfx":[["whoosh",0.0],["pop",0.5]]}
+]}

@@ -1,0 +1,20 @@
+{"id":"002-rabatt","series":"ALLTAGSDUELL","theme":"indigo","topic":"30 Prozent plus 20 Prozent Rabatt oder 50 Prozent auf einmal?","voice":"de-DE-KillianNeural","rate":"+8%",
+"beats":[
+{"id":"hook","mood":"wave","text":"Dreißig Prozent Rabatt und dann noch *a:zwanzig* Prozent. Oder *b:fünfzig* Prozent auf einmal?","sfx":[["pop",0.2]],"pause":0.3},
+{"id":"guess","mood":"think","text":"Klar, *gleich*. Dreißig plus zwanzig ist fünfzig.","sfx":[["pop",0.2]]},
+{"id":"setup","mood":"neutral","text":"Das Teil kostet beide Male *hundert Euro*.","sfx":[["whoosh",0.0]]},
+{"id":"setup2","mood":"neutral","text":"Links gibt es zwei Rabatte nacheinander. Rechts nur einen.","sfx":[["pop",0.1]]},
+{"id":"go","mood":"cheer","text":"Los geht's!","sfx":[["pop",0.05]],"pause":0.2},
+{"id":"s1","mood":"watch","text":"Erst *a:minus dreißig*. Das Teil kostet nur noch siebzig Euro.","sfx":[["pop",0.4],["whoosh",1.9]]},
+{"id":"s2","mood":"watch","text":"Dann *a:minus zwanzig*. Aber zwanzig Prozent wovon?","sfx":[["pop",0.4]]},
+{"id":"s2b","mood":"think","text":"Von siebzig Euro, nicht von hundert. Das sind nur vierzehn Euro weniger.","ticks":true,"pause":0.8},
+{"id":"s3","mood":"watch","text":"Rechts: *b:fünfzig* Prozent auf hundert Euro. Das sind fünfzig Euro weniger.","ticks":true,"pause":0.8},
+{"id":"result","mood":"cheer","text":"Links bleiben *a:sechsundfünfzig* Euro. Rechts nur *b:fünfzig*.","sfx":[["ding",0.1]],"pause":0.3},
+{"id":"win","mood":"cheer","text":"Der einzelne Rabatt ist sechs Euro *günstiger*. Zwei Rabatte sind schlechter, als sie klingen.","sfx":[["ding",0.05]],"pause":0.4},
+{"id":"why","mood":"think","text":"Warum? Jeder Rabatt wird vom *neuen* Preis abgezogen. Nicht vom alten.","sfx":[["whoosh",0.0]]},
+{"id":"why2","mood":"think","text":"Die zweite Prozentzahl rechnet also mit einem *kleineren* Betrag.","sfx":[["pop",0.8]]},
+{"id":"total","mood":"cheer","text":"Dreißig und zwanzig Prozent zusammen sind nur *vierundvierzig* Prozent.","sfx":[["whoosh",0.0],["ding",1.8]]},
+{"id":"rule","mood":"think","text":"Faustregel: Rabatte werden nie *addiert*. Sie werden nacheinander multipliziert.","sfx":[["whoosh",0.0],["pop",1.6]]},
+{"id":"tip","mood":"neutral","text":"Achte bei Aktionen darauf, ob sich Rabatte *stapeln*. Dann lohnt sich Nachrechnen.","sfx":[["whoosh",0.0],["pop",1.2],["pop",2.2]]},
+{"id":"cta","mood":"cheer","text":"Auf welche Rabatt-Falle bist du schon *reingefallen*? Schreib's in die Kommentare.","sfx":[["whoosh",0.0],["pop",0.5]]}
+]}

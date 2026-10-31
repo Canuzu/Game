@@ -1,0 +1,19 @@
+{"id":"003-geburtstag","series":"ALLTAGSDUELL","theme":"indigo","topic":"Geburtstagsparadox: Wie viele Leute, bis zwei am selben Tag Geburtstag haben?","voice":"de-DE-KillianNeural","rate":"+8%",
+"beats":[
+{"id":"hook","mood":"wave","text":"Wie viele Leute brauchst du in einem Raum, bis *b:zwei* am selben Tag Geburtstag haben?","sfx":[["pop",0.2]],"pause":0.3},
+{"id":"guess","mood":"think","text":"Klar, *hundertdreiundachtzig*. Die Hälfte von dreihundertfünfundsechzig Tagen.","sfx":[["pop",0.2]]},
+{"id":"setup","mood":"neutral","text":"Wir füllen den Raum *Person* für Person. Und rechnen die Chance auf einen Treffer aus.","sfx":[["whoosh",0.0]]},
+{"id":"go","mood":"cheer","text":"Los geht's!","sfx":[["pop",0.05]],"pause":0.2},
+{"id":"r1","mood":"watch","text":"Zehn Leute. Chance auf einen gemeinsamen Geburtstag: nur *elf Komma sieben* Prozent.","ticks":true,"pause":0.5},
+{"id":"r2","mood":"watch","text":"Zwanzig Leute. Schon *einundvierzig* Prozent.","ticks":true,"pause":0.5},
+{"id":"r3","mood":"watch","text":"Und bei *dreiundzwanzig* Personen? Über *fünfzig* Prozent.","ticks":true,"pause":0.6},
+{"id":"result","mood":"cheer","text":"Dreiundzwanzig Leute reichen. Nicht hundertdreiundachtzig.","sfx":[["ding",0.1]],"pause":0.4},
+{"id":"why","mood":"think","text":"Warum? Weil nicht Personen zählen, sondern *Paare*.","sfx":[["whoosh",0.0]]},
+{"id":"why2","mood":"think","text":"Bei dreiundzwanzig Leuten gibt es zweihundertdreiundfünfzig verschiedene Paare.","ticks":true,"pause":0.4},
+{"id":"why3","mood":"cheer","text":"Jedes Paar ist eine neue Chance auf denselben Geburtstag.","sfx":[["ding",0.1]]},
+{"id":"big","mood":"watch","text":"Bei dreißig Leuten sind es schon über *siebzig* Prozent.","sfx":[["whoosh",0.0],["pop",1.5]]},
+{"id":"big2","mood":"cheer","text":"Bei siebenundfünfzig Leuten fast *neunundneunzig* Prozent.","sfx":[["pop",0.2],["ding",1.7]]},
+{"id":"rule","mood":"think","text":"Faustregel: Wenn du *Paare* zählst, passieren Zufälle viel öfter, als du denkst.","sfx":[["whoosh",0.0],["pop",2.0]]},
+{"id":"note","mood":"neutral","text":"Gerechnet haben wir ohne Schaltjahr und mit gleich verteilten Geburtstagen.","sfx":[["whoosh",0.0]]},
+{"id":"cta","mood":"cheer","text":"Teilst du deinen *Geburtstag* mit jemandem? Schreib's in die Kommentare.","sfx":[["whoosh",0.0],["pop",0.5]]}
+]}

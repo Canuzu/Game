@@ -57,9 +57,9 @@ function buildChunks(spec) {
     let cur = [];
     const flush = () => { if (cur.length) { chunks.push({ t0: cur[0].t0, words: cur, beatEnd: b.t1 }); cur = []; } };
     for (const w of b.words) {
-      if (cur.length && cur.map(x => x.w).join(' ').length + w.w.length + 1 > 24) flush();
+      if (cur.length && cur.map(x => x.w).join(' ').length + w.w.length + 1 > 19) flush();
       cur.push(w);
-      if (/[.,?!:]$/.test(w.w) || cur.length >= 4) flush();
+      if (/[.,?!:]$/.test(w.w) || cur.length >= 3) flush();
     }
     flush();
   }
@@ -73,7 +73,7 @@ function captions(t, th, chunks) {
   while (textW(c.words.map(w => w.w).join(' '), size, 800) + 76 > 1000) size -= 2;
   const full = c.words.map(w => w.w).join(' ');
   const tw = textW(full, size, 800), ww = tw + 76, hh = 112;
-  const k = .9 + .1 * E.back(clamp((t - c.t0) / .16));
+  const k = .8 + .2 * E.back(clamp((t - c.t0) / .2));
   const col = { a: th.capA, b: th.capB, y: th.capY };
   let spans = c.words.map((w, i) => `<tspan fill="${w.key ? col[w.key] : th.dark}">${esc(w.w)}${i < c.words.length - 1 ? ' ' : ''}</tspan>`).join('');
   return G(RECT(540 - ww / 2, y - hh / 2, ww, hh, '#fff', { r: 34, shadow: true }) +
@@ -83,11 +83,13 @@ function captions(t, th, chunks) {
 
 // ---------- Szenenbausteine ----------
 function scoreCard(x, y, w, h, label, valueStr, unit, color, th, { s = 1, o = 1, dim = 1 } = {}) {
+  let vs = 92; while (vs > 40 && textW(valueStr, vs, 900) + textW(unit, 34, 800) + 62 > w - 40) vs -= 4;
+  const tv = textW(valueStr, vs, 900), uw = textW(unit, 34, 800), x0 = (w - (tv + uw + 12)) / 2;
   const inner = RECT(0, 0, w, h, th.card, { r: 30, stroke: th.line, sw: 3, shadow: true }) +
     RECT(0, 0, w, 62, color, { r: 30 }) + RECT(0, 40, w, 22, color, { r: 0 }) +
-    TX(w / 2, 43, label, { size: 29, fill: th.dark, w: 900, ls: 2 }) +
-    `<text x="${w / 2 - 22}" y="${h - 48}" font-family="Inter" font-weight="900" font-size="92" fill="#fff" text-anchor="middle">${esc(valueStr)}</text>` +
-    TX(w / 2 + textW(valueStr, 92, 900) / 2 - 12, h - 52, unit, { size: 34, fill: th.mute, w: 800, anchor: 'start' });
+    TX(w / 2, 43, label, { size: 29, fill: th.dark, w: 900, ls: 1 }) +
+    `<text x="${x0}" y="${h - 50}" font-family="Inter" font-weight="900" font-size="${vs}" fill="#fff">${esc(valueStr)}</text>` +
+    TX(x0 + tv + 12, h - 52, unit, { size: 34, fill: th.mute, w: 800, anchor: 'start' });
   return G(inner, { x, y, s, px: w / 2, py: h / 2, o: o * dim });
 }
 
@@ -120,9 +122,22 @@ function pizza(cx, cy, r, { sweep = 1, rot = 0, seed = 1, o = 1, ghost = true } 
 
 // Maskottchen links unten über der Untertitel-Zeile (rechts liegen die TikTok-Buttons). Stimmung je Video über MOOD(ctx).
 function mascotLayer(c) {
-  const mood = (typeof MOOD === 'function' && MOOD(c)) || 'neutral';
+  const cur = c.spec.beats.find(b => c.t >= b.t0 && c.t < c.nextT(b.id));
+  const mood = (typeof MOOD === 'function' && MOOD(c)) || (cur && cur.mood) || 'neutral';
   const k = pop(c.t, .3, .5);
   return k > .01 ? mascot(82, 1432, .78 * k, mood, c.t, Math.min(1, k)) : '';
+}
+// Kamera: Zoom-Stoß zu Beginn jedes Satzes, langsamer Push, kleine Schräglage, Wackeln bei Treffer-Sounds
+function camera(c) {
+  const bs = c.spec.beats, i = bs.findIndex(b => c.t >= b.t0 && c.t < c.nextT(b.id)); if (i < 0) return {};
+  const b = bs[i], loc = c.t - b.t0, len = c.nextT(b.id) - b.t0;
+  const punch = .07 * (1 - E.out3(clamp(loc / .5))), push = .03 * clamp(loc / len);
+  const rot = (i % 2 ? 1 : -1) * 1.2 * (1 - E.out3(clamp(loc / .45)));
+  let sx = 0, sy = 0;
+  for (const bb of bs) for (const [n, off] of (bb.sfx || [])) if (n === 'ding') {
+    const d = c.t - (bb.t0 + off); if (d > 0 && d < .6) { const a = 14 * Math.exp(-d * 8); sx += a * Math.sin(d * 70); sy += a * Math.cos(d * 55); }
+  }
+  return { s: 1 + punch + push, rot, x: sx, y: sy };
 }
 window.RENDER = function (spec, stage) {
   const th = THEMES[spec.theme || 'indigo'];
@@ -140,6 +155,6 @@ window.RENDER = function (spec, stage) {
     };
     const prog = `<rect x="0" y="0" width="${W * clamp(t / spec.duration)}" height="10" fill="${th.b}"/>`;
     root.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
-      ${background(t, th)}${G(stage(ctx), { y: 50 })}${mascotLayer(ctx)}${captions(t, th, chunks)}${prog}</svg>`;
+      ${background(t, th)}${(() => { const k = camera(ctx); return G(stage(ctx), { x: k.x || 0, y: 50 + (k.y || 0), s: k.s || 1, rot: k.rot || 0, px: 540, py: 850 }); })()}${mascotLayer(ctx)}${captions(t, th, chunks)}${prog}</svg>`;
   };
 };
