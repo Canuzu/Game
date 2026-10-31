@@ -16,10 +16,18 @@ const B = base(`<g filter="url(#sh)"><rect x="200" y="260" width="680" height="5
 <text x="740" y="425" font-family="Inter" font-weight="900" font-size="80" fill="#15113A" text-anchor="end">804</text>
 <text x="560" y="655" font-family="Inter" font-weight="900" font-size="80" fill="#15113A" text-anchor="end">760</text>
 <g filter="url(#sh)"><circle cx="800" cy="610" r="92" fill="#FFC93C"/><text x="800" y="648" font-family="Inter" font-weight="900" font-size="100" fill="#15113A" text-anchor="middle">&gt;</text></g>`);
+const mascotSrc = (await import('fs')).readFileSync('../engine/mascot.js','utf8');
+const C = base(`<g filter="url(#sh)"><circle cx="540" cy="540" r="330" fill="#15113A"/>
+<g clip-path="url(#c)"><rect x="200" y="200" width="680" height="680" fill="#FF7A59"/><polygon points="640,200 880,200 880,880 400,880" fill="#2EE6C5"/></g></g>
+<circle cx="540" cy="540" r="300" fill="none" stroke="#fff" stroke-width="10"/>
+<g filter="url(#sh)"><circle cx="540" cy="540" r="112" fill="#FFC93C"/>
+<text x="540" y="582" font-family="Inter" font-weight="900" font-size="118" fill="#15113A" text-anchor="middle">VS</text></g>
+<g filter="url(#sh)">__M__</g>`);
 const b = await chromium.launch();
-for (const [n, svg] of [['avatar-A', A], ['avatar-B', B]]) {
+for (const [n, svg] of [['avatar-A', A], ['avatar-B', B], ['avatar-C', C]]) {
   const p = await (await b.newContext({ viewport: { width: 1080, height: 1080 } })).newPage();
-  await p.setContent(`<body style="margin:0">${svg}</body>`); await p.evaluate(() => document.fonts.ready);
+  await p.setContent(`<body style="margin:0">${svg.replace('__M__','')}</body>`);
+  if (n === 'avatar-C') await p.evaluate(src => { eval(src); document.querySelector('g[filter]:last-of-type').innerHTML = mascot(800, 905, 1.75, 'wave', .55); }, mascotSrc); await p.evaluate(() => document.fonts.ready);
   await p.screenshot({ path: `${n}.png` });
 }
 await b.close();

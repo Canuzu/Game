@@ -8,7 +8,7 @@ const spec = JSON.parse(fs.readFileSync(`${dir}/work/spec.json`, 'utf8'));
 const FPS = spec.fps, N = Math.ceil(spec.duration * FPS);
 const frames = `${dir}/work/frames`; fs.rmSync(frames, { recursive: true, force: true }); fs.mkdirSync(frames, { recursive: true });
 const html = `<!doctype html><meta charset="utf-8"><style>html,body{margin:0;background:#000}#root{width:1080px;height:1920px}</style><div id="root"></div>
-<script>${fs.readFileSync(`${here}/base.js`, 'utf8')}</script><script>${fs.readFileSync(`${dir}/stage.js`, 'utf8')}</script>
+<script>${fs.readFileSync(`${here}/mascot.js`, 'utf8')}</script><script>${fs.readFileSync(`${here}/base.js`, 'utf8')}</script><script>${fs.readFileSync(`${dir}/stage.js`, 'utf8')}</script>
 <script>window.SPEC=${JSON.stringify(spec)};window.draw=RENDER(SPEC,STAGE);</script>`;
 const idxs = only ? only.map(s => Math.round(s * FPS)) : Array.from({ length: N }, (_, i) => i);
 const WORKERS = Math.min(4, idxs.length);

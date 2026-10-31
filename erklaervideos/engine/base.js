@@ -118,6 +118,12 @@ function pizza(cx, cy, r, { sweep = 1, rot = 0, seed = 1, o = 1, ghost = true } 
     </g></g></g>`;
 }
 
+// Maskottchen links unten über der Untertitel-Zeile (rechts liegen die TikTok-Buttons). Stimmung je Video über MOOD(ctx).
+function mascotLayer(c) {
+  const mood = (typeof MOOD === 'function' && MOOD(c)) || 'neutral';
+  const k = pop(c.t, .3, .5);
+  return k > .01 ? mascot(82, 1432, .78 * k, mood, c.t, Math.min(1, k)) : '';
+}
 window.RENDER = function (spec, stage) {
   const th = THEMES[spec.theme || 'indigo'];
   const chunks = buildChunks(spec);
@@ -134,6 +140,6 @@ window.RENDER = function (spec, stage) {
     };
     const prog = `<rect x="0" y="0" width="${W * clamp(t / spec.duration)}" height="10" fill="${th.b}"/>`;
     root.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
-      ${background(t, th)}${G(stage(ctx), { y: 50 })}${captions(t, th, chunks)}${prog}</svg>`;
+      ${background(t, th)}${G(stage(ctx), { y: 50 })}${mascotLayer(ctx)}${captions(t, th, chunks)}${prog}</svg>`;
   };
 };

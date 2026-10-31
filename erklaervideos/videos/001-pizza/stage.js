@@ -146,3 +146,10 @@ function scene5(c) {
   o += G(PILL(540, 1345, '👇 SCHREIB ES IN DIE KOMMENTARE', { size: 34, fill: th.y, ink: th.dark, px: 32 }), { s: pop(t, t0 + 1.4), px: 540, py: 1345 });
   return o;
 }
+
+// Stimmung des Maskottchens je Beat
+function MOOD(c) {
+  const { t, B } = c, id = Object.keys(B).find(k => t >= B[k].t0 && t < c.nextT(k));
+  return { hook: 'wave', guess: 'think', setup: 'neutral', rules: 'neutral', go: 'cheer', race: 'watch', result: 'watch',
+           win: 'cheer', why: 'think', square: 'neutral', ratio: 'neutral', rule: 'think', cta: 'cheer' }[id] || 'neutral';
+}
