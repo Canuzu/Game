@@ -86,3 +86,14 @@ function kChain(c, { at, title, steps, arrows, notes = [] }) {
   notes.forEach(([txt, col], i) => o += G(PILL(540, 1060 + i * 110, txt, { size: 44, fill: col || '#fff', ink: th.dark, px: 36 }), { s: pop(t, at + 2.4 + i * 1.0), px: 540, py: 1060 + i * 110 }));
   return o;
 }
+// Einstieg: Emoji-Hook (l, mid, r), "Klar, ..."-Sticker und "LOS GEHT'S!"; emojiOut = Zeit, ab der die Emojis ausblenden
+function kOpening(c, { l, r, mid = 'VS', guess, guessSize = 70, guessY = 1100, emojiOut }) {
+  const { t, th, B } = c; let o = '';
+  const cv = 1 - ramp(t, emojiOut, emojiOut + .4);
+  if (cv > .01) o += G(TX(270, 880, l, { size: 200 }) + TX(810, 880, r, { size: 200 }) + TX(540, 860, mid, { size: 100, w: 900, fill: th.y }), { s: pop(t, B.hook.t0 + .3), px: 540, py: 820, o: cv });
+  const g = pop(t, B.guess.t0 + .5) * (1 - ramp(t, B.setup.t0, B.setup.t0 + .3));
+  if (g > .01 && guess) o += G(PILL(540, guessY, guess, { size: guessSize, fill: th.y, ink: th.dark, px: 44 }), { s: g, px: 540, py: guessY, rot: -4, o: Math.min(1, g) });
+  const go = pop(t, B.go.t0 + .02, .35) * (1 - ramp(t, B.go.t1 + .35, B.go.t1 + .6));
+  if (go > .01) o += G(PILL(540, 880, "LOS GEHT'S!", { size: 92, fill: th.y, ink: th.dark, px: 50 }), { s: go, px: 540, py: 880, rot: -6, o: Math.min(1, go) });
+  return o;
+}

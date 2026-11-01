@@ -25,3 +25,20 @@ Zahlen immer selbst nachrechnen (Code) oder aus einer Quelle belegen. Annahmen i
 - Stand-by gegen Steckerleiste aus (Kosten pro Jahr, Annahmen angeben)
 - Zwei Kinder, eins ist ein Junge: Wahrscheinlichkeit (rechenfest)
 - Fahrstuhl gegen Treppe, Kalorien (Quelle prüfen)
+
+## Neue Richtung (Alltags-Probleme)
+
+Filter: Hat der Zuschauer das diese Woche selbst gemacht oder bezahlt? Gibt es ein Problem (Geld, Zeit, Nerven)? Kommt eine Zahl heraus, die wehtut? Gibt es eine Lösung für heute?
+
+| Folge | Thema | Zahl | Status |
+|-------|-------|------|--------|
+| 12 | Kaffee to go | 770 € gegen 88 € im Jahr | FERTIG |
+| 13 | Vier Streaming-Abos | 480 € gegen 120 € im Jahr | FERTIG |
+| 14 | Fitnessstudio pro Besuch | 30 € gegen 2,50 € pro Besuch | FERTIG |
+| 15 | Handy auf Raten | 576 € gegen 500 € bar | offen |
+| 16 | Mogelpackung (weniger Inhalt, gleicher Preis) | 500 g auf 450 g = 11 % teurer | offen |
+| 17 | Jahres- gegen Monatsabo | lohnt sich erst nach 10 Monaten | offen |
+| 18 | Wasser kaufen gegen Leitung | ca. 290 € im Jahr | Quelle/Annahme prüfen |
+| 19 | Pendeln | 9 Tage im Jahr | offen |
+| 20 | Handyzeit | 4 h täglich = 61 Tage im Jahr | offen |
+| 21 | Stand-by | ca. 131 € im Jahr (Annahmen) | offen |

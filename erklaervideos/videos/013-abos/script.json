@@ -1,0 +1,245 @@
+{
+ "id": "013-abos",
+ "series": "ALLTAGSDUELL",
+ "theme": "indigo",
+ "topic": "Vier Streaming-Abos kosten 480 Euro im Jahr",
+ "voice": "de-DE-FlorianMultilingualNeural",
+ "rate": "+22%",
+ "pitch": "+4Hz",
+ "gap": 0.14,
+ "beats": [
+  {
+   "id": "hook",
+   "text": "Stopp! Vier Streaming-Abos kosten dich *a:vierhundertachtzig* Euro im Jahr. Muss das sein?",
+   "mood": "wave",
+   "sfx": [
+    [
+     "riser",
+     0.0
+    ],
+    [
+     "pop",
+     0.6
+    ],
+    [
+     "pop",
+     1.5
+    ]
+   ],
+   "rate": "+26%",
+   "pitch": "+7Hz",
+   "pause": 0.12
+  },
+  {
+   "id": "guess",
+   "text": "Klar, ist ja nur ein bisschen pro Monat. Zehn Euro hier, zehn Euro da.",
+   "mood": "think",
+   "sfx": [
+    [
+     "pop",
+     0.2
+    ]
+   ]
+  },
+  {
+   "id": "setup",
+   "text": "Annahme: Du hast *vier* Abos für je zehn Euro im Monat.",
+   "mood": "neutral",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "setup2",
+   "text": "Links behältst du alle vier. Rechts hast du immer nur *eins* und wechselst alle drei Monate.",
+   "mood": "neutral",
+   "sfx": [
+    [
+     "pop",
+     0.1
+    ]
+   ]
+  },
+  {
+   "id": "go",
+   "text": "Los geht's!",
+   "mood": "cheer",
+   "sfx": [
+    [
+     "pop",
+     0.05
+    ]
+   ],
+   "pause": 0.2
+  },
+  {
+   "id": "m3",
+   "text": "Nach drei Monaten: *hundertzwanzig* Euro gegen dreißig.",
+   "mood": "watch",
+   "ticks": true,
+   "pause": 0.3,
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "m6",
+   "text": "Nach sechs Monaten: *zweihundertvierzig* Euro gegen sechzig.",
+   "mood": "watch",
+   "ticks": true,
+   "pause": 0.3,
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "m12",
+   "text": "Nach einem Jahr: *a:vierhundertachtzig* Euro gegen *b:hundertzwanzig*.",
+   "mood": "cheer",
+   "ticks": true,
+   "sfx": [
+    [
+     "ding",
+     3.2
+    ]
+   ],
+   "pause": 0.5,
+   "rate": "+24%",
+   "pitch": "+6Hz"
+  },
+  {
+   "id": "result",
+   "text": "Boom! Du sparst *dreihundertsechzig* Euro im Jahr.",
+   "mood": "cheer",
+   "sfx": [
+    [
+     "ding",
+     0.1
+    ]
+   ],
+   "pause": 0.3,
+   "rate": "+24%",
+   "pitch": "+6Hz"
+  },
+  {
+   "id": "why",
+   "text": "Aber warte, jetzt kommt der Trick! Eine Staffel schaust du oft in ein bis zwei Monaten *durch*.",
+   "mood": "think",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "why2",
+   "text": "Danach bezahlst du jeden weiteren Monat für *nichts*.",
+   "mood": "watch",
+   "sfx": [
+    [
+     "pop",
+     0.8
+    ]
+   ]
+  },
+  {
+   "id": "tip",
+   "text": "Dein Plan: Kündige jedes Abo direkt nach dem Durchschauen. Und trag dir die *Kündigungsfrist* in den Kalender ein.",
+   "mood": "cheer",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     2.6
+    ]
+   ]
+  },
+  {
+   "id": "extra",
+   "mood": "think",
+   "text": "Viele Dienste lassen sich monatlich kündigen und später wieder buchen. Prüf das vorher in den *Bedingungen*.",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     1.2
+    ]
+   ]
+  },
+  {
+   "id": "years",
+   "mood": "cheer",
+   "text": "Über drei Jahre sind das *tausendachtzig* Euro Unterschied.",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     1.2
+    ]
+   ]
+  },
+  {
+   "id": "rule",
+   "text": "Faustregel: Jeder Monat ohne Nutzung ist rausgeworfenes *Geld*.",
+   "mood": "think",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     1.8
+    ]
+   ]
+  },
+  {
+   "id": "note",
+   "text": "Die Preise sind Beispielwerte. Schau auf deinen Kontoauszug, was du wirklich zahlst.",
+   "mood": "neutral",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "cta",
+   "text": "Wie viele *Abos* zahlst du gerade? Schreib's in die Kommentare.",
+   "mood": "cheer",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     0.5
+    ]
+   ],
+   "rate": "+24%",
+   "pitch": "+6Hz"
+  }
+ ],
+ "tail": 2.4
+}

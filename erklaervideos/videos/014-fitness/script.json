@@ -1,0 +1,242 @@
+{
+ "id": "014-fitness",
+ "series": "ALLTAGSDUELL",
+ "theme": "indigo",
+ "topic": "Fitnessstudio: Was kostet ein Besuch wirklich?",
+ "voice": "de-DE-FlorianMultilingualNeural",
+ "rate": "+22%",
+ "pitch": "+4Hz",
+ "gap": 0.14,
+ "beats": [
+  {
+   "id": "hook",
+   "text": "Stopp! Dein Fitnessstudio kostet dich *a:dreißig* Euro. Pro Besuch! Wenn du nur einmal im Monat hingehst.",
+   "mood": "wave",
+   "sfx": [
+    [
+     "riser",
+     0.0
+    ],
+    [
+     "pop",
+     0.6
+    ],
+    [
+     "pop",
+     1.5
+    ]
+   ],
+   "rate": "+26%",
+   "pitch": "+7Hz",
+   "pause": 0.12
+  },
+  {
+   "id": "guess",
+   "text": "Klar, dreißig Euro im Monat sind doch ein normaler Preis.",
+   "mood": "think",
+   "sfx": [
+    [
+     "pop",
+     0.2
+    ]
+   ]
+  },
+  {
+   "id": "setup",
+   "text": "Annahme: Dein Vertrag kostet *dreißig* Euro im Monat.",
+   "mood": "neutral",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "setup2",
+   "text": "Die Frage ist nur: Wie oft gehst du wirklich hin? Wir rechnen den Preis pro *Besuch* aus.",
+   "mood": "neutral",
+   "sfx": [
+    [
+     "pop",
+     0.1
+    ]
+   ]
+  },
+  {
+   "id": "go",
+   "text": "Los geht's!",
+   "mood": "cheer",
+   "sfx": [
+    [
+     "pop",
+     0.05
+    ]
+   ],
+   "pause": 0.2
+  },
+  {
+   "id": "v1",
+   "text": "Einmal im Monat: dreißig Euro pro Besuch.",
+   "mood": "watch",
+   "pause": 0.4,
+   "sfx": [
+    [
+     "pop",
+     0.3
+    ]
+   ]
+  },
+  {
+   "id": "v4",
+   "text": "Einmal pro Woche, also vier Mal im Monat: *sieben Euro fünfzig*.",
+   "mood": "watch",
+   "pause": 0.4,
+   "sfx": [
+    [
+     "pop",
+     0.3
+    ]
+   ]
+  },
+  {
+   "id": "v8",
+   "text": "Zweimal pro Woche: *drei Euro fünfundsiebzig*.",
+   "mood": "watch",
+   "pause": 0.4,
+   "sfx": [
+    [
+     "pop",
+     0.3
+    ]
+   ]
+  },
+  {
+   "id": "v12",
+   "text": "Dreimal pro Woche: nur noch *b:zwei Euro fünfzig*.",
+   "mood": "cheer",
+   "sfx": [
+    [
+     "ding",
+     0.3
+    ]
+   ],
+   "pause": 0.5,
+   "rate": "+24%",
+   "pitch": "+6Hz"
+  },
+  {
+   "id": "result",
+   "text": "Boom! Gleicher Vertrag, aber zwölfmal *günstiger* pro Besuch.",
+   "mood": "cheer",
+   "sfx": [
+    [
+     "ding",
+     0.1
+    ]
+   ],
+   "pause": 0.3,
+   "rate": "+24%",
+   "pitch": "+6Hz"
+  },
+  {
+   "id": "why",
+   "text": "Aber warte, jetzt kommt der Trick! Der Beitrag ist fix. Nur deine *Besuche* entscheiden, was du bezahlst.",
+   "mood": "think",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "cost",
+   "mood": "think",
+   "text": "Und wenn du gar nicht hingehst? Dann zahlst du dreihundertsechzig Euro im Jahr für *nichts*.",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     1.2
+    ]
+   ]
+  },
+  {
+   "id": "year",
+   "mood": "cheer",
+   "text": "Bei zwölf Besuchen im Monat bekommst du *hundertvierundvierzig* Besuche für dieselben dreihundertsechzig Euro.",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     1.2
+    ]
+   ]
+  },
+  {
+   "id": "tip",
+   "text": "Dein Plan: Trag dir feste *Termine* ein. Oder kündige, wenn du ehrlich nicht hingehst.",
+   "mood": "cheer",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     2.0
+    ]
+   ]
+  },
+  {
+   "id": "rule",
+   "text": "Faustregel: Teile deinen Monatsbeitrag durch deine *Besuche*. Dann siehst du den echten Preis.",
+   "mood": "think",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     2.2
+    ]
+   ]
+  },
+  {
+   "id": "note",
+   "text": "Die Zahlen sind Beispielwerte. Setz deinen eigenen Beitrag ein.",
+   "mood": "neutral",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "cta",
+   "text": "Wie oft warst du letzten Monat wirklich *da*? Schreib's in die Kommentare.",
+   "mood": "cheer",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     0.5
+    ]
+   ],
+   "rate": "+24%",
+   "pitch": "+6Hz"
+  }
+ ]
+}

@@ -1,0 +1,223 @@
+{
+ "id": "012-kaffee",
+ "series": "ALLTAGSDUELL",
+ "theme": "indigo",
+ "topic": "Kaffee to go kostet im Jahr 770 Euro",
+ "voice": "de-DE-FlorianMultilingualNeural",
+ "rate": "+22%",
+ "pitch": "+4Hz",
+ "gap": 0.14,
+ "beats": [
+  {
+   "id": "hook",
+   "text": "Stopp! Dein Kaffee unterwegs kostet dich *a:siebenhundertsiebzig* Euro im Jahr. Rechnen wir nach!",
+   "mood": "wave",
+   "sfx": [
+    [
+     "riser",
+     0.0
+    ],
+    [
+     "pop",
+     0.6
+    ],
+    [
+     "pop",
+     1.5
+    ]
+   ],
+   "rate": "+26%",
+   "pitch": "+7Hz",
+   "pause": 0.12
+  },
+  {
+   "id": "guess",
+   "text": "Klar, ist doch nur ein Kaffee. Drei Euro fünfzig. Was soll das schon kosten?",
+   "mood": "think",
+   "sfx": [
+    [
+     "pop",
+     0.2
+    ]
+   ]
+  },
+  {
+   "id": "setup",
+   "text": "Annahme: Du holst dir an jedem Arbeitstag einen Kaffee für *drei Euro fünfzig*. Das sind etwa zweihundertzwanzig Tage im Jahr.",
+   "mood": "neutral",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "setup2",
+   "text": "Links der Kaffee to go. Rechts dein eigener Kaffee von zuhause, für etwa *vierzig Cent*.",
+   "mood": "neutral",
+   "sfx": [
+    [
+     "pop",
+     0.1
+    ]
+   ]
+  },
+  {
+   "id": "go",
+   "text": "Los geht's!",
+   "mood": "cheer",
+   "sfx": [
+    [
+     "pop",
+     0.05
+    ]
+   ],
+   "pause": 0.2
+  },
+  {
+   "id": "m3",
+   "text": "Nach drei Monaten: fast *zweihundert* Euro gegen zweiundzwanzig.",
+   "mood": "watch",
+   "ticks": true,
+   "pause": 0.3,
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "m6",
+   "text": "Nach einem halben Jahr: *dreihundertfünfundachtzig* Euro.",
+   "mood": "watch",
+   "ticks": true,
+   "pause": 0.3,
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "m12",
+   "text": "Nach einem Jahr: *a:siebenhundertsiebzig* Euro. Rechts nur *b:achtundachtzig*.",
+   "mood": "cheer",
+   "ticks": true,
+   "sfx": [
+    [
+     "ding",
+     3.0
+    ]
+   ],
+   "pause": 0.5,
+   "rate": "+24%",
+   "pitch": "+6Hz"
+  },
+  {
+   "id": "result",
+   "text": "Boom! Der Unterschied: *sechshundertzweiundachtzig* Euro im Jahr.",
+   "mood": "cheer",
+   "sfx": [
+    [
+     "ding",
+     0.1
+    ]
+   ],
+   "pause": 0.3,
+   "rate": "+24%",
+   "pitch": "+6Hz"
+  },
+  {
+   "id": "why",
+   "text": "Aber warte, jetzt kommt der Trick! Es ist nicht der eine Kaffee. Es ist die *Gewohnheit*.",
+   "mood": "think",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "habit",
+   "text": "Das sind fast *zwei Euro* am Tag, die du einfach wegtrinkst.",
+   "mood": "watch",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     1.2
+    ]
+   ]
+  },
+  {
+   "id": "tip",
+   "text": "Dein Plan: Mach den Kaffee zuhause und gönn dir den to go nur *einmal pro Woche*. Du sparst trotzdem über fünfhundert Euro.",
+   "mood": "cheer",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     1.6
+    ],
+    [
+     "ding",
+     4.0
+    ]
+   ]
+  },
+  {
+   "id": "rule",
+   "text": "Faustregel: Rechne jede tägliche Ausgabe mal *zweihundertzwanzig*. Dann siehst du, was sie im Jahr kostet.",
+   "mood": "think",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     2.2
+    ]
+   ]
+  },
+  {
+   "id": "note",
+   "text": "Die Preise sind Beispielwerte. Setz einfach deine eigenen ein.",
+   "mood": "neutral",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "cta",
+   "text": "Wie viel gibst du am Tag für *Kleinkram* aus? Schreib's in die Kommentare.",
+   "mood": "cheer",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     0.5
+    ]
+   ],
+   "rate": "+24%",
+   "pitch": "+6Hz"
+  }
+ ],
+ "tail": 1.8
+}
