@@ -1,0 +1,243 @@
+{
+ "id": "015-handy-raten",
+ "series": "ALLTAGSDUELL",
+ "theme": "indigo",
+ "topic": "Handy auf Raten kostet 76 Euro mehr",
+ "voice": "de-DE-FlorianMultilingualNeural",
+ "rate": "+22%",
+ "pitch": "+4Hz",
+ "gap": 0.14,
+ "tail": 1.8,
+ "beats": [
+  {
+   "id": "hook",
+   "text": "Stopp! Dein Handy auf Raten kostet dich *a:sechsundsiebzig* Euro mehr. Ohne dass du es merkst!",
+   "mood": "wave",
+   "sfx": [
+    [
+     "riser",
+     0.0
+    ],
+    [
+     "pop",
+     0.6
+    ],
+    [
+     "pop",
+     1.5
+    ]
+   ],
+   "rate": "+26%",
+   "pitch": "+7Hz",
+   "pause": 0.12
+  },
+  {
+   "id": "guess",
+   "text": "Klar, vierundzwanzig Euro im Monat tun doch nicht weh.",
+   "mood": "think",
+   "sfx": [
+    [
+     "pop",
+     0.2
+    ]
+   ]
+  },
+  {
+   "id": "setup",
+   "text": "Annahme: Das Handy kostet *fünfhundert* Euro. Auf Raten zahlst du vierundzwanzig Monate lang je vierundzwanzig Euro.",
+   "mood": "neutral",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "setup2",
+   "text": "Links die Raten. Rechts zahlst du das Handy sofort *bar*.",
+   "mood": "neutral",
+   "sfx": [
+    [
+     "pop",
+     0.1
+    ]
+   ]
+  },
+  {
+   "id": "go",
+   "text": "Los geht's!",
+   "mood": "cheer",
+   "sfx": [
+    [
+     "pop",
+     0.05
+    ]
+   ],
+   "pause": 0.2
+  },
+  {
+   "id": "m6",
+   "text": "Nach sechs Monaten: *hundertvierundvierzig* Euro gezahlt.",
+   "mood": "watch",
+   "ticks": true,
+   "pause": 0.3,
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "m12",
+   "text": "Nach einem Jahr: *zweihundertachtundachtzig* Euro.",
+   "mood": "watch",
+   "ticks": true,
+   "pause": 0.3,
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "m18",
+   "text": "Nach anderthalb Jahren: vierhundertzweiunddreißig Euro.",
+   "mood": "watch",
+   "ticks": true,
+   "pause": 0.3,
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "m24",
+   "text": "Nach zwei Jahren: *a:fünfhundertsechsundsiebzig* Euro. Rechts waren es nur *b:fünfhundert*.",
+   "mood": "cheer",
+   "ticks": true,
+   "sfx": [
+    [
+     "ding",
+     3.6
+    ]
+   ],
+   "pause": 0.5,
+   "rate": "+24%",
+   "pitch": "+6Hz"
+  },
+  {
+   "id": "result",
+   "text": "Boom! Das sind *sechsundsiebzig* Euro Aufpreis. Über fünfzehn Prozent.",
+   "mood": "cheer",
+   "sfx": [
+    [
+     "ding",
+     0.1
+    ]
+   ],
+   "pause": 0.3,
+   "rate": "+24%",
+   "pitch": "+6Hz"
+  },
+  {
+   "id": "why",
+   "text": "Aber warte, jetzt kommt der Trick! Eine kleine Monatsrate *versteckt* den Gesamtpreis.",
+   "mood": "think",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "why2",
+   "text": "Dein Kopf sieht vierundzwanzig Euro. Nicht die *fünfhundertsechsundsiebzig*.",
+   "mood": "watch",
+   "sfx": [
+    [
+     "pop",
+     0.8
+    ]
+   ]
+  },
+  {
+   "id": "tip",
+   "text": "Dein Plan: Frag immer nach dem *Gesamtbetrag* und dem effektiven Jahreszins.",
+   "mood": "cheer",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     1.8
+    ]
+   ]
+  },
+  {
+   "id": "save",
+   "text": "Oder leg jeden Monat vierundzwanzig Euro zurück. Nach etwa *einundzwanzig* Monaten hast du die fünfhundert Euro und kaufst bar.",
+   "mood": "cheer",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     3.0
+    ]
+   ]
+  },
+  {
+   "id": "rule",
+   "text": "Faustregel: *Rate mal Monate* ist dein echter Preis.",
+   "mood": "think",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     1.2
+    ]
+   ]
+  },
+  {
+   "id": "note",
+   "text": "Es gibt auch Angebote ohne Zinsen. Prüf, ob der Gesamtpreis wirklich *gleich* bleibt.",
+   "mood": "neutral",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "cta",
+   "text": "Wie viele *Raten* laufen bei dir gerade? Schreib's in die Kommentare.",
+   "mood": "cheer",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     0.5
+    ]
+   ],
+   "rate": "+24%",
+   "pitch": "+6Hz"
+  }
+ ]
+}
