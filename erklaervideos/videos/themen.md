@@ -37,7 +37,7 @@ Filter: Hat der Zuschauer das diese Woche selbst gemacht oder bezahlt? Gibt es e
 | 14 | Fitnessstudio pro Besuch | 30 € gegen 2,50 € pro Besuch | FERTIG |
 | 15 | Handy auf Raten | 576 € gegen 500 € bar | FERTIG |
 | 16 | Mogelpackung (weniger Inhalt, gleicher Preis) | 500 g auf 450 g = 11 % teurer | FERTIG |
-| 17 | Jahres- gegen Monatsabo | lohnt sich erst nach 10 Monaten | offen |
+| 17 | Jahres- gegen Monatsabo | lohnt sich erst nach 10 Monaten | FERTIG |
 | 18 | Wasser kaufen gegen Leitung | ca. 290 € im Jahr | Quelle/Annahme prüfen |
 | 19 | Pendeln | 9 Tage im Jahr | offen |
 | 20 | Handyzeit | 4 h täglich = 61 Tage im Jahr | offen |

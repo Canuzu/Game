@@ -1,0 +1,262 @@
+{
+ "id": "017-jahresabo",
+ "series": "ALLTAGSDUELL",
+ "theme": "indigo",
+ "topic": "Jahresabo oder Monatsabo: Wann lohnt es sich?",
+ "voice": "de-DE-FlorianMultilingualNeural",
+ "rate": "+22%",
+ "pitch": "+4Hz",
+ "gap": 0.14,
+ "tail": 2.0,
+ "beats": [
+  {
+   "id": "hook",
+   "text": "Stopp! Das Jahresabo ist günstiger? Nicht immer! Es kann dich *a:neununddreißig* Euro mehr kosten.",
+   "mood": "wave",
+   "sfx": [
+    [
+     "riser",
+     0.0
+    ],
+    [
+     "pop",
+     0.6
+    ],
+    [
+     "pop",
+     1.5
+    ]
+   ],
+   "rate": "+26%",
+   "pitch": "+7Hz",
+   "pause": 0.12
+  },
+  {
+   "id": "guess",
+   "text": "Klar, das Jahresabo ist doch immer der bessere Deal.",
+   "mood": "think",
+   "sfx": [
+    [
+     "pop",
+     0.2
+    ]
+   ]
+  },
+  {
+   "id": "setup",
+   "text": "Annahme: Ein Abo kostet *neun Euro neunundneunzig* im Monat. Oder neunundneunzig Euro für ein ganzes Jahr.",
+   "mood": "neutral",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "setup2",
+   "text": "Links zahlst du monatlich und kündigst, wenn du fertig bist. Rechts zahlst du das Jahr *direkt*.",
+   "mood": "neutral",
+   "sfx": [
+    [
+     "pop",
+     0.1
+    ]
+   ]
+  },
+  {
+   "id": "go",
+   "text": "Los geht's!",
+   "mood": "cheer",
+   "sfx": [
+    [
+     "pop",
+     0.05
+    ]
+   ],
+   "pause": 0.2
+  },
+  {
+   "id": "m3",
+   "text": "Nach drei Monaten: *dreißig* Euro gegen neunundneunzig.",
+   "mood": "watch",
+   "ticks": true,
+   "pause": 0.3,
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "m6",
+   "text": "Nach sechs Monaten: *sechzig* Euro gegen neunundneunzig.",
+   "mood": "watch",
+   "ticks": true,
+   "pause": 0.3,
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "m10",
+   "text": "Nach zehn Monaten: *hundert* Euro. Jetzt ist das Jahresabo gleichauf.",
+   "mood": "cheer",
+   "ticks": true,
+   "sfx": [
+    [
+     "ding",
+     2.4
+    ]
+   ],
+   "pause": 0.4
+  },
+  {
+   "id": "m12",
+   "text": "Nach zwölf Monaten: *a:hundertzwanzig* Euro gegen *b:neunundneunzig*. Jetzt spart das Jahresabo.",
+   "mood": "watch",
+   "ticks": true,
+   "pause": 0.4,
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ],
+   "rate": "+24%",
+   "pitch": "+6Hz"
+  },
+  {
+   "id": "result",
+   "text": "Boom! Das Jahresabo lohnt sich erst nach *zehn* Monaten.",
+   "mood": "cheer",
+   "sfx": [
+    [
+     "ding",
+     0.1
+    ]
+   ],
+   "pause": 0.3,
+   "rate": "+24%",
+   "pitch": "+6Hz"
+  },
+  {
+   "id": "years",
+   "text": "Hältst du das Abo ein ganzes Jahr durch, sparst du *zwanzig Euro und achtundachtzig Cent*.",
+   "mood": "watch",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     2.4
+    ]
+   ]
+  },
+  {
+   "id": "why",
+   "text": "Aber warte, jetzt kommt der Trick! Du zahlst das Jahr komplett *im Voraus*.",
+   "mood": "think",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "why2",
+   "text": "Nutzt du es nur sechs Monate, zahlst du *neununddreißig* Euro zu viel.",
+   "mood": "cheer",
+   "sfx": [
+    [
+     "pop",
+     1.4
+    ],
+    [
+     "ding",
+     2.6
+    ]
+   ]
+  },
+  {
+   "id": "tip",
+   "text": "Dein Plan: Frag dich vor dem Abschluss, wie lange du es *wirklich* nutzt.",
+   "mood": "cheer",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     2.0
+    ]
+   ]
+  },
+  {
+   "id": "tip2",
+   "text": "Wenn du unsicher bist, nimm das Monatsabo. Falls es monatlich *kündbar* ist.",
+   "mood": "watch",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     1.8
+    ]
+   ]
+  },
+  {
+   "id": "rule",
+   "text": "Faustregel: Teile den Jahrespreis durch den Monatspreis. Das ist deine *Break-even-Zahl*.",
+   "mood": "think",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     2.2
+    ]
+   ]
+  },
+  {
+   "id": "note",
+   "text": "Die Preise sind Beispielwerte. Rechne mit deinen echten Preisen.",
+   "mood": "neutral",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "cta",
+   "text": "Hast du schon mal ein *Jahresabo* ungenutzt laufen lassen? Schreib's in die Kommentare.",
+   "mood": "cheer",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     0.5
+    ]
+   ],
+   "rate": "+24%",
+   "pitch": "+6Hz"
+  }
+ ]
+}
