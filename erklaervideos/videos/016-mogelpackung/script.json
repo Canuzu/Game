@@ -1,0 +1,259 @@
+{
+ "id": "016-mogelpackung",
+ "series": "ALLTAGSDUELL",
+ "theme": "indigo",
+ "topic": "Mogelpackung: gleicher Preis, weniger Inhalt",
+ "voice": "de-DE-FlorianMultilingualNeural",
+ "rate": "+22%",
+ "pitch": "+4Hz",
+ "gap": 0.14,
+ "tail": 1.8,
+ "beats": [
+  {
+   "id": "hook",
+   "text": "Stopp! Der Preis blieb gleich und trotzdem wurde es *a:elf Prozent* teurer. Wie geht das?",
+   "mood": "wave",
+   "sfx": [
+    [
+     "riser",
+     0.0
+    ],
+    [
+     "pop",
+     0.6
+    ],
+    [
+     "pop",
+     1.5
+    ]
+   ],
+   "rate": "+26%",
+   "pitch": "+7Hz",
+   "pause": 0.12
+  },
+  {
+   "id": "guess",
+   "text": "Klar, gleicher Preis heißt doch gleich teuer.",
+   "mood": "think",
+   "sfx": [
+    [
+     "pop",
+     0.2
+    ]
+   ]
+  },
+  {
+   "id": "setup",
+   "text": "Annahme: Eine Packung kostet *zwei Euro neunundvierzig*. Früher waren fünfhundert Gramm drin.",
+   "mood": "neutral",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "setup2",
+   "text": "Heute sind es nur noch *vierhundertfünfzig* Gramm. Gleicher Preis, weniger Inhalt.",
+   "mood": "neutral",
+   "sfx": [
+    [
+     "pop",
+     0.1
+    ],
+    [
+     "pop",
+     2.2
+    ]
+   ]
+  },
+  {
+   "id": "go",
+   "text": "Los geht's!",
+   "mood": "cheer",
+   "sfx": [
+    [
+     "pop",
+     0.05
+    ]
+   ],
+   "pause": 0.2
+  },
+  {
+   "id": "k1",
+   "text": "Rechnen wir den Preis pro Kilo. Früher: *vier Euro achtundneunzig*.",
+   "mood": "watch",
+   "ticks": true,
+   "pause": 0.4,
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "k2",
+   "text": "Heute: *fünf Euro dreiundfünfzig* pro Kilo.",
+   "mood": "watch",
+   "ticks": true,
+   "sfx": [
+    [
+     "ding",
+     1.4
+    ]
+   ],
+   "pause": 0.5,
+   "rate": "+24%",
+   "pitch": "+6Hz"
+  },
+  {
+   "id": "result",
+   "text": "Boom! Das sind *fünfundfünfzig* Cent mehr pro Kilo. Elf Prozent teurer.",
+   "mood": "cheer",
+   "sfx": [
+    [
+     "ding",
+     0.1
+    ]
+   ],
+   "pause": 0.3,
+   "rate": "+24%",
+   "pitch": "+6Hz"
+  },
+  {
+   "id": "compare",
+   "text": "Das ist, als würdest du für zehn Packungen bezahlen und nur *neun* bekommen.",
+   "mood": "think",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     2.4
+    ]
+   ]
+  },
+  {
+   "id": "shrink",
+   "text": "Das nennt man *Shrinkflation*: Die Packung schrumpft, der Preis bleibt.",
+   "mood": "watch",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     1.6
+    ]
+   ]
+  },
+  {
+   "id": "year",
+   "text": "Kaufst du jede Woche eine Packung, zahlst du im Jahr für die gleiche Menge über *vierzehn Euro* mehr.",
+   "mood": "cheer",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     3.2
+    ],
+    [
+     "ding",
+     5.0
+    ]
+   ]
+  },
+  {
+   "id": "why",
+   "text": "Aber warte, jetzt kommt der Trick! Auf der Packung steht der Preis *fett*. Der Inhalt steht klein.",
+   "mood": "think",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "tip",
+   "text": "Dein Plan: Schau immer auf den *Grundpreis* pro Kilo oder Liter. Der steht am Regal.",
+   "mood": "cheer",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     2.4
+    ]
+   ]
+  },
+  {
+   "id": "tip2",
+   "text": "So vergleichst du Marken und Packungsgrößen fair, ganz ohne Rechnen.",
+   "mood": "watch",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     1.2
+    ]
+   ]
+  },
+  {
+   "id": "rule",
+   "text": "Faustregel: Nicht der Packungspreis zählt, sondern der Preis pro *Einheit*.",
+   "mood": "think",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     1.8
+    ]
+   ]
+  },
+  {
+   "id": "note",
+   "text": "Die Zahlen sind ein Beispiel. Prüf deine Lieblingsprodukte selbst.",
+   "mood": "neutral",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "cta",
+   "text": "Welches Produkt ist bei dir *kleiner* geworden? Schreib's in die Kommentare.",
+   "mood": "cheer",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     0.5
+    ]
+   ],
+   "rate": "+24%",
+   "pitch": "+6Hz"
+  }
+ ]
+}

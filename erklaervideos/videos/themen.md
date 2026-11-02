@@ -36,7 +36,7 @@ Filter: Hat der Zuschauer das diese Woche selbst gemacht oder bezahlt? Gibt es e
 | 13 | Vier Streaming-Abos | 480 € gegen 120 € im Jahr | FERTIG |
 | 14 | Fitnessstudio pro Besuch | 30 € gegen 2,50 € pro Besuch | FERTIG |
 | 15 | Handy auf Raten | 576 € gegen 500 € bar | FERTIG |
-| 16 | Mogelpackung (weniger Inhalt, gleicher Preis) | 500 g auf 450 g = 11 % teurer | offen |
+| 16 | Mogelpackung (weniger Inhalt, gleicher Preis) | 500 g auf 450 g = 11 % teurer | FERTIG |
 | 17 | Jahres- gegen Monatsabo | lohnt sich erst nach 10 Monaten | offen |
 | 18 | Wasser kaufen gegen Leitung | ca. 290 € im Jahr | Quelle/Annahme prüfen |
 | 19 | Pendeln | 9 Tage im Jahr | offen |
