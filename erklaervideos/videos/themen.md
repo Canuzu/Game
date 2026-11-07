@@ -38,7 +38,7 @@ Filter: Hat der Zuschauer das diese Woche selbst gemacht oder bezahlt? Gibt es e
 | 15 | Handy auf Raten | 576 € gegen 500 € bar | FERTIG |
 | 16 | Mogelpackung (weniger Inhalt, gleicher Preis) | 500 g auf 450 g = 11 % teurer | FERTIG |
 | 17 | Jahres- gegen Monatsabo | lohnt sich erst nach 10 Monaten | FERTIG |
-| 18 | Wasser kaufen gegen Leitung | ca. 290 € im Jahr | Quelle/Annahme prüfen |
+| 18 | Wasser kaufen gegen Leitung | 365 € gegen ca. 1,50 € im Jahr (Annahmen) | FERTIG |
 | 19 | Pendeln | 9 Tage im Jahr | offen |
 | 20 | Handyzeit | 4 h täglich = 61 Tage im Jahr | offen |
 | 21 | Stand-by | ca. 131 € im Jahr (Annahmen) | offen |

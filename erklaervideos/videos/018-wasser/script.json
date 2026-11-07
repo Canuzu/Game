@@ -1,0 +1,262 @@
+{
+ "id": "018-wasser",
+ "series": "ALLTAGSDUELL",
+ "theme": "indigo",
+ "topic": "Wasser kaufen kostet 365 Euro im Jahr, Leitungswasser fast nichts",
+ "voice": "de-DE-FlorianMultilingualNeural",
+ "rate": "+22%",
+ "pitch": "+4Hz",
+ "gap": 0.14,
+ "tail": 2.0,
+ "beats": [
+  {
+   "id": "hook",
+   "text": "Stopp! Eine Flasche Wasser am Tag kostet dich *a:dreihundertfünfundsechzig* Euro im Jahr. Dabei kommt es *b:fast gratis* aus dem Hahn!",
+   "mood": "wave",
+   "sfx": [
+    [
+     "riser",
+     0.0
+    ],
+    [
+     "pop",
+     0.6
+    ],
+    [
+     "pop",
+     1.5
+    ]
+   ],
+   "rate": "+26%",
+   "pitch": "+7Hz",
+   "pause": 0.12
+  },
+  {
+   "id": "guess",
+   "text": "Klar, ein Euro für eine Flasche. Was soll das schon kosten?",
+   "mood": "think",
+   "sfx": [
+    [
+     "pop",
+     0.2
+    ]
+   ]
+  },
+  {
+   "id": "setup",
+   "text": "Annahme: Du kaufst jeden Tag eine Flasche Wasser für *einen Euro*.",
+   "mood": "neutral",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "setup2",
+   "text": "Links die Flasche aus dem Laden. Rechts das Wasser aus dem *Hahn*, für grob vier Euro pro tausend Liter.",
+   "mood": "neutral",
+   "sfx": [
+    [
+     "pop",
+     0.1
+    ]
+   ]
+  },
+  {
+   "id": "go",
+   "text": "Los geht's!",
+   "mood": "cheer",
+   "sfx": [
+    [
+     "pop",
+     0.05
+    ]
+   ],
+   "pause": 0.2
+  },
+  {
+   "id": "m1",
+   "text": "Nach einem Monat: etwa *dreißig* Euro gegen zwölf Cent.",
+   "mood": "watch",
+   "ticks": true,
+   "pause": 0.3,
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "m3",
+   "text": "Nach drei Monaten: gut *neunzig* Euro gegen vierzig Cent.",
+   "mood": "watch",
+   "ticks": true,
+   "pause": 0.3,
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "m6",
+   "text": "Nach einem halben Jahr: über *hundertachtzig* Euro.",
+   "mood": "watch",
+   "ticks": true,
+   "pause": 0.3,
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "m12",
+   "text": "Nach einem Jahr: *a:dreihundertfünfundsechzig* Euro. Aus dem Hahn: *b:anderthalb* Euro.",
+   "mood": "cheer",
+   "ticks": true,
+   "sfx": [
+    [
+     "ding",
+     3.4
+    ]
+   ],
+   "pause": 0.5,
+   "rate": "+24%",
+   "pitch": "+6Hz"
+  },
+  {
+   "id": "result",
+   "text": "Boom! Du sparst über *dreihundertsechzig* Euro im Jahr.",
+   "mood": "cheer",
+   "sfx": [
+    [
+     "ding",
+     0.1
+    ]
+   ],
+   "pause": 0.3,
+   "rate": "+24%",
+   "pitch": "+6Hz"
+  },
+  {
+   "id": "factor",
+   "text": "Pro Liter ist die Flasche etwa *zweihundertfünfzigmal* so teuer wie der Hahn.",
+   "mood": "think",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     2.2
+    ]
+   ]
+  },
+  {
+   "id": "why",
+   "text": "Aber warte, jetzt kommt der Trick! Du zahlst nicht fürs Wasser. Du zahlst für die *Flasche* und den Transport.",
+   "mood": "think",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "why2",
+   "text": "Leitungswasser wird in Deutschland *streng* kontrolliert.",
+   "mood": "watch",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     1.4
+    ]
+   ]
+  },
+  {
+   "id": "tip",
+   "text": "Dein Plan: Nimm eine Trinkflasche mit und füll sie *zuhause* auf.",
+   "mood": "cheer",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     2.0
+    ]
+   ]
+  },
+  {
+   "id": "tip2",
+   "text": "Magst du Sprudel? Mit einem Wassersprudler hast du ihn auch aus dem Hahn. Prüf, ab wann er sich *lohnt*.",
+   "mood": "watch",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     2.6
+    ]
+   ]
+  },
+  {
+   "id": "rule",
+   "text": "Faustregel: Rechne den Tagespreis mal *dreihundertfünfundsechzig*. Dann siehst du, was eine Gewohnheit im Jahr kostet.",
+   "mood": "think",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     2.2
+    ]
+   ]
+  },
+  {
+   "id": "note",
+   "text": "Die Preise sind Beispielwerte. Setz einfach deine eigenen ein.",
+   "mood": "neutral",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ]
+   ]
+  },
+  {
+   "id": "cta",
+   "text": "Wie viele Flaschen kaufst du pro *Woche*? Schreib's in die Kommentare.",
+   "mood": "cheer",
+   "sfx": [
+    [
+     "whoosh",
+     0.0
+    ],
+    [
+     "pop",
+     0.5
+    ]
+   ],
+   "rate": "+24%",
+   "pitch": "+6Hz"
+  }
+ ]
+}
