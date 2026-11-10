@@ -267,3 +267,10 @@
 .bestaetigung__nummer { font-variant-numeric: tabular-nums; letter-spacing: 0.08em; font-weight: 650; padding: 0.5rem 1.1rem; border: 1px dashed var(--messing); border-radius: var(--r-s); background: var(--kreide); }
 .bestaetigung .knopfreihe { justify-content: center; }
 .bestaetigung .kasten { text-align: left; width: min(38rem, 100%); }
+
+/* ---------- Feinschliff für schmale Bildschirme und Tippflächen -------------- */
+
+.werkzeile__rechts { min-width: 0; flex: 0 1 auto; }
+.werkzeile .auswahl { min-width: 0; flex: 0 1 auto; }
+.variante legend a { padding-block: 0.4rem; margin-block: -0.4rem; }
+.kasten > h2 small { width: 1.75rem; height: 1.75rem; display: inline-grid; place-items: center; border: 1px solid var(--messing); border-radius: 50%; letter-spacing: 0; font-size: 0.78rem; transform: translateY(-0.18em); flex: none; }

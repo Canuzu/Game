@@ -10,6 +10,8 @@
  *                 in speicher/verwaltung-schluessel.txt abgelegt.
  *   Einbetten:    MUGA_EINBETTEN=1 erlaubt die Anzeige in fremden Rahmen
  *                 (nur für Vorschauen; im Betrieb weglassen).
+ *   Hinter Proxy: MUGA_PROXY=1, wenn ein vorgeschalteter Webserver die Anfragen
+ *                 weiterreicht. Dann zählt die Adresse aus X-Forwarded-For.
  *
  * Gliederung:
  *   1) Einstellungen   2) Speicher        3) Prüfen von Eingaben
@@ -31,6 +33,8 @@ const PORT = Number(process.env.PORT) || 4173;
 const DATEN = process.env.MUGA_DATEN || path.join(WURZEL, 'speicher');
 const EINBETTEN = process.env.MUGA_EINBETTEN === '1';
 const MAX_KOERPER = 64 * 1024;
+const HINTER_PROXY = process.env.MUGA_PROXY === '1';
+const SCHREIBGRENZE = Number(process.env.MUGA_SCHREIBGRENZE) || 30;   // Schreibzugriffe je Adresse in zehn Minuten
 
 fs.mkdirSync(DATEN, { recursive: true });
 
@@ -296,7 +300,8 @@ const ZUSTAENDE = {
 
 async function schnittstelle(req, res, url) {
   const weg = url.pathname.replace(/^\/api\//, '');
-  const adresse = req.socket.remoteAddress || 'unbekannt';
+  const weitergereicht = HINTER_PROXY ? String(req.headers['x-forwarded-for'] || '').split(',')[0].trim() : '';
+  const adresse = weitergereicht || req.socket.remoteAddress || 'unbekannt';
 
   if (req.method === 'GET' && weg === 'status') {
     return sende(res, 200, { dienst: 'muga', version: 1 });
@@ -319,7 +324,7 @@ async function schnittstelle(req, res, url) {
 
   if (req.method !== 'POST') throw new Eingabefehler('Nicht gefunden.', 404);
   if (fremd(req)) throw new Eingabefehler('Anfrage von fremder Seite abgelehnt.', 403);
-  if (gebremst(adresse, 'schreiben', 30, 600000)) throw new Eingabefehler('Zu viele Anfragen. Bitte versuchen Sie es in einigen Minuten erneut.', 429);
+  if (gebremst(adresse, 'schreiben', SCHREIBGRENZE, 600000)) throw new Eingabefehler('Zu viele Anfragen. Bitte versuchen Sie es in einigen Minuten erneut.', 429);
   const d = await liesKoerper(req);
 
   /* Unsichtbares Feld gegen automatische Einsendungen: Ist es gefüllt, tun wir

@@ -459,3 +459,12 @@ table { border-collapse: collapse; width: 100%; }
   .kasten, .uebersicht { border-color: #999; break-inside: avoid; }
   a { text-decoration: none; }
 }
+
+/* ---------- Schmale Bildschirme: lange Wörter und Adressen umbrechen --------- */
+
+body { overflow-wrap: break-word; }
+.prosa a { overflow-wrap: anywhere; }
+@media (max-width: 560px) {
+  h1, h2, h3 { hyphens: auto; -webkit-hyphens: auto; hyphenate-limit-chars: 14 6 6; overflow-wrap: anywhere; }
+  .seitenkopf h1 { font-size: clamp(2rem, 9.5vw, 2.6rem); }
+}

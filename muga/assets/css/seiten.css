@@ -388,3 +388,5 @@
 .verwaltung .auswahl { min-height: 2.3rem; padding-block: 0.3rem; font-size: 0.86rem; width: auto; }
 
 .kalender abbr { text-decoration: none; cursor: default; }
+.zuruck, .textknopf { min-height: 2.75rem; display: inline-flex; align-items: center; }
+.zuruck { gap: 0.5rem; }
