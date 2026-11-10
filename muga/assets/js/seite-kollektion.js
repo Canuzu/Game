@@ -225,7 +225,7 @@
           '<p class="leise">Nehmen Sie einen Filter zurück, oder lassen Sie sich persönlich beraten. Im Geschäft führen wir mehr, als online zu sehen ist.</p>' +
           '<div class="knopfreihe" style="justify-content:center"><button class="knopf knopf--dunkel" type="button" data-alle-weg>Filter zurücksetzen</button><a class="faden" href="termin.html">Termin buchen ' + sym('pfeil') + '</a></div></div>';
       } else {
-        raster.innerHTML = sicht.map(function (p, i) { return M.karte(p, k, { sofort: i < 3 }); }).join('');
+        raster.innerHTML = sicht.map(function (p, i) { return M.karte(p, k, { sofort: i < 3, h: 'h2' }); }).join('');
       }
       var nach = document.getElementById('nachladen');
       nach.hidden = !alle.length;

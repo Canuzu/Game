@@ -56,7 +56,7 @@
     if (bereich === 'termine') {
       var liste = daten.termine.slice().sort(function (a, b) { return (b.datum + Z.uhr(b.start)).localeCompare(a.datum + Z.uhr(a.start)); })
         .sort(function (a, b) { return (a.datum < heute) - (b.datum < heute) || (a.datum >= heute ? (a.datum + Z.uhr(a.start)).localeCompare(b.datum + Z.uhr(b.start)) : 0); });
-      html = liste.length ? '<div class="tabellenrahmen"><table class="tabelle"><thead><tr><th>Wann</th><th>Anliegen</th><th>Kunde</th><th>Hinweise</th><th>Zustand</th></tr></thead><tbody>' +
+      html = liste.length ? '<div class="tabellenrahmen" tabindex="0" role="region" aria-label="Liste"><table class="tabelle"><thead><tr><th>Wann</th><th>Anliegen</th><th>Kunde</th><th>Hinweise</th><th>Zustand</th></tr></thead><tbody>' +
         liste.map(function (t) {
           var a = M.terminart(t.art);
           return '<tr><td><strong>' + esc(Z.datumLang(t.datum)) + '</strong><small>' + Z.uhr(t.start) + ' bis ' + Z.uhr(t.start + t.dauer) + ' Uhr · ' + esc(t.code) + '</small></td>' +
@@ -68,7 +68,7 @@
     }
     if (bereich === 'bestellungen') {
       var bl = daten.bestellungen.slice().reverse();
-      html = bl.length ? '<div class="tabellenrahmen"><table class="tabelle"><thead><tr><th>Bestellung</th><th>Artikel</th><th>Kunde</th><th class="zahl">Summe</th><th>Zustand</th></tr></thead><tbody>' +
+      html = bl.length ? '<div class="tabellenrahmen" tabindex="0" role="region" aria-label="Liste"><table class="tabelle"><thead><tr><th>Bestellung</th><th>Artikel</th><th>Kunde</th><th class="zahl">Summe</th><th>Zustand</th></tr></thead><tbody>' +
         bl.map(function (b) {
           var zahl = C.zahlarten.filter(function (z) { return z.id === b.zahlung; })[0], k = b.kunde;
           return '<tr><td><strong>' + esc(b.nummer) + '</strong><small>' + esc(wann(b.angelegt)) + '</small><small>' + (b.lieferung === 'abholung' ? 'Abholung' : 'Versand') + ' · ' + esc(zahl ? zahl.name : b.zahlung) + '</small></td>' +
@@ -83,7 +83,7 @@
     }
     if (bereich === 'nachrichten') {
       var nl = daten.nachrichten.slice().reverse();
-      html = nl.length ? '<div class="tabellenrahmen"><table class="tabelle"><thead><tr><th>Eingang</th><th>Von</th><th>Nachricht</th><th>Zustand</th></tr></thead><tbody>' +
+      html = nl.length ? '<div class="tabellenrahmen" tabindex="0" role="region" aria-label="Liste"><table class="tabelle"><thead><tr><th>Eingang</th><th>Von</th><th>Nachricht</th><th>Zustand</th></tr></thead><tbody>' +
         nl.map(function (n) {
           return '<tr><td>' + esc(wann(n.angelegt)) + '</td>' +
             '<td>' + esc(n.vorname + ' ' + n.nachname) + '<small><a href="mailto:' + esc(n.email) + '">' + esc(n.email) + '</a>' + (n.telefon ? ' · ' + esc(n.telefon) : '') + '</small></td>' +

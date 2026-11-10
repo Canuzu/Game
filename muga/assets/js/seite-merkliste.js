@@ -9,7 +9,7 @@
     M.katalog.lade().then(function (k) {
       function zeichne() {
         var liste = M.merk.liste().map(function (id) { return k.nach[id]; }).filter(Boolean);
-        document.getElementById('merk-raster').innerHTML = liste.map(function (p) { return M.karte(p, k); }).join('');
+        document.getElementById('merk-raster').innerHTML = liste.map(function (p) { return M.karte(p, k, { h: 'h2' }); }).join('');
         document.getElementById('merk-leer').hidden = !!liste.length;
         document.getElementById('merk-kopf').hidden = !liste.length;
         document.getElementById('merk-zahl').innerHTML = '<strong>' + liste.length + '</strong> ' + (liste.length === 1 ? 'Artikel gemerkt' : 'Artikel gemerkt');

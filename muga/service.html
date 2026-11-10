@@ -7,8 +7,6 @@
 <meta name="description" content="Versandkosten nach Land, Zahlungsarten, Rückgabe und häufige Fragen bei MUGA Herrenausstatter Köln. In Deutschland ab 50,01 € versandkostenfrei.">
 <meta name="theme-color" content="#f6f2ea">
 <link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
-<link rel="preload" href="assets/fonts/fraunces-latin-opsz-normal.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="assets/fonts/figtree-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="assets/css/basis.css">
 <link rel="stylesheet" href="assets/css/rahmen.css">
 <link rel="stylesheet" href="assets/css/shop.css">
@@ -45,7 +43,7 @@
         <p class="rechner__ergebnis" aria-live="polite"><small>Versand</small><span id="r-ergebnis">kostenlos</span></p>
       </form>
 
-      <div class="tabellenrahmen">
+      <div class="tabellenrahmen" tabindex="0" role="region" aria-label="Versandkosten nach Zielland und Bestellwert">
         <table class="tabelle" id="versandtabelle">
           <caption class="unsichtbar">Versandkosten nach Zielland und Bestellwert</caption>
           <thead><tr><th scope="col">Zielland</th><th scope="col" class="zahl">bis 5,00&nbsp;€</th><th scope="col" class="zahl">bis 20,00&nbsp;€</th><th scope="col" class="zahl">bis 50,00&nbsp;€</th><th scope="col" class="zahl">ab 50,01&nbsp;€</th></tr></thead>

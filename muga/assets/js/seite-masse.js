@@ -192,7 +192,7 @@
     }).join('');
     function zeige(i) {
       var t = TABELLEN[i];
-      ziel.innerHTML = '<div class="tabellenrahmen"><table class="tabelle"><caption class="unsichtbar">' + esc(t.name) + ', Maße in Zentimetern</caption><thead><tr><th scope="col">Größe</th>' +
+      ziel.innerHTML = '<div class="tabellenrahmen" tabindex="0" role="region" aria-label="' + esc(t.name) + ', Maße in Zentimetern"><table class="tabelle"><caption class="unsichtbar">' + esc(t.name) + ', Maße in Zentimetern</caption><thead><tr><th scope="col">Größe</th>' +
         t.kopf.map(function (k) { return '<th scope="col" class="zahl">' + esc(k) + '</th>'; }).join('') + '</tr></thead><tbody>' +
         t.zeilen.map(function (z) {
           return '<tr><th scope="row">' + esc(z[0]) + '</th>' + z.slice(1).map(function (w) { return '<td class="zahl">' + esc(w) + '</td>'; }).join('') + '</tr>';

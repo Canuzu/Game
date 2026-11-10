@@ -12,6 +12,17 @@
 
   var SEITE = (location.pathname.split('/').pop() || 'index.html').toLowerCase();
 
+  /* Schriften früh anfordern. Nur über http(s): Bei Doppelklick-Betrieb lehnt der
+   * Browser solche Vorabaufrufe ab, die Schriften lädt er dort trotzdem über das CSS. */
+  if (/^https?:$/.test(location.protocol)) {
+    ['fraunces-latin-opsz-normal', 'figtree-latin-wght-normal'].forEach(function (name) {
+      var l = document.createElement('link');
+      l.rel = 'preload'; l.as = 'font'; l.type = 'font/woff2'; l.crossOrigin = 'anonymous';
+      l.href = 'assets/fonts/' + name + '.woff2';
+      document.head.appendChild(l);
+    });
+  }
+
   /* Aufbau des Sortiments für Navigation und Fußzeile */
   var SORTIMENT = [
     { titel: 'Anzüge', punkte: [
@@ -49,13 +60,13 @@
   function katLink(id) { return 'kollektion.html?k=' + id; }
 
   function logo(hell) {
-    return '<a class="logo' + (hell ? ' logo--hell' : '') + '" href="index.html" aria-label="MUGA Herrenausstatter Köln, zur Startseite">' +
+    return '<a class="logo' + (hell ? ' logo--hell' : '') + '" href="index.html">' +
       '<svg class="logo__zeichen" viewBox="0 0 40 40" aria-hidden="true">' +
         '<rect width="40" height="40" rx="8" fill="' + (hell ? '#f3ede2' : '#15120f') + '"/>' +
         '<path d="M8.500 30.500L14.500 10.500 20 22l5.500-11.500 6 20" fill="none" stroke="#b81f26" stroke-width="5.400" stroke-linecap="round" stroke-linejoin="round"/>' +
         '<path d="M8.500 30.500L14.500 10.500 20 22l5.500-11.500 6 20" fill="none" stroke="' + (hell ? '#15120f' : '#fffdf9') + '" stroke-width="1.700" stroke-linecap="round" stroke-linejoin="round"/>' +
       '</svg>' +
-      '<span class="logo__text"><span class="logo__wort">MUGA</span><span class="logo__zusatz">Herrenausstatter · Köln</span></span>' +
+      '<span class="logo__text"><span class="logo__wort">MUGA</span><span class="logo__zusatz">Herrenausstatter · Köln</span></span><span class="unsichtbar">, zur Startseite</span>' +
     '</a>';
   }
 
@@ -94,11 +105,11 @@
       ['besuch.html', 'Besuch in Köln']
     ];
     return '<a class="sprung" href="#inhalt">Zum Inhalt springen</a>' +
-    '<div class="leiste nacht">' +
+    '<div class="leiste nacht" role="region" aria-label="Öffnungsstatus und Telefon">' +
       '<div class="huelle leiste__innen">' +
         '<a class="leiste__status" href="besuch.html" data-oeffnung>' + statusHtml() + '</a>' +
         '<p class="leiste__mitte">Direkt vom Hersteller · Kostenloser Versand ab 50,01&nbsp;€ in Deutschland</p>' +
-        '<a class="leiste__tel" href="tel:' + C.telefonLink + '">' + sym('telefon') + '<span>' + esc(C.telefon) + '</span></a>' +
+        '<a class="leiste__tel" href="tel:' + C.telefonLink + '" aria-label="Anrufen: ' + esc(C.telefon) + '">' + sym('telefon') + '<span>' + esc(C.telefon) + '</span></a>' +
       '</div>' +
     '</div>' +
     '<header class="kopf" id="kopf">' +
@@ -116,9 +127,9 @@
         '</ul></nav>' +
         '<div class="kopf__werkzeug">' +
           '<button class="symbolknopf" type="button" data-oeffne="suche" aria-label="Suche öffnen">' + sym('suche') + '</button>' +
-          '<a class="symbolknopf kopf__merk" href="merkliste.html" aria-label="Merkliste">' + sym('herz') + '<span class="zaehler" data-merkzahl hidden></span></a>' +
-          '<button class="symbolknopf" type="button" data-oeffne="korblade" aria-label="Warenkorb öffnen">' + sym('korb') + '<span class="zaehler" data-korbzahl hidden></span></button>' +
-          '<a class="knopf knopf--klein kopf__termin" href="termin.html">' + sym('kalender') + '<span>Termin buchen</span></a>' +
+          '<a class="symbolknopf kopf__merk" href="merkliste.html" aria-label="Merkliste" data-merkknopf>' + sym('herz') + '<span class="zaehler" data-merkzahl hidden></span></a>' +
+          '<button class="symbolknopf" type="button" data-oeffne="korblade" aria-label="Warenkorb öffnen" data-korbknopf>' + sym('korb') + '<span class="zaehler" data-korbzahl hidden></span></button>' +
+          '<a class="knopf knopf--klein kopf__termin" href="termin.html" aria-label="Termin buchen">' + sym('kalender') + '<span>Termin buchen</span></a>' +
         '</div>' +
       '</div>' +
       megaHtml() +
@@ -255,6 +266,9 @@
     var k = M.korb.anzahl(), m = M.merk.liste().length;
     M.$$('[data-korbzahl]').forEach(function (z) { z.textContent = k; z.hidden = !k; });
     M.$$('[data-merkzahl]').forEach(function (z) { z.textContent = m; z.hidden = !m; });
+    /* Die sichtbare Zahl gehört auch in die Beschriftung für Vorleseprogramme */
+    M.$$('[data-korbknopf]').forEach(function (b) { b.setAttribute('aria-label', 'Warenkorb öffnen' + (k ? ', ' + k + ' Artikel' : '')); });
+    M.$$('[data-merkknopf]').forEach(function (b) { b.setAttribute('aria-label', 'Merkliste' + (m ? ', ' + m + ' Artikel' : '')); });
   }
 
   /* Mengenknöpfe und Entfernen, für Leiste und Warenkorbseite gemeinsam */
@@ -310,6 +324,10 @@
       });
     }, 140);
     feld.addEventListener('input', zeichne);
+    /* Suchfelder leeren sich bei Escape nur. Hier soll die Taste die Suche schließen. */
+    feld.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { e.preventDefault(); M.schliesse(document.getElementById('suche')); }
+    });
     feld.form.addEventListener('submit', function (e) {
       if (!feld.value.trim()) e.preventDefault();
     });

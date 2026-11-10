@@ -219,9 +219,10 @@
         serverFrage = Promise.resolve(false);
         return serverFrage;
       }
-      serverFrage = fetch('api/status', { headers: { Accept: 'application/json' }, cache: 'no-store' })
-        .then(function (a) { return a.ok ? a.json() : null; })
-        .then(function (d) { return !!(d && d.dienst === 'muga'); })
+      /* Der Server gibt sich mit einer Kopfzeile zu erkennen. Gefragt wird die
+       * eigene Seite, damit auf reinen Dateiservern kein Fehlaufruf entsteht. */
+      serverFrage = fetch(location.pathname || '/', { method: 'HEAD', cache: 'no-store' })
+        .then(function (a) { return a.headers.get('x-muga-dienst') === '1'; })
         .catch(function () { return false; });
       return serverFrage;
     },
@@ -537,7 +538,7 @@
     }).join('');
     var mehr = farben.length > 5 ? '<li class="farbpunkte__mehr">+' + (farben.length - 5) + '</li>' : '';
     var gemerkt = M.merk.hat(p.id);
-    var b = p.b || [3, 4];
+    var b = p.b || [3, 4], h = wahl.h === 'h2' ? 'h2' : 'h3';
     return '<article class="karte' + (wahl.klasse ? ' ' + wahl.klasse : '') + '" data-id="' + M.esc(p.id) + '">' +
       '<a class="karte__bild" href="produkt.html?p=' + encodeURIComponent(p.id) + '" tabindex="-1" aria-hidden="true">' +
         '<img src="' + M.katalog.bild(p) + '" alt="" width="' + b[0] + '" height="' + b[1] + '" loading="' + (wahl.sofort ? 'eager' : 'lazy') + '" decoding="async">' +
@@ -546,7 +547,7 @@
       '<button class="karte__herz" type="button" data-merken="' + M.esc(p.id) + '" aria-pressed="' + gemerkt + '" aria-label="' + M.esc(p.n) + (gemerkt ? ' von der Merkliste entfernen' : ' merken') + '">' + M.symbol('herz') + '</button>' +
       '<div class="karte__text">' +
         '<p class="karte__art">' + M.esc(kat ? kat.einzahl || kat.name : '') + (p.nr ? ' · Modell ' + M.esc(p.nr) : '') + '</p>' +
-        '<h3 class="karte__name"><a href="produkt.html?p=' + encodeURIComponent(p.id) + '">' + M.esc(p.n) + '</a></h3>' +
+        '<' + h + ' class="karte__name"><a href="produkt.html?p=' + encodeURIComponent(p.id) + '">' + M.esc(p.n) + '</a></' + h + '>' +
         '<div class="karte__fuss">' + M.preis(p) + (punkte ? '<ul class="farbpunkte" aria-label="Farben">' + punkte + mehr + '</ul>' : '') + '</div>' +
       '</div>' +
     '</article>';

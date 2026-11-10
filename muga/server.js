@@ -417,6 +417,7 @@ const SCHUTZ = [
 function kopfzeilen(zusatz) {
   return Object.assign({
     'Content-Security-Policy': SCHUTZ,
+    'X-Muga-Dienst': '1',
     'X-Content-Type-Options': 'nosniff',
     'Referrer-Policy': 'strict-origin-when-cross-origin',
     'Permissions-Policy': 'camera=(), microphone=(), geolocation=()'

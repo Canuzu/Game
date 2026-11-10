@@ -238,7 +238,7 @@
 .terminzettel dl { margin: 0; padding: 1.2rem 1.5rem; display: grid; gap: 1rem; }
 .terminzettel dt { font-size: 0.7rem; font-weight: 650; letter-spacing: 0.14em; text-transform: uppercase; color: var(--stein); margin-bottom: 0.15rem; }
 .terminzettel dd { margin: 0; font-weight: 580; line-height: 1.35; }
-.terminzettel dd.offen { color: #a39989; font-weight: 500; }
+.terminzettel dd.offen { color: var(--stein); font-weight: 500; font-style: italic; }
 .terminzettel__fuss { padding: 1.1rem 1.5rem 1.4rem; border-top: 1px dashed var(--linie); font-size: 0.86rem; color: var(--stein); display: grid; gap: 0.5rem; }
 .terminzettel__fuss a { display: inline-flex; align-items: center; gap: 0.5rem; color: var(--tinte); font-weight: 600; text-decoration: none; }
 @media (max-width: 980px) {
