@@ -58,12 +58,13 @@
     M.$('[data-personen="-1"]').disabled = true;
 
     /* ---- Artikel aus der Produktseite ---- */
-    var artikelId = M.param('artikel');
-    if (artikelId && /^[a-z0-9-]+$/.test(artikelId)) {
+    var artikelIds = (M.param('artikel') || '').split(',').filter(function (x) { return /^[a-z0-9-]+$/.test(x); }).slice(0, 6);
+    if (artikelIds.length) {
       M.katalog.lade().then(function (k) {
-        var p = k.nach[artikelId];
-        if (!p) return;
-        wahl.artikel = p.n + (p.nr ? ' (Modell ' + p.nr + ')' : '');
+        var namen = artikelIds.map(function (x) { return k.nach[x]; }).filter(Boolean)
+          .map(function (p) { return p.nr ? 'Modell ' + p.nr + ' (' + p.a + ')' : p.n; });
+        if (!namen.length) return;
+        wahl.artikel = namen.join(', ').slice(0, 160);
         document.getElementById('artikel-name').textContent = wahl.artikel;
         document.getElementById('artikel-hinweis').hidden = false;
       }).catch(function () { /* ohne Katalog geht die Buchung trotzdem */ });

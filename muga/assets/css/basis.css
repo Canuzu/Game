@@ -449,3 +449,13 @@ table { border-collapse: collapse; width: 100%; }
 .kruemel a { text-decoration: none; }
 .kruemel a:hover { color: var(--rot); }
 .kruemel li + li::before { content: "/"; margin-right: 0.5rem; color: #b9ad9b; }
+
+/* ---------- Druck (Bestell- und Terminbestätigung) -------------------------- */
+
+@media print {
+  muga-kopf, muga-fuss, .knopfreihe, .meldung, .ohne-skript { display: none !important; }
+  body { background: #fff; font-size: 11pt; }
+  .zeigen { opacity: 1 !important; transform: none !important; }
+  .kasten, .uebersicht { border-color: #999; break-inside: avoid; }
+  a { text-decoration: none; }
+}

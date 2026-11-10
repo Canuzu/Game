@@ -105,7 +105,7 @@
         { id: 'eu2', name: 'Zone 2', kosten: [11.9, 15.9, 17.9, 35.9],
           laender: ['Großbritannien', 'Malta', 'Litauen', 'Estland', 'Lettland', 'Norwegen', 'Portugal', 'Spanien', 'Irland', 'Finnland'] },
         { id: 'eu3', name: 'Zone 3', kosten: [17, 30, 35, 40],
-          laender: ['Ungarn', 'Slowakei', 'Slowenien', 'Polen', 'Schweden', 'Schweiz', 'Griechenland', 'Zypern'] },
+          laender: ['Ungarn', 'Slowakei', 'Slowenien', 'Polen', 'Schweden', 'Schweiz', 'Griechenland', 'Zypern', 'Spanien (Balearen und Kanaren)', 'Portugal (Azoren)'] },
         { id: 'welt', name: 'Rest der Welt', kosten: [25, 40, 50, 60],
           laender: ['Anderes Land'] }
       ]

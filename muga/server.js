@@ -146,6 +146,13 @@ function pruefeTermin(d) {
   };
 }
 
+/* Preis für Größe und Farbe; dieselbe Regel wie im Browser (kern.js, M.preisFuer) */
+function preisFuer(artikel, groesse, farbe) {
+  let preis = artikel.pg && groesse && artikel.pg[groesse] != null ? artikel.pg[groesse] : artikel.p;
+  if (artikel.pf && farbe && artikel.pf[farbe] != null) preis += artikel.pf[farbe];
+  return Math.round(preis * 100) / 100;
+}
+
 function pruefeBestellung(d) {
   if (!Array.isArray(d.posten) || !d.posten.length) throw new Eingabefehler('Ihr Warenkorb ist leer.');
   if (d.posten.length > 40) throw new Eingabefehler('Zu viele Positionen in einer Bestellung.');
@@ -158,8 +165,9 @@ function pruefeBestellung(d) {
     const groesse = zeile(p.groesse, 40, false), farbe = zeile(p.farbe, 60, false);
     if (artikel.g && artikel.g.length && artikel.g.indexOf(groesse) === -1) throw new Eingabefehler('Bitte wählen Sie eine Größe für „' + artikel.n + '“.');
     if (artikel.f && artikel.f.length > 1 && artikel.f.indexOf(farbe) === -1) throw new Eingabefehler('Bitte wählen Sie eine Farbe für „' + artikel.n + '“.');
-    summe += artikel.p * menge;
-    return { id: artikel.id, nr: artikel.nr || '', name: artikel.n, preis: artikel.p, groesse: groesse, farbe: farbe, menge: menge };
+    const preis = preisFuer(artikel, groesse, farbe);
+    summe += preis * menge;
+    return { id: artikel.id, nr: artikel.nr || '', name: artikel.n, preis: preis, groesse: groesse, farbe: farbe, zusatz: zeile(p.zusatz, 160, false), menge: menge };
   });
   summe = Math.round(summe * 100) / 100;
 
@@ -181,6 +189,7 @@ function pruefeBestellung(d) {
     kunde.ort = zeile(k.ort, 80, true, 'Ort');
     kunde.land = zeile(k.land, 60, true, 'Land');
     if (laender().indexOf(kunde.land) === -1) throw new Eingabefehler('In dieses Land können wir online nicht liefern. Bitte rufen Sie uns an.');
+    if (kunde.land === 'Anderes Land') kunde.landname = zeile(k.landname, 60, true, 'Name des Landes');
     if (kunde.land === 'Deutschland' && !/^\d{5}$/.test(kunde.plz)) throw new Eingabefehler('Bitte geben Sie eine fünfstellige Postleitzahl an.');
     versand = versandkosten(kunde.land, summe);
   }
@@ -471,7 +480,8 @@ function datei(req, res, url) {
 function fehlerseite(res, status) {
   if (status === 404) {
     return fs.readFile(path.join(WURZEL, '404.html'), (fehler, inhalt) => {
-      const koerper = fehler ? 'Seite nicht gefunden' : inhalt;
+      /* Die Fehlerseite kann unter jedem Pfad erscheinen; <base> hält ihre Verweise gültig. */
+      const koerper = fehler ? 'Seite nicht gefunden' : String(inhalt).replace('<head>', '<head>\n<base href="/">');
       res.writeHead(404, kopfzeilen({ 'Content-Type': fehler ? 'text/plain; charset=utf-8' : 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }));
       res.end(koerper);
     });

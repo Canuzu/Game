@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="de" class="ohne-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Warenkorb · MUGA Herrenausstatter Köln</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#f6f2ea">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preload" href="assets/fonts/fraunces-latin-opsz-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/figtree-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/css/basis.css">
+<link rel="stylesheet" href="assets/css/rahmen.css">
+<link rel="stylesheet" href="assets/css/shop.css">
+<link rel="stylesheet" href="assets/css/seiten.css">
+<script src="assets/js/config.js"></script>
+<script src="assets/js/kern.js"></script>
+<script src="assets/js/rahmen.js"></script>
+<script src="daten/katalog.js" defer></script>
+<script src="assets/js/seite-kasse.js" defer></script>
+</head>
+<body>
+<muga-kopf></muga-kopf>
+<noscript><p class="ohne-skript">Für den Warenkorb wird JavaScript benötigt. Bestellungen nehmen wir auch telefonisch unter 0221 839 25 90 entgegen.</p></noscript>
+
+<main id="inhalt">
+  <div class="huelle">
+    <header class="seitenkopf">
+      <nav aria-label="Brotkrumen"><ol class="kruemel"><li><a href="index.html">Start</a></li><li aria-current="page">Warenkorb</li></ol></nav>
+      <h1>Ihr <em>Warenkorb</em></h1>
+    </header>
+
+    <div class="kasse" id="warenkorb" hidden>
+      <section aria-label="Artikel im Warenkorb">
+        <ul class="zeilen warenkorb-liste" id="korb-liste"></ul>
+        <p style="margin-top:1.5rem"><a class="faden" href="kollektion.html"><svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg> Weiter einkaufen</a></p>
+      </section>
+
+      <aside class="uebersicht" aria-label="Zusammenfassung">
+        <h2>Zusammenfassung</h2>
+        <div id="korb-balken"></div>
+        <div class="feld">
+          <label for="korb-land">Lieferland</label>
+          <select class="auswahl" id="korb-land"></select>
+        </div>
+        <dl class="uebersicht__zeilen">
+          <div><dt>Zwischensumme</dt><dd id="korb-summe"></dd></div>
+          <div><dt>Versand</dt><dd id="korb-versand"></dd></div>
+        </dl>
+        <p class="uebersicht__gesamt"><span>Gesamt</span><strong id="korb-gesamt"></strong></p>
+        <p class="klein leise" style="margin-top:-.6rem">Inkl. gesetzlicher MwSt. Bei Abholung im Geschäft entfällt der Versand.</p>
+        <a class="knopf knopf--voll" href="kasse.html">Zur Kasse</a>
+        <p class="klein leise mitte">PayPal · Vorkasse · Barzahlung bei Abholung</p>
+      </aside>
+    </div>
+
+    <div class="leer" id="warenkorb-leer" hidden style="padding-block:clamp(3rem,8vw,6rem)">
+      <svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.500 8.500h13l-1 11.500h-11z"/><path d="M9 8.500V7a3 3 0 0 1 6 0v1.500"/></svg>
+      <p class="leer__titel">Ihr Warenkorb ist noch leer.</p>
+      <p class="leise">Stöbern Sie in der Kollektion oder lassen Sie sich im Geschäft beraten.</p>
+      <div class="knopfreihe"><a class="knopf knopf--dunkel" href="kollektion.html">Zur Kollektion</a><a class="knopf knopf--linie" href="termin.html">Termin buchen</a></div>
+    </div>
+  </div>
+</main>
+
+<muga-fuss></muga-fuss>
+</body>
+</html>

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="de" class="ohne-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Widerrufsrecht · MUGA Herrenausstatter Köln</title>
+<meta name="description" content="Widerrufsbelehrung der Muga Company GmbH und Online-Widerruf: Sie haben einen Monat Zeit, Ihren Vertrag zu widerrufen.">
+<meta name="theme-color" content="#f6f2ea">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preload" href="assets/fonts/fraunces-latin-opsz-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/figtree-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/css/basis.css">
+<link rel="stylesheet" href="assets/css/rahmen.css">
+<link rel="stylesheet" href="assets/css/shop.css">
+<link rel="stylesheet" href="assets/css/seiten.css">
+<script src="assets/js/config.js"></script>
+<script src="assets/js/kern.js"></script>
+<script src="assets/js/rahmen.js"></script>
+<script src="assets/js/seite-kontakt.js" defer></script>
+</head>
+<body>
+<muga-kopf></muga-kopf>
+
+<main id="inhalt">
+  <div class="huelle huelle--mittel">
+    <header class="seitenkopf">
+      <nav aria-label="Brotkrumen"><ol class="kruemel"><li><a href="index.html">Start</a></li><li aria-current="page">Widerrufsrecht</li></ol></nav>
+      <h1>Widerrufs<em>recht</em></h1>
+      <p class="einleitung">Sie haben einen Monat Zeit, Ihren Vertrag ohne Angabe von Gründen zu widerrufen. Am schnellsten geht es über das Formular auf dieser Seite.</p>
+    </header>
+    <div class="prosa" style="padding-block:clamp(1.5rem,3vw,2.5rem) var(--abschnitt)">
+      <section class="kasten" id="formular" style="margin-bottom:2.5rem">
+        <h2 style="margin-top:0">Vertrag widerrufen</h2>
+        <p>Hier können Sie Ihren Vertrag online widerrufen. Sie erhalten den Eingang Ihres Widerrufs mit Datum und Uhrzeit bestätigt.</p>
+        <form id="widerrufform" novalidate style="margin-top:1.4rem">
+          <div class="formraster">
+            <div class="feld halb"><label class="pflicht" for="w-vorname">Vorname</label><input class="eingabe" id="w-vorname" name="vorname" type="text" autocomplete="given-name" maxlength="60" required></div>
+            <div class="feld halb"><label class="pflicht" for="w-nachname">Nachname</label><input class="eingabe" id="w-nachname" name="nachname" type="text" autocomplete="family-name" maxlength="60" required></div>
+            <div class="feld halb"><label class="pflicht" for="w-nummer">Bestellnummer</label><input class="eingabe" id="w-nummer" name="nummer" type="text" maxlength="40" required>
+              <p class="feld__hinweis">Steht in Ihrer Bestellbestätigung und auf der Rechnung.</p></div>
+            <div class="feld halb"><label class="pflicht" for="w-email">E-Mail für die Bestätigung</label><input class="eingabe" id="w-email" name="email" type="email" autocomplete="email" inputmode="email" maxlength="120" required></div>
+            <div class="feld"><label for="w-waren">Betroffene Waren <span class="leise">(freiwillig, falls nicht die ganze Bestellung)</span></label><textarea class="textfeld" id="w-waren" name="waren" maxlength="1000" style="min-height:5.5rem"></textarea></div>
+            <div class="feld unsichtbar" aria-hidden="true"><label for="w-website">Bitte leer lassen</label><input id="w-website" name="website" type="text" tabindex="-1" autocomplete="off"></div>
+          </div>
+          <p class="hinweis hinweis--rot" id="widerruf-fehler" role="alert" hidden style="margin-top:1.2rem"></p>
+          <div class="knopfreihe" style="margin-top:1.4rem"><button class="knopf" type="submit" id="widerruf-senden">Widerruf bestätigen</button></div>
+        </form>
+        <div id="widerruf-fertig" hidden></div>
+      </section>
+      <h2>Widerrufsrecht für den Verkauf von Waren</h2>
+      <h3>Widerrufsrecht für Verbraucher</h3>
+      <p>(Verbraucher ist jede natürliche Person, die ein Rechtsgeschäft zu Zwecken abschließt, die überwiegend weder ihrer gewerblichen noch ihrer selbstständigen beruflichen Tätigkeit zugerechnet werden können.)</p>
+      <h3>Widerrufsbelehrung</h3>
+      <h3>Widerrufsrecht</h3>
+      <p>Sie haben das Recht, binnen eines Monats ohne Angabe von Gründen diesen Vertrag zu widerrufen.</p>
+      <p>Die Widerrufsfrist beträgt einen Monat ab dem Tag,</p>
+      <p>- an dem Sie oder ein von Ihnen benannter Dritter, der nicht der Beförderer ist, die Waren in Besitz genommen haben bzw. hat, sofern Sie eine oder mehrere Waren im Rahmen einer einheitlichen Bestellung bestellt haben und diese einheitlich geliefert wird bzw. werden;</p>
+      <p>- an dem Sie oder ein von Ihnen benannter Dritter, der nicht der Beförderer ist, die letzte Ware in Besitz genommen haben bzw. hat, sofern Sie mehrere Waren im Rahmen einer einheitlichen Bestellung bestellt haben und diese getrennt geliefert werden;</p>
+      <p>Um Ihr Widerrufsrecht auszuüben, müssen Sie uns <strong>(Muga Company GmbH, Olpener Str.321, 51109 Köln, Telefonnr.: 0221-8392590, E-Mail-Adresse: info@mmuga.de)</strong> mittels einer eindeutigen Erklärung (z.B. ein mit der Post versandter Brief oder eine E-Mail) über Ihren Entschluss, diesen Vertrag zu widerrufen, informieren. Sie können dafür das beigefügte Muster-Widerrufsformular verwenden, das jedoch nicht vorgeschrieben ist.</p>
+      <p>Sie können Ihr Widerrufsrecht auch online unter einer entsprechend bezeichneten Schaltfläche ("Vertrag widerrufen" oder ähnliche Bezeichnung) auf unserer Webseite (<a href="https://www.mmuga.de/" rel="noopener">https://www.mmuga.de/</a>) ausüben. Wenn Sie diese Online-Funktion nutzen, übermitteln wir Ihnen auf einem dauerhaften Datenträger (z.B. durch eine E-Mail) unverzüglich eine Eingangsbestätigung mit Informationen zum Inhalt der Widerrufserklärung sowie dem Datum und der Uhrzeit ihres Eingangs.</p>
+      <p>Zur Wahrung der Widerrufsfrist reicht es aus, dass Sie die Mitteilung über die Ausübung des Widerrufsrechts vor Ablauf der Widerrufsfrist absenden.</p>
+      <h3>Folgen des Widerrufs</h3>
+      <p>Wenn Sie diesen Vertrag widerrufen, haben wir Ihnen alle Zahlungen, die wir von Ihnen erhalten haben, einschließlich der Lieferkosten (mit Ausnahme der zusätzlichen Kosten, die sich daraus ergeben, dass Sie eine andere Art der Lieferung als die von uns angebotene, günstigste Standardlieferung gewählt haben), unverzüglich und spätestens binnen 14 Tagen ab dem Tag zurückzuzahlen, an dem die Mitteilung über Ihren Widerruf dieses Vertrags bei uns eingegangen ist. Für diese Rückzahlung verwenden wir dasselbe Zahlungsmittel, das Sie bei der ursprünglichen Transaktion eingesetzt haben, es sei denn, mit Ihnen wurde ausdrücklich etwas anderes vereinbart; in keinem Fall werden Ihnen wegen dieser Rückzahlung Entgelte berechnet.</p>
+      <p>Wir können die Rückzahlung verweigern, bis wir die Waren wieder zurückerhalten haben oder bis Sie den Nachweis erbracht haben, dass Sie die Waren zurückgesandt haben, je nachdem, welches der frühere Zeitpunkt ist.</p>
+      <p>Sie haben die Waren unverzüglich und in jedem Fall spätestens binnen 14 Tagen ab dem Tag, an dem Sie uns über den Widerruf dieses Vertrags unterrichten, an uns oder an Muga Company GmbH, Olpener Str.321, 51109 Köln zurückzusenden oder zu übergeben. Die Frist ist gewahrt, wenn Sie die Waren vor Ablauf der Frist von 14 Tagen absenden.</p>
+      <p>Sie tragen die unmittelbaren Kosten der Rücksendung der Waren.</p>
+      <p>Sie müssen für einen etwaigen Wertverlust der Waren nur aufkommen, wenn dieser Wertverlust auf einen zur Prüfung der Beschaffenheit, Eigenschaften und Funktionsweise der Waren nicht notwendigen Umgang mit ihnen zurückzuführen ist.</p>
+      <h3>Ausschluss- bzw. Erlöschensgründe</h3>
+      <p>Das Widerrufsrecht besteht nicht bei Verträgen</p>
+      <p>- zur Lieferung von Waren, die nicht vorgefertigt sind und für deren Herstellung eine individuelle Auswahl oder Bestimmung durch den Verbraucher maßgeblich ist oder die eindeutig auf die persönlichen Bedürfnisse des Verbrauchers zugeschnitten sind;</p>
+      <p>- zur Lieferung von Waren, die schnell verderben können oder deren Verfallsdatum schnell überschritten würde;</p>
+      <p>- zur Lieferung alkoholischer Getränke, deren Preis bei Vertragsschluss vereinbart wurde, die aber frühestens 30 Tage nach Vertragsschluss geliefert werden können und deren aktueller Wert von Schwankungen auf dem Markt abhängt, auf die der Unternehmer keinen Einfluss hat;</p>
+      <p>- zur Lieferung von Zeitungen, Zeitschriften oder Illustrierten mit Ausnahme von Abonnement-Verträgen.</p>
+      <p>Das Widerrufsrecht erlischt vorzeitig bei Verträgen</p>
+      <p>- zur Lieferung versiegelter Waren, die aus Gründen des Gesundheitsschutzes oder der Hygiene nicht zur Rückgabe geeignet sind, wenn ihre Versiegelung nach der Lieferung entfernt wurde;</p>
+      <p>- zur Lieferung von Waren, wenn diese nach der Lieferung aufgrund ihrer Beschaffenheit untrennbar mit anderen Gütern vermischt wurden;</p>
+      <p>- zur Lieferung von Ton- oder Videoaufnahmen oder Computersoftware in einer versiegelten Packung, wenn die Versiegelung nach der Lieferung entfernt wurde.</p>
+      <h3>Muster-Widerrufsformular</h3>
+      <p>(Wenn Sie den Vertrag widerrufen wollen, dann füllen Sie bitte dieses Formular aus und senden Sie es zurück.)</p>
+      <p>- An Muga Company GmbH, Olpener Str.321, 51109 Köln, E-Mail-Adresse: info@mmuga.de :</p>
+      <p>- Hiermit widerrufe(n) ich/ wir (*) den von mir/ uns (*) abgeschlossenen Vertrag über den Kauf der folgenden Waren (*)/</p>
+      <p>die Erbringung der folgenden Dienstleistung (*)</p>
+      <p>- Bestellt am (*)/ erhalten am (*)</p>
+      <p>- Name des/ der Verbraucher(s)</p>
+      <p>- Anschrift des/ der Verbraucher(s)</p>
+      <p>- Unterschrift des/ der Verbraucher(s) (nur bei Mitteilung auf Papier)</p>
+      <p>- Datum</p>
+      <p>(*) Unzutreffendes streichen.</p>
+    </div>
+  </div>
+</main>
+
+<muga-fuss></muga-fuss>
+</body>
+</html>

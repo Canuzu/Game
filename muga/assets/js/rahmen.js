@@ -213,10 +213,26 @@
     '</div>';
   };
 
+  /* Merkt sich, welcher Knopf einer Warenkorbzeile den Fokus hat, und setzt ihn
+   * nach dem Neuzeichnen wieder. Sonst verlöre die Tastatur bei jedem Klick ihren Platz. */
+  M.merkeFokus = function (bereich) {
+    var a = document.activeElement;
+    if (!a || !bereich || !bereich.contains(a)) return function () {};
+    var zeile = a.closest('[data-posten]');
+    if (!zeile) return function () {};
+    var posten = zeile.dataset.posten, menge = a.dataset.menge;
+    return function () {
+      var neu = M.$$('[data-posten]', bereich).filter(function (z) { return z.dataset.posten === posten; })[0];
+      if (!neu) return;
+      var ziel = menge ? neu.querySelector('[data-menge="' + menge + '"]:not([disabled])') || neu.querySelector('[data-menge]:not([disabled])') : neu.querySelector('.zeile__name');
+      if (ziel) ziel.focus({ preventScroll: true });
+    };
+  };
+
   function zeichneKorblade() {
     var ziel = document.getElementById('korblade-inhalt');
     if (!ziel) return;
-    var liste = M.korb.liste(), summe = M.korb.summe();
+    var liste = M.korb.liste(), summe = M.korb.summe(), merke = M.merkeFokus(ziel);
     if (!liste.length) {
       ziel.innerHTML = '<div class="leer">' + sym('korb') +
         '<p class="leer__titel">Ihr Warenkorb ist noch leer.</p>' +
@@ -232,6 +248,7 @@
         '<a class="knopf knopf--voll" href="kasse.html">Zur Kasse</a>' +
         '<a class="knopf knopf--linie knopf--voll" href="warenkorb.html">Warenkorb ansehen</a>' +
       '</div>';
+    merke();
   }
 
   function zaehler() {
@@ -345,7 +362,7 @@
         '</ul>' +
         '<div class="fuss__ende">' +
           '<p>© ' + jahr + ' ' + esc(C.firma) + ' · <span class="fuss__spruch">' + esc(C.leitspruch) + '</span></p>' +
-          '<ul><li><a href="impressum.html">Impressum</a></li><li><a href="datenschutz.html">Datenschutz</a></li><li><a href="agb.html">AGB</a></li><li><a href="widerruf.html">Widerrufsrecht</a></li></ul>' +
+          '<ul><li><a href="impressum.html">Impressum</a></li><li><a href="datenschutz.html">Datenschutz</a></li><li><a href="agb.html">AGB</a></li><li><a href="widerruf.html">Widerrufsrecht</a></li><li><a href="widerruf.html#formular">Vertrag widerrufen</a></li></ul>' +
         '</div>' +
         '<p class="fuss__preis">Alle Preise inkl. gesetzlicher MwSt., zzgl. <a href="service.html#versand">Versandkosten</a>.</p>' +
       '</div>' +

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="de" class="ohne-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maß &amp; Passform: Größenberater und Maßtabellen · MUGA Herrenausstatter Köln</title>
+<meta name="description" content="Größenberater für Anzüge und Hemden: Körpergröße, Brust- und Bundumfang eingeben und Konfektionsgröße erhalten, auch untersetzt und schlank. Dazu die Maßtabellen von MUGA.">
+<meta name="theme-color" content="#f6f2ea">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preload" href="assets/fonts/fraunces-latin-opsz-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/figtree-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/css/basis.css">
+<link rel="stylesheet" href="assets/css/rahmen.css">
+<link rel="stylesheet" href="assets/css/shop.css">
+<link rel="stylesheet" href="assets/css/seiten.css">
+<script src="assets/js/config.js"></script>
+<script src="assets/js/kern.js"></script>
+<script src="assets/js/rahmen.js"></script>
+<script src="assets/js/seite-masse.js" defer></script>
+</head>
+<body>
+<muga-kopf></muga-kopf>
+<noscript><p class="ohne-skript">Für den Größenberater wird JavaScript benötigt. Wir beraten Sie auch telefonisch unter 0221 839 25 90.</p></noscript>
+
+<main id="inhalt">
+  <div class="huelle">
+    <header class="seitenkopf">
+      <nav aria-label="Brotkrumen"><ol class="kruemel"><li><a href="index.html">Start</a></li><li aria-current="page">Maß &amp; Passform</li></ol></nav>
+      <h1>Die richtige Größe, <em>ohne Rätselraten.</em></h1>
+      <p class="einleitung">Drei Maße genügen für eine erste Empfehlung. Neben den Körpermaßen zählt auch die Figur, deshalb führen wir normale, untersetzte und schlanke Größen.</p>
+      <nav class="sprungmarken" aria-label="Auf dieser Seite">
+        <a class="tipp" href="#anzug">Anzuggröße</a><a class="tipp" href="#hemd">Hemdgröße</a><a class="tipp" href="#messen">Richtig messen</a><a class="tipp" href="#tabellen">Maßtabellen</a>
+      </nav>
+    </header>
+  </div>
+
+  <!-- ===== Anzuggröße ===== -->
+  <section class="abschnitt--eng" id="anzug" style="padding-top:clamp(2rem,4vw,3.2rem)">
+    <div class="huelle">
+      <div class="kopfzeile"><p class="vorspann">Größenberater</p><h2>Ihre <em>Anzuggröße</em></h2></div>
+      <form class="berater" id="berater" autocomplete="off">
+        <div class="berater__eingabe">
+          <div class="regler">
+            <div class="regler__kopf"><label for="hoehe">Körpergröße</label>
+              <span class="regler__wert"><input class="eingabe" id="hoehe-zahl" type="number" inputmode="numeric" min="155" max="210" step="1" value="180" aria-label="Körpergröße in Zentimetern"><span>cm</span></span></div>
+            <input id="hoehe" type="range" min="155" max="210" step="1" value="180">
+          </div>
+          <div class="regler">
+            <div class="regler__kopf"><label for="brust">Brustumfang</label>
+              <span class="regler__wert"><input class="eingabe" id="brust-zahl" type="number" inputmode="numeric" min="82" max="146" step="1" value="100" aria-label="Brustumfang in Zentimetern"><span>cm</span></span></div>
+            <input id="brust" type="range" min="82" max="146" step="1" value="100">
+            <p class="regler__hinweis">An der stärksten Stelle, Maßband waagerecht.</p>
+          </div>
+          <div class="regler">
+            <div class="regler__kopf"><label for="bund">Bundumfang</label>
+              <span class="regler__wert"><input class="eingabe" id="bund-zahl" type="number" inputmode="numeric" min="66" max="150" step="1" value="88" aria-label="Bundumfang in Zentimetern"><span>cm</span></span></div>
+            <input id="bund" type="range" min="66" max="150" step="1" value="88">
+            <p class="regler__hinweis">Dort, wo die Hose sitzt.</p>
+          </div>
+        </div>
+        <div class="berater__ergebnis nacht" aria-live="polite" aria-atomic="true">
+          <p class="vorspann">Unsere Empfehlung</p>
+          <p class="berater__groesse" id="erg-groesse">50</p>
+          <p class="berater__art" id="erg-art">Normale Größe</p>
+          <p id="erg-text"></p>
+          <div class="berater__weitere" id="erg-weitere"></div>
+          <div class="knopfreihe">
+            <a class="knopf knopf--hell" id="erg-link" href="kollektion.html?k=anzuege-uni&amp;g=50">Anzüge in Größe 50</a>
+            <a class="knopf knopf--hell-linie" id="erg-hochzeit" href="kollektion.html?k=hochzeitsanzuege&amp;g=50">Hochzeitsanzüge</a>
+          </div>
+        </div>
+      </form>
+      <p class="klein leise" style="margin-top:1rem;max-width:46rem">Die Empfehlung beruht auf den üblichen Konfektionsgrößen für Herren. Je nach Modell und Schnitt können Maße abweichen. Sicher wissen Sie es nach der Anprobe: <a href="termin.html?art=anprobe">Termin buchen</a>.</p>
+    </div>
+  </section>
+
+  <!-- ===== Hemdgröße ===== -->
+  <section class="abschnitt--eng abschnitt--leinen" id="hemd">
+    <div class="huelle">
+      <div class="kopfzeile"><p class="vorspann">Größenberater</p><h2>Ihre <em>Hemdgröße</em></h2></div>
+      <form class="berater" id="hemdberater" autocomplete="off">
+        <div class="berater__eingabe">
+          <div class="regler">
+            <div class="regler__kopf"><label for="hals">Halsumfang</label>
+              <span class="regler__wert"><input class="eingabe" id="hals-zahl" type="number" inputmode="numeric" min="35" max="52" step="1" value="41" aria-label="Halsumfang in Zentimetern"><span>cm</span></span></div>
+            <input id="hals" type="range" min="35" max="52" step="1" value="41">
+            <p class="regler__hinweis">Unterhalb des Kehlkopfs messen. Ein Finger sollte zwischen Maßband und Hals passen.</p>
+          </div>
+          <div class="hinweis">
+            <svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.500"/><path d="M12 11v5.500M12 7.800v.200"/></svg>
+            <span>Hemden gibt es bei uns in vier Schnitten: klassisch, leicht tailliert, Slim-fit und mit extra langem Arm.</span>
+          </div>
+        </div>
+        <div class="berater__ergebnis nacht" aria-live="polite" aria-atomic="true">
+          <p class="vorspann">Unsere Empfehlung</p>
+          <p class="berater__groesse" id="hemd-groesse">L</p>
+          <p class="berater__art" id="hemd-art">Kragenweite 41/42</p>
+          <div class="knopfreihe">
+            <a class="knopf knopf--hell" id="hemd-link" href="kollektion.html?k=hemden">Passende Hemden ansehen</a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- ===== Richtig messen ===== -->
+  <section class="abschnitt" id="messen">
+    <div class="huelle">
+      <div class="kopfzeile"><p class="vorspann">So geht es</p><h2>Richtig <em>messen</em></h2>
+        <p class="einleitung">Am besten misst eine zweite Person, über Unterhemd oder Hemd. Das Maßband liegt an, ohne einzuschnüren.</p></div>
+      <ol class="messen">
+        <li><h3>Brustumfang</h3><p>Das Maßband waagerecht um die stärkste Stelle der Brust führen, unter den Achseln hindurch und über die Schulterblätter. Normal weiteratmen.</p></li>
+        <li><h3>Bundumfang</h3><p>Dort messen, wo der Hosenbund sitzt. Nicht den Bauch einziehen, sonst kneift die Hose später.</p></li>
+        <li><h3>Körpergröße</h3><p>Ohne Schuhe gerade an eine Wand stellen, den Blick nach vorn. Die Körpergröße entscheidet über normale, untersetzte oder schlanke Größe.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ===== Maßtabellen ===== -->
+  <section class="abschnitt abschnitt--kreide" id="tabellen">
+    <div class="huelle">
+      <div class="kopfzeile"><p class="vorspann">Zum Nachmessen</p><h2>Maß<em>tabellen</em></h2>
+        <p class="einleitung">Alle Angaben in Zentimetern und am liegenden Kleidungsstück gemessen. „Einfach“ heißt: einmal quer über das Teil, also der halbe Umfang.</p></div>
+      <div class="reiter" role="tablist" aria-label="Maßtabellen" id="reiter"></div>
+      <div id="tabelle" role="tabpanel" tabindex="0"></div>
+      <p class="klein leise" style="margin-top:1rem">Die Anzugmaße gelten für Modell 176. Andere Modelle können abweichen. Im Zweifel hilft ein kurzer Anruf oder die Anprobe im Geschäft.</p>
+    </div>
+  </section>
+</main>
+
+<muga-fuss></muga-fuss>
+</body>
+</html>
