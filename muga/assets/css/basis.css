@@ -1,0 +1,451 @@
+/* =============================================================================
+ * basis.css — Farben, Schrift, Raster, Knöpfe, Formulare
+ * -----------------------------------------------------------------------------
+ * Gestaltungsidee: ein ruhiges Atelier. Warmes Papierweiß, tiefes Tintenschwarz,
+ * das Muga-Rot als einziger lauter Ton, Messing nur für feine Linien.
+ * Wiederkehrende Motive: die Naht (gestrichelte Linie), das Maßband und der
+ * Bogen als Bildrahmen.
+ * ========================================================================== */
+
+@font-face {
+  font-family: "Fraunces";
+  src: url("../fonts/fraunces-latin-opsz-normal.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Fraunces";
+  src: url("../fonts/fraunces-latin-opsz-italic.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: italic;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Figtree";
+  src: url("../fonts/figtree-latin-wght-normal.woff2") format("woff2");
+  font-weight: 300 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  /* Farben */
+  --papier: #f6f2ea;
+  --leinen: #ede6da;
+  --leinen-tief: #e3dacb;
+  --kreide: #fffdf9;
+  --tinte: #15120f;
+  --tinte-weich: #2b2621;
+  --stein: #655c52;
+  --linie: #d9cfbf;
+  --linie-zart: #e6ddd0;
+  --rot: #a4161a;
+  --rot-tief: #86100f;
+  --rot-hell: #f4e1dc;
+  --messing: #a8854a;
+  --messing-tief: #7a5c27;
+  --gruen: #2f6b4a;
+  --gruen-hell: #e2efe6;
+  --nacht: #171411;
+  --nacht-2: #211c18;
+  --nacht-text: #f3ede2;
+  --nacht-leise: #b9ae9f;
+  --nacht-linie: rgba(243, 237, 226, 0.16);
+
+  /* Schrift */
+  --serif: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --sans: "Figtree", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+
+  /* Maße */
+  --breite: 1280px;
+  --rand: clamp(1.15rem, 4vw, 3rem);
+  --abschnitt: clamp(4rem, 9vw, 7.5rem);
+  --r-s: 6px;
+  --r-m: 12px;
+  --r-l: 22px;
+  --kopfhoehe: 76px;
+
+  --schatten-s: 0 1px 2px rgba(21, 18, 15, 0.06), 0 2px 8px rgba(21, 18, 15, 0.05);
+  --schatten-m: 0 2px 6px rgba(21, 18, 15, 0.06), 0 14px 34px rgba(21, 18, 15, 0.1);
+  --schatten-l: 0 30px 80px rgba(21, 18, 15, 0.22);
+
+  --sanft: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --naht: repeating-linear-gradient(90deg, var(--messing) 0 7px, transparent 7px 12px);
+}
+
+/* ---------- Grundlagen ------------------------------------------------------ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scroll-behavior: smooth;
+  scroll-padding-top: calc(var(--kopfhoehe) + 1.5rem);
+}
+
+body {
+  margin: 0;
+  background-color: var(--papier);
+  /* Feine Körnung, damit die Fläche nach Papier aussieht und nicht nach Bildschirm */
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='k'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .35 0 0 0 0 .28 0 0 0 0 .2 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23k)'/%3E%3C/svg%3E");
+  color: var(--tinte);
+  font-family: var(--sans);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  font-feature-settings: "kern", "liga";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  overflow-x: hidden;
+}
+
+body.gesperrt { overflow: hidden; }
+
+img, svg, video, iframe { display: block; max-width: 100%; }
+img { height: auto; }
+
+a { color: inherit; text-decoration-color: var(--messing); text-underline-offset: 0.22em; text-decoration-thickness: 1px; }
+a:hover { text-decoration-color: currentColor; }
+
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; background: none; border: 0; padding: 0; }
+
+h1, h2, h3, h4 {
+  font-family: var(--serif);
+  font-weight: 360;
+  font-optical-sizing: auto;
+  line-height: 1.06;
+  letter-spacing: -0.018em;
+  margin: 0;
+  text-wrap: balance;
+}
+h1 { font-size: clamp(2.7rem, 6.2vw, 5.4rem); }
+h2 { font-size: clamp(2.05rem, 3.9vw, 3.35rem); }
+h3 { font-size: clamp(1.35rem, 2vw, 1.7rem); line-height: 1.16; }
+h4 { font-size: 1.15rem; line-height: 1.25; letter-spacing: -0.005em; font-weight: 420; }
+h1 em, h2 em, h3 em { font-style: italic; font-weight: 320; color: var(--rot); }
+
+p { margin: 0 0 1em; text-wrap: pretty; }
+p:last-child { margin-bottom: 0; }
+ul, ol { margin: 0; padding: 0; list-style: none; }
+hr { border: 0; height: 1px; background: var(--naht); margin: 2rem 0; opacity: 0.8; }
+strong { font-weight: 650; }
+address { font-style: normal; }
+table { border-collapse: collapse; width: 100%; }
+
+::selection { background: var(--rot); color: #fff; }
+
+:focus-visible {
+  outline: 2px solid var(--rot);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+[hidden] { display: none !important; }
+
+.unsichtbar {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; border: 0;
+}
+
+.sprung {
+  position: absolute; left: 1rem; top: -4rem; z-index: 1000;
+  background: var(--tinte); color: var(--kreide); padding: 0.75rem 1.1rem; border-radius: var(--r-s);
+  text-decoration: none; font-weight: 600; transition: top 0.2s var(--sanft);
+}
+.sprung:focus { top: 1rem; }
+
+/* ---------- Raster und Abschnitte ------------------------------------------ */
+
+.huelle { width: 100%; max-width: calc(var(--breite) + 2 * var(--rand)); margin-inline: auto; padding-inline: var(--rand); }
+.huelle--schmal { max-width: calc(860px + 2 * var(--rand)); }
+.huelle--mittel { max-width: calc(1080px + 2 * var(--rand)); }
+
+.abschnitt { padding-block: var(--abschnitt); }
+.abschnitt--eng { padding-block: calc(var(--abschnitt) * 0.6); }
+.abschnitt--leinen { background: var(--leinen); }
+.abschnitt--kreide { background: var(--kreide); }
+
+/* Dunkle Flächen tragen ein feines Fischgrätmuster wie ein Anzugstoff */
+.abschnitt--nacht, .nacht {
+  background-color: var(--nacht);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Cg fill='none' stroke='%23f3ede2' stroke-opacity='.045' stroke-width='1'%3E%3Cpath d='M0 7l7-7M0 14L14 0M0 21L14 7M0 28l14-14M7 28l7-7'/%3E%3Cpath d='M28 7l-7-7M28 14L14 0M28 21L14 7M28 28L14 14M21 28l-7-7'/%3E%3C/g%3E%3C/svg%3E");
+  color: var(--nacht-text);
+}
+.abschnitt--nacht a, .nacht a { text-decoration-color: rgba(243, 237, 226, 0.4); }
+.abschnitt--nacht h2 em, .abschnitt--nacht h1 em, .nacht h2 em { color: #e9b8a5; }
+
+.kopfzeile { display: grid; gap: 1.1rem; margin-bottom: clamp(2rem, 4vw, 3.5rem); max-width: 46rem; }
+.kopfzeile--mitte { margin-inline: auto; text-align: center; justify-items: center; }
+.kopfzeile--breit { max-width: none; grid-template-columns: 1fr auto; align-items: end; }
+@media (max-width: 720px) { .kopfzeile--breit { grid-template-columns: 1fr; } }
+
+.vorspann {
+  display: inline-flex; align-items: center; gap: 0.75rem;
+  font-size: 0.74rem; font-weight: 650; letter-spacing: 0.17em; text-transform: uppercase;
+  color: var(--messing-tief);
+}
+.vorspann::before { content: ""; width: 2.4rem; height: 1px; background: var(--naht); }
+.kopfzeile--mitte .vorspann::after { content: ""; width: 2.4rem; height: 1px; background: var(--naht); }
+.abschnitt--nacht .vorspann, .nacht .vorspann { color: #d7b77c; }
+
+.einleitung { font-size: clamp(1.08rem, 1.5vw, 1.25rem); line-height: 1.6; color: var(--stein); max-width: 40rem; }
+.abschnitt--nacht .einleitung, .nacht .einleitung { color: var(--nacht-leise); }
+.leise { color: var(--stein); }
+.klein { font-size: 0.875rem; line-height: 1.5; }
+.mitte { text-align: center; }
+.naht { height: 1px; background: var(--naht); opacity: 0.85; border: 0; margin: 0; }
+
+.stapel > * + * { margin-top: var(--abstand, 1rem); }
+
+/* ---------- Knöpfe ---------------------------------------------------------- */
+
+.knopf {
+  --kf: var(--rot); --kt: #fff; --kr: var(--rot);
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem;
+  min-height: 3.1rem; padding: 0.7rem 1.6rem;
+  background: var(--kf); color: var(--kt); border: 1px solid var(--kr); border-radius: var(--r-s);
+  font-weight: 620; font-size: 0.95rem; letter-spacing: 0.02em; line-height: 1.2; text-decoration: none; text-align: center;
+  transition: background-color 0.25s var(--sanft), color 0.25s var(--sanft), border-color 0.25s var(--sanft), transform 0.25s var(--sanft), box-shadow 0.25s var(--sanft);
+  -webkit-tap-highlight-color: transparent;
+}
+.knopf:hover { --kf: var(--rot-tief); --kr: var(--rot-tief); transform: translateY(-1px); box-shadow: 0 8px 20px rgba(164, 22, 26, 0.22); }
+.knopf:active { transform: translateY(0); box-shadow: none; }
+.knopf svg { width: 1.15em; height: 1.15em; flex: none; }
+.knopf--dunkel { --kf: var(--tinte); --kr: var(--tinte); --kt: var(--kreide); }
+.knopf--dunkel:hover { --kf: #000; --kr: #000; box-shadow: 0 8px 20px rgba(21, 18, 15, 0.22); }
+.knopf--linie { --kf: transparent; --kt: var(--tinte); --kr: var(--tinte); }
+.knopf--linie:hover { --kf: var(--tinte); --kt: var(--kreide); --kr: var(--tinte); box-shadow: none; }
+.knopf--hell { --kf: var(--kreide); --kt: var(--tinte); --kr: var(--kreide); }
+.knopf--hell:hover { --kf: #fff; --kr: #fff; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3); }
+.knopf--hell-linie { --kf: transparent; --kt: var(--nacht-text); --kr: rgba(243, 237, 226, 0.55); }
+.knopf--hell-linie:hover { --kf: var(--nacht-text); --kt: var(--tinte); --kr: var(--nacht-text); box-shadow: none; }
+.knopf--klein { min-height: 2.5rem; padding: 0.45rem 1.05rem; font-size: 0.875rem; }
+.knopf--voll { width: 100%; }
+.knopf[disabled], .knopf[aria-disabled="true"] { opacity: 0.45; pointer-events: none; }
+
+/* Textverweis mit Faden, der sich beim Überfahren durchzieht */
+.faden {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  font-weight: 620; font-size: 0.95rem; letter-spacing: 0.02em; text-decoration: none;
+  background: linear-gradient(currentColor, currentColor) 0 100% / 100% 1px no-repeat;
+  padding-bottom: 0.2rem; transition: background-size 0.35s var(--sanft), color 0.2s;
+}
+.faden svg { width: 1.05em; height: 1.05em; transition: transform 0.35s var(--sanft); }
+.faden:hover { color: var(--rot); }
+.faden:hover svg { transform: translateX(4px); }
+.abschnitt--nacht .faden:hover, .nacht .faden:hover { color: #f0c2b0; }
+
+.symbolknopf {
+  display: inline-grid; place-items: center; width: 2.75rem; height: 2.75rem; border-radius: 50%;
+  color: var(--tinte); position: relative; text-decoration: none;
+  transition: background-color 0.2s, color 0.2s;
+}
+.symbolknopf:hover { background: var(--leinen); }
+.symbolknopf svg { width: 1.3rem; height: 1.3rem; }
+
+.symbol { width: 1.25rem; height: 1.25rem; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+.knopfreihe { display: flex; flex-wrap: wrap; gap: 0.85rem 1rem; align-items: center; }
+
+/* ---------- Formulare ------------------------------------------------------- */
+
+.feld { display: grid; gap: 0.4rem; }
+.feld > label, .feld > .feld__name { font-size: 0.85rem; font-weight: 620; letter-spacing: 0.01em; }
+.feld__hinweis { font-size: 0.8rem; color: var(--stein); }
+.feld__fehler { font-size: 0.82rem; color: var(--rot); font-weight: 560; display: none; }
+.feld.fehler .feld__fehler { display: block; }
+.pflicht::after { content: " *"; color: var(--rot); }
+
+.eingabe, .auswahl, .textfeld {
+  width: 100%; min-height: 3.05rem; padding: 0.7rem 0.95rem;
+  background: var(--kreide); border: 1px solid var(--linie); border-radius: var(--r-s);
+  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+  appearance: none; -webkit-appearance: none;
+}
+.textfeld { min-height: 8rem; resize: vertical; line-height: 1.5; }
+.eingabe::placeholder, .textfeld::placeholder { color: #9a9086; }
+.eingabe:hover, .auswahl:hover, .textfeld:hover { border-color: #b9ad9b; }
+.eingabe:focus, .auswahl:focus, .textfeld:focus { outline: none; border-color: var(--tinte); box-shadow: 0 0 0 3px rgba(21, 18, 15, 0.1); background: #fff; }
+.feld.fehler .eingabe, .feld.fehler .auswahl, .feld.fehler .textfeld { border-color: var(--rot); box-shadow: 0 0 0 3px rgba(164, 22, 26, 0.1); }
+.auswahl {
+  padding-right: 2.6rem; cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2315120f' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 0.85rem center; background-size: 1.1rem;
+}
+
+.haken { display: grid; grid-template-columns: auto 1fr; gap: 0.75rem; align-items: start; font-size: 0.92rem; line-height: 1.45; cursor: pointer; }
+.haken input {
+  appearance: none; -webkit-appearance: none; width: 1.3rem; height: 1.3rem; margin: 0.1rem 0 0;
+  border: 1px solid #b9ad9b; border-radius: 4px; background: var(--kreide); cursor: pointer; flex: none;
+  display: grid; place-content: center; transition: background-color 0.15s, border-color 0.15s;
+}
+.haken input::after { content: ""; width: 0.7rem; height: 0.4rem; border-left: 2px solid #fff; border-bottom: 2px solid #fff; transform: rotate(-45deg) translateY(-1px) scale(0); transition: transform 0.15s var(--sanft); }
+.haken input:checked { background: var(--tinte); border-color: var(--tinte); }
+.haken input:checked::after { transform: rotate(-45deg) translateY(-1px) scale(1); }
+.feld.fehler .haken input { border-color: var(--rot); }
+
+.formraster { display: grid; gap: 1.1rem 1rem; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.formraster > * { grid-column: span 6; }
+.formraster > .halb { grid-column: span 3; }
+.formraster > .drittel { grid-column: span 2; }
+.formraster > .zweidrittel { grid-column: span 4; }
+@media (max-width: 560px) {
+  .formraster > .halb, .formraster > .drittel, .formraster > .zweidrittel { grid-column: span 6; }
+  .formraster > .halb-immer { grid-column: span 3; }
+}
+
+/* Auswahlkarten (Radio) */
+.wahl { display: grid; gap: 0.75rem; }
+.wahl--2 { grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); }
+.wahl__punkt { position: relative; }
+.wahl__punkt input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.wahl__karte {
+  display: grid; gap: 0.3rem; height: 100%; padding: 1.05rem 1.15rem 1.05rem 3.1rem; position: relative;
+  background: var(--kreide); border: 1px solid var(--linie); border-radius: var(--r-m);
+  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.2s;
+}
+.wahl__karte::before {
+  content: ""; position: absolute; left: 1.1rem; top: 1.15rem; width: 1.2rem; height: 1.2rem;
+  border: 1px solid #b9ad9b; border-radius: 50%; background: var(--kreide);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.wahl__punkt input:hover + .wahl__karte { border-color: #b9ad9b; }
+.wahl__punkt input:checked + .wahl__karte { border-color: var(--tinte); box-shadow: inset 0 0 0 1px var(--tinte); background: #fff; }
+.wahl__punkt input:checked + .wahl__karte::before { border-color: var(--rot); box-shadow: inset 0 0 0 4px var(--kreide), inset 0 0 0 10px var(--rot); }
+.wahl__punkt input:focus-visible + .wahl__karte { outline: 2px solid var(--rot); outline-offset: 3px; }
+.wahl__punkt input:disabled + .wahl__karte { opacity: 0.5; }
+.wahl__titel { font-weight: 650; display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; }
+.wahl__titel small { font-weight: 500; color: var(--stein); font-size: 0.85rem; white-space: nowrap; }
+.wahl__text { font-size: 0.9rem; color: var(--stein); line-height: 1.45; }
+
+/* ---------- Hinweisflächen, Marken, Tabellen -------------------------------- */
+
+.hinweis {
+  display: grid; grid-template-columns: auto 1fr; gap: 0.85rem; align-items: start;
+  padding: 1rem 1.15rem; border-radius: var(--r-m); background: var(--leinen); border: 1px solid var(--linie-zart);
+  font-size: 0.93rem; line-height: 1.5;
+}
+.hinweis svg { margin-top: 0.15rem; color: var(--messing-tief); }
+.hinweis--gut { background: var(--gruen-hell); border-color: #c9dfd0; }
+.hinweis--gut svg { color: var(--gruen); }
+.hinweis--rot { background: var(--rot-hell); border-color: #e8c9c2; }
+.hinweis--rot svg { color: var(--rot); }
+
+.marke {
+  display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.28rem 0.7rem; border-radius: 999px;
+  font-size: 0.72rem; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase;
+  background: var(--tinte); color: var(--kreide);
+}
+.marke--rot { background: var(--rot); color: #fff; }
+.marke--hell { background: var(--kreide); color: var(--tinte); border: 1px solid var(--linie); }
+
+.punkt { width: 0.55rem; height: 0.55rem; border-radius: 50%; background: #b0483f; flex: none; box-shadow: 0 0 0 3px rgba(176, 72, 63, 0.18); }
+.punkt.offen { background: #3f9a67; box-shadow: 0 0 0 3px rgba(63, 154, 103, 0.22); animation: puls 2.4s ease-in-out infinite; }
+@keyframes puls { 50% { box-shadow: 0 0 0 6px rgba(63, 154, 103, 0); } }
+
+.tabelle { font-size: 0.93rem; font-variant-numeric: tabular-nums; }
+.tabelle th, .tabelle td { padding: 0.8rem 0.9rem; text-align: left; border-bottom: 1px solid var(--linie-zart); vertical-align: top; }
+.tabelle thead th { font-size: 0.74rem; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 650; color: var(--stein); border-bottom: 1px solid var(--tinte); white-space: nowrap; }
+.tabelle td.zahl, .tabelle th.zahl { text-align: right; white-space: nowrap; }
+.tabelle tbody tr:hover { background: rgba(237, 230, 218, 0.55); }
+.tabellenrahmen { overflow-x: auto; -webkit-overflow-scrolling: touch; border: 1px solid var(--linie); border-radius: var(--r-m); background: var(--kreide); }
+.tabellenrahmen .tabelle th:first-child, .tabellenrahmen .tabelle td:first-child { padding-left: 1.2rem; }
+.tabellenrahmen .tabelle tbody tr:last-child td, .tabellenrahmen .tabelle tbody tr:last-child th { border-bottom: 0; }
+
+/* ---------- Aufklappbare Abschnitte ----------------------------------------- */
+
+.klappe { border-bottom: 1px solid var(--linie); }
+.klappe:first-of-type { border-top: 1px solid var(--linie); }
+.klappe > summary {
+  list-style: none; cursor: pointer; display: grid; grid-template-columns: 1fr auto; gap: 1.5rem; align-items: center;
+  padding: 1.25rem 0.1rem; font-family: var(--serif); font-size: clamp(1.1rem, 1.6vw, 1.3rem); font-weight: 400; letter-spacing: -0.01em; line-height: 1.25;
+  transition: color 0.2s;
+}
+.klappe > summary::-webkit-details-marker { display: none; }
+.klappe > summary:hover { color: var(--rot); }
+.klappe > summary::after {
+  content: ""; width: 0.95rem; height: 0.95rem; flex: none;
+  background: linear-gradient(currentColor, currentColor) center / 100% 1.5px no-repeat, linear-gradient(currentColor, currentColor) center / 1.5px 100% no-repeat;
+  transition: transform 0.35s var(--sanft);
+}
+.klappe[open] > summary::after { transform: rotate(135deg); }
+.klappe__inhalt { padding: 0 2.5rem 1.5rem 0.1rem; color: var(--stein); max-width: 46rem; }
+.klappe__inhalt a { color: var(--tinte); }
+.abschnitt--nacht .klappe, .nacht .klappe { border-color: var(--nacht-linie); }
+
+/* ---------- Maßband als Fortschrittsanzeige -------------------------------- */
+
+.massband {
+  --stand: 0%;
+  position: relative; height: 2.1rem; border-radius: 4px; overflow: hidden;
+  background-color: #fbf6ea;
+  background-image:
+    repeating-linear-gradient(90deg, rgba(21, 18, 15, 0.55) 0 1px, transparent 1px 10px),
+    repeating-linear-gradient(90deg, rgba(21, 18, 15, 0.8) 0 1px, transparent 1px 50px);
+  background-size: 100% 0.45rem, 100% 0.85rem;
+  background-repeat: no-repeat; background-position: 0 100%, 0 100%;
+  border: 1px solid #d9c9a8;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), var(--schatten-s);
+}
+.massband::before {
+  content: ""; position: absolute; inset: 0 auto 0 0; width: var(--stand);
+  background: linear-gradient(90deg, rgba(164, 22, 26, 0.16), rgba(164, 22, 26, 0.3));
+  border-right: 2px solid var(--rot); transition: width 0.6s var(--sanft);
+}
+
+.schritte { display: grid; gap: 0.8rem; }
+.schritte__liste { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 0.5rem; counter-reset: schritt; }
+.schritte__liste li {
+  counter-increment: schritt; font-size: 0.82rem; font-weight: 600; color: var(--stein);
+  display: flex; align-items: center; gap: 0.5rem; min-width: 0;
+}
+.schritte__liste li::before {
+  content: counter(schritt); display: grid; place-items: center; width: 1.6rem; height: 1.6rem; flex: none;
+  border-radius: 50%; border: 1px solid var(--linie); background: var(--kreide); font-size: 0.78rem; font-variant-numeric: tabular-nums;
+  transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+}
+.schritte__liste li span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.schritte__liste li.aktiv { color: var(--tinte); }
+.schritte__liste li.aktiv::before { background: var(--rot); border-color: var(--rot); color: #fff; }
+.schritte__liste li.fertig { color: var(--tinte); }
+.schritte__liste li.fertig::before { content: "✓"; background: var(--tinte); border-color: var(--tinte); color: var(--kreide); }
+@media (max-width: 640px) {
+  .schritte__liste li span { display: none; }
+  .schritte__liste li.aktiv span { display: inline; }
+  .schritte__liste { grid-auto-columns: auto; justify-content: space-between; }
+}
+
+/* ---------- Einblenden beim Rollen ------------------------------------------ */
+
+.zeigen { opacity: 0; transform: translateY(18px); transition: opacity 0.9s var(--sanft), transform 0.9s var(--sanft); transition-delay: var(--verzug, 0s); }
+.zeigen.sichtbar { opacity: 1; transform: none; }
+.ohne-js .zeigen { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
+  .zeigen { opacity: 1; transform: none; }
+}
+
+/* ---------- Fließtext (Rechtstexte, Service) -------------------------------- */
+
+.prosa { max-width: 46rem; }
+.prosa h2 { font-size: clamp(1.5rem, 2.4vw, 2rem); margin: 2.6rem 0 0.9rem; }
+.prosa h3 { font-size: 1.25rem; margin: 2rem 0 0.6rem; }
+.prosa p, .prosa li { color: var(--tinte-weich); }
+.prosa ul { list-style: none; margin: 0 0 1em; display: grid; gap: 0.45rem; }
+.prosa ul li { padding-left: 1.4rem; position: relative; }
+.prosa ul li::before { content: ""; position: absolute; left: 0; top: 0.72em; width: 0.7rem; height: 1px; background: var(--messing); }
+.prosa a { color: var(--rot); }
+
+.seitenkopf { padding-block: clamp(2.6rem, 6vw, 5rem) clamp(2rem, 4vw, 3.2rem); border-bottom: 1px solid var(--linie-zart); }
+.seitenkopf h1 { font-size: clamp(2.4rem, 5vw, 4.2rem); margin-top: 1rem; }
+.seitenkopf .einleitung { margin-top: 1.2rem; }
+
+.kruemel { display: flex; flex-wrap: wrap; gap: 0.5rem; font-size: 0.82rem; color: var(--stein); }
+.kruemel a { text-decoration: none; }
+.kruemel a:hover { color: var(--rot); }
+.kruemel li + li::before { content: "/"; margin-right: 0.5rem; color: #b9ad9b; }
