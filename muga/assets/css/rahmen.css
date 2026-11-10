@@ -11,6 +11,7 @@ muga-kopf { display: contents; }
 .leiste__innen { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 1.5rem; min-height: 2.5rem; }
 .leiste__status { display: inline-flex; align-items: center; gap: 0.6rem; text-decoration: none; color: inherit; margin: 0; }
 .leiste__status strong { font-weight: 620; }
+.status__text i { font-style: normal; }
 .leiste__mitte { margin: 0; color: var(--nacht-leise); text-align: center; letter-spacing: 0.02em; }
 .leiste__tel { justify-self: end; display: inline-flex; align-items: center; gap: 0.5rem; text-decoration: none; font-weight: 600; letter-spacing: 0.03em; }
 .leiste__tel .symbol { width: 1rem; height: 1rem; }
@@ -35,7 +36,7 @@ muga-kopf { display: contents; }
 }
 .kopf--gerollt, .kopf--mega { border-bottom-color: var(--linie-zart); box-shadow: 0 6px 24px rgba(21, 18, 15, 0.06); }
 .kopf--mega { background: var(--papier); }
-.kopf__innen { display: flex; align-items: center; gap: clamp(1rem, 2.4vw, 2.4rem); min-height: var(--kopfhoehe); }
+.kopf__innen { display: flex; align-items: center; gap: clamp(0.8rem, 1.8vw, 2rem); min-height: var(--kopfhoehe); }
 
 .logo { display: inline-flex; align-items: center; gap: 0.8rem; text-decoration: none; flex: none; color: var(--tinte); }
 .logo__zeichen { width: 2.6rem; height: 2.6rem; flex: none; transition: transform 0.5s var(--sanft); }
@@ -47,14 +48,14 @@ muga-kopf { display: contents; }
 .logo--hell .logo__zusatz { color: var(--nacht-leise); }
 
 .hauptnav { margin-inline: auto; }
-.hauptnav ul { display: flex; align-items: center; gap: clamp(0.2rem, 1vw, 0.9rem); }
+.hauptnav ul { display: flex; align-items: center; gap: clamp(0rem, 0.5vw, 0.5rem); }
 .hauptnav a {
-  display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.6rem 0.7rem; position: relative;
+  display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.6rem 0.6rem; position: relative;
   font-size: 0.93rem; font-weight: 560; letter-spacing: 0.01em; text-decoration: none; white-space: nowrap;
   transition: color 0.2s;
 }
 .hauptnav a::after {
-  content: ""; position: absolute; left: 0.7rem; right: 0.7rem; bottom: 0.3rem; height: 1px;
+  content: ""; position: absolute; left: 0.6rem; right: 0.6rem; bottom: 0.3rem; height: 1px;
   background: var(--naht); transform: scaleX(0); transform-origin: left; transition: transform 0.4s var(--sanft);
 }
 .hauptnav a:hover::after, .hauptnav a[aria-current="page"]::after, .hauptnav a[aria-expanded="true"]::after { transform: scaleX(1); }
@@ -63,7 +64,7 @@ muga-kopf { display: contents; }
 .hauptnav a[aria-expanded="true"] .symbol { transform: rotate(180deg); }
 
 .kopf__werkzeug { display: flex; align-items: center; gap: 0.1rem; margin-left: auto; }
-.kopf__termin { margin-left: 0.7rem; }
+.kopf__termin { margin-left: 0.7rem; white-space: nowrap; }
 .kopf__menue { display: none; margin-left: -0.6rem; }
 
 .zaehler {
@@ -73,7 +74,10 @@ muga-kopf { display: contents; }
   box-shadow: 0 0 0 2px var(--papier);
 }
 
-@media (max-width: 1140px) {
+@media (max-width: 1340px) {
+  .kopf .logo__zusatz { display: none; }
+}
+@media (max-width: 1180px) {
   .hauptnav { display: none; }
   .kopf__menue { display: inline-grid; }
   .kopf__innen { gap: 0.6rem; }

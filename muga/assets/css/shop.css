@@ -83,6 +83,7 @@
 .tipp[aria-current="page"] { background: var(--tinte); border-color: var(--tinte); color: var(--kreide); }
 
 .filter { position: sticky; top: calc(var(--kopfhoehe) + 1.5rem); display: grid; gap: 0; max-height: calc(100dvh - var(--kopfhoehe) - 3rem); overflow-y: auto; padding-right: 0.5rem; scrollbar-width: thin; }
+.lade .filter { position: static; max-height: none; overflow: visible; padding-right: 0; }
 .filter__gruppe { border-bottom: 1px solid var(--linie); padding: 0.2rem 0; }
 .filter__gruppe > summary {
   list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center; gap: 1rem;
@@ -178,6 +179,10 @@
 .variante legend a { font-weight: 560; font-size: 0.82rem; }
 .variante.fehlt .chips { outline: 2px solid var(--rot); outline-offset: 6px; border-radius: var(--r-s); }
 .variante__fehler { color: var(--rot); font-size: 0.84rem; font-weight: 560; margin: 0; }
+.variante__einzel { margin: 0; font-size: 0.95rem; }
+.kauf__preis .klein { flex-basis: 100%; }
+#zusatzwahl { display: grid; gap: 1rem; }
+#zusatzwahl:empty { display: none; }
 .chip--farbe span { padding-inline: 0.6rem 0.8rem; }
 .chip--farbe i { width: 1.05rem; height: 1.05rem; }
 .groessen-reihe + .groessen-reihe { margin-top: 0.7rem; }

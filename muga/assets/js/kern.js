@@ -149,7 +149,7 @@
 
   /* ---------- 4) Warenkorb ------------------------------------------------- */
 
-  function schluessel(p) { return [p.id, p.groesse || '', p.farbe || ''].join('|'); }
+  function schluessel(p) { return [p.id, p.groesse || '', p.farbe || '', p.zusatz || ''].join('|'); }
 
   M.korb = {
     liste: function () {
@@ -163,7 +163,7 @@
       if (da) da.menge = Math.min(10, da.menge + menge);
       else l.push({
         id: posten.id, nr: posten.nr || '', name: posten.name, preis: +posten.preis,
-        groesse: posten.groesse || '', farbe: posten.farbe || '', menge: menge
+        groesse: posten.groesse || '', farbe: posten.farbe || '', zusatz: posten.zusatz || '', menge: menge
       });
       M.speicher.schreib('korb', l);
       M.melde('korb', l);
@@ -446,6 +446,79 @@
     var teile = s.split(' ');
     for (var i = 0; i < teile.length; i++) if (FARBTON[teile[i]]) return FARBTON[teile[i]];
     return null;
+  };
+
+  /* In diesen Kategorien sind Zahlen Konfektionsgrößen und werden nach Reihen gruppiert */
+  M.KONFEKTION = ['hochzeitsanzuege', 'anzuege-uni', 'anzuege-gemustert', 'sakko-blazer', 'hosen-westen', 'mantel-jacken', 'westen-fliegen'];
+  var BUCHSTABEN = ['XXS', 'XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL', '5XL', '6XL'];
+
+  function groessenRang(g) {
+    if (/^\d+([.,]\d+)?$/.test(g)) return [0, parseFloat(g.replace(',', '.'))];
+    var kopf = g.split(/[\s(]/)[0].toUpperCase(), i = BUCHSTABEN.indexOf(kopf);
+    return i !== -1 ? [1, i] : [2, 0];
+  }
+  /* Teilt Größen in Reihen: normal (44–72), untersetzt (23–37), schlank (88–130) */
+  M.groessenReihen = function (werte, konfektion) {
+    var sortiert = werte.slice().sort(function (a, b) {
+      var ra = groessenRang(a), rb = groessenRang(b);
+      return ra[0] - rb[0] || ra[1] - rb[1] || a.localeCompare(b, 'de');
+    });
+    if (!konfektion) return [{ titel: '', werte: sortiert }];
+    var reihen = { n: [], u: [], s: [], x: [] };
+    sortiert.forEach(function (g) {
+      var z = /^\d+$/.test(g) ? +g : null;
+      if (z !== null && z >= 44 && z <= 72) reihen.n.push(g);
+      else if (z !== null && z >= 23 && z <= 37) reihen.u.push(g);
+      else if (z !== null && z >= 88 && z <= 130) reihen.s.push(g);
+      else reihen.x.push(g);
+    });
+    var aus = [];
+    if (reihen.n.length) aus.push({ titel: 'Normale Größen', werte: reihen.n });
+    if (reihen.u.length) aus.push({ titel: 'Untersetzte Größen', werte: reihen.u });
+    if (reihen.s.length) aus.push({ titel: 'Schlanke Größen', werte: reihen.s });
+    if (reihen.x.length) aus.push({ titel: aus.length ? 'Weitere' : '', werte: reihen.x });
+    if (aus.length === 1) aus[0].titel = '';
+    return aus;
+  };
+  M.istKonfektion = function (p) { return (p.k || []).some(function (id) { return M.KONFEKTION.indexOf(id) !== -1; }); };
+
+  /* Farbfamilien für Filter und Stil-Finder */
+  M.farbfamilien = [
+    { id: 'schwarz', name: 'Schwarz', ton: '#1a1917', woerter: ['schwarz'] },
+    { id: 'blau', name: 'Blau', ton: '#263c6b', woerter: ['dunkelblau', 'marine', 'navyblau', 'navy', 'blau', 'mittelblau', 'hellblau', 'royalblau', 'royal', 'blaugrau', 'tuerkis', 'petrol'] },
+    { id: 'grau', name: 'Grau', ton: '#8a8d91', woerter: ['grau', 'hellgrau', 'dunkelgrau', 'anthrazit', 'silber', 'silbergrau'] },
+    { id: 'braun', name: 'Braun', ton: '#6a4a33', woerter: ['braun', 'hellbraun', 'dunkelbraun', 'rehbraun', 'cognac', 'taupe'] },
+    { id: 'beige', name: 'Creme & Beige', ton: '#e6d8bb', woerter: ['creme', 'ivory', 'cremegold', 'cremebeige', 'champagner', 'ecru', 'beige', 'hellbeige', 'senfbeige', 'sand', 'camel'] },
+    { id: 'weiss', name: 'Weiß', ton: '#ffffff', woerter: ['weiss'] },
+    { id: 'rot', name: 'Rot & Bordeaux', ton: '#8d1f27', woerter: ['bordeaux', 'weinrot', 'rot', 'dunkelrot'] },
+    { id: 'gruen', name: 'Grün', ton: '#2f6b4a', woerter: ['gruen', 'dunkelgruen', 'hellgruen', 'oliv', 'khaki'] },
+    { id: 'violett', name: 'Violett', ton: '#6a4a9c', woerter: ['violett', 'lila', 'flieder', 'hellflieder'] },
+    { id: 'rosa', name: 'Rosa', ton: '#e7b3bd', woerter: ['rosa', 'hellrosa', 'dunkelrosa', 'altrosa', 'lachs', 'fuchsia', 'pink'] },
+    { id: 'gelb', name: 'Gelb & Orange', ton: '#e6c84a', woerter: ['gelb', 'gold', 'orange'] }
+  ];
+  var familieNach = {};
+  M.farbfamilien.forEach(function (f) { f.woerter.forEach(function (w) { familieNach[w] = f.id; }); });
+  M.farbfamilie = function (name) {
+    var teile = M.schlicht(name).split(' ');
+    for (var i = teile.length - 1; i >= 0; i--) if (familieNach[teile[i]]) return familieNach[teile[i]];
+    return null;
+  };
+  /* Alle Farbfamilien eines Artikels */
+  M.familienVon = function (p) {
+    var aus = [];
+    (p.f || []).forEach(function (f) {
+      var fam = M.farbfamilie(f);
+      if (fam && aus.indexOf(fam) === -1) aus.push(fam);
+    });
+    return aus;
+  };
+
+  /* Preis eines Artikels für eine bestimmte Größe und Farbe.
+   * pg: abweichende Preise je Größe, pf: Aufschläge je Farbe. */
+  M.preisFuer = function (p, groesse, farbe) {
+    var preis = p.pg && groesse && p.pg[groesse] != null ? p.pg[groesse] : p.p;
+    if (p.pf && farbe && p.pf[farbe] != null) preis += p.pf[farbe];
+    return Math.round(preis * 100) / 100;
   };
 
   M.preis = function (p) {

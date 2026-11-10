@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="de" class="ohne-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kollektion · MUGA Herrenausstatter Köln</title>
+<meta name="description" content="Die Kollektion von MUGA: Hochzeitsanzüge, Anzüge, Hemden, Westen, Schuhe und Accessoires. Nach Größe, Farbe, Stil und Preis filtern.">
+<meta name="theme-color" content="#f6f2ea">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="preload" href="assets/fonts/fraunces-latin-opsz-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/figtree-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/css/basis.css">
+<link rel="stylesheet" href="assets/css/rahmen.css">
+<link rel="stylesheet" href="assets/css/shop.css">
+<link rel="stylesheet" href="assets/css/seiten.css">
+<script src="assets/js/config.js"></script>
+<script src="assets/js/kern.js"></script>
+<script src="assets/js/rahmen.js"></script>
+<script src="daten/katalog.js" defer></script>
+<script src="assets/js/seite-kollektion.js" defer></script>
+</head>
+<body>
+<muga-kopf></muga-kopf>
+<noscript><p class="ohne-skript">Für die Kollektion wird JavaScript benötigt. Sie erreichen uns auch telefonisch unter 0221 839 25 90.</p></noscript>
+
+<main id="inhalt">
+  <div class="huelle">
+    <header class="seitenkopf">
+      <nav aria-label="Brotkrumen"><ol class="kruemel" id="kruemel"><li><a href="index.html">Start</a></li><li>Kollektion</li></ol></nav>
+      <h1 id="titel">Kollektion</h1>
+      <p class="einleitung" id="einleitung">Alles aus eigener Herstellung: vom Hochzeitsanzug bis zum Einstecktuch.</p>
+      <nav class="kat-streifen" id="streifen" aria-label="Sortiment"></nav>
+    </header>
+
+    <div class="kollektion">
+      <aside class="filter-spalte" aria-label="Filter">
+        <form class="filter" id="filter" autocomplete="off"></form>
+      </aside>
+
+      <section aria-label="Artikel">
+        <div class="werkzeile">
+          <p class="werkzeile__zahl" id="zahl" aria-live="polite">&nbsp;</p>
+          <div class="werkzeile__rechts">
+            <button class="knopf knopf--linie knopf--klein filterknopf" type="button" id="filter-auf">
+              <svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg>
+              Filter<span id="filter-zahl"></span>
+            </button>
+            <label class="unsichtbar" for="sortierung">Sortierung</label>
+            <select class="auswahl" id="sortierung">
+              <option value="">Empfohlen</option>
+              <option value="preis-auf">Preis aufsteigend</option>
+              <option value="preis-ab">Preis absteigend</option>
+              <option value="name">Name A bis Z</option>
+            </select>
+          </div>
+        </div>
+        <div class="aktiv-filter" id="aktiv"></div>
+        <div class="produktraster" id="raster" style="--spalten:3">
+          <div class="karte"><div class="karte__bild schimmer"></div></div>
+          <div class="karte"><div class="karte__bild schimmer"></div></div>
+          <div class="karte"><div class="karte__bild schimmer"></div></div>
+          <div class="karte"><div class="karte__bild schimmer"></div></div>
+          <div class="karte"><div class="karte__bild schimmer"></div></div>
+          <div class="karte"><div class="karte__bild schimmer"></div></div>
+        </div>
+        <div class="nachladen" id="nachladen" hidden>
+          <p class="klein leise" id="nachladen-text"></p>
+          <div class="massband" id="nachladen-band" role="presentation"></div>
+          <button class="knopf knopf--linie" type="button" id="mehr">Mehr anzeigen</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <dialog class="lade lade--links" id="filterlade" aria-labelledby="filterlade-titel">
+    <div class="lade__kopf"><h2 id="filterlade-titel">Filter</h2>
+      <button class="symbolknopf" type="button" data-schliessen aria-label="Filter schließen"><svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="lade__inhalt">
+      <div id="filterlade-ziel"></div>
+      <div class="lade__fuss"><button class="knopf knopf--voll" type="button" data-schliessen id="filter-zeigen">Artikel anzeigen</button></div>
+    </div>
+  </dialog>
+</main>
+
+<muga-fuss></muga-fuss>
+</body>
+</html>

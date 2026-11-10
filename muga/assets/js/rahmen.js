@@ -61,7 +61,8 @@
 
   function statusHtml() {
     var s = M.zeit.status();
-    return '<span class="punkt' + (s.offen ? ' offen' : '') + '"></span><span><strong>' + esc(s.kurz) + '</strong>' + (s.text ? ' · ' + esc(s.text) : '') + '</span>';
+    return '<span class="punkt' + (s.offen ? ' offen' : '') + '"></span><span><strong>' + esc(s.kurz) + '</strong>' +
+      (s.text ? '<span class="status__text"><i> · </i>' + esc(s.text) + '</span>' : '') + '</span>';
   }
 
   /* ---------- Kopf --------------------------------------------------------- */
@@ -181,7 +182,7 @@
   /* Eine Zeile im Warenkorb; wird auch von der Warenkorbseite benutzt. */
   M.korbzeile = function (p) {
     var k = M.korb.schluessel(p);
-    var zusatz = [p.groesse ? 'Größe ' + p.groesse : '', p.farbe].filter(Boolean).join(' · ');
+    var zusatz = [p.groesse ? 'Größe ' + p.groesse : '', p.farbe, p.zusatz].filter(Boolean).join(' · ');
     return '<li class="zeile" data-posten="' + esc(k) + '">' +
       '<a class="zeile__bild" href="produkt.html?p=' + encodeURIComponent(p.id) + '" tabindex="-1" aria-hidden="true"><img src="assets/produkte/' + esc(p.id) + '.webp" alt="" width="96" height="120" loading="lazy"></a>' +
       '<div class="zeile__text">' +
