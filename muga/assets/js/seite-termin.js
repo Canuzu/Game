@@ -342,7 +342,7 @@
     var a = M.terminart(t.art), ziel = document.getElementById('fertig');
     var route = 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(C.strasse + ', ' + C.plz + ' ' + C.ort);
     ziel.innerHTML = '<div class="bestaetigung">' +
-      '<span class="bestaetigung__zeichen">' + sym(server ? 'haken' : 'post') + '</span>' +
+      M.nahtknopf(server ? 'haken' : 'post') +
       '<h2 tabindex="-1" id="fertig-titel">' + (server ? 'Ihr Termin ist <em>eingetragen.</em>' : 'Fast geschafft: Bitte senden Sie uns <em>Ihren Wunsch.</em>') + '</h2>' +
       '<p class="einleitung">' + (server
         ? 'Wir freuen uns auf Sie, ' + esc(t.vorname) + '. Falls wir vorab etwas klären müssen, rufen wir Sie an.'

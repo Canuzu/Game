@@ -156,6 +156,14 @@
 .galerie__gross img { width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply; padding: clamp(0.6rem, 2vw, 1.4rem); transition: opacity 0.35s var(--sanft); }
 .galerie__gross.laedt img { opacity: 0.35; }
 .galerie__lupe { position: absolute; right: 1rem; bottom: 1rem; width: 2.6rem; height: 2.6rem; display: grid; place-items: center; border-radius: 50%; background: rgba(255, 253, 249, 0.92); box-shadow: var(--schatten-s); pointer-events: none; }
+/* Stofflupe: folgt dem Zeiger und zeigt das Gewebe vergrößert */
+.stofflupe {
+  position: absolute; left: 0; top: 0; z-index: 2; width: 11.5rem; height: 11.5rem; border-radius: 50%; pointer-events: none; opacity: 0;
+  background-color: var(--leinen); background-repeat: no-repeat; background-blend-mode: multiply; will-change: transform;
+  box-shadow: 0 0 0 1px rgba(168, 133, 74, 0.9), 0 0 0 5px rgba(255, 253, 249, 0.94), 0 0 0 6px rgba(168, 133, 74, 0.5), var(--schatten-l);
+  transition: opacity 0.2s;
+}
+.stofflupe.an { opacity: 1; }
 .galerie__daumen { display: grid; grid-auto-flow: column; grid-auto-columns: 5.2rem; gap: 0.6rem; overflow-x: auto; padding-bottom: 0.4rem; scrollbar-width: thin; }
 .galerie__daumen button { aspect-ratio: 1; background: var(--leinen); border-radius: var(--r-s); overflow: hidden; border: 1px solid transparent; transition: border-color 0.2s; }
 .galerie__daumen button img { width: 100%; height: 100%; object-fit: cover; mix-blend-mode: multiply; }
@@ -194,6 +202,27 @@
 .kauf__herz:hover { background: var(--leinen); }
 .kauf__anprobe { display: grid; grid-template-columns: auto 1fr auto; gap: 1rem; align-items: center; padding: 1rem 1.15rem; border-radius: var(--r-m); border: 1px dashed var(--messing); text-decoration: none; transition: background-color 0.25s; }
 .kauf__anprobe:hover { background: var(--leinen); }
+.kauf__anprobe + .kauf__anprobe { margin-top: -0.4rem; }
+.kauf__anprobe--atelier { border-style: solid; border-color: var(--linie); }
+.kauf__anprobe--atelier > .symbol:first-child { color: var(--messing-tief); }
+
+/* Kaufleiste am unteren Rand: auf dem Handy bleibt der Kauf immer erreichbar */
+.kaufleiste { display: none; }
+@media (max-width: 900px) {
+  .kaufleiste {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0.9rem; align-items: center;
+    padding: 0.7rem var(--rand) calc(0.7rem + env(safe-area-inset-bottom, 0px)); background: rgba(255, 253, 249, 0.96);
+    -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border-top: 1px solid var(--linie); box-shadow: 0 -8px 24px rgba(21, 18, 15, 0.08);
+    transform: translateY(105%); transition: transform 0.4s var(--sanft); visibility: hidden;
+  }
+  .kaufleiste.da { transform: none; visibility: visible; }
+  .kaufleiste__text { display: grid; min-width: 0; line-height: 1.25; }
+  .kaufleiste__name { font-size: 0.82rem; color: var(--stein); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kaufleiste__preis { font-weight: 650; font-variant-numeric: tabular-nums; }
+  body.mit-kaufleiste { padding-bottom: 4.6rem; }
+}
+@media (max-width: 900px) and (prefers-reduced-motion: reduce) { .kaufleiste { transition: none; } }
+
 .kauf__anprobe strong { display: block; }
 .kauf__anprobe span span { font-size: 0.88rem; color: var(--stein); }
 .kauf__anprobe > .symbol:first-child { width: 1.6rem; height: 1.6rem; color: var(--rot); }
@@ -263,6 +292,19 @@
 .bestaetigung { text-align: center; display: grid; justify-items: center; gap: 1.1rem; padding-block: clamp(2.5rem, 6vw, 4.5rem); }
 .bestaetigung__zeichen { width: 4.6rem; height: 4.6rem; border-radius: 50%; background: var(--gruen-hell); color: var(--gruen); display: grid; place-items: center; }
 .bestaetigung__zeichen .symbol { width: 2.1rem; height: 2.1rem; stroke-width: 1.8; }
+/* Der Knopf wird angenäht: Er springt herein, dann stickt der Faden das Zeichen */
+.nahtknopf { width: 6.6rem; height: 6.6rem; background: none; border-radius: 0; animation: knopf-auf 0.7s cubic-bezier(0.3, 1.4, 0.5, 1) both; }
+.nahtknopf svg { width: 100%; height: 100%; overflow: visible; }
+.nahtknopf__ring { fill: none; stroke: var(--messing); stroke-width: 1.2; stroke-dasharray: 5 4; transform-origin: 0 0; animation: knopf-dreh 18s linear infinite; }
+.nahtknopf__stich { fill: none; stroke: #bd1e27; stroke-width: 5.2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 100; stroke-dashoffset: 100; animation: naht-stich 0.9s cubic-bezier(0.6, 0, 0.3, 1) 0.45s forwards; }
+.nahtknopf__stich--fein { stroke-width: 3; animation-duration: 1.3s; }
+@keyframes knopf-auf { from { opacity: 0; transform: scale(0.5) rotate(-25deg); } }
+@keyframes knopf-dreh { to { transform: rotate(360deg); } }
+@keyframes naht-stich { to { stroke-dashoffset: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .nahtknopf, .nahtknopf__ring { animation: none; }
+  .nahtknopf__stich { animation: none; stroke-dashoffset: 0; }
+}
 .bestaetigung h1, .bestaetigung h2 { font-size: clamp(2rem, 4.4vw, 3.3rem); }
 .bestaetigung__nummer { font-variant-numeric: tabular-nums; letter-spacing: 0.08em; font-weight: 650; padding: 0.5rem 1.1rem; border: 1px dashed var(--messing); border-radius: var(--r-s); background: var(--kreide); }
 .bestaetigung .knopfreihe { justify-content: center; }

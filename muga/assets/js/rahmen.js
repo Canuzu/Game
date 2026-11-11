@@ -586,6 +586,47 @@
     M.$$('[data-oeffnung]').forEach(function (el) { el.innerHTML = html; });
   });
 
+  /* ---------- Seitenübergänge ------------------------------------------------- */
+
+  /* Das Bild einer Produktkarte wächst in das große Bild der Artikelseite hinein und
+   * auf dem Rückweg wieder zurück. Dazu bekommt das Kartenbild für die Dauer des
+   * Übergangs denselben Namen wie das große Bild. */
+  function produktAus(adresse) {
+    try {
+      var u = new URL(adresse, location.href);
+      return /produkt\.html$/.test(u.pathname) ? u.searchParams.get('p') : null;
+    } catch (e) { return null; }
+  }
+  function benenne(id) {
+    if (!id || !/^[a-z0-9-]+$/.test(id)) return null;
+    var bild = document.querySelector('.karte[data-id="' + id + '"] .karte__bild img');
+    if (!bild) return null;
+    var gross = document.getElementById('gross-bild');
+    if (gross) gross.style.viewTransitionName = 'none';
+    bild.style.viewTransitionName = 'produktbild';
+    return function () {
+      bild.style.viewTransitionName = '';
+      if (gross) gross.style.viewTransitionName = '';
+    };
+  }
+  window.addEventListener('pageswap', function (e) {
+    if (!e.viewTransition || !e.activation || !e.activation.entry) return;
+    var aufraeumen = benenne(produktAus(e.activation.entry.url));
+    if (aufraeumen) e.viewTransition.finished.then(aufraeumen, aufraeumen);
+  });
+  window.addEventListener('pagereveal', function (e) {
+    if (!e.viewTransition || !window.navigation || !navigation.activation || !navigation.activation.from) return;
+    if (/produkt\.html$/.test(location.pathname)) return;
+    var aufraeumen = benenne(produktAus(navigation.activation.from.url));
+    if (aufraeumen) e.viewTransition.finished.then(aufraeumen, aufraeumen);
+  });
+
+  /* Übergang innerhalb einer Seite, zum Beispiel beim Filtern der Kollektion */
+  M.wandle = function (fn) {
+    if (!document.startViewTransition || window.matchMedia('(prefers-reduced-motion: reduce)').matches) { fn(); return; }
+    try { document.startViewTransition(fn); } catch (e) { fn(); }
+  };
+
   /* Nach „In den Warenkorb“ die Leiste zeigen */
   M.zeigeKorb = function () {
     var lade = document.getElementById('korblade');

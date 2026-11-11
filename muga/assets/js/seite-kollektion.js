@@ -226,6 +226,10 @@
           '<div class="knopfreihe" style="justify-content:center"><button class="knopf knopf--dunkel" type="button" data-alle-weg>Filter zurücksetzen</button><a class="faden" href="termin.html">Termin buchen ' + sym('pfeil') + '</a></div></div>';
       } else {
         raster.innerHTML = sicht.map(function (p, i) { return M.karte(p, k, { sofort: i < 3, h: 'h2' }); }).join('');
+        /* Die ersten Karten tragen einen Namen, damit sie beim Filtern an ihren neuen Platz gleiten */
+        Array.prototype.slice.call(raster.children, 0, 18).forEach(function (karte) {
+          if (karte.dataset.id) karte.style.viewTransitionName = 'k-' + karte.dataset.id;
+        });
       }
       var nach = document.getElementById('nachladen');
       nach.hidden = !alle.length;
@@ -244,7 +248,7 @@
       adresse();
     }
 
-    function geaendert() { lies(); zustand.n = SCHRITT; zeichne(); }
+    function geaendert() { lies(); zustand.n = SCHRITT; M.wandle(zeichne); }
     form.addEventListener('change', geaendert);
     form.addEventListener('input', M.verzoegert(function (e) {
       if (e.target.name === 'min' || e.target.name === 'max') geaendert();

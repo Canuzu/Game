@@ -222,7 +222,7 @@
     if (kopf) kopf.hidden = true;
     var ziel = el('bestellt');
     ziel.innerHTML = '<div class="bestaetigung">' +
-      '<span class="bestaetigung__zeichen">' + sym(b.server ? 'haken' : 'post') + '</span>' +
+      M.nahtknopf(b.server ? 'haken' : 'post') +
       '<h1 tabindex="-1" id="bestellt-titel">' + (b.server ? 'Vielen Dank für <em>Ihre Bestellung.</em>' : 'Fast geschafft: Bitte senden Sie uns <em>Ihre Bestellung.</em>') + '</h1>' +
       '<p class="einleitung">' + (b.server
         ? 'Ihre Bestellung ist bei uns eingegangen, ' + esc(k.vorname) + '.'
