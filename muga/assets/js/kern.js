@@ -111,6 +111,18 @@
     return '<svg class="symbol' + (klasse ? ' ' + klasse : '') + '" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' + (PFADE[name] || '') + '</svg>';
   };
 
+  /* Bestätigungszeichen: ein Knopf, auf den der rote Faden einen Haken stickt
+   * (oder einen Brief, wenn die Anfrage per E-Mail auf den Weg geht). */
+  M.nahtknopf = function (art) {
+    var stich = art === 'post'
+      ? '<path class="nahtknopf__stich nahtknopf__stich--fein" pathLength="100" d="M-17 -11H17V11H-17ZM-17 -10L0 3L17 -10"/>'
+      : '<path class="nahtknopf__stich" pathLength="100" d="M-15 1L-4.500 12L16 -11"/>';
+    return '<span class="bestaetigung__zeichen nahtknopf" aria-hidden="true"><svg viewBox="-50 -50 100 100" focusable="false">' +
+      '<circle class="nahtknopf__ring" r="47"/>' +
+      '<circle r="39" fill="#f6ecd8" stroke="#b59c72" stroke-width="1"/>' +
+      '<circle r="30" fill="#efe3cc" stroke="rgba(120,96,58,.3)" stroke-width="1"/>' + stich + '</svg></span>';
+  };
+
   /* ---------- 3) Speicher -------------------------------------------------- */
 
   var ersatz = {};

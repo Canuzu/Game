@@ -29,6 +29,23 @@
     document.title = 'Artikel nicht gefunden · MUGA Herrenausstatter Köln';
   }
 
+  /* Anzüge lassen sich im Atelier an der Schneiderpuppe weiterkombinieren.
+   * Schnitt, Farbe und Muster des Artikels werden dorthin mitgegeben. */
+  function atelierVerweis(p) {
+    var anzug = ['hochzeitsanzuege', 'anzuege-uni', 'anzuege-gemustert'].some(function (id) { return p.k.indexOf(id) !== -1; });
+    if (!anzug) return '';
+    var t = p.t || [];
+    var schnitt = ['gehrock', 'cutaway', 'smoking', 'stehkragen'].filter(function (s) { return t.indexOf(s) !== -1; })[0] || 'anzug';
+    var stoff = { schwarz: 'schwarz', blau: 'dunkelblau', grau: 'grau', braun: 'braun', beige: 'creme', rot: 'bordeaux', gruen: 'gruen' }[M.familienVon(p)[0]] || 'dunkelblau';
+    var muster = t.indexOf('gestreift') !== -1 ? 'nadelstreifen' : (t.indexOf('kariert') !== -1 ? 'karo' : (t.indexOf('jacquard') !== -1 ? 'jacquard' : 'uni'));
+    var rest = schnitt === 'smoking' ? '&h=fliege&hf=schwarz&t=weiss'
+      : (schnitt === 'anzug' ? '&h=krawatte&hf=bordeaux&t=weiss' : '&h=plastron&hf=champagner&t=champagner');
+    var ziel = 'atelier.html?s=' + schnitt + '&f=' + stoff + '&m=' + muster + '&w=' + (t.indexOf('mit-weste') !== -1 ? 'ton' : 'ohne') + '&wm=0' + rest;
+    return '<a class="kauf__anprobe kauf__anprobe--atelier" href="' + esc(ziel) + '">' +
+      sym('funke') + '<span><strong>Im Atelier kombinieren</strong><span>Weste, Halsschmuck und Einstecktuch an der Schneiderpuppe ausprobieren.</span></span>' + sym('pfeil') +
+      '</a>';
+  }
+
   function bildAdresse(k, pfad, groesse) {
     var punkt = pfad.lastIndexOf('.');
     return k.bildbasis + encodeURI(pfad.slice(0, punkt)) + (groesse ? '_' + groesse : '') + pfad.slice(punkt);
@@ -95,6 +112,7 @@
         '<a class="kauf__anprobe" href="termin.html?art=anprobe&amp;artikel=' + encodeURIComponent(p.id) + '">' +
           sym('kalender') + '<span><strong>Lieber erst anprobieren?</strong><span>Wir legen das Modell in Ihrer Größe im Kölner Geschäft bereit.</span></span>' + sym('pfeil') +
         '</a>' +
+        atelierVerweis(p) +
         '<ul class="kauf__vorteile">' +
           '<li>' + sym('fabrik') + 'Direkt vom Hersteller, 1A-Qualität</li>' +
           '<li>' + sym('lkw') + 'Versand unverzüglich nach Zahlungseingang</li>' +
@@ -127,6 +145,29 @@
         (p.pu && !genau ? '<span class="klein leise">Für große Größen kann ein Aufpreis gelten. Wir bestätigen den Preis vor dem Versand.</span>' : '');
       var text = document.getElementById('farbe-text');
       if (text) text.textContent = a.farbe || 'Bitte wählen';
+      var leistenpreis = document.getElementById('kaufleiste-preis');
+      if (leistenpreis) leistenpreis.textContent = (genau ? '' : 'ab ') + M.geld(preis);
+    }
+
+    /* ---- Kaufleiste: auf dem Handy bleibt der Kauf erreichbar, solange der Knopf nicht zu sehen ist ---- */
+    var leiste = document.getElementById('kaufleiste');
+    if (!leiste) {
+      leiste = document.createElement('div');
+      leiste.id = 'kaufleiste';
+      leiste.className = 'kaufleiste';
+      document.body.appendChild(leiste);
+    }
+    leiste.innerHTML = '<div class="kaufleiste__text"><span class="kaufleiste__name">' + esc(p.n) + '</span><span class="kaufleiste__preis" id="kaufleiste-preis"></span></div>' +
+      '<button class="knopf knopf--klein" type="button" id="kaufleiste-knopf">' + sym('korb') + 'In den Warenkorb</button>';
+    document.getElementById('kaufleiste-knopf').addEventListener('click', function () {
+      if (form.requestSubmit) form.requestSubmit(); else form.querySelector('button[type="submit"]').click();
+    });
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(function (t) {
+        var sichtbar = t[0].isIntersecting;
+        leiste.classList.toggle('da', !sichtbar);
+        document.body.classList.toggle('mit-kaufleiste', !sichtbar);
+      }, { rootMargin: '-60px 0px 0px 0px' }).observe(form.querySelector('.kauf__knoepfe'));
     }
     zeigePreis();
     form.addEventListener('change', function () {
@@ -200,6 +241,35 @@
       M.$$('.grossbild__pfeil', dialog).forEach(function (kn) { kn.hidden = bilder.length < 2; });
     }
     rahmen.addEventListener('click', function () { M.oeffne(dialog); zeigeGross(); });
+
+    /* ---- Stofflupe: Mit dem Zeiger über das Bild fahren, das Gewebe erscheint vergrößert ---- */
+    if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+      var lupe = document.createElement('span'), lupeQuelle = '';
+      lupe.className = 'stofflupe';
+      lupe.setAttribute('aria-hidden', 'true');
+      rahmen.appendChild(lupe);
+      rahmen.addEventListener('pointermove', function (e) {
+        var r = grossBild.getBoundingClientRect(), stil = getComputedStyle(grossBild);
+        var rand = parseFloat(stil.paddingLeft) || 0, nb = grossBild.naturalWidth, nh = grossBild.naturalHeight;
+        if (!nb || !nh) return;
+        /* sichtbare Bildfläche: Das Bild ist in seinen Rahmen eingepasst */
+        var fb = r.width - 2 * rand, fh = r.height - 2 * rand, m = Math.min(fb / nb, fh / nh), b = nb * m, h = nh * m;
+        var x = (e.clientX - (r.left + rand + (fb - b) / 2)) / b, y = (e.clientY - (r.top + rand + (fh - h) / 2)) / h;
+        if (x < 0 || x > 1 || y < 0 || y > 1) { lupe.classList.remove('an'); return; }
+        var ziel = bilder[aktiv].gross, jetzt = grossBild.currentSrc || grossBild.src;
+        if (lupeQuelle !== ziel + jetzt) {
+          lupeQuelle = ziel + jetzt;
+          /* erst das Bild, das schon da ist, darüber die große Fassung, sobald sie geladen ist */
+          lupe.style.backgroundImage = 'url("' + ziel.replace(/"/g, '%22') + '"), url("' + jetzt.replace(/"/g, '%22') + '")';
+        }
+        var fach = 2.6, d = lupe.offsetWidth, a = rahmen.getBoundingClientRect();
+        lupe.style.backgroundSize = (b * fach).toFixed(0) + 'px ' + (h * fach).toFixed(0) + 'px';
+        lupe.style.backgroundPosition = (d / 2 - x * b * fach).toFixed(1) + 'px ' + (d / 2 - y * h * fach).toFixed(1) + 'px';
+        lupe.style.transform = 'translate(' + (e.clientX - a.left - d / 2).toFixed(1) + 'px,' + (e.clientY - a.top - d / 2).toFixed(1) + 'px)';
+        lupe.classList.add('an');
+      });
+      rahmen.addEventListener('pointerleave', function () { lupe.classList.remove('an'); });
+    }
     dialog.addEventListener('click', function (e) {
       var blatt = e.target.closest('[data-blatt]');
       if (blatt) { zeige(aktiv + (+blatt.dataset.blatt)); zeigeGross(); }
