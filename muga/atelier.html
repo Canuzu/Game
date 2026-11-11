@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="de" class="ohne-js" data-kopf="nacht">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Atelier: Stellen Sie Ihren Anzug zusammen · MUGA Herrenausstatter Köln</title>
+<meta name="description" content="Im Atelier von MUGA stellen Sie Ihren Anzug an der Schneiderpuppe zusammen: Schnitt, Stoff, Muster, Weste, Halsschmuck und Einstecktuch. Wir zeigen die passenden Modelle und legen sie zur Anprobe bereit.">
+<meta name="theme-color" content="#171411">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Das Atelier von MUGA">
+<meta property="og:description" content="Schnitt, Stoff, Weste, Halsschmuck: Stellen Sie Ihren Anzug an der Schneiderpuppe zusammen.">
+<meta property="og:locale" content="de_DE">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/basis.css">
+<link rel="stylesheet" href="assets/css/rahmen.css">
+<link rel="stylesheet" href="assets/css/shop.css">
+<link rel="stylesheet" href="assets/css/seiten.css">
+<link rel="stylesheet" href="assets/css/erlebnis.css">
+<script src="assets/js/config.js"></script>
+<script src="assets/js/kern.js"></script>
+<script src="assets/js/rahmen.js"></script>
+<script src="assets/js/anzug.js" defer></script>
+<script src="assets/js/seite-atelier.js" defer></script>
+</head>
+<body>
+<muga-kopf></muga-kopf>
+<noscript><p class="ohne-skript">Für das Atelier wird JavaScript benötigt. Wir beraten Sie auch persönlich: 0221 839 25 90.</p></noscript>
+
+<main id="inhalt">
+
+  <!-- ===== Werkstatt: links die Puppe, rechts die Auswahl ===== -->
+  <section class="atelier nacht" data-buehne aria-labelledby="atelier-titel">
+    <div class="huelle atelier__innen">
+
+      <div class="atelier__buehne">
+        <div class="atelier__nische">
+          <svg class="puppe" id="atelier-puppe" viewBox="0 0 480 680" role="img" aria-labelledby="atelier-beschreibung"></svg>
+        </div>
+        <p class="atelier__beschreibung" id="atelier-beschreibung" aria-live="polite"></p>
+        <div class="atelier__werkzeug">
+          <button class="werkzeug" type="button" id="atelier-zufall">
+            <svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.500l1.800 5.200 5.200 1.800-5.200 1.800L12 17.500l-1.800-5.200L5 10.500l5.200-1.800z"/><path d="M18.500 16l.700 1.800 1.800.700-1.800.700-.700 1.800-.700-1.800-1.800-.700 1.800-.700z"/></svg>
+            <span>Überraschen</span>
+          </button>
+          <button class="werkzeug" type="button" id="atelier-bild">
+            <svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.500 10.500L12 15l4.500-4.500M5 19.500h14"/></svg>
+            <span>Bild sichern</span>
+          </button>
+          <button class="werkzeug" type="button" id="atelier-teilen">
+            <svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.700 0l3-3a4 4 0 0 0-5.700-5.700l-1 1"/><path d="M14 10a4 4 0 0 0-5.700 0l-3 3a4 4 0 0 0 5.700 5.700l1-1"/></svg>
+            <span>Verweis kopieren</span>
+          </button>
+        </div>
+      </div>
+
+      <form class="atelier__wahl" id="atelier-form" novalidate>
+        <header class="atelier__kopf">
+          <nav aria-label="Brotkrumen"><ol class="kruemel kruemel--hell"><li><a href="index.html">Start</a></li><li aria-current="page">Atelier</li></ol></nav>
+          <p class="vorspann">Das Atelier</p>
+          <h1 id="atelier-titel">Ihr Look, bevor Sie ihn <em>anziehen.</em></h1>
+          <p class="einleitung">Stellen Sie Ihren Anzug an der Schneiderpuppe zusammen. Darunter zeigen wir die Modelle aus unserer Kollektion, die Ihrem Entwurf am nächsten kommen.</p>
+        </header>
+
+        <fieldset class="werk">
+          <legend><span class="werk__nr">1</span> Schnitt</legend>
+          <div class="werk__schnitte" id="wahl-schnitt"></div>
+        </fieldset>
+
+        <fieldset class="werk">
+          <legend><span class="werk__nr">2</span> Stoff</legend>
+          <div class="toene" id="wahl-stoff" role="group" aria-label="Farbe des Stoffs"></div>
+          <p class="werk__unter">Muster</p>
+          <div class="marken" id="wahl-muster" role="group" aria-label="Muster des Stoffs"></div>
+        </fieldset>
+
+        <fieldset class="werk" id="gruppe-weste">
+          <legend><span class="werk__nr">3</span> Weste</legend>
+          <div class="marken" id="wahl-weste-art" role="group" aria-label="Weste"></div>
+          <div class="toene" id="wahl-weste" role="group" aria-label="Farbe der Weste"></div>
+          <label class="haken haken--hell"><input type="checkbox" name="wm" id="wahl-westemuster"><span>Weste mit Jacquard-Muster</span></label>
+          <p class="werk__hinweis" hidden>Der Stehkragen ist hoch geschlossen, eine Weste wäre nicht zu sehen.</p>
+        </fieldset>
+
+        <fieldset class="werk" id="gruppe-hals">
+          <legend><span class="werk__nr">4</span> Halsschmuck</legend>
+          <div class="marken" id="wahl-hals" role="group" aria-label="Art des Halsschmucks"></div>
+          <div class="toene" id="wahl-halsfarbe" role="group" aria-label="Farbe des Halsschmucks"></div>
+          <p class="werk__hinweis" hidden>Beim Stehkragen bleibt der Hals frei.</p>
+        </fieldset>
+
+        <fieldset class="werk">
+          <legend><span class="werk__nr">5</span> Einstecktuch</legend>
+          <div class="toene" id="wahl-tuch" role="group" aria-label="Farbe des Einstecktuchs"></div>
+        </fieldset>
+
+        <div class="atelier__weiter">
+          <a class="knopf" id="atelier-termin" href="termin.html">
+            <svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5.500" width="16" height="14.500" rx="2"/><path d="M4 10h16M8.500 3.500v4M15.500 3.500v4"/></svg>
+            Mit diesem Entwurf zur Anprobe
+          </a>
+          <a class="faden" href="#passend">Passende Modelle ansehen <svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></a>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- ===== Passende Modelle aus der Kollektion ===== -->
+  <section class="abschnitt" id="passend" aria-labelledby="passend-titel">
+    <div class="huelle">
+      <div class="kopfzeile kopfzeile--breit">
+        <div class="stapel">
+          <p class="vorspann">Aus unserer Kollektion</p>
+          <h2 id="passend-titel">Modelle, die Ihrem Entwurf <em>nahekommen.</em></h2>
+          <p class="einleitung" id="passend-text" aria-live="polite"></p>
+        </div>
+        <a class="faden" id="passend-alle" href="kollektion.html">Alle passenden Modelle <svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      </div>
+      <div class="produktraster" id="passend-liste" style="--spalten:4">
+        <div class="karte"><div class="karte__bild schimmer"></div></div>
+        <div class="karte"><div class="karte__bild schimmer"></div></div>
+        <div class="karte"><div class="karte__bild schimmer"></div></div>
+        <div class="karte"><div class="karte__bild schimmer"></div></div>
+      </div>
+      <p class="klein leise atelier__fussnote">Die Puppe zeigt eine Skizze. Stoff, Farbe und Schnitt des fertigen Anzugs sehen Sie am besten bei der Anprobe im Geschäft. Nicht jede Kombination gibt es genau so in der Kollektion, deshalb zeigen wir die Modelle, die ihr am nächsten kommen.</p>
+    </div>
+  </section>
+
+</main>
+
+<muga-fuss></muga-fuss>
+</body>
+</html>

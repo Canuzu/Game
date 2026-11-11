@@ -598,5 +598,13 @@
   };
   M.bereit(function () { M.beobachte(document); });
 
+  /* Der Vorhang der Startseite hebt sich nur beim ersten Besuch einer Sitzung
+   * und nie, wenn jemand reduzierte Bewegung eingestellt hat. */
+  try {
+    if (sessionStorage.getItem('muga.vorhang') || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      document.documentElement.classList.add('kein-vorhang');
+    }
+  } catch (e) { document.documentElement.classList.add('kein-vorhang'); }
+
   document.documentElement.classList.remove('ohne-js');
 })();

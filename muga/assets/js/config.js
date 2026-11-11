@@ -93,6 +93,20 @@
       ]
     },
 
+    /* Hochzeits-Fahrplan: empfohlener Abstand der Schritte zum Hochzeitstag in Wochen.
+     * Das sind Richtwerte, die sich hier anpassen lassen. `art` ist die Terminart,
+     * die zum Schritt gebucht wird. */
+    fahrplan: [
+      { id: 'beratung', art: 'hochzeit', wochen: 12, name: 'Beratung',
+        text: 'Stil, Farbe und Schnitt finden. Trauzeugen und Brautvater sind gern dabei.' },
+      { id: 'anprobe', art: 'anprobe', wochen: 6, name: 'Anprobe',
+        text: 'Ihr Anzug in Ihrer Größe, mit Weste, Hemd und Schuhen. Für Änderungen bleibt genug Zeit.' },
+      { id: 'beiwerk', art: 'beratung', wochen: 3, name: 'Feinschliff',
+        text: 'Plastron oder Krawatte, Einstecktuch, Gürtel und Manschettenknöpfe machen den Anzug vollständig.' },
+      { id: 'abholung', art: 'abholung', wochen: 1, name: 'Abholung',
+        text: 'Letzte Anprobe, dann nehmen Sie alles mit. Die Woche vor dem Fest bleibt entspannt.' }
+    ],
+
     /* Versandkosten nach Bestellwert (Stufen: bis 5 €, bis 20 €, bis 50 €, darüber) */
     versand: {
       freiAb: 50.01,
