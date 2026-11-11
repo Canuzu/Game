@@ -82,6 +82,12 @@
     }
     form.elements.anlassdatum.min = heute;
 
+    /* ---- Vorbelegung aus Hochzeits-Fahrplan und Atelier ---- */
+    var anlass = M.param('anlass') || M.speicher.lies('hochzeit', '');
+    if (typeof anlass === 'string' && Z.teile(anlass) && anlass >= heute) form.elements.anlassdatum.value = anlass;
+    var notiz = M.param('notiz');
+    if (notiz) form.elements.nachricht.value = notiz.slice(0, 600);
+
     /* ---- Schrittwechsel ---- */
     document.addEventListener('click', function (e) {
       var kn = e.target.closest('[data-weiter]');
@@ -98,18 +104,32 @@
     /* ---- Belegte Zeiten laden, dann Kalender zeichnen ---- */
     T.belegt(heute, letzter).then(function (b) { belegt = b; }).catch(function () { belegt = {}; }).then(function () {
       var wunsch = M.param('datum');
-      if (wunsch && Z.teile(wunsch) && wunsch >= heute && wunsch <= letzter) wahl.datum = wunsch;
+      var gewuenscht = !!(wunsch && Z.teile(wunsch) && wunsch >= heute && wunsch <= letzter);
+      /* Ist der gewünschte Tag belegt oder geschlossen, gilt der nächstgelegene freie Tag */
+      if (gewuenscht) wahl.datum = hatFreie(wunsch) ? wunsch : (naechsterFreierTag(wunsch) || '');
       if (!wahl.datum || !hatFreie(wahl.datum)) wahl.datum = ersterFreierTag() || '';
       var t = Z.teile(wahl.datum || heute);
       monat = { jahr: t.jahr, monat: t.monat };
       kalender();
       zeiten();
       zettel();
+      /* Wer mit Anliegen und Wunschtag kommt, steht gleich bei der Uhrzeit */
+      if (gewuenscht && wahl.art) gehe(2);
     });
 
     zettel();
     meine();
   });
+
+  /* Freier Tag, der einem Wunschtag am nächsten liegt (erst danach, dann davor) */
+  function naechsterFreierTag(wunsch) {
+    for (var n = 1; n <= 21; n++) {
+      var danach = Z.plusTage(wunsch, n), davor = Z.plusTage(wunsch, -n);
+      if (danach <= letzter && hatFreie(danach)) return danach;
+      if (davor >= heute && hatFreie(davor)) return davor;
+    }
+    return null;
+  }
 
   function ersterFreierTag() {
     for (var n = 0; n <= C.termin.wochenVoraus * 7; n++) {
@@ -138,7 +158,7 @@
     if (schritt === 2) {
       /* Passt der vorgewählte Tag nicht zur Dauer des Anliegens, zum nächsten freien Tag springen */
       if (wahl.start === null && (!wahl.datum || !hatFreie(wahl.datum))) {
-        wahl.datum = ersterFreierTag() || '';
+        wahl.datum = (wahl.datum && naechsterFreierTag(wahl.datum)) || ersterFreierTag() || '';
         if (wahl.datum) { var t = Z.teile(wahl.datum); monat = { jahr: t.jahr, monat: t.monat }; }
       }
       kalender(); zeiten(); zettel();

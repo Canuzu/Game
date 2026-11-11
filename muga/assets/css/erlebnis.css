@@ -1,0 +1,443 @@
+/* =============================================================================
+ * erlebnis.css — alles, was die Seite lebendig macht
+ * -----------------------------------------------------------------------------
+ * Vorhang, dunkle Bühne mit Stoff und heraustretenden Figuren, der rote Faden,
+ * Stilkunde mit Schneiderpuppe, Laufband, Atelier, Hochzeits-Fahrplan, Finale.
+ * Jede Bewegung hat eine ruhige Fassung für Menschen, die reduzierte Bewegung
+ * eingestellt haben (siehe ganz unten).
+ * ========================================================================== */
+
+:root { --auftakt: 1.45s; --faden: #bd1e27; --faden-hell: #ef6a62; }
+.kein-vorhang, .ohne-js { --auftakt: 0.05s; }
+
+/* ---------- Vorhang --------------------------------------------------------- */
+
+.vorhang { position: fixed; inset: 0; z-index: 900; display: grid; place-items: center; overflow: hidden; animation: vorhang-weg 0.01s linear 2.45s forwards; }
+.kein-vorhang .vorhang, .ohne-js .vorhang { display: none; }
+.vorhang__bahn {
+  position: absolute; top: 0; bottom: 0; width: 50.5%;
+  background-color: #171411;
+  /* Faltenwurf: helle und dunkle Bahnen wie bei schwerem Stoff */
+  background-image:
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, 0.42) 0, rgba(255, 255, 255, 0.035) 2.2rem, rgba(0, 0, 0, 0) 3.8rem, rgba(0, 0, 0, 0.42) 6rem),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Cg fill='none' stroke='%23f3ede2' stroke-opacity='.05'%3E%3Cpath d='M0 7l7-7M0 14L14 0M0 21L14 7M0 28l14-14M7 28l7-7'/%3E%3Cpath d='M28 7l-7-7M28 14L14 0M28 21L14 7M28 28L14 14M21 28l-7-7'/%3E%3C/g%3E%3C/svg%3E");
+  animation: vorhang-auf 1.05s cubic-bezier(0.72, 0, 0.18, 1) 1.3s forwards;
+}
+.vorhang__bahn--links { left: 0; transform-origin: left center; box-shadow: inset -1px 0 0 rgba(215, 183, 124, 0.55); }
+.vorhang__bahn--rechts { right: 0; transform-origin: right center; box-shadow: inset 1px 0 0 rgba(215, 183, 124, 0.55); }
+/* Die Bahnen werden zur Seite gerafft: Sie schrumpfen in der Breite, die Falten rücken zusammen */
+@keyframes vorhang-auf { 85% { opacity: 1; } to { transform: scaleX(0.03); opacity: 0; } }
+@keyframes vorhang-weg { to { visibility: hidden; } }
+.vorhang__mitte { position: relative; z-index: 2; display: grid; justify-items: center; gap: 1.2rem; animation: vorhang-aus 0.4s ease 1.22s forwards; }
+@keyframes vorhang-aus { to { opacity: 0; transform: scale(0.94); } }
+.vorhang__zeichen { width: clamp(5.5rem, 17vw, 8rem); overflow: visible; }
+.vorhang__stich { stroke-dasharray: 100; stroke-dashoffset: 100; animation: stich 0.95s cubic-bezier(0.6, 0, 0.3, 1) 0.15s forwards; }
+@keyframes stich { to { stroke-dashoffset: 0; } }
+.vorhang__strich { opacity: 0; animation: einblenden 0.4s ease 0.9s forwards; }
+.vorhang__wort { margin: 0; font-family: var(--serif); font-size: clamp(1.3rem, 4vw, 1.9rem); font-weight: 500; letter-spacing: 0.52em; margin-right: -0.52em; color: var(--nacht-text); opacity: 0; animation: einblenden 0.5s ease 0.7s forwards; }
+@keyframes einblenden { to { opacity: 1; } }
+.vorhang--schnell { transition: opacity 0.3s ease; opacity: 0; pointer-events: none; }
+
+/* ---------- Bühne ------------------------------------------------------------ */
+
+/* Der Faden liegt über den Flächen der Abschnitte, aber unter ihrem Inhalt.
+ * Deshalb darf kein Abschnitt einen eigenen Stapel bilden: Flächen stehen am
+ * Abschnitt selbst, Inhalt bekommt die höhere Ebene. */
+#inhalt { position: relative; }
+#inhalt > section > .huelle, #inhalt > section > .stilkunde__klebt, #inhalt > .laufband { position: relative; z-index: 2; }
+
+.buehne {
+  position: relative; overflow: hidden; color: var(--nacht-text);
+  margin-top: calc(var(--kopfhoehe) * -1); padding-top: var(--kopfhoehe);
+  min-height: min(100svh - 2.5rem, 60rem); display: grid; align-items: center;
+}
+.buehne__grund, .buehne__stoff, .buehne__schleier { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.buehne__grund { z-index: -3; background: radial-gradient(120% 95% at 72% 38%, #2c231c 0%, #1a1613 48%, #0d0b09 100%); }
+.buehne__stoff { z-index: -2; opacity: 0; transition: opacity 1.4s ease; }
+.buehne__stoff.bereit { opacity: 1; }
+.buehne__schleier { z-index: -1; background: linear-gradient(90deg, rgba(13, 11, 9, 0.78) 0%, rgba(13, 11, 9, 0.38) 44%, rgba(13, 11, 9, 0) 72%), linear-gradient(0deg, rgba(13, 11, 9, 0.7) 0%, rgba(13, 11, 9, 0) 26%); }
+
+.buehne__innen { display: grid; grid-template-columns: minmax(0, 1.06fr) minmax(0, 0.94fr); gap: clamp(2rem, 5vw, 5rem); align-items: center; padding-block: clamp(2rem, 5vh, 4rem) clamp(5.5rem, 12vh, 8.5rem); }
+.buehne__text { display: grid; gap: 1.6rem; justify-items: start; }
+.buehne .vorspann { color: #d7b77c; }
+.buehne h1 { font-size: clamp(2.45rem, 6vw, 5.3rem); line-height: 1.03; }
+.buehne h1 em { color: #f3cdbd; }
+.buehne .einleitung { color: #cfc5b6; max-width: 36rem; }
+.buehne__fakten { display: flex; flex-wrap: wrap; gap: 0.5rem 1.6rem; font-size: 0.88rem; font-weight: 580; color: #d9cfc0; }
+.buehne__fakten li { display: inline-flex; align-items: center; gap: 0.55rem; }
+.buehne__fakten li::before { content: ""; width: 0.42rem; height: 0.42rem; border-radius: 50%; background: var(--faden); box-shadow: 0 0 0 3px rgba(189, 30, 39, 0.25); }
+
+/* Zeilen steigen hinter einer Kante auf */
+.hebe { display: block; overflow: hidden; padding: 0.06em 0.12em 0.16em 0; margin: -0.06em -0.12em -0.16em 0; }
+.hebe > span { display: inline-block; transform: translateY(112%); animation: hebe-auf 1.05s cubic-bezier(0.2, 0.7, 0.2, 1) calc(var(--auftakt) + 0.1s) forwards; }
+.hebe + .hebe > span { animation-delay: calc(var(--auftakt) + 0.22s); }
+@keyframes hebe-auf { to { transform: none; } }
+.buehne .vorspann, .buehne .einleitung, .buehne .knopfreihe, .buehne__fakten { opacity: 0; transform: translateY(14px); animation: steigen 0.9s var(--sanft) forwards; }
+.buehne .vorspann { animation-delay: var(--auftakt); }
+.buehne .einleitung { animation-delay: calc(var(--auftakt) + 0.42s); }
+.buehne .knopfreihe { animation-delay: calc(var(--auftakt) + 0.54s); }
+.buehne__fakten { animation-delay: calc(var(--auftakt) + 0.66s); }
+@keyframes steigen { to { opacity: 1; transform: none; } }
+
+/* Szene: zwei beleuchtete Nischen, die vordere Figur tritt aus ihrem Bogen heraus */
+.buehne__szene { position: relative; width: 100%; max-width: 37rem; aspect-ratio: 1 / 1.1; justify-self: end; grid-column: 2; grid-row: 1; --tx: 0; --ty: 0; --roll: 0; }
+.nische { position: absolute; opacity: 0; animation: nische-auf 1.3s var(--sanft) calc(var(--auftakt) + 0.2s) forwards; }
+@keyframes nische-auf { from { opacity: 0; transform: translateY(34px) scale(0.975); } to { opacity: 1; transform: none; } }
+.nische--vorn { right: 3%; top: 0; width: 60%; height: 88%; }
+.nische--hinten { left: 0; bottom: 4%; width: 40%; height: 52%; animation-delay: calc(var(--auftakt) + 0.38s); }
+.nische__fenster {
+  position: absolute; inset: 0; overflow: hidden; border-radius: 999px 999px 1.1rem 1.1rem;
+  background: radial-gradient(115% 78% at 50% 6%, #f6ecda 0%, #decdb0 46%, #a58b66 100%);
+  box-shadow: 0 0 0 1px rgba(215, 183, 124, 0.85), 0 0 0 0.5rem #14110e, 0 0 0 calc(0.5rem + 1px) rgba(215, 183, 124, 0.42), 0 2.5rem 5rem rgba(0, 0, 0, 0.55);
+  transform: translate3d(calc(var(--tx) * -7px), calc(var(--ty) * -5px + var(--roll) * 18px), 0);
+}
+.nische__fenster::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 -3.5rem 4rem rgba(70, 46, 22, 0.32), inset 0 0 2.6rem rgba(70, 46, 22, 0.22); pointer-events: none; }
+.nische--hinten .nische__fenster { background: radial-gradient(115% 78% at 50% 6%, #eadfc9 0%, #cdbb9c 46%, #8f7756 100%); transform: translate3d(calc(var(--tx) * -3px), calc(var(--ty) * -2px + var(--roll) * 34px), 0); }
+.nische__figur { position: absolute; left: 50%; bottom: -24%; height: 126%; width: auto; max-width: none; transform: translate3d(calc(-50% + var(--tx) * 6px), calc(var(--ty) * 4px), 0); }
+.nische--hinten .nische__figur { bottom: -14%; height: 114%; transform: translate3d(calc(-50% + var(--tx) * 3px), 0, 0); }
+/* Zweites Exemplar derselben Figur, außerhalb des Fensters: sichtbar erst unterhalb des Bogens,
+ * so ragen Arme und Schultern über den Rahmen hinaus. Unten läuft die Figur ins Dunkel aus. */
+.nische__figur--frei {
+  z-index: 2; pointer-events: none;
+  transform: translate3d(calc(-50% + var(--tx) * 13px), calc(var(--ty) * 9px + var(--roll) * -26px), 0);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, transparent 25.5%, #000 33%, #000 76%, transparent 98%);
+  mask-image: linear-gradient(to bottom, transparent 0, transparent 25.5%, #000 33%, #000 76%, transparent 98%);
+  filter: drop-shadow(0 1.5rem 1.5rem rgba(0, 0, 0, 0.5));
+}
+.nische--vorn .nische__fenster .nische__figur { transform: translate3d(calc(-50% + var(--tx) * 13px), calc(var(--ty) * 9px + var(--roll) * -44px), 0); }
+
+/* Schwebende Karten aus mattem Glas */
+.buehne__karten { grid-column: 2; grid-row: 1; position: relative; align-self: stretch; justify-self: end; width: 100%; max-width: 37rem; pointer-events: none; z-index: 3; }
+.schwebe {
+  position: absolute; pointer-events: auto; display: grid; gap: 0.25rem; padding: 0.9rem 1.1rem; border-radius: var(--r-m);
+  background: rgba(243, 237, 226, 0.1); border: 1px solid rgba(243, 237, 226, 0.22);
+  -webkit-backdrop-filter: blur(16px) saturate(1.3); backdrop-filter: blur(16px) saturate(1.3);
+  color: var(--nacht-text); text-decoration: none; font-size: 0.86rem; line-height: 1.35; box-shadow: 0 1.2rem 2.6rem rgba(0, 0, 0, 0.38);
+  opacity: 0; animation: steigen 1s var(--sanft) calc(var(--auftakt) + 0.8s) forwards;
+  transition: transform 0.4s var(--sanft), background-color 0.3s;
+}
+.schwebe:hover { transform: translateY(-3px); background: rgba(243, 237, 226, 0.16); }
+.schwebe--status { left: -1.6rem; top: 7%; grid-template-columns: auto 1fr; column-gap: 0.7rem; align-items: start; }
+.schwebe--termin { right: -0.8rem; bottom: 8%; min-width: 14rem; gap: 0.35rem; animation-delay: calc(var(--auftakt) + 0.95s); }
+.schwebe__kopf { display: contents; }
+.schwebe__kopf .punkt { margin-top: 0.42rem; }
+.schwebe--status .status__text { display: block; color: #cfc5b6; }
+.schwebe--status .status__text i { display: none; }
+.schwebe__text { color: #b9ae9f; grid-column: 2; font-size: 0.8rem; }
+.schwebe__marke { font-size: 0.68rem; font-weight: 650; letter-spacing: 0.15em; text-transform: uppercase; color: #d7b77c; }
+.schwebe__gross { font-family: var(--serif); font-size: 1.35rem; line-height: 1.15; letter-spacing: -0.01em; }
+.schwebe .faden { font-size: 0.84rem; justify-self: start; margin-top: 0.2rem; }
+.schwebe .faden:hover { color: #f0c2b0; }
+
+/* Der untere Rand der Bühne ist ein Bogen, vernäht mit einer Messingnaht */
+.buehne__saum { position: absolute; left: 0; right: 0; bottom: -1px; width: 100%; height: clamp(2.4rem, 6vw, 5rem); pointer-events: none; }
+
+@media (max-width: 900px) {
+  .buehne { min-height: 0; }
+  .buehne__innen { grid-template-columns: minmax(0, 1fr); gap: 2.4rem; padding-block: 1.6rem 5.5rem; }
+  .buehne__szene { grid-column: 1; grid-row: 2; justify-self: center; max-width: 24rem; aspect-ratio: 1 / 1.04; }
+  .buehne__karten { grid-column: 1; grid-row: 3; position: static; display: grid; grid-template-columns: repeat(auto-fit, minmax(13.5rem, 1fr)); gap: 0.8rem; max-width: none; pointer-events: auto; }
+  .schwebe { position: static; }
+  .buehne__schleier { background: linear-gradient(180deg, rgba(13, 11, 9, 0.66) 0%, rgba(13, 11, 9, 0.2) 46%, rgba(13, 11, 9, 0.75) 100%); }
+}
+
+/* ---------- Kopf über der Bühne --------------------------------------------- */
+
+.logo__feld { fill: var(--tinte); }
+.logo__rot { stroke: #b81f26; }
+.logo__strich { stroke: var(--kreide); }
+.logo--hell .logo__feld { fill: var(--nacht-text); }
+.logo--hell .logo__strich { stroke: var(--tinte); }
+.logo__feld, .logo__strich { transition: fill 0.3s, stroke 0.3s; }
+
+.kopf__band { position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--faden); transform-origin: left center; transform: scaleX(0); pointer-events: none; }
+
+.kopf--nacht:not(.kopf--mega) { background: transparent; color: var(--nacht-text); border-bottom-color: transparent; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.kopf--nacht.kopf--gerollt:not(.kopf--mega) { background: rgba(16, 13, 11, 0.74); -webkit-backdrop-filter: saturate(1.3) blur(14px); backdrop-filter: saturate(1.3) blur(14px); }
+.kopf--nacht:not(.kopf--mega) .logo, .kopf--nacht:not(.kopf--mega) .symbolknopf, .kopf--nacht:not(.kopf--mega) .hauptnav a { color: var(--nacht-text); }
+.kopf--nacht:not(.kopf--mega) .logo__zusatz { color: var(--nacht-leise); }
+.kopf--nacht:not(.kopf--mega) .logo__feld { fill: var(--nacht-text); }
+.kopf--nacht:not(.kopf--mega) .logo__strich { stroke: var(--tinte); }
+.kopf--nacht:not(.kopf--mega) .symbolknopf:hover { background: rgba(243, 237, 226, 0.13); }
+.kopf--nacht:not(.kopf--mega) .hauptnav a:hover, .kopf--nacht:not(.kopf--mega) .hauptnav a[aria-expanded="true"] { color: #f3cdbd; }
+.kopf--nacht:not(.kopf--mega) .zaehler { box-shadow: 0 0 0 2px #171411; }
+.kopf--nacht:not(.kopf--mega) .kopf__band { opacity: 0; }
+
+/* ---------- Der rote Faden --------------------------------------------------- */
+
+.faden-bahn { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; overflow: visible; }
+.faden-bahn path.faden-linie { fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.faden-bahn .nadel { filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.35)); }
+@media (max-width: 700px) { .faden-bahn path.faden-linie { stroke-width: 1.6; } }
+
+/* ---------- Vier Versprechen: Zeichen werden gezeichnet ---------------------- */
+
+.vorteile { position: relative; }
+
+/* ---------- Stilkunde -------------------------------------------------------- */
+
+.stilkunde { position: relative; background: var(--papier); }
+.stilkunde__klebt { padding-block: var(--abschnitt); }
+.stilkunde__innen { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(1.5rem, 5vw, 5rem); align-items: center; }
+.stilkunde__text { display: grid; gap: 1.5rem; align-content: center; }
+.stilkunde__reiter { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.stilkunde__reiter button {
+  padding: 0.5rem 1rem; border-radius: 999px; border: 1px solid var(--linie); background: var(--kreide);
+  font-size: 0.9rem; font-weight: 580; transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+}
+.stilkunde__reiter button:hover { border-color: var(--tinte); }
+.stilkunde__reiter button[aria-selected="true"] { background: var(--tinte); border-color: var(--tinte); color: var(--kreide); }
+.stilkunde__tafeln { display: grid; }
+.stil { grid-area: 1 / 1; display: grid; gap: 0.9rem; align-content: start; justify-items: start; opacity: 0; visibility: hidden; transform: translateY(14px); transition: opacity 0.5s var(--sanft), transform 0.5s var(--sanft), visibility 0s linear 0.5s; }
+.stil.aktiv { opacity: 1; visibility: visible; transform: none; transition-delay: 0.12s, 0.12s, 0s; }
+.stil h3 { font-size: clamp(2rem, 4vw, 3.2rem); line-height: 1.05; }
+.stil p { color: var(--stein); font-size: clamp(1.02rem, 1.4vw, 1.15rem); max-width: 30rem; }
+.stilkunde__buehne { position: relative; display: grid; place-items: center; min-height: 0; }
+.stilkunde__buehne::before {
+  content: ""; position: absolute; left: 50%; top: 48%; width: min(34rem, 96%); aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 253, 249, 1) 0%, rgba(255, 253, 249, 0.75) 45%, rgba(255, 253, 249, 0) 100%);
+}
+.stilkunde__name {
+  position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%); margin: 0; white-space: nowrap; pointer-events: none;
+  font-family: var(--serif); font-style: italic; font-weight: 300; font-size: clamp(4.5rem, 13vw, 11.5rem); line-height: 1; letter-spacing: -0.03em;
+  color: transparent; -webkit-text-stroke: 1px rgba(168, 133, 74, 0.5); opacity: 0.9;
+}
+.puppe { position: relative; width: auto; height: min(74vh, 40rem); max-width: 100%; overflow: visible; }
+
+/* Angeheftete Fassung: Der Abschnitt ist mehrere Bildschirme hoch, sein Inhalt bleibt stehen */
+.stilkunde--lauf { height: calc(100svh * 4.4); }
+#inhalt > .stilkunde--lauf > .stilkunde__klebt { position: sticky; top: var(--kopfhoehe); height: calc(100svh - var(--kopfhoehe)); padding-block: 0; display: grid; align-items: center; overflow: hidden; }
+.stilkunde--lauf .puppe { height: min(calc(100svh - var(--kopfhoehe) - 4rem), 40rem); }
+
+@media (max-width: 860px) {
+  .stilkunde__innen { grid-template-columns: minmax(0, 1fr); gap: 0.6rem; align-content: center; }
+  .stilkunde__buehne { order: -1; }
+  .puppe, .stilkunde--lauf .puppe { height: min(44svh, 24rem); }
+  .stilkunde__text { gap: 0.9rem; }
+  .stilkunde__text h2 { font-size: clamp(1.5rem, 6vw, 2rem); }
+  .stil h3 { font-size: clamp(1.7rem, 7.5vw, 2.3rem); }
+  .stil p { font-size: 0.98rem; }
+  .stilkunde__reiter { flex-wrap: nowrap; overflow-x: auto; margin-inline: calc(var(--rand) * -1); padding-inline: var(--rand); scrollbar-width: none; }
+  .stilkunde__reiter::-webkit-scrollbar { display: none; }
+  .stilkunde__reiter button { flex: none; padding: 0.42rem 0.85rem; font-size: 0.85rem; }
+  .stilkunde__name { top: 44%; font-size: clamp(3.6rem, 22vw, 7rem); }
+}
+
+/* ---------- Laufband --------------------------------------------------------- */
+
+.laufband { overflow: hidden; padding-block: clamp(1.1rem, 2.4vw, 1.8rem); background: var(--tinte); color: var(--nacht-text); }
+.laufband__spur { display: flex; align-items: center; gap: clamp(1.4rem, 3vw, 2.6rem); width: max-content; animation: laufband 38s linear infinite; }
+.laufband:hover .laufband__spur { animation-play-state: paused; }
+.laufband span { font-family: var(--serif); font-style: italic; font-weight: 320; font-size: clamp(1.7rem, 4.4vw, 3.4rem); line-height: 1; letter-spacing: -0.02em; white-space: nowrap; }
+.laufband span:nth-of-type(even) { color: transparent; -webkit-text-stroke: 1px rgba(243, 237, 226, 0.75); }
+.laufband i { width: 0.55rem; height: 0.55rem; border-radius: 50%; background: var(--faden); flex: none; }
+@keyframes laufband { to { transform: translateX(-50%); } }
+
+/* ---------- Anlässe mit heraustretenden Figuren ------------------------------ */
+
+.anlass__rahmen { position: relative; display: block; aspect-ratio: 3 / 4; }
+.anlass__rahmen .anlass__bogen { position: absolute; inset: 0; aspect-ratio: auto; background: linear-gradient(180deg, #efe7d9 0%, #e4dac9 100%); }
+.anlass__bogen img, .anlass__frei { mix-blend-mode: normal; }
+.anlass--frei .anlass__bogen img, .anlass__frei { position: absolute; left: 50%; bottom: -16%; height: 116%; width: auto; max-width: none; object-fit: contain; transform: translateX(-50%); transition: transform 0.9s var(--sanft); }
+.anlass__frei { z-index: 2; pointer-events: none; -webkit-mask-image: linear-gradient(to bottom, transparent 0, transparent 30%, #000 38%, #000 80%, transparent 97%); mask-image: linear-gradient(to bottom, transparent 0, transparent 30%, #000 38%, #000 80%, transparent 97%); filter: drop-shadow(0 0.9rem 0.9rem rgba(21, 18, 15, 0.28)); }
+.anlass--frei:hover .anlass__bogen img, .anlass--frei:hover .anlass__frei { transform: translateX(-50%) scale(1.045); }
+.anlass__voll { width: 100%; height: 100%; object-fit: cover; object-position: center top; }
+
+/* ---------- Atelier-Anriss --------------------------------------------------- */
+
+.atelier-anriss__innen { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); gap: clamp(2rem, 5vw, 5rem); align-items: center; }
+.atelier-anriss__wahl { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+.atelier-anriss__wahl li { padding: 0.4rem 0.9rem; border-radius: 999px; border: 1px dashed rgba(215, 183, 124, 0.7); font-size: 0.85rem; font-weight: 560; color: #d7b77c; }
+.atelier-anriss__buehne { position: relative; display: grid; place-items: center; text-decoration: none; }
+.atelier-anriss__buehne::before { content: ""; position: absolute; left: 50%; top: 46%; width: min(30rem, 100%); aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(closest-side, rgba(243, 237, 226, 0.2) 0%, rgba(243, 237, 226, 0.07) 55%, rgba(243, 237, 226, 0) 100%); }
+.atelier-anriss__buehne .puppe { height: min(66vh, 34rem); transition: transform 0.8s var(--sanft); }
+.atelier-anriss__buehne:hover .puppe { transform: scale(1.02); }
+@media (max-width: 860px) {
+  .atelier-anriss__innen { grid-template-columns: minmax(0, 1fr); }
+  .atelier-anriss__buehne { order: -1; }
+  .atelier-anriss__buehne .puppe { height: min(52svh, 26rem); }
+}
+
+/* ---------- Hochzeits-Fahrplan ----------------------------------------------- */
+
+.fahrplan__frage { display: grid; grid-template-columns: minmax(0, 16rem) auto; gap: 0.9rem; justify-content: center; align-items: end; }
+.fahrplan__frage .feld { text-align: left; }
+@media (max-width: 480px) { .fahrplan__frage { grid-template-columns: minmax(0, 1fr); } }
+.fahrplan__ergebnis { margin-top: clamp(2.2rem, 5vw, 3.6rem); display: grid; gap: clamp(1.8rem, 4vw, 2.8rem); }
+.fahrplan__zaehler { text-align: center; display: grid; gap: 0.3rem; justify-items: center; }
+.fahrplan__tage { font-family: var(--serif); font-size: clamp(4rem, 13vw, 8.5rem); line-height: 0.95; font-weight: 300; letter-spacing: -0.04em; color: var(--rot); font-style: italic; font-variant-numeric: tabular-nums; }
+.fahrplan__zaehler p { margin: 0; font-size: clamp(1.05rem, 1.6vw, 1.25rem); color: var(--stein); }
+.fahrplan__zaehler strong { color: var(--tinte); }
+
+.fahrplan__weg { position: relative; display: grid; grid-template-columns: repeat(var(--halte, 5), minmax(0, 1fr)); gap: 1rem; }
+.fahrplan__weg::before { content: ""; position: absolute; left: 1.6rem; right: calc((100% - (var(--halte, 5) - 1) * 1rem) / var(--halte, 5) - 1.6rem); top: 1.55rem; height: 2px; background: var(--faden); transform-origin: left center; transform: scaleX(var(--weg, 0)); transition: transform 1.6s var(--sanft); }
+.halt { position: relative; display: grid; gap: 0.5rem; align-content: start; justify-items: start; opacity: 0; transform: translateY(16px); transition: opacity 0.7s var(--sanft), transform 0.7s var(--sanft); transition-delay: calc(var(--n) * 0.22s + 0.2s); }
+.fahrplan__ergebnis.da .halt { opacity: 1; transform: none; }
+/* Jede Station ist ein Knopf mit vier Löchern */
+.halt__knopf { position: relative; width: 3.2rem; height: 3.2rem; border-radius: 50%; background: radial-gradient(circle at 36% 30%, #fffaf0, #e9dcc3 70%, #cdb893); box-shadow: 0 0 0 1px #b59c72, 0 6px 14px rgba(21, 18, 15, 0.16); margin-bottom: 0.6rem; }
+.halt__knopf::before { content: ""; position: absolute; inset: 0.55rem; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(120, 96, 58, 0.3); background:
+  radial-gradient(circle at 36% 36%, #2a211a 0 0.17rem, transparent 0.19rem), radial-gradient(circle at 64% 36%, #2a211a 0 0.17rem, transparent 0.19rem),
+  radial-gradient(circle at 36% 64%, #2a211a 0 0.17rem, transparent 0.19rem), radial-gradient(circle at 64% 64%, #2a211a 0 0.17rem, transparent 0.19rem); }
+.halt--ziel .halt__knopf { background: radial-gradient(circle at 36% 30%, #d9343d, #a4161a 70%, #7a0f12); box-shadow: 0 0 0 1px #7a0f12, 0 6px 16px rgba(164, 22, 26, 0.35); }
+.halt--ziel .halt__knopf::before { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25); background:
+  radial-gradient(circle at 36% 36%, #fff 0 0.17rem, transparent 0.19rem), radial-gradient(circle at 64% 36%, #fff 0 0.17rem, transparent 0.19rem),
+  radial-gradient(circle at 36% 64%, #fff 0 0.17rem, transparent 0.19rem), radial-gradient(circle at 64% 64%, #fff 0 0.17rem, transparent 0.19rem); }
+.halt__wann { font-size: 0.72rem; font-weight: 650; letter-spacing: 0.13em; text-transform: uppercase; color: var(--messing-tief); margin: 0; }
+.halt h3 { font-size: 1.3rem; }
+.halt__datum { font-weight: 640; margin: 0; font-variant-numeric: tabular-nums; }
+.halt p.halt__text { font-size: 0.92rem; color: var(--stein); margin: 0; }
+.halt .faden { font-size: 0.88rem; margin-top: 0.2rem; }
+.fahrplan__knoepfe { justify-content: center; }
+@media (max-width: 900px) {
+  .fahrplan__weg { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .fahrplan__weg::before { left: 1.55rem; right: auto; top: 1.6rem; bottom: 1.6rem; width: 2px; height: auto; transform-origin: center top; transform: scaleY(var(--weg, 0)); }
+  .halt { grid-template-columns: 3.2rem minmax(0, 1fr); column-gap: 1.2rem; padding-bottom: 1.9rem; }
+  .halt__knopf { grid-row: 1 / span 5; margin: 0; }
+  .halt > :not(.halt__knopf) { grid-column: 2; }
+}
+
+/* ---------- Ablauf auf hellem Grund ------------------------------------------ */
+
+.ablauf--hell::before { background: var(--naht); opacity: 0.9; }
+.ablauf--hell .ablauf__zahl { background: var(--leinen); border-color: var(--messing); color: var(--rot); }
+.ablauf--hell p { color: var(--stein); }
+@media (max-width: 860px) { .ablauf--hell::before { background: repeating-linear-gradient(180deg, var(--messing) 0 7px, transparent 7px 12px); } }
+
+/* ---------- Besuch mit Ladenfoto --------------------------------------------- */
+
+.besuch__bilder { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1fr); gap: 1rem; align-items: end; }
+.besuch__foto { margin: 0; overflow: hidden; border-radius: 999px 999px var(--r-m) var(--r-m); aspect-ratio: 3 / 5; background: var(--leinen); }
+.besuch__foto img { width: 100%; height: 100%; object-fit: cover; transform: scale(1.08); transition: transform 1.4s var(--sanft); }
+.besuch__bilder.sichtbar .besuch__foto img { transform: none; }
+.besuch__bilder .karte-rahmen { aspect-ratio: 4 / 5; min-height: 0; }
+@media (max-width: 520px) { .besuch__bilder { grid-template-columns: minmax(0, 1fr); } .besuch__foto { aspect-ratio: 4 / 5; max-width: 16rem; justify-self: center; width: 100%; } .besuch__bilder .karte-rahmen { aspect-ratio: 4 / 3.4; } }
+
+/* ---------- Finale: der Knopf ------------------------------------------------- */
+
+.finale { position: relative; padding-block: clamp(4.5rem, 11vw, 9rem) clamp(4rem, 9vw, 7rem); text-align: center; overflow: hidden; }
+.finale__innen { display: grid; justify-items: center; gap: 1.3rem; }
+.finale h2 { font-size: clamp(2.3rem, 5.6vw, 4.6rem); }
+.finale .einleitung { margin-inline: auto; }
+.terminknopf { position: relative; display: grid; place-items: center; width: clamp(15rem, 44vw, 21rem); aspect-ratio: 1; margin-top: clamp(0.5rem, 2vw, 1.5rem); text-decoration: none; border-radius: 50%; -webkit-tap-highlight-color: transparent; }
+.terminknopf svg { width: 100%; height: 100%; overflow: visible; }
+.terminknopf__schrift { transform-origin: 0 0; animation: drehen 32s linear infinite; }
+.terminknopf__schrift text { font-family: var(--sans); font-size: 15.5px; font-weight: 650; letter-spacing: 0.21em; text-transform: uppercase; fill: #d7b77c; }
+@keyframes drehen { to { transform: rotate(360deg); } }
+.terminknopf__knopf { transition: transform 0.5s var(--sanft); transform-origin: 0 0; }
+.terminknopf:hover .terminknopf__knopf { transform: scale(1.05) rotate(-8deg); }
+.terminknopf:active .terminknopf__knopf { transform: scale(0.97); }
+.terminknopf:focus-visible { outline: 2px solid #f0c2b0; outline-offset: 8px; }
+/* Die beiden Stiche durch die Knopflöcher zieht der Faden, sobald er ankommt */
+.terminknopf__stich path { stroke-dasharray: 100; stroke-dashoffset: 100; transition: stroke-dashoffset 0.55s cubic-bezier(0.6, 0, 0.3, 1); }
+.terminknopf.genaeht .terminknopf__stich path { stroke-dashoffset: 0; }
+.terminknopf.genaeht .terminknopf__stich path + path { transition-delay: 0.4s; }
+.terminknopf__wort { position: absolute; left: 50%; bottom: -2.6rem; transform: translateX(-50%); white-space: nowrap; font-weight: 650; letter-spacing: 0.04em; padding: 0.55rem 1.3rem; border-radius: 999px; background: var(--rot); color: #fff; box-shadow: 0 10px 24px rgba(164, 22, 26, 0.35); transition: transform 0.3s var(--sanft), background-color 0.3s; }
+.terminknopf:hover .terminknopf__wort { background: var(--rot-tief); transform: translateX(-50%) translateY(-2px); }
+.finale__tel { margin-top: 3.4rem; color: var(--nacht-leise); }
+.finale__tel a { color: var(--nacht-text); font-weight: 620; }
+.fuss--knapp { padding-top: clamp(2.5rem, 5vw, 4rem); border-top: 1px solid var(--nacht-linie); }
+
+/* ---------- Atelier ---------------------------------------------------------- */
+
+.atelier { margin-top: calc(var(--kopfhoehe) * -1); padding-block: calc(var(--kopfhoehe) + clamp(1.2rem, 3vw, 2.6rem)) var(--abschnitt); }
+.atelier__innen { display: grid; grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.14fr); gap: clamp(2rem, 5vw, 5.5rem); align-items: start; }
+.atelier__buehne { position: sticky; top: calc(var(--kopfhoehe) + 1.2rem); display: grid; gap: 1.1rem; justify-items: center; }
+/* Die Puppe steht in einer beleuchteten Nische, damit auch dunkle Stoffe gut zu sehen sind */
+.atelier__nische {
+  position: relative; overflow: hidden; aspect-ratio: 480 / 680;
+  width: min(100%, 27rem, calc((100svh - var(--kopfhoehe) - 12.5rem) * 0.7059));
+  border-radius: 999px 999px 1.2rem 1.2rem;
+  background: radial-gradient(115% 78% at 50% 6%, #f6ecda 0%, #decdb0 46%, #a58b66 100%);
+  box-shadow: 0 0 0 1px rgba(215, 183, 124, 0.85), 0 0 0 0.5rem #14110e, 0 0 0 calc(0.5rem + 1px) rgba(215, 183, 124, 0.42), 0 2.5rem 5rem rgba(0, 0, 0, 0.55);
+}
+.atelier__nische::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 -3rem 3.5rem rgba(70, 46, 22, 0.26), inset 0 0 2.4rem rgba(70, 46, 22, 0.2); pointer-events: none; }
+.atelier__nische .puppe { position: absolute; left: 5%; bottom: -0.5%; width: 90%; height: auto; max-width: none; }
+.atelier__beschreibung { margin: 0; text-align: center; font-family: var(--serif); font-size: 1.1rem; line-height: 1.4; color: var(--nacht-text); max-width: 30rem; min-height: 2.8em; }
+.atelier__werkzeug { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; }
+.werkzeug { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 2.5rem; padding: 0.45rem 0.95rem; border-radius: 999px; border: 1px solid var(--nacht-linie); color: var(--nacht-text); font-size: 0.86rem; font-weight: 580; transition: background-color 0.25s, border-color 0.25s; }
+.werkzeug:hover { background: rgba(243, 237, 226, 0.1); border-color: rgba(243, 237, 226, 0.42); }
+.werkzeug:focus-visible, .atelier .faden:focus-visible { outline-color: #f0c2b0; }
+.werkzeug .symbol { width: 1.05rem; height: 1.05rem; }
+
+.atelier__wahl { display: grid; gap: clamp(1.5rem, 3vw, 2.2rem); min-width: 0; }
+.atelier__kopf { display: grid; gap: 1.1rem; justify-items: start; padding-top: 0.4rem; }
+.atelier__kopf h1 { font-size: clamp(2.2rem, 4.4vw, 3.9rem); }
+.kruemel--hell { color: var(--nacht-leise); }
+.kruemel--hell a:hover { color: #f0c2b0; }
+.werk { border: 0; margin: 0; padding: 0; min-width: 0; }
+.werk > * + * { margin-top: 1rem; }
+.werk legend { display: flex; align-items: center; gap: 0.8rem; width: 100%; padding: 1.5rem 0 0; border-top: 1px solid var(--nacht-linie); font-family: var(--serif); font-size: 1.45rem; letter-spacing: -0.01em; }
+.werk__nr { display: inline-grid; place-items: center; width: 1.9rem; height: 1.9rem; border-radius: 50%; border: 1px solid #d7b77c; color: #d7b77c; font-size: 0.95rem; font-style: italic; }
+.werk__unter { font-size: 0.72rem; font-weight: 650; letter-spacing: 0.15em; text-transform: uppercase; color: var(--nacht-leise); margin-bottom: -0.3rem; }
+.werk__hinweis { font-size: 0.9rem; color: var(--nacht-leise); margin-bottom: 0; }
+.werk--aus .marken, .werk--aus .toene, .werk--aus .haken { opacity: 0.32; }
+
+.werk__schnitte { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.6rem; }
+.schnitt { position: relative; }
+.schnitt input, .ton input, .marke-wahl input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; margin: 0; cursor: pointer; }
+.schnitt__karte { display: grid; justify-items: center; align-content: start; gap: 0.15rem; height: 100%; padding: 0.6rem 0.4rem 0.8rem; border-radius: var(--r-m); border: 1px solid var(--nacht-linie); background: rgba(243, 237, 226, 0.04); text-align: center; transition: border-color 0.25s, background-color 0.25s, box-shadow 0.25s; }
+.schnitt__bild { width: 100%; max-width: 5rem; height: auto; margin-bottom: 0.4rem; padding: 8% 6% 0; border-radius: 999px 999px 0.5rem 0.5rem; background: radial-gradient(110% 80% at 50% 8%, #f3e8d4, #cdb893); }
+.schnitt__name { font-weight: 650; font-size: 0.95rem; }
+.schnitt__text { font-size: 0.74rem; line-height: 1.3; color: var(--nacht-leise); }
+.schnitt input:hover + .schnitt__karte { border-color: rgba(243, 237, 226, 0.45); }
+.schnitt input:checked + .schnitt__karte { border-color: #d7b77c; background: rgba(215, 183, 124, 0.12); box-shadow: inset 0 0 0 1px #d7b77c; }
+.schnitt input:focus-visible + .schnitt__karte { outline: 2px solid #f0c2b0; outline-offset: 3px; }
+
+.toene { display: flex; flex-wrap: wrap; gap: 0.6rem; transition: opacity 0.3s; }
+.toene--matt { opacity: 0.4; }
+.ton { position: relative; width: 2.5rem; height: 2.5rem; }
+.ton > span { display: block; width: 100%; height: 100%; border-radius: 50%; background: var(--ton); box-shadow: inset 0 0 0 1px rgba(243, 237, 226, 0.32), inset 0 -6px 10px rgba(0, 0, 0, 0.18); transition: transform 0.25s var(--sanft), box-shadow 0.25s; }
+.ton input:hover + span { transform: scale(1.08); }
+.ton input:checked + span { box-shadow: inset 0 0 0 1px rgba(243, 237, 226, 0.32), 0 0 0 3px var(--nacht), 0 0 0 5px #d7b77c; }
+.ton input:focus-visible + span { outline: 2px solid #f0c2b0; outline-offset: 7px; }
+.ton--ohne > span { background: linear-gradient(135deg, transparent 46%, #b9ae9f 46%, #b9ae9f 54%, transparent 54%); box-shadow: inset 0 0 0 1px rgba(243, 237, 226, 0.5); }
+
+.marken { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+.marke-wahl { position: relative; }
+.marke-wahl span { display: inline-flex; align-items: center; min-height: 2.5rem; padding: 0.4rem 1.05rem; border-radius: 999px; border: 1px solid var(--nacht-linie); font-size: 0.92rem; font-weight: 580; transition: background-color 0.25s, border-color 0.25s, color 0.25s; }
+.marke-wahl input:hover + span { border-color: rgba(243, 237, 226, 0.5); }
+.marke-wahl input:checked + span { background: var(--nacht-text); border-color: var(--nacht-text); color: var(--tinte); }
+.marke-wahl input:focus-visible + span { outline: 2px solid #f0c2b0; outline-offset: 2px; }
+.haken--hell input { border-color: rgba(243, 237, 226, 0.5); background: transparent; }
+.haken--hell input:checked { background: #d7b77c; border-color: #d7b77c; }
+.haken--hell input::after { border-color: var(--tinte); }
+.haken--hell input:focus-visible { outline-color: #f0c2b0; }
+.haken--hell input:disabled { opacity: 0.35; }
+
+.atelier__weiter { display: flex; flex-wrap: wrap; gap: 1rem 1.6rem; align-items: center; padding-top: 1.6rem; border-top: 1px solid var(--nacht-linie); }
+.atelier__weiter .faden:hover { color: #f0c2b0; }
+.atelier__fussnote { margin-top: 2.2rem; max-width: 46rem; }
+
+@media (max-width: 860px) {
+  .atelier { padding-top: var(--kopfhoehe); }
+  .atelier__innen { grid-template-columns: minmax(0, 1fr); gap: 1.2rem; }
+  /* Die Puppe bleibt oben stehen, die Auswahl rollt darunter durch */
+  .atelier__buehne {
+    top: var(--kopfhoehe); z-index: 5; margin-inline: calc(var(--rand) * -1); padding: 1.1rem var(--rand) 1.2rem;
+    grid-template-columns: auto minmax(0, 1fr); justify-items: start; align-items: center; gap: 0.6rem 1.1rem;
+    background: linear-gradient(var(--nacht) 0, var(--nacht) 86%, rgba(23, 20, 17, 0) 100%);
+  }
+  .atelier__nische { width: auto; height: min(33svh, 16.5rem); grid-row: 1 / span 2; margin: 0.4rem 0 0.4rem 0.5rem; }
+  .atelier__beschreibung { text-align: left; font-size: 0.95rem; min-height: 0; align-self: end; }
+  .atelier__werkzeug { justify-content: flex-start; align-self: start; }
+  .werkzeug { padding: 0; width: 2.6rem; justify-content: center; }
+  .werkzeug span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .werk__schnitte { grid-template-columns: repeat(5, 6.2rem); overflow-x: auto; margin-inline: calc(var(--rand) * -1); padding: 0.2rem var(--rand); scrollbar-width: none; }
+  .werk__schnitte::-webkit-scrollbar { display: none; }
+}
+
+/* ---------- Zähler ----------------------------------------------------------- */
+
+[data-zaehle] { font-variant-numeric: tabular-nums; }
+
+/* ---------- Ruhige Fassung --------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .vorhang { display: none; }
+  .hebe > span, .buehne .vorspann, .buehne .einleitung, .buehne .knopfreihe, .buehne__fakten, .nische, .schwebe { opacity: 1; transform: none; animation: none; }
+  .laufband__spur, .terminknopf__schrift { animation: none; }
+  .halt { opacity: 1; transform: none; }
+  .fahrplan__weg::before { transform: none; }
+  .terminknopf__stich path { stroke-dashoffset: 0; }
+  .besuch__foto img { transform: none; }
+}

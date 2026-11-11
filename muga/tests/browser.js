@@ -57,6 +57,32 @@ async function lauf(browser, basis, breite, hoehe) {
   pruefe(name + ' Startseite lädt Auswahl', (await page.locator('#auswahl-bahn .karte[data-id]').count()) === 10);
   pruefe(name + ' Öffnungszeiten mit heutigem Tag', (await page.locator('.zeiten tr.heute').count()) === 1);
 
+  /* ---- Stilkunde, roter Faden, Hochzeits-Fahrplan ---- */
+  pruefe(name + ' Schneiderpuppe ist gezeichnet', (await page.locator('#stilkunde-puppe path').count()) > 20);
+  await page.click('#stil-reiter-2');
+  pruefe(name + ' Stilkunde wechselt den Schnitt', await page.evaluate(() => document.getElementById('stil-2').classList.contains('aktiv') && document.getElementById('stil-reiter-2').getAttribute('aria-selected') === 'true'));
+  await page.waitForFunction(() => { const l = document.querySelector('#faden path.faden-linie'); return l && l.getTotalLength() > 1000; });
+  pruefe(name + ' Roter Faden ist gelegt', true);
+  const hochzeit = await page.evaluate(() => window.MUGA.zeit.plusTage(window.MUGA.zeit.jetzt().datum, 100));
+  await page.fill('#hochzeitstag', hochzeit);
+  await page.click('#fahrplan-form button[type="submit"]');
+  await page.waitForSelector('#fahrplan-ergebnis .halt');
+  pruefe(name + ' Fahrplan zeigt fünf Stationen', (await page.locator('#fahrplan-ergebnis .halt').count()) === 5);
+  pruefe(name + ' Fahrplan zählt die Tage', (await page.textContent('#fahrplan-ergebnis [data-tage]')).trim() === '100');
+  pruefe(name + ' Fahrplan führt in die Buchung', ((await page.getAttribute('#fahrplan-ergebnis .halt a', 'href')) || '').startsWith('termin.html?art=hochzeit&datum='));
+  await page.click('[data-fahrplan-weg]');
+  pruefe(name + ' Fahrplan lässt sich vergessen', await page.isHidden('#fahrplan-ergebnis') && (await page.evaluate(() => window.MUGA.fahrplan.gemerkt())) === null);
+
+  /* ---- Atelier ---- */
+  await gehe('/atelier.html');
+  await page.locator('input[name="s"][value="smoking"]').check({ force: true });
+  await page.locator('input[name="f"][value="schwarz"]').check({ force: true });
+  pruefe(name + ' Atelier beschreibt den Entwurf', (await page.textContent('#atelier-beschreibung')).startsWith('Smoking in Schwarz'));
+  pruefe(name + ' Atelier merkt den Entwurf in der Adresse', page.url().includes('s=smoking') && page.url().includes('f=schwarz'));
+  await page.waitForSelector('#passend-liste .karte[data-id]');
+  pruefe(name + ' Atelier zeigt passende Modelle', (await page.locator('#passend-liste .karte[data-id]').count()) === 4);
+  pruefe(name + ' Atelier übergibt den Entwurf an die Buchung', /^termin\.html\?art=beratung&artikel=[a-z0-9,-]+&notiz=/.test(await page.getAttribute('#atelier-termin', 'href')));
+
   /* ---- Suche ---- */
   await page.click('[data-oeffne="suche"]');
   await page.fill('#suchfeld', 'smoking');
@@ -135,8 +161,8 @@ async function lauf(browser, basis, breite, hoehe) {
 
   const zweiter = await seite(browser, breite, hoehe);
   await zweiter.goto(basis + '/termin.html?art=hochzeit&datum=' + tag, { waitUntil: 'networkidle' });
-  await zweiter.click('[data-weiter="2"]');
   await zweiter.waitForSelector('[data-start]');
+  pruefe(name + ' Verweis mit Anliegen und Tag öffnet bei der Uhrzeit', await zweiter.isVisible('[data-schritt="2"]'));
   const vergeben = await zweiter.$$eval('[data-start][disabled]', (l) => l.map((b) => b.textContent.trim()));
   pruefe(name + ' Zeit ist für andere Besucher vergeben', vergeben.includes(uhr), vergeben.join(' '));
   await zweiter.context().close();

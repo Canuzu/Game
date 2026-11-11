@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="de" class="ohne-js">
+<html lang="de" class="ohne-js" data-kopf="nacht">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>MUGA Herrenausstatter Köln · Hochzeitsanzüge, Gehrock, Smoking</title>
 <meta name="description" content="Herrenausstatter in Köln-Merheim: Hochzeitsanzüge, Gehröcke, Smokings und Business-Anzüge aus eigener Herstellung in den Größen 44 bis 72. Jetzt Termin zur Beratung und Anprobe buchen.">
-<meta name="theme-color" content="#f6f2ea">
+<meta name="theme-color" content="#171411">
 <meta property="og:type" content="website">
 <meta property="og:title" content="MUGA Herrenausstatter Köln">
 <meta property="og:description" content="Hochzeitsanzüge, Gehröcke und Smokings aus eigener Herstellung. Beratung und Anprobe in Köln-Merheim.">
@@ -15,10 +15,15 @@
 <link rel="stylesheet" href="assets/css/rahmen.css">
 <link rel="stylesheet" href="assets/css/shop.css">
 <link rel="stylesheet" href="assets/css/seiten.css">
+<link rel="stylesheet" href="assets/css/erlebnis.css">
 <script src="assets/js/config.js"></script>
 <script src="assets/js/kern.js"></script>
 <script src="assets/js/rahmen.js"></script>
 <script src="assets/js/termine.js" defer></script>
+<script src="assets/js/stoff.js" defer></script>
+<script src="assets/js/faden.js" defer></script>
+<script src="assets/js/anzug.js" defer></script>
+<script src="assets/js/fahrplan.js" defer></script>
 <script src="assets/js/seite-start.js" defer></script>
 <script type="application/ld+json">
 {
@@ -52,21 +57,40 @@
 </script>
 </head>
 <body>
+
+<!-- ===== Vorhang: hebt sich beim ersten Besuch einer Sitzung ===== -->
+<div class="vorhang" id="vorhang" aria-hidden="true">
+  <div class="vorhang__bahn vorhang__bahn--links"></div>
+  <div class="vorhang__bahn vorhang__bahn--rechts"></div>
+  <div class="vorhang__mitte">
+    <svg class="vorhang__zeichen" viewBox="0 0 40 40">
+      <path class="vorhang__stich" pathLength="100" d="M8.5 30.5L14.5 10.5 20 22l5.5-11.5 6 20" fill="none" stroke="#c4202a" stroke-width="5.4" stroke-linecap="round" stroke-linejoin="round"/>
+      <path class="vorhang__strich" d="M8.5 30.5L14.5 10.5 20 22l5.5-11.5 6 20" fill="none" stroke="#fffdf9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <p class="vorhang__wort">MUGA</p>
+  </div>
+</div>
+
 <muga-kopf></muga-kopf>
 <noscript><p class="ohne-skript">Für Terminbuchung, Warenkorb und Suche wird JavaScript benötigt. Sie erreichen uns auch telefonisch unter 0221 839 25 90.</p></noscript>
 
 <main id="inhalt">
+  <svg class="faden-bahn" id="faden" aria-hidden="true" focusable="false"></svg>
 
-  <!-- ===== Auftakt ===== -->
-  <section class="buehne">
+  <!-- ===== Bühne ===== -->
+  <section class="buehne" data-buehne data-faden="buehne">
+    <div class="buehne__grund" aria-hidden="true"></div>
+    <canvas class="buehne__stoff" id="stoff" aria-hidden="true"></canvas>
+    <div class="buehne__schleier" aria-hidden="true"></div>
+
     <div class="huelle buehne__innen">
       <div class="buehne__text">
         <p class="vorspann">Herrenausstatter &amp; Hochzeitsmode · Köln</p>
-        <h1>Der Anzug für Ihren <em>großen Tag.</em></h1>
+        <h1><span class="hebe"><span>Der Anzug für</span></span> <span class="hebe"><span>Ihren <em data-faden-unter>großen Tag.</em></span></span></h1>
         <p class="einleitung">Hochzeitsanzüge, Gehröcke und Smokings aus eigener Herstellung, in den Größen 44 bis 72, auch untersetzt und schlank. Persönlich beraten und anprobiert in unserem Geschäft in Köln-Merheim.</p>
         <div class="knopfreihe">
-          <a class="knopf" href="termin.html"><svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/></svg>Termin buchen</a>
-          <a class="knopf knopf--linie" href="kollektion.html?k=hochzeitsanzuege">Kollektion entdecken</a>
+          <a class="knopf" href="termin.html" data-magnet><svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/></svg>Termin buchen</a>
+          <a class="knopf knopf--hell-linie" href="kollektion.html?k=hochzeitsanzuege">Kollektion entdecken</a>
         </div>
         <ul class="buehne__fakten">
           <li>Direkt vom Hersteller</li>
@@ -75,14 +99,14 @@
         </ul>
       </div>
 
-      <div class="buehne__bild" aria-hidden="true">
-        <div class="buehne__bogen buehne__bogen--gross">
-          <img src="assets/img/auftakt-1.webp" alt="" width="760" height="1040" fetchpriority="high">
+      <div class="buehne__szene" aria-hidden="true">
+        <div class="nische nische--hinten">
+          <div class="nische__fenster"><img class="nische__figur" src="assets/img/figur-hochzeit.webp" alt="" width="533" height="900"></div>
         </div>
-        <div class="buehne__bogen buehne__bogen--klein">
-          <img src="assets/img/auftakt-2.webp" alt="" width="520" height="700">
+        <div class="nische nische--vorn">
+          <div class="nische__fenster"><img class="nische__figur" src="assets/img/figur-smoking.webp" alt="" width="614" height="1080" fetchpriority="high"></div>
+          <img class="nische__figur nische__figur--frei" src="assets/img/figur-smoking.webp" alt="" width="614" height="1080">
         </div>
-        <svg class="buehne__naht" viewBox="0 0 520 620" fill="none" preserveAspectRatio="none"><path d="M40 610C10 420 60 120 260 40s300 120 220 330" stroke="currentColor" stroke-width="1.2" stroke-dasharray="7 6" stroke-linecap="round"/></svg>
       </div>
 
       <div class="buehne__karten">
@@ -91,16 +115,21 @@
           <span class="schwebe__text">Olpener Str. 321 · Köln-Merheim</span>
         </a>
         <a class="schwebe schwebe--termin" href="termin.html" id="naechster-termin" hidden>
-          <span class="schwebe__marke">Nächster freier Termin</span>
+          <span class="schwebe__marke" data-marke>Nächster freier Termin</span>
           <span class="schwebe__gross" data-wann></span>
           <span class="faden">Jetzt sichern <svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
         </a>
       </div>
     </div>
+
+    <svg class="buehne__saum" viewBox="0 0 1440 80" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+      <path d="M0 80V52Q720 -22 1440 52V80Z" fill="#fffdf9"/>
+      <path d="M0 42Q720 -32 1440 42" fill="none" stroke="#d7b77c" stroke-width="1.2" stroke-dasharray="7 6" vector-effect="non-scaling-stroke" opacity=".8"/>
+    </svg>
   </section>
 
   <!-- ===== Vier Versprechen ===== -->
-  <section class="vorteile" aria-label="Ihre Vorteile">
+  <section class="vorteile" aria-label="Ihre Vorteile" data-faden="rechts">
     <div class="huelle">
       <ul class="vorteile__liste">
         <li class="zeigen">
@@ -123,8 +152,66 @@
     </div>
   </section>
 
+  <!-- ===== Stilkunde: der Anzug verwandelt sich beim Rollen ===== -->
+  <section class="stilkunde" id="stilkunde" aria-labelledby="stilkunde-titel" data-faden="rechts">
+    <div class="stilkunde__klebt">
+      <div class="huelle stilkunde__innen">
+        <div class="stilkunde__text">
+          <p class="vorspann">Kleine Stilkunde</p>
+          <h2 id="stilkunde-titel">Fünf Wege, <em>festlich</em> zu sein.</h2>
+          <div class="stilkunde__reiter" role="tablist" aria-label="Schnitte">
+            <button type="button" role="tab" id="stil-reiter-0" aria-controls="stil-0" aria-selected="true" data-stil="0">Anzug</button>
+            <button type="button" role="tab" id="stil-reiter-1" aria-controls="stil-1" aria-selected="false" tabindex="-1" data-stil="1">Gehrock</button>
+            <button type="button" role="tab" id="stil-reiter-2" aria-controls="stil-2" aria-selected="false" tabindex="-1" data-stil="2">Cutaway</button>
+            <button type="button" role="tab" id="stil-reiter-3" aria-controls="stil-3" aria-selected="false" tabindex="-1" data-stil="3">Smoking</button>
+            <button type="button" role="tab" id="stil-reiter-4" aria-controls="stil-4" aria-selected="false" tabindex="-1" data-stil="4">Stehkragen</button>
+          </div>
+          <div class="stilkunde__tafeln">
+            <div class="stil aktiv" id="stil-0" role="tabpanel" aria-labelledby="stil-reiter-0">
+              <h3>Der Anzug</h3>
+              <p>Der Klassiker: Sakko mit fallendem Revers, zwei Knöpfe, dazu Krawatte. Er passt ins Büro, aufs Standesamt und als Gast zu jeder Feier.</p>
+              <a class="faden" href="kollektion.html?k=anzuege-uni"><span data-stilzahl="anzug">Anzüge ansehen</span> <svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+            </div>
+            <div class="stil" id="stil-1" role="tabpanel" aria-labelledby="stil-reiter-1">
+              <h3>Der Gehrock</h3>
+              <p>Knielang und festlich. Der Gehrock streckt die Figur und ist für viele Bräutigame die erste Wahl, gern mit gemusterter Weste und Plastron.</p>
+              <a class="faden" href="kollektion.html?k=hochzeitsanzuege&amp;stil=gehrock"><span data-stilzahl="gehrock">Gehröcke ansehen</span> <svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+            </div>
+            <div class="stil" id="stil-2" role="tabpanel" aria-labelledby="stil-reiter-2">
+              <h3>Der Cutaway</h3>
+              <p>Der große Anzug für den Tag: vorn schräg geschnitten, hinten lang. Traditionell trägt man ihn zur Trauung bis in den frühen Abend.</p>
+              <a class="faden" href="kollektion.html?k=hochzeitsanzuege&amp;stil=cutaway"><span data-stilzahl="cutaway">Cutaways ansehen</span> <svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+            </div>
+            <div class="stil" id="stil-3" role="tabpanel" aria-labelledby="stil-reiter-3">
+              <h3>Der Smoking</h3>
+              <p>Für den Abend gemacht: Schalkragen oder Spitzrevers mit Seidenspiegel, dazu die Fliege. Richtig, wenn die Feier am Abend beginnt.</p>
+              <a class="faden" href="kollektion.html?k=hochzeitsanzuege&amp;stil=smoking"><span data-stilzahl="smoking">Smokings ansehen</span> <svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+            </div>
+            <div class="stil" id="stil-4" role="tabpanel" aria-labelledby="stil-reiter-4">
+              <h3>Der Stehkragen</h3>
+              <p>Ohne Revers und hoch geschlossen. Modern, klar und trotzdem feierlich, besonders schön in Jacquard.</p>
+              <a class="faden" href="kollektion.html?k=hochzeitsanzuege&amp;stil=stehkragen"><span data-stilzahl="stehkragen">Stehkragen ansehen</span> <svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+            </div>
+          </div>
+        </div>
+        <div class="stilkunde__buehne">
+          <p class="stilkunde__name" id="stilkunde-name" aria-hidden="true">Anzug</p>
+          <svg class="puppe" id="stilkunde-puppe" viewBox="0 0 480 680" role="img" aria-label="Schneiderpuppe, die den jeweils beschriebenen Schnitt trägt"></svg>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Laufband ===== -->
+  <div class="laufband" aria-hidden="true">
+    <div class="laufband__spur">
+      <span>Gehrock</span><i></i><span>Cutaway</span><i></i><span>Smoking</span><i></i><span>Stehkragen</span><i></i><span>Frack</span><i></i><span>Weste</span><i></i><span>Plastron</span><i></i>
+      <span>Gehrock</span><i></i><span>Cutaway</span><i></i><span>Smoking</span><i></i><span>Stehkragen</span><i></i><span>Frack</span><i></i><span>Weste</span><i></i><span>Plastron</span><i></i>
+    </div>
+  </div>
+
   <!-- ===== Anlässe ===== -->
-  <section class="abschnitt">
+  <section class="abschnitt" data-faden="links">
     <div class="huelle">
       <div class="kopfzeile kopfzeile--breit">
         <div class="stapel">
@@ -135,26 +222,36 @@
       </div>
       <ul class="anlaesse">
         <li class="zeigen">
-          <a class="anlass" href="kollektion.html?k=hochzeitsanzuege">
-            <span class="anlass__bogen"><img src="assets/img/anlass-hochzeit.webp" alt="" width="560" height="760" loading="lazy"></span>
+          <a class="anlass anlass--frei" href="kollektion.html?k=hochzeitsanzuege">
+            <span class="anlass__rahmen">
+              <span class="anlass__bogen"><img src="assets/img/figur-gehrock.webp" alt="" width="489" height="860" loading="lazy"></span>
+              <img class="anlass__frei" src="assets/img/figur-gehrock.webp" alt="" width="489" height="860" loading="lazy">
+            </span>
             <span class="anlass__text"><span class="anlass__name">Hochzeit</span><span class="anlass__zusatz">Gehrock, Cutaway, Stehkragen</span></span>
           </a>
         </li>
         <li class="zeigen" style="--verzug:.08s">
           <a class="anlass" href="kollektion.html?k=anzuege-uni">
-            <span class="anlass__bogen"><img src="assets/img/anlass-business.webp" alt="" width="560" height="760" loading="lazy"></span>
+            <span class="anlass__rahmen">
+              <span class="anlass__bogen"><img class="anlass__voll" src="assets/img/figur-business.webp" alt="" width="873" height="860" loading="lazy"></span>
+            </span>
             <span class="anlass__text"><span class="anlass__name">Business</span><span class="anlass__zusatz">Klassisch und Slim-fit</span></span>
           </a>
         </li>
         <li class="zeigen" style="--verzug:.16s">
-          <a class="anlass" href="kollektion.html?k=hochzeitsanzuege&amp;stil=smoking">
-            <span class="anlass__bogen"><img src="assets/img/anlass-gala.webp" alt="" width="560" height="760" loading="lazy"></span>
+          <a class="anlass anlass--frei" href="kollektion.html?k=hochzeitsanzuege&amp;stil=smoking">
+            <span class="anlass__rahmen">
+              <span class="anlass__bogen"><img src="assets/img/figur-gala.webp" alt="" width="408" height="860" loading="lazy"></span>
+              <img class="anlass__frei" src="assets/img/figur-gala.webp" alt="" width="408" height="860" loading="lazy">
+            </span>
             <span class="anlass__text"><span class="anlass__name">Fest &amp; Gala</span><span class="anlass__zusatz">Smoking und Abendanzug</span></span>
           </a>
         </li>
         <li class="zeigen" style="--verzug:.24s">
           <a class="anlass" href="kollektion.html?k=anzuege-gemustert">
-            <span class="anlass__bogen"><img src="assets/img/anlass-muster.webp" alt="" width="560" height="760" loading="lazy"></span>
+            <span class="anlass__rahmen">
+              <span class="anlass__bogen"><img class="anlass__voll" src="assets/img/figur-muster.webp" alt="" width="620" height="675" loading="lazy"></span>
+            </span>
             <span class="anlass__text"><span class="anlass__name">Mit Muster</span><span class="anlass__zusatz">Streifen, Karo, Struktur</span></span>
           </a>
         </li>
@@ -172,7 +269,7 @@
   </section>
 
   <!-- ===== Aus der Kollektion ===== -->
-  <section class="abschnitt abschnitt--leinen" id="auswahl">
+  <section class="abschnitt abschnitt--leinen" id="auswahl" data-faden="rechts">
     <div class="huelle">
       <div class="kopfzeile kopfzeile--breit">
         <div class="stapel">
@@ -196,14 +293,54 @@
     </div>
   </section>
 
+  <!-- ===== Atelier ===== -->
+  <section class="abschnitt abschnitt--nacht atelier-anriss" data-faden="links">
+    <div class="huelle atelier-anriss__innen">
+      <div class="stapel atelier-anriss__text" style="--abstand:1.4rem">
+        <p class="vorspann zeigen">Das Atelier</p>
+        <h2 class="zeigen">Ihr Look, bevor Sie ihn <em>anziehen.</em></h2>
+        <p class="einleitung zeigen">Stellen Sie Ihren Anzug an der Schneiderpuppe zusammen: Schnitt, Stoff, Weste, Halsschmuck. Wir zeigen, welche Modelle Ihrem Entwurf am nächsten kommen, und legen sie zur Anprobe bereit.</p>
+        <ul class="atelier-anriss__wahl zeigen" aria-hidden="true">
+          <li>Schnitt</li><li>Stoff</li><li>Muster</li><li>Weste</li><li>Halsschmuck</li><li>Einstecktuch</li>
+        </ul>
+        <div class="knopfreihe zeigen">
+          <a class="knopf knopf--hell" href="atelier.html" data-magnet>Atelier öffnen</a>
+          <a class="faden" href="stilfinder.html">Lieber vier kurze Fragen? <svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        </div>
+      </div>
+      <a class="atelier-anriss__buehne zeigen" href="atelier.html" tabindex="-1" aria-hidden="true">
+        <svg class="puppe" id="anriss-puppe" viewBox="0 0 480 680"></svg>
+      </a>
+    </div>
+  </section>
+
+  <!-- ===== Hochzeits-Fahrplan ===== -->
+  <section class="abschnitt fahrplan" id="fahrplan" data-faden="rechts">
+    <div class="huelle">
+      <div class="kopfzeile kopfzeile--mitte">
+        <p class="vorspann zeigen">Ihr Hochzeits-Fahrplan</p>
+        <h2 class="zeigen">Wann <em>heiraten</em> Sie?</h2>
+        <p class="einleitung zeigen">Nennen Sie uns Ihr Datum. Sie bekommen einen Fahrplan, wann Beratung, Anprobe und Abholung sinnvoll sind, mit Terminen zum direkten Buchen.</p>
+      </div>
+      <form class="fahrplan__frage zeigen" id="fahrplan-form" novalidate>
+        <div class="feld">
+          <label for="hochzeitstag">Ihr Hochzeitstag</label>
+          <input class="eingabe" id="hochzeitstag" name="hochzeitstag" type="date" required>
+        </div>
+        <button class="knopf" type="submit">Fahrplan zeigen</button>
+      </form>
+      <div class="fahrplan__ergebnis" id="fahrplan-ergebnis" hidden aria-live="polite"></div>
+    </div>
+  </section>
+
   <!-- ===== Ablauf ===== -->
-  <section class="abschnitt abschnitt--nacht">
+  <section class="abschnitt abschnitt--leinen" data-faden="links">
     <div class="huelle">
       <div class="kopfzeile kopfzeile--mitte">
         <p class="vorspann zeigen">Ihr Besuch bei uns</p>
         <h2 class="zeigen">In vier Schritten zum Anzug, <em>der sitzt.</em></h2>
       </div>
-      <ol class="ablauf">
+      <ol class="ablauf ablauf--hell">
         <li class="zeigen">
           <span class="ablauf__zahl">1</span>
           <h3>Termin wählen</h3>
@@ -225,35 +362,11 @@
           <p>Gleich einpacken lassen oder bequem nach Hause liefern lassen.</p>
         </li>
       </ol>
-      <div class="knopfreihe ablauf__knoepfe zeigen">
-        <a class="knopf knopf--hell" href="termin.html">Termin buchen</a>
-        <a class="knopf knopf--hell-linie" href="besuch.html">Anfahrt &amp; Öffnungszeiten</a>
-      </div>
-    </div>
-  </section>
-
-  <!-- ===== Stil-Finder und Größenberater ===== -->
-  <section class="abschnitt">
-    <div class="huelle helfer">
-      <a class="helfer__karte zeigen" href="stilfinder.html">
-        <span class="vorspann">Stil-Finder</span>
-        <h2>Gehrock, Cutaway oder <em>Smoking?</em></h2>
-        <p>Vier kurze Fragen zu Anlass, Stil und Farbe. Danach sehen Sie die Modelle, die dazu passen.</p>
-        <ul class="helfer__chips" aria-hidden="true"><li>Hochzeit</li><li>Klassisch</li><li>Dunkelblau</li><li>mit Weste</li></ul>
-        <span class="faden">Stil-Finder starten <svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
-      </a>
-      <a class="helfer__karte helfer__karte--mass zeigen" href="masse.html" style="--verzug:.1s">
-        <span class="vorspann">Maß &amp; Passform</span>
-        <h2>Ihre Größe in <em>30&nbsp;Sekunden.</em></h2>
-        <p>Körpergröße, Brust- und Bundumfang eingeben. Der Größenberater nennt Ihre Konfektionsgröße, auch untersetzt oder schlank.</p>
-        <div class="massband helfer__band" style="--stand:62%" aria-hidden="true"></div>
-        <span class="faden">Größenberater öffnen <svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
-      </a>
     </div>
   </section>
 
   <!-- ===== Besuch ===== -->
-  <section class="abschnitt abschnitt--leinen" id="besuch">
+  <section class="abschnitt" id="besuch" data-faden="rechts">
     <div class="huelle besuch">
       <div class="besuch__text">
         <p class="vorspann zeigen">Ihr Weg zu uns</p>
@@ -275,19 +388,22 @@
           <a class="faden" href="https://www.google.com/maps/dir/?api=1&amp;destination=Olpener+Str.+321%2C+51109+K%C3%B6ln" target="_blank" rel="noopener">Route planen <svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 5h5v5M19 5l-8 8M17 14v4.500H5.500V7H10"/></svg></a>
         </div>
       </div>
-      <div class="karte-rahmen zeigen" data-landkarte>
-        <div class="karte-rahmen__vor">
-          <svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s6.500-5.800 6.500-11.200a6.500 6.500 0 0 0-13 0C5.500 15.200 12 21 12 21z"/><circle cx="12" cy="9.800" r="2.300"/></svg>
-          <p><strong>Olpener Str. 321, 51109 Köln</strong></p>
-          <p class="klein">Die Karte wird von OpenStreetMap geladen. Dabei wird Ihre IP-Adresse an den Kartendienst übertragen.</p>
-          <button class="knopf knopf--linie knopf--klein" type="button" data-karte-laden>Karte anzeigen</button>
+      <div class="besuch__bilder zeigen">
+        <figure class="besuch__foto"><img src="assets/img/laden-1.webp" alt="Dunkelblauer Zweireiher im Verkaufsraum, dahinter Anzüge an den Ständern und das MUGA-Logo" width="540" height="1000" loading="lazy"></figure>
+        <div class="karte-rahmen" data-landkarte>
+          <div class="karte-rahmen__vor">
+            <svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s6.500-5.800 6.500-11.200a6.500 6.500 0 0 0-13 0C5.500 15.200 12 21 12 21z"/><circle cx="12" cy="9.800" r="2.300"/></svg>
+            <p><strong>Olpener Str. 321, 51109 Köln</strong></p>
+            <p class="klein">Die Karte wird von OpenStreetMap geladen. Dabei wird Ihre IP-Adresse an den Kartendienst übertragen.</p>
+            <button class="knopf knopf--linie knopf--klein" type="button" data-karte-laden>Karte anzeigen</button>
+          </div>
         </div>
       </div>
     </div>
   </section>
 
   <!-- ===== Vertrauen ===== -->
-  <section class="abschnitt">
+  <section class="abschnitt abschnitt--leinen" data-faden="links">
     <div class="huelle">
       <div class="kopfzeile kopfzeile--mitte">
         <p class="vorspann zeigen">Darauf können Sie sich verlassen</p>
@@ -295,7 +411,7 @@
       </div>
       <ul class="zusagen">
         <li class="zeigen">
-          <span class="zusagen__zahl">44–72</span>
+          <span class="zusagen__zahl"><span data-zaehle="44">44</span>–<span data-zaehle="72">72</span></span>
           <h3>Für jede Figur</h3>
           <p>Normale, untersetzte und schlanke Größen. Hemden von Kragenweite 37/38 bis 51/52.</p>
         </li>
@@ -305,9 +421,9 @@
           <p>Design by MUGA®. Sie kaufen direkt beim Hersteller, ohne Umweg und ohne zweite Wahl.</p>
         </li>
         <li class="zeigen" style="--verzug:.2s">
-          <span class="zusagen__zahl">IHK</span>
-          <h3>Geprüft und fair</h3>
-          <p>Ausbildungsbetrieb der IHK Köln, Mitglied im Händlerbund und der Initiative FairCommerce.</p>
+          <span class="zusagen__zahl"><span data-zaehle="576" id="artikelzahl">576</span></span>
+          <h3>Artikel zur Auswahl</h3>
+          <p>Vom Hochzeitsanzug bis zum Einstecktuch. Ausbildungsbetrieb der IHK Köln, Mitglied im Händlerbund.</p>
         </li>
       </ul>
       <p class="mitte zeigen" style="margin-top:2.5rem">
@@ -317,7 +433,7 @@
   </section>
 
   <!-- ===== Häufige Fragen ===== -->
-  <section class="abschnitt abschnitt--kreide">
+  <section class="abschnitt abschnitt--kreide" data-faden="rechts">
     <div class="huelle fragen">
       <div class="stapel fragen__kopf">
         <p class="vorspann zeigen">Gut zu wissen</p>
@@ -350,8 +466,49 @@
     </div>
   </section>
 
+  <!-- ===== Finale: der Faden näht den Knopf an ===== -->
+  <section class="finale nacht" id="finale" data-faden="finale">
+    <div class="huelle finale__innen">
+      <p class="vorspann zeigen">Der letzte Stich</p>
+      <h2 class="zeigen">Jetzt fehlt nur noch <em>Ihr Termin.</em></h2>
+      <p class="einleitung zeigen">Beratung, Anprobe oder Abholung: Wählen Sie Tag und Uhrzeit. Wir halten die Zeit für Sie frei.</p>
+      <a class="terminknopf zeigen" href="termin.html" id="terminknopf" data-magnet>
+        <svg viewBox="-160 -160 320 320" aria-hidden="true" focusable="false">
+          <defs>
+            <path id="knopf-kreis" d="M0 -128a128 128 0 1 1 0 256a128 128 0 1 1 0 -256"/>
+            <radialGradient id="knopf-glanz" cx="38%" cy="30%" r="80%">
+              <stop offset="0" stop-color="#fffaf0"/><stop offset=".55" stop-color="#efe3cc"/><stop offset="1" stop-color="#cdb893"/>
+            </radialGradient>
+            <radialGradient id="knopf-mulde" cx="50%" cy="50%" r="50%">
+              <stop offset="0" stop-color="#e6d8bd"/><stop offset=".8" stop-color="#efe4cf"/><stop offset="1" stop-color="#fbf4e4"/>
+            </radialGradient>
+          </defs>
+          <g class="terminknopf__schrift">
+            <text><textPath href="#knopf-kreis" startOffset="0">Termin buchen · Beratung · Anprobe · Abholung · Termin buchen · Beratung · Anprobe · Abholung · </textPath></text>
+          </g>
+          <g class="terminknopf__knopf">
+            <circle r="96" fill="rgba(0,0,0,.35)" transform="translate(0 7)"/>
+            <circle r="94" fill="url(#knopf-glanz)"/>
+            <circle r="94" fill="none" stroke="#b59c72" stroke-width="1"/>
+            <circle r="72" fill="url(#knopf-mulde)"/>
+            <circle r="72" fill="none" stroke="rgba(120,96,58,.35)" stroke-width="1"/>
+            <g fill="#2a211a">
+              <circle cx="-19" cy="-19" r="9"/><circle cx="19" cy="-19" r="9"/><circle cx="-19" cy="19" r="9"/><circle cx="19" cy="19" r="9"/>
+            </g>
+            <g class="terminknopf__stich" fill="none" stroke="#c4202a" stroke-width="6" stroke-linecap="round">
+              <path pathLength="100" d="M-19 -19L19 19"/>
+              <path pathLength="100" d="M19 -19L-19 19"/>
+            </g>
+          </g>
+        </svg>
+        <span class="terminknopf__wort">Termin buchen</span>
+      </a>
+      <p class="finale__tel zeigen">oder rufen Sie an: <a href="tel:+492218392590">0221 839 25 90</a></p>
+    </div>
+  </section>
+
 </main>
 
-<muga-fuss></muga-fuss>
+<muga-fuss ohne-auftakt></muga-fuss>
 </body>
 </html>

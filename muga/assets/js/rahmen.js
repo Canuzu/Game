@@ -62,9 +62,9 @@
   function logo(hell) {
     return '<a class="logo' + (hell ? ' logo--hell' : '') + '" href="index.html">' +
       '<svg class="logo__zeichen" viewBox="0 0 40 40" aria-hidden="true">' +
-        '<rect width="40" height="40" rx="8" fill="' + (hell ? '#f3ede2' : '#15120f') + '"/>' +
-        '<path d="M8.500 30.500L14.500 10.500 20 22l5.500-11.500 6 20" fill="none" stroke="#b81f26" stroke-width="5.400" stroke-linecap="round" stroke-linejoin="round"/>' +
-        '<path d="M8.500 30.500L14.500 10.500 20 22l5.500-11.500 6 20" fill="none" stroke="' + (hell ? '#15120f' : '#fffdf9') + '" stroke-width="1.700" stroke-linecap="round" stroke-linejoin="round"/>' +
+        '<rect class="logo__feld" width="40" height="40" rx="8"/>' +
+        '<path class="logo__rot" d="M8.500 30.500L14.500 10.500 20 22l5.500-11.500 6 20" fill="none" stroke-width="5.400" stroke-linecap="round" stroke-linejoin="round"/>' +
+        '<path class="logo__strich" d="M8.500 30.500L14.500 10.500 20 22l5.500-11.500 6 20" fill="none" stroke-width="1.700" stroke-linecap="round" stroke-linejoin="round"/>' +
       '</svg>' +
       '<span class="logo__text"><span class="logo__wort">MUGA</span><span class="logo__zusatz">Herrenausstatter · Köln</span></span><span class="unsichtbar">, zur Startseite</span>' +
     '</a>';
@@ -86,10 +86,10 @@
             s.punkte.map(function (p) { return '<li><a href="' + katLink(p[0]) + '">' + esc(p[1]) + '</a></li>'; }).join('') +
           '</ul></div>';
         }).join('') +
-        '<a class="mega__tafel" href="stilfinder.html">' +
-          '<span class="vorspann">Stil-Finder</span>' +
-          '<span class="mega__tafeltitel">In vier Fragen zum passenden Anzug</span>' +
-          '<span class="faden">Jetzt starten ' + sym('pfeil') + '</span>' +
+        '<a class="mega__tafel" href="atelier.html">' +
+          '<span class="vorspann">Das Atelier</span>' +
+          '<span class="mega__tafeltitel">Entwerfen Sie Ihren Look an der Schneiderpuppe</span>' +
+          '<span class="faden">Atelier öffnen ' + sym('pfeil') + '</span>' +
         '</a>' +
       '</div>' +
     '</div>';
@@ -99,11 +99,13 @@
     var nav = [
       ['kollektion.html', 'Kollektion', true],
       ['kollektion.html?k=hochzeitsanzuege', 'Hochzeit'],
-      ['stilfinder.html', 'Stil-Finder'],
+      ['atelier.html', 'Atelier'],
       ['masse.html', 'Maß & Passform'],
       ['service.html', 'Service'],
       ['besuch.html', 'Besuch in Köln']
     ];
+    /* Über einer dunklen Bühne (Startseite) beginnt der Kopf durchsichtig mit heller Schrift */
+    var nacht = document.documentElement.getAttribute('data-kopf') === 'nacht';
     return '<a class="sprung" href="#inhalt">Zum Inhalt springen</a>' +
     '<div class="leiste nacht" role="region" aria-label="Öffnungsstatus und Telefon">' +
       '<div class="huelle leiste__innen">' +
@@ -112,7 +114,8 @@
         '<a class="leiste__tel" href="tel:' + C.telefonLink + '" aria-label="Anrufen: ' + esc(C.telefon) + '">' + sym('telefon') + '<span>' + esc(C.telefon) + '</span></a>' +
       '</div>' +
     '</div>' +
-    '<header class="kopf" id="kopf">' +
+    '<header class="kopf' + (nacht ? ' kopf--nacht' : '') + '" id="kopf">' +
+      '<div class="kopf__band" aria-hidden="true"></div>' +
       '<div class="huelle kopf__innen">' +
         '<button class="symbolknopf kopf__menue" type="button" data-oeffne="navlade" aria-label="Menü öffnen">' + sym('menue') + '</button>' +
         logo(false) +
@@ -153,6 +156,8 @@
         '</nav>' +
         '<ul class="navlade__haupt">' +
           '<li><a href="kollektion.html">Gesamte Kollektion</a></li>' +
+          '<li><a href="atelier.html">Atelier: Look entwerfen</a></li>' +
+          '<li><a href="index.html#fahrplan">Hochzeits-Fahrplan</a></li>' +
           '<li><a href="stilfinder.html">Stil-Finder</a></li>' +
           '<li><a href="masse.html">Maß & Passform</a></li>' +
           '<li><a href="service.html">Versand, Zahlung & Rückgabe</a></li>' +
@@ -335,16 +340,16 @@
 
   /* ---------- Fuß ---------------------------------------------------------- */
 
-  function fussHtml() {
+  function fussHtml(ohneAuftakt) {
     var jahr = M.zeit.teile(M.zeit.jetzt().datum).jahr;
-    return '<footer class="fuss nacht">' +
+    return '<footer class="fuss nacht' + (ohneAuftakt ? ' fuss--knapp' : '') + '">' +
       '<div class="huelle">' +
-        '<div class="fuss__auftakt">' +
+        (ohneAuftakt ? '' : '<div class="fuss__auftakt">' +
           '<div><p class="vorspann">Persönlich in Köln-Merheim</p>' +
             '<p class="fuss__ruf">Am besten sitzt ein Anzug,<br>den man <em>anprobiert</em> hat.</p></div>' +
           '<div class="knopfreihe"><a class="knopf knopf--hell" href="termin.html">' + sym('kalender') + 'Termin buchen</a>' +
             '<a class="knopf knopf--hell-linie" href="tel:' + C.telefonLink + '">' + sym('telefon') + esc(C.telefon) + '</a></div>' +
-        '</div>' +
+        '</div>') +
         '<div class="fuss__raster">' +
           '<div class="fuss__marke">' + logo(true) +
             '<p class="fuss__text">Herrenmode aus eigener Herstellung: Hochzeitsanzüge, Gehröcke, Smokings und Business-Anzüge in den Größen 44 bis 72.</p>' +
@@ -358,6 +363,8 @@
           '</ul></div>' +
           '<div><p class="fuss__titel">Service</p><ul class="fuss__liste">' +
             '<li><a href="termin.html">Termin buchen</a></li>' +
+            '<li><a href="atelier.html">Atelier</a></li>' +
+            '<li><a href="index.html#fahrplan">Hochzeits-Fahrplan</a></li>' +
             '<li><a href="stilfinder.html">Stil-Finder</a></li>' +
             '<li><a href="masse.html">Maß & Passform</a></li>' +
             '<li><a href="service.html">Versand & Zahlung</a></li>' +
@@ -402,7 +409,8 @@
     connectedCallback() {
       if (this.__da) return;
       this.__da = true;
-      this.innerHTML = fussHtml();
+      /* Seiten mit eigenem Schluss (Startseite) lassen den Aufruf über dem Fuß weg */
+      this.innerHTML = fussHtml(this.hasAttribute('ohne-auftakt'));
     }
   }
   customElements.define('muga-fuss', Fuss);
@@ -487,9 +495,24 @@
 
     /* Schatten unter dem Kopf, sobald gerollt wird */
     if (kopf) {
-      var merke = function () { kopf.classList.toggle('kopf--gerollt', window.scrollY > 8); };
+      var buehne = document.querySelector('[data-buehne]'), band = kopf.querySelector('.kopf__band'), wartet = false;
+      var merke = function () {
+        wartet = false;
+        var y = window.scrollY;
+        kopf.classList.toggle('kopf--gerollt', y > 8);
+        /* Über der dunklen Bühne bleibt der Kopf dunkel, danach wird er hell */
+        if (buehne) kopf.classList.toggle('kopf--nacht', y < buehne.offsetTop + buehne.offsetHeight - kopf.offsetHeight - 24);
+        /* Schmales Band unter dem Kopf: wie weit die Seite schon gelesen ist */
+        if (band) {
+          var weg = document.documentElement.scrollHeight - window.innerHeight;
+          band.style.transform = 'scaleX(' + (weg > 0 ? Math.min(1, y / weg) : 0).toFixed(4) + ')';
+        }
+      };
       merke();
-      window.addEventListener('scroll', merke, { passive: true });
+      window.addEventListener('scroll', function () {
+        if (!wartet) { wartet = true; requestAnimationFrame(merke); }
+      }, { passive: true });
+      window.addEventListener('resize', merke);
     }
 
     zaehler();
