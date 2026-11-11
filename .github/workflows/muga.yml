@@ -1,0 +1,57 @@
+# Veröffentlicht die MUGA-Seite unter https://canuzu.github.io/Game/muga/
+#
+# Die Seite wird als Unterordner auf den Zweig gh-pages gelegt, ohne den Rest
+# dort (das Schachspiel) anzufassen. Ohne Server läuft sie im Dateimodus:
+# Termine und Bestellungen gehen als vorbereitete E-Mail ans Geschäft.
+name: MUGA veröffentlichen
+
+on:
+  push:
+    branches: [claude/festive-albattani-gig3pz]
+    paths: ['muga/**', '.github/workflows/muga.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: muga-seite
+  cancel-in-progress: false
+
+jobs:
+  veroeffentlichen:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: quelle
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Tests
+        run: cd quelle/muga && npm test
+
+      - name: gh-pages holen oder anlegen
+        run: |
+          if git ls-remote --exit-code --heads "https://github.com/${GITHUB_REPOSITORY}.git" gh-pages >/dev/null; then
+            git clone --depth 1 --branch gh-pages "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" seite
+          else
+            mkdir seite && cd seite && git init -q -b gh-pages
+            git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Seite einsetzen und schieben
+        run: |
+          cd seite
+          rm -rf muga && mkdir muga
+          cp -r ../quelle/muga/*.html ../quelle/muga/assets ../quelle/muga/daten muga/
+          touch .nojekyll
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || git commit -q -m "MUGA-Seite — Stand ${GITHUB_SHA::7}"
+          git push origin HEAD:gh-pages
