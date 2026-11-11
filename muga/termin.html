@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="de" class="ohne-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Termin buchen · MUGA Herrenausstatter Köln</title>
+<meta name="description" content="Beratung, Anprobe oder Abholung im Kölner Geschäft: Wählen Sie online Ihren Wunschtermin bei MUGA Herrenausstatter.">
+<meta name="theme-color" content="#f6f2ea">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/basis.css">
+<link rel="stylesheet" href="assets/css/rahmen.css">
+<link rel="stylesheet" href="assets/css/shop.css">
+<link rel="stylesheet" href="assets/css/seiten.css">
+<script src="assets/js/config.js"></script>
+<script src="assets/js/kern.js"></script>
+<script src="assets/js/rahmen.js"></script>
+<script src="assets/js/termine.js" defer></script>
+<script src="assets/js/seite-termin.js" defer></script>
+</head>
+<body>
+<muga-kopf></muga-kopf>
+<noscript><p class="ohne-skript">Für die Online-Buchung wird JavaScript benötigt. Termine vergeben wir auch telefonisch unter 0221 839 25 90.</p></noscript>
+
+<main id="inhalt">
+  <div class="huelle">
+    <header class="seitenkopf">
+      <nav aria-label="Brotkrumen"><ol class="kruemel"><li><a href="index.html">Start</a></li><li aria-current="page">Termin buchen</li></ol></nav>
+      <h1>Ihr Termin bei <em>MUGA</em></h1>
+      <p class="einleitung">Wählen Sie Anliegen, Tag und Uhrzeit. Wir halten die Zeit für Sie frei und legen auf Wunsch schon passende Modelle bereit.</p>
+    </header>
+
+    <div class="buchung">
+      <div>
+        <div class="schritte buchung__schritte" id="schritte">
+          <ol class="schritte__liste">
+            <li class="aktiv"><span>Anliegen</span></li>
+            <li><span>Tag &amp; Uhrzeit</span></li>
+            <li><span>Ihre Angaben</span></li>
+            <li><span>Bestätigung</span></li>
+          </ol>
+          <div class="massband" id="fortschritt" style="--stand:12%" role="progressbar" aria-label="Fortschritt der Buchung" aria-valuemin="1" aria-valuemax="4" aria-valuenow="1"></div>
+        </div>
+
+        <form id="terminform" novalidate>
+          <!-- Schritt 1 -->
+          <section class="schritt" data-schritt="1" aria-labelledby="s1">
+            <h2 id="s1" tabindex="-1">Worum geht es?</h2>
+            <div class="wahl wahl--2" id="arten" role="radiogroup" aria-labelledby="s1"></div>
+            <div class="personen">
+              <span class="personen__name" id="personen-name">Wie viele Personen kommen?</span>
+              <div class="zaehlwerk" role="group" aria-labelledby="personen-name">
+                <button type="button" data-personen="-1" aria-label="Eine Person weniger"><svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.5 12h13"/></svg></button>
+                <output id="personen" aria-live="polite">1</output>
+                <button type="button" data-personen="1" aria-label="Eine Person mehr"><svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5.500v13M5.500 12h13"/></svg></button>
+              </div>
+            </div>
+            <p class="variante__fehler" id="fehler-1" role="alert" hidden>Bitte wählen Sie ein Anliegen.</p>
+            <div class="schritt__fuss">
+              <span></span>
+              <button class="knopf" type="button" data-weiter="2">Weiter zu Tag &amp; Uhrzeit</button>
+            </div>
+          </section>
+
+          <!-- Schritt 2 -->
+          <section class="schritt" data-schritt="2" aria-labelledby="s2" hidden>
+            <h2 id="s2" tabindex="-1">Wann passt es Ihnen?</h2>
+            <div class="zeitwahl-raster">
+              <div class="kalender" id="kalender"></div>
+              <div class="zeitwahl" id="zeitwahl" aria-live="polite"></div>
+            </div>
+            <p class="variante__fehler" id="fehler-2" role="alert" hidden>Bitte wählen Sie einen Tag und eine Uhrzeit.</p>
+            <div class="schritt__fuss">
+              <button class="zuruck" type="button" data-weiter="1"><svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>Zurück</button>
+              <button class="knopf" type="button" data-weiter="3">Weiter zu Ihren Angaben</button>
+            </div>
+          </section>
+
+          <!-- Schritt 3 -->
+          <section class="schritt" data-schritt="3" aria-labelledby="s3" hidden>
+            <h2 id="s3" tabindex="-1">Wie erreichen wir Sie?</h2>
+            <div class="hinweis" id="artikel-hinweis" hidden>
+              <svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.500l4.500 4.500L19 7.500"/></svg>
+              <div><strong>Zur Anprobe vorgemerkt:</strong> <span id="artikel-name"></span>
+                <button class="textknopf" type="button" id="artikel-weg" style="margin-left:.6rem">entfernen</button></div>
+            </div>
+            <div class="formraster">
+              <div class="feld halb"><label class="pflicht" for="vorname">Vorname</label><input class="eingabe" id="vorname" name="vorname" type="text" autocomplete="given-name" maxlength="60" required></div>
+              <div class="feld halb"><label class="pflicht" for="nachname">Nachname</label><input class="eingabe" id="nachname" name="nachname" type="text" autocomplete="family-name" maxlength="60" required></div>
+              <div class="feld halb"><label class="pflicht" for="email">E-Mail</label><input class="eingabe" id="email" name="email" type="email" autocomplete="email" inputmode="email" maxlength="120" required></div>
+              <div class="feld halb"><label class="pflicht" for="telefon">Telefon</label><input class="eingabe" id="telefon" name="telefon" type="tel" autocomplete="tel" inputmode="tel" maxlength="30" pattern="[0-9+\(\)\/ .\-]{5,30}" data-fehler="Bitte geben Sie eine Telefonnummer an, unter der wir Sie erreichen." required>
+                <p class="feld__hinweis">Falls wir kurzfristig etwas klären müssen.</p></div>
+              <div class="feld halb" id="feld-anlass"><label for="anlassdatum">Datum der Feier <span class="leise">(freiwillig)</span></label><input class="eingabe" id="anlassdatum" name="anlassdatum" type="date">
+                <p class="feld__hinweis">So wissen wir, wie viel Zeit bis zum Anlass bleibt.</p></div>
+              <div class="feld"><label for="nachricht">Was sollen wir vorbereiten? <span class="leise">(freiwillig)</span></label><textarea class="textfeld" id="nachricht" name="nachricht" maxlength="1000" placeholder="Zum Beispiel: Größe 52, dunkelblau, Hochzeit im Mai, mit Weste."></textarea></div>
+              <div class="feld unsichtbar" aria-hidden="true"><label for="website">Bitte leer lassen</label><input id="website" name="website" type="text" tabindex="-1" autocomplete="off"></div>
+              <div class="feld"><label class="haken"><input type="checkbox" name="datenschutz" required data-fehler="Bitte stimmen Sie zu, damit wir Ihren Termin eintragen können."><span>Ich bin einverstanden, dass MUGA meine Angaben zur Terminvereinbarung verarbeitet. Hinweise dazu stehen in der <a href="datenschutz.html" target="_blank" rel="noopener">Datenschutzerklärung</a>.</span></label></div>
+              <div class="feld"><label class="haken"><input type="checkbox" name="merken"><span>Meine Kontaktdaten auf diesem Gerät für das nächste Mal merken.</span></label></div>
+            </div>
+            <p class="hinweis hinweis--rot" id="fehler-3" role="alert" hidden></p>
+            <div class="schritt__fuss">
+              <button class="zuruck" type="button" data-weiter="2"><svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>Zurück</button>
+              <button class="knopf" type="submit" id="absenden">Termin buchen</button>
+            </div>
+          </section>
+        </form>
+
+        <!-- Schritt 4 -->
+        <section class="schritt" data-schritt="4" id="fertig" hidden></section>
+      </div>
+
+      <aside class="terminzettel" aria-label="Ihre Auswahl">
+        <div class="terminzettel__kopf"><p>Ihr Termin</p><h2 id="z-art">Noch nichts gewählt</h2></div>
+        <dl>
+          <div><dt>Tag</dt><dd id="z-tag" class="offen">offen</dd></div>
+          <div><dt>Uhrzeit</dt><dd id="z-zeit" class="offen">offen</dd></div>
+          <div><dt>Personen</dt><dd id="z-personen">1</dd></div>
+          <div><dt>Ort</dt><dd>Olpener Str. 321<br>51109 Köln</dd></div>
+        </dl>
+        <div class="terminzettel__fuss">
+          <span>Lieber telefonisch?</span>
+          <a href="tel:+492218392590"><svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.500 3.500h3l1.500 4-2 1.300a11 11 0 0 0 6.200 6.200l1.300-2 4 1.500v3a2 2 0 0 1-2.200 2A15.500 15.500 0 0 1 4.500 5.700a2 2 0 0 1 2-2.200z"/></svg>0221 839 25 90</a>
+          <span>Außerhalb der Öffnungszeiten nach Vereinbarung: 0177 705 08 62</span>
+        </div>
+      </aside>
+    </div>
+
+    <section class="abschnitt--eng" id="meine" hidden style="padding-top:0">
+      <div class="kopfzeile"><p class="vorspann">Auf diesem Gerät gebucht</p><h2>Ihre <em>Termine</em></h2></div>
+      <ul class="meine-termine" id="meine-liste"></ul>
+    </section>
+  </div>
+</main>
+
+<muga-fuss></muga-fuss>
+</body>
+</html>

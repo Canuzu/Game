@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="de" class="ohne-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Service: Versand, Zahlung, Rückgabe · MUGA Herrenausstatter Köln</title>
+<meta name="description" content="Versandkosten nach Land, Zahlungsarten, Rückgabe und häufige Fragen bei MUGA Herrenausstatter Köln. In Deutschland ab 50,01 € versandkostenfrei.">
+<meta name="theme-color" content="#f6f2ea">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/basis.css">
+<link rel="stylesheet" href="assets/css/rahmen.css">
+<link rel="stylesheet" href="assets/css/shop.css">
+<link rel="stylesheet" href="assets/css/seiten.css">
+<script src="assets/js/config.js"></script>
+<script src="assets/js/kern.js"></script>
+<script src="assets/js/rahmen.js"></script>
+<script src="assets/js/seite-service.js" defer></script>
+</head>
+<body>
+<muga-kopf></muga-kopf>
+
+<main id="inhalt">
+  <div class="huelle">
+    <header class="seitenkopf">
+      <nav aria-label="Brotkrumen"><ol class="kruemel"><li><a href="index.html">Start</a></li><li aria-current="page">Service</li></ol></nav>
+      <h1>Versand, Zahlung <em>und Rückgabe</em></h1>
+      <p class="einleitung">Alles Wichtige rund um Ihre Bestellung. Wenn eine Frage offen bleibt, rufen Sie uns an: 0221 839 25 90.</p>
+      <nav class="sprungmarken" aria-label="Auf dieser Seite">
+        <a class="tipp" href="#versand">Versand</a><a class="tipp" href="#zahlung">Zahlung</a><a class="tipp" href="#rueckgabe">Rückgabe</a><a class="tipp" href="#fragen">Häufige Fragen</a>
+      </nav>
+    </header>
+  </div>
+
+  <!-- ===== Versand ===== -->
+  <section class="abschnitt--eng" id="versand" style="padding-top:clamp(2rem,4vw,3.2rem)">
+    <div class="huelle huelle--mittel">
+      <div class="kopfzeile"><p class="vorspann">Lieferung</p><h2>Versand<em>kosten</em></h2>
+        <p class="einleitung">Innerhalb Deutschlands (ohne Inseln) liefern wir ab 50,01&nbsp;€ Bestellwert versandkostenfrei. Der Versand erfolgt unverzüglich nach Zahlungseingang, die Rechnung mit ausgewiesener Mehrwertsteuer liegt bei.</p></div>
+
+      <form class="rechner" id="rechner" autocomplete="off">
+        <div class="feld"><label for="r-land">Lieferland</label><select class="auswahl" id="r-land"></select></div>
+        <div class="feld"><label for="r-wert">Bestellwert in €</label><input class="eingabe" id="r-wert" type="number" inputmode="decimal" min="0" step="0.01" value="199.90"></div>
+        <p class="rechner__ergebnis" aria-live="polite"><small>Versand</small><span id="r-ergebnis">kostenlos</span></p>
+      </form>
+
+      <div class="tabellenrahmen" tabindex="0" role="region" aria-label="Versandkosten nach Zielland und Bestellwert">
+        <table class="tabelle" id="versandtabelle">
+          <caption class="unsichtbar">Versandkosten nach Zielland und Bestellwert</caption>
+          <thead><tr><th scope="col">Zielland</th><th scope="col" class="zahl">bis 5,00&nbsp;€</th><th scope="col" class="zahl">bis 20,00&nbsp;€</th><th scope="col" class="zahl">bis 50,00&nbsp;€</th><th scope="col" class="zahl">ab 50,01&nbsp;€</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="klein leise" style="margin-top:1rem">Bei Lieferungen in Länder außerhalb der Europäischen Union können Zölle, Steuern oder Gebühren anfallen, die nicht von uns erhoben werden. Abholung im Kölner Geschäft ist kostenlos.</p>
+    </div>
+  </section>
+
+  <!-- ===== Zahlung ===== -->
+  <section class="abschnitt--eng abschnitt--leinen" id="zahlung">
+    <div class="huelle huelle--mittel">
+      <div class="kopfzeile"><p class="vorspann">Bezahlen</p><h2>Zahlungs<em>arten</em></h2></div>
+      <ul class="kacheln">
+        <li class="kachel">
+          <svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.500l7 2.500v5.500c0 4.500-3 7.500-7 9-4-1.500-7-4.500-7-9V6z"/><path d="M9 12l2.200 2.200L15.200 10"/></svg>
+          <h3>PayPal</h3><p>Schnell und bequem. Über PayPal zahlen Sie auch per Lastschrift oder Kreditkarte.</p>
+        </li>
+        <li class="kachel">
+          <svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.500" y="5.500" width="17" height="13" rx="2"/><path d="M3.500 10h17M7 15h4"/></svg>
+          <h3>Vorkasse</h3><p>Sie überweisen den Betrag auf unser Konto. Die Bankverbindung erhalten Sie mit der Bestellbestätigung.</p>
+        </li>
+        <li class="kachel">
+          <svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.500 8.500h13l-1 11.500h-11z"/><path d="M9 8.500V7a3 3 0 0 1 6 0v1.500"/></svg>
+          <h3>Barzahlung</h3><p>Bei Selbstabholung im Kölner Geschäft zahlen Sie einfach vor Ort.</p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ===== Rückgabe ===== -->
+  <section class="abschnitt--eng" id="rueckgabe">
+    <div class="huelle huelle--mittel zweispaltig">
+      <div class="stapel" style="--abstand:1.2rem">
+        <p class="vorspann">Rückgabe und Umtausch</p>
+        <h2>Ein Monat <em>Bedenkzeit</em></h2>
+        <p class="einleitung">Sie können Ihren Kauf innerhalb eines Monats ohne Angabe von Gründen widerrufen.</p>
+        <div class="knopfreihe">
+          <a class="knopf knopf--dunkel" href="widerruf.html#formular">Vertrag widerrufen</a>
+          <a class="faden" href="widerruf.html">Widerrufsbelehrung lesen <svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        </div>
+      </div>
+      <div class="prosa">
+        <ul>
+          <li>Widerruf erklären: über das Formular „Vertrag widerrufen“, per E-Mail oder per Brief.</li>
+          <li>Ware zurücksenden: innerhalb von 14 Tagen nach Ihrem Widerruf an Muga Company GmbH, Olpener Str. 321, 51109 Köln, oder im Geschäft abgeben.</li>
+          <li>Erstattung: innerhalb von 14 Tagen nach Eingang Ihres Widerrufs, einschließlich der Kosten der Standardlieferung.</li>
+          <li>Die unmittelbaren Kosten der Rücksendung tragen Sie.</li>
+          <li>Lieber eine andere Größe? Rufen Sie uns an, wir finden eine Lösung: 0221 839 25 90.</li>
+        </ul>
+        <p class="klein leise">Maßgeblich ist die <a href="widerruf.html">Widerrufsbelehrung</a>.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Häufige Fragen ===== -->
+  <section class="abschnitt abschnitt--kreide" id="fragen">
+    <div class="huelle fragen">
+      <div class="stapel fragen__kopf">
+        <p class="vorspann">Gut zu wissen</p>
+        <h2>Häufige <em>Fragen</em></h2>
+        <p class="einleitung">Ihre Frage ist nicht dabei? Wir helfen gern weiter.</p>
+        <p><a class="faden" href="kontakt.html">Zum Kontakt <svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></p>
+      </div>
+      <div>
+        <details class="klappe"><summary>Brauche ich einen Termin?</summary><div class="klappe__inhalt"><p>Mit Termin ist die Zeit für Sie reserviert, das empfehlen wir besonders für die Hochzeitsberatung. Sie können auch ohne Termin kommen. Dann kann es zu Wartezeiten kommen. <a href="termin.html">Termin buchen</a></p></div></details>
+        <details class="klappe"><summary>Welche Größen führen Sie?</summary><div class="klappe__inhalt"><p>Anzüge in den Größen 44 bis 72, in untersetzten Größen (23 bis 37) und in schlanken Größen (90 bis 126). Hemden von S (Kragenweite 37/38) bis 5XL (51/52). Nicht jedes Modell gibt es in jeder Größe, die verfügbaren Größen stehen beim Artikel.</p></div></details>
+        <details class="klappe"><summary>Wie finde ich meine Größe?</summary><div class="klappe__inhalt"><p>Der <a href="masse.html">Größenberater</a> nennt Ihnen aus Körpergröße, Brust- und Bundumfang eine Empfehlung. Sicher wissen Sie es nach einer Anprobe im Geschäft.</p></div></details>
+        <details class="klappe"><summary>Kann ich einen Artikel aus dem Shop im Geschäft anprobieren?</summary><div class="klappe__inhalt"><p>Ja. Auf jeder Artikelseite finden Sie „Lieber erst anprobieren?“. Damit buchen Sie einen Termin, und wir legen das Modell in Ihrer Größe bereit. Mehrere Favoriten sammeln Sie auf der <a href="merkliste.html">Merkliste</a>.</p></div></details>
+        <details class="klappe"><summary>Kann ich online bestellen und im Geschäft abholen?</summary><div class="klappe__inhalt"><p>Ja. Wählen Sie an der Kasse „Abholung im Geschäft“. Bei Abholung können Sie auch bar bezahlen.</p></div></details>
+        <details class="klappe"><summary>Wann wird meine Bestellung verschickt?</summary><div class="klappe__inhalt"><p>Der Versand erfolgt unverzüglich nach Zahlungseingang. Die Rechnung mit ausgewiesener Mehrwertsteuer liegt der Lieferung bei.</p></div></details>
+        <details class="klappe"><summary>Liefern Sie auch ins Ausland?</summary><div class="klappe__inhalt"><p>Ja, in viele Länder. Die Kosten je Land stehen in der <a href="#versand">Versandtabelle</a>.</p></div></details>
+        <details class="klappe"><summary>Gibt es Parkplätze am Geschäft?</summary><div class="klappe__inhalt"><p>Ja, kostenlose Parkplätze sind ausreichend vorhanden. Es gibt keine Plakettenpflicht und keine Parkgebühren. <a href="besuch.html">Zur Anfahrt</a></p></div></details>
+      </div>
+    </div>
+  </section>
+</main>
+
+<muga-fuss></muga-fuss>
+</body>
+</html>

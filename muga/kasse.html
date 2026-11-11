@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="de" class="ohne-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kasse · MUGA Herrenausstatter Köln</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#f6f2ea">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/basis.css">
+<link rel="stylesheet" href="assets/css/rahmen.css">
+<link rel="stylesheet" href="assets/css/shop.css">
+<link rel="stylesheet" href="assets/css/seiten.css">
+<script src="assets/js/config.js"></script>
+<script src="assets/js/kern.js"></script>
+<script src="assets/js/rahmen.js"></script>
+<script src="daten/katalog.js" defer></script>
+<script src="assets/js/seite-kasse.js" defer></script>
+</head>
+<body>
+<muga-kopf></muga-kopf>
+<noscript><p class="ohne-skript">Für die Bestellung wird JavaScript benötigt. Bestellungen nehmen wir auch telefonisch unter 0221 839 25 90 entgegen.</p></noscript>
+
+<main id="inhalt">
+  <div class="huelle">
+    <header class="seitenkopf" id="kasse-kopf">
+      <nav aria-label="Brotkrumen"><ol class="kruemel"><li><a href="index.html">Start</a></li><li><a href="warenkorb.html">Warenkorb</a></li><li aria-current="page">Kasse</li></ol></nav>
+      <h1>Zur <em>Kasse</em></h1>
+    </header>
+
+    <form class="kasse" id="kasse" novalidate hidden>
+      <div>
+        <section class="kasten" aria-labelledby="k1">
+          <h2 id="k1"><small>1</small>Lieferung</h2>
+          <div class="wahl wahl--2" role="radiogroup" aria-labelledby="k1">
+            <label class="wahl__punkt"><input type="radio" name="lieferung" value="versand" checked>
+              <span class="wahl__karte"><span class="wahl__titel">Versand<small id="versand-preis"></small></span><span class="wahl__text">Lieferung an Ihre Adresse. Der Versand erfolgt unverzüglich nach Zahlungseingang.</span></span></label>
+            <label class="wahl__punkt"><input type="radio" name="lieferung" value="abholung">
+              <span class="wahl__karte"><span class="wahl__titel">Abholung im Geschäft<small>kostenlos</small></span><span class="wahl__text">Olpener Str. 321, 51109 Köln. Wir melden uns, sobald alles bereitliegt.</span></span></label>
+          </div>
+        </section>
+
+        <section class="kasten" aria-labelledby="k2">
+          <h2 id="k2"><small>2</small>Ihre Angaben</h2>
+          <div class="formraster">
+            <div class="feld halb"><label class="pflicht" for="vorname">Vorname</label><input class="eingabe" id="vorname" name="vorname" type="text" autocomplete="given-name" maxlength="60" required></div>
+            <div class="feld halb"><label class="pflicht" for="nachname">Nachname</label><input class="eingabe" id="nachname" name="nachname" type="text" autocomplete="family-name" maxlength="60" required></div>
+            <div class="feld halb"><label class="pflicht" for="email">E-Mail</label><input class="eingabe" id="email" name="email" type="email" autocomplete="email" inputmode="email" maxlength="120" required></div>
+            <div class="feld halb"><label for="telefon" id="telefon-name">Telefon <span class="leise">(freiwillig)</span></label><input class="eingabe" id="telefon" name="telefon" type="tel" autocomplete="tel" inputmode="tel" maxlength="30" pattern="[0-9+\(\)\/ .\-]{5,30}" data-fehler="Bitte geben Sie eine gültige Telefonnummer an."></div>
+          </div>
+          <div class="formraster" id="adresse" style="margin-top:1.1rem">
+            <div class="feld"><label class="pflicht" for="strasse">Straße und Hausnummer</label><input class="eingabe" id="strasse" name="strasse" type="text" autocomplete="street-address" maxlength="100" required></div>
+            <div class="feld drittel"><label class="pflicht" for="plz">Postleitzahl</label><input class="eingabe" id="plz" name="plz" type="text" autocomplete="postal-code" inputmode="numeric" maxlength="12" required></div>
+            <div class="feld zweidrittel"><label class="pflicht" for="ort">Ort</label><input class="eingabe" id="ort" name="ort" type="text" autocomplete="address-level2" maxlength="80" required></div>
+            <div class="feld halb"><label class="pflicht" for="land">Land</label><select class="auswahl" id="land" name="land" autocomplete="country-name" required></select></div>
+            <div class="feld halb" id="feld-landname" hidden><label class="pflicht" for="landname">Name des Landes</label><input class="eingabe" id="landname" name="landname" type="text" maxlength="60" required></div>
+            <p class="feld__hinweis" id="insel-hinweis">Für deutsche Inseln gelten abweichende Versandkosten. Wir melden uns dazu vor dem Versand.</p>
+          </div>
+        </section>
+
+        <section class="kasten" aria-labelledby="k3">
+          <h2 id="k3"><small>3</small>Zahlung</h2>
+          <div class="wahl" id="zahlarten" role="radiogroup" aria-labelledby="k3"></div>
+        </section>
+
+        <section class="kasten" aria-labelledby="k4">
+          <h2 id="k4"><small>4</small>Abschluss</h2>
+          <div class="formraster">
+            <div class="feld"><label for="hinweis">Anmerkung zur Bestellung <span class="leise">(freiwillig)</span></label><textarea class="textfeld" id="hinweis" name="hinweis" maxlength="600" style="min-height:5.5rem"></textarea></div>
+            <div class="feld unsichtbar" aria-hidden="true"><label for="website">Bitte leer lassen</label><input id="website" name="website" type="text" tabindex="-1" autocomplete="off"></div>
+            <div class="feld"><label class="haken"><input type="checkbox" name="agb" required data-fehler="Bitte bestätigen Sie AGB und Widerrufsbelehrung."><span>Ich habe die <a href="agb.html" target="_blank" rel="noopener">AGB</a> und die <a href="widerruf.html" target="_blank" rel="noopener">Widerrufsbelehrung</a> gelesen und bin einverstanden. Die <a href="datenschutz.html" target="_blank" rel="noopener">Datenschutzerklärung</a> habe ich zur Kenntnis genommen.</span></label></div>
+            <div class="feld"><label class="haken"><input type="checkbox" name="merken"><span>Meine Kontaktdaten auf diesem Gerät für das nächste Mal merken.</span></label></div>
+          </div>
+          <p class="hinweis hinweis--rot" id="kasse-fehler" role="alert" hidden style="margin-top:1.2rem"></p>
+          <div style="margin-top:1.5rem;display:grid;gap:.7rem">
+            <button class="knopf knopf--voll" type="submit" id="bestellen" style="min-height:3.5rem">Zahlungspflichtig bestellen</button>
+            <p class="klein leise mitte">Mit dem Klick geben Sie eine verbindliche Bestellung ab.</p>
+          </div>
+        </section>
+      </div>
+
+      <aside class="uebersicht" aria-label="Ihre Bestellung">
+        <h2>Ihre Bestellung</h2>
+        <ul class="uebersicht__posten" id="kasse-posten"></ul>
+        <dl class="uebersicht__zeilen">
+          <div><dt>Zwischensumme</dt><dd id="kasse-summe"></dd></div>
+          <div><dt id="kasse-versandname">Versand</dt><dd id="kasse-versand"></dd></div>
+        </dl>
+        <p class="uebersicht__gesamt"><span>Gesamt</span><strong id="kasse-gesamt"></strong></p>
+        <p class="klein leise" style="margin-top:-.6rem">Inkl. gesetzlicher MwSt.</p>
+        <a class="faden" href="warenkorb.html" style="justify-self:start">Warenkorb ändern</a>
+      </aside>
+    </form>
+
+    <div class="leer" id="kasse-leer" hidden style="padding-block:clamp(3rem,8vw,6rem)">
+      <svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M5.500 8.500h13l-1 11.500h-11z"/><path d="M9 8.500V7a3 3 0 0 1 6 0v1.500"/></svg>
+      <p class="leer__titel">Ihr Warenkorb ist leer.</p>
+      <p class="leise">Legen Sie zuerst etwas in den Warenkorb.</p>
+      <div class="knopfreihe"><a class="knopf knopf--dunkel" href="kollektion.html">Zur Kollektion</a></div>
+    </div>
+
+    <section id="bestellt" hidden></section>
+  </div>
+</main>
+
+<muga-fuss></muga-fuss>
+</body>
+</html>

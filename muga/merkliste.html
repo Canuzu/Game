@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="de" class="ohne-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Merkliste · MUGA Herrenausstatter Köln</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#f6f2ea">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/basis.css">
+<link rel="stylesheet" href="assets/css/rahmen.css">
+<link rel="stylesheet" href="assets/css/shop.css">
+<link rel="stylesheet" href="assets/css/seiten.css">
+<script src="assets/js/config.js"></script>
+<script src="assets/js/kern.js"></script>
+<script src="assets/js/rahmen.js"></script>
+<script src="daten/katalog.js" defer></script>
+<script src="assets/js/seite-merkliste.js" defer></script>
+</head>
+<body>
+<muga-kopf></muga-kopf>
+<noscript><p class="ohne-skript">Für die Merkliste wird JavaScript benötigt.</p></noscript>
+
+<main id="inhalt">
+  <div class="huelle">
+    <header class="seitenkopf">
+      <nav aria-label="Brotkrumen"><ol class="kruemel"><li><a href="index.html">Start</a></li><li aria-current="page">Merkliste</li></ol></nav>
+      <h1>Ihre <em>Merkliste</em></h1>
+      <p class="einleitung">Ihre Favoriten bleiben auf diesem Gerät gespeichert. Nehmen Sie die Liste mit zum Termin: Wir legen die Modelle in Ihrer Größe bereit.</p>
+    </header>
+
+    <section class="abschnitt--eng" style="padding-block:clamp(1.8rem,4vw,3rem) var(--abschnitt)">
+      <div class="werkzeile" id="merk-kopf" hidden>
+        <p class="werkzeile__zahl" id="merk-zahl" aria-live="polite"></p>
+        <a class="knopf knopf--dunkel knopf--klein" id="merk-termin" href="termin.html?art=anprobe">
+          <svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5.5" width="16" height="14.5" rx="2"/><path d="M4 10h16M8.5 3.500v4M15.500 3.500v4"/></svg>
+          Diese Modelle anprobieren
+        </a>
+      </div>
+      <div class="produktraster" id="merk-raster" style="--spalten:3"></div>
+      <div class="leer" id="merk-leer" hidden>
+        <svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.200s-7.500-4.400-7.500-10A4.300 4.300 0 0 1 12 7.600a4.300 4.300 0 0 1 7.500 2.600c0 5.600-7.500 10-7.500 10z"/></svg>
+        <p class="leer__titel">Noch nichts gemerkt.</p>
+        <p class="leise">Tippen Sie bei einem Artikel auf das Herz, um ihn hier wiederzufinden.</p>
+        <div class="knopfreihe"><a class="knopf knopf--dunkel" href="kollektion.html">Zur Kollektion</a><a class="knopf knopf--linie" href="stilfinder.html">Stil-Finder starten</a></div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<muga-fuss></muga-fuss>
+</body>
+</html>

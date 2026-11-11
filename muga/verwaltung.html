@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="de" class="ohne-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Verwaltung · MUGA Herrenausstatter Köln</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#f6f2ea">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/basis.css">
+<link rel="stylesheet" href="assets/css/rahmen.css">
+<link rel="stylesheet" href="assets/css/shop.css">
+<link rel="stylesheet" href="assets/css/seiten.css">
+<script src="assets/js/config.js"></script>
+<script src="assets/js/kern.js"></script>
+<script src="assets/js/rahmen.js"></script>
+<script src="assets/js/seite-verwaltung.js" defer></script>
+</head>
+<body>
+<muga-kopf></muga-kopf>
+
+<main id="inhalt">
+  <div class="huelle verwaltung">
+    <header class="verwaltung__kopf">
+      <div class="stapel"><p class="vorspann">Nur für das Geschäft</p><h1 style="font-size:clamp(2rem,4vw,3rem)">Verwaltung</h1></div>
+      <button class="knopf knopf--linie knopf--klein" type="button" id="abmelden" hidden>Abmelden</button>
+    </header>
+
+    <form class="kasten" id="anmeldung" novalidate style="max-width:32rem">
+      <h2>Anmelden</h2>
+      <p class="leise">Der Schlüssel steht beim Start des Servers in der Datei <code>speicher/verwaltung-schluessel.txt</code>.</p>
+      <div class="feld" style="margin-top:1rem"><label class="pflicht" for="schluessel">Schlüssel</label><input class="eingabe" id="schluessel" name="schluessel" type="password" autocomplete="current-password" required></div>
+      <p class="hinweis hinweis--rot" id="anmelde-fehler" role="alert" hidden style="margin-top:1rem"></p>
+      <div class="knopfreihe" style="margin-top:1.2rem"><button class="knopf" type="submit">Anmelden</button></div>
+    </form>
+
+    <div id="bereich" hidden>
+      <ul class="kennzahlen" id="kennzahlen"></ul>
+      <div class="reiter" role="tablist" aria-label="Bereiche" id="v-reiter" style="margin-top:2rem"></div>
+      <div id="v-inhalt" role="tabpanel" tabindex="0" aria-live="polite"></div>
+    </div>
+  </div>
+</main>
+
+<muga-fuss></muga-fuss>
+</body>
+</html>

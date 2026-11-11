@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="de" class="ohne-js">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kontakt · MUGA Herrenausstatter Köln</title>
+<meta name="description" content="So erreichen Sie MUGA Herrenausstatter in Köln-Merheim: Telefon 0221 839 25 90, E-Mail info@mmuga.de oder über das Kontaktformular.">
+<meta name="theme-color" content="#f6f2ea">
+<link rel="icon" href="assets/img/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/basis.css">
+<link rel="stylesheet" href="assets/css/rahmen.css">
+<link rel="stylesheet" href="assets/css/shop.css">
+<link rel="stylesheet" href="assets/css/seiten.css">
+<script src="assets/js/config.js"></script>
+<script src="assets/js/kern.js"></script>
+<script src="assets/js/rahmen.js"></script>
+<script src="assets/js/seite-kontakt.js" defer></script>
+</head>
+<body>
+<muga-kopf></muga-kopf>
+<noscript><p class="ohne-skript">Für das Kontaktformular wird JavaScript benötigt. Sie erreichen uns unter 0221 839 25 90 oder info@mmuga.de.</p></noscript>
+
+<main id="inhalt">
+  <div class="huelle">
+    <header class="seitenkopf">
+      <nav aria-label="Brotkrumen"><ol class="kruemel"><li><a href="index.html">Start</a></li><li aria-current="page">Kontakt</li></ol></nav>
+      <h1>Wir sind <em>für Sie da.</em></h1>
+      <p class="einleitung">Eine Frage zu Größe, Lieferung oder einem bestimmten Modell? Rufen Sie an, schreiben Sie uns oder kommen Sie vorbei.</p>
+    </header>
+
+    <div class="zweispaltig" style="padding-block:clamp(2rem,4vw,3.5rem) var(--abschnitt)">
+      <div class="stapel" style="--abstand:2rem">
+        <ul class="kontaktliste">
+          <li><svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.500 3.500h3l1.500 4-2 1.300a11 11 0 0 0 6.200 6.200l1.300-2 4 1.500v3a2 2 0 0 1-2.200 2A15.500 15.500 0 0 1 4.500 5.700a2 2 0 0 1 2-2.200z"/></svg>
+            <div><strong>Telefon</strong><a href="tel:+492218392590">0221 839 25 90</a><span>Während der Öffnungszeiten</span></div></li>
+          <li><svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M6.500 3.500h3l1.500 4-2 1.300a11 11 0 0 0 6.200 6.200l1.300-2 4 1.500v3a2 2 0 0 1-2.200 2A15.500 15.500 0 0 1 4.500 5.700a2 2 0 0 1 2-2.200z"/></svg>
+            <div><strong>Mobil</strong><a href="tel:+491777050862">0177 705 08 62</a><span>Für Termine außerhalb der Öffnungszeiten</span></div></li>
+          <li><svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.500" y="5.500" width="17" height="13" rx="2"/><path d="M4 7l8 6 8-6"/></svg>
+            <div><strong>E-Mail</strong><a href="mailto:info@mmuga.de">info@mmuga.de</a></div></li>
+          <li><svg class="symbol" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s6.500-5.800 6.500-11.200a6.500 6.500 0 0 0-13 0C5.500 15.200 12 21 12 21z"/><circle cx="12" cy="9.800" r="2.300"/></svg>
+            <div><strong>Geschäft</strong><a href="besuch.html">Olpener Str. 321, 51109 Köln</a><span>Merheim, kostenlose Parkplätze</span></div></li>
+        </ul>
+        <div>
+          <h2 style="font-size:1.5rem;margin-bottom:1rem">Öffnungszeiten</h2>
+          <table class="zeiten" data-zeiten style="max-width:22rem"><tbody></tbody></table>
+          <p class="leiste__status" data-oeffnung style="margin-top:1rem"></p>
+        </div>
+        <a class="knopf knopf--dunkel" href="termin.html" style="justify-self:start">Termin buchen</a>
+      </div>
+
+      <div class="kasten">
+        <h2>Schreiben Sie uns</h2>
+        <form id="kontaktform" novalidate>
+          <div class="formraster">
+            <div class="feld halb"><label class="pflicht" for="vorname">Vorname</label><input class="eingabe" id="vorname" name="vorname" type="text" autocomplete="given-name" maxlength="60" required></div>
+            <div class="feld halb"><label class="pflicht" for="nachname">Nachname</label><input class="eingabe" id="nachname" name="nachname" type="text" autocomplete="family-name" maxlength="60" required></div>
+            <div class="feld halb"><label class="pflicht" for="email">E-Mail</label><input class="eingabe" id="email" name="email" type="email" autocomplete="email" inputmode="email" maxlength="120" required></div>
+            <div class="feld halb"><label for="telefon">Telefon <span class="leise">(für einen Rückruf)</span></label><input class="eingabe" id="telefon" name="telefon" type="tel" autocomplete="tel" inputmode="tel" maxlength="30" pattern="[0-9+\(\)\/ .\-]{5,30}" data-fehler="Bitte geben Sie eine gültige Telefonnummer an."></div>
+            <div class="feld"><label class="pflicht" for="betreff">Betreff</label><input class="eingabe" id="betreff" name="betreff" type="text" maxlength="120" required></div>
+            <div class="feld"><label class="pflicht" for="nachricht">Ihre Nachricht</label><textarea class="textfeld" id="nachricht" name="nachricht" maxlength="3000" required></textarea></div>
+            <div class="feld unsichtbar" aria-hidden="true"><label for="website">Bitte leer lassen</label><input id="website" name="website" type="text" tabindex="-1" autocomplete="off"></div>
+            <div class="feld"><label class="haken"><input type="checkbox" name="datenschutz" required data-fehler="Bitte stimmen Sie zu, damit wir Ihnen antworten können."><span>Ich bin einverstanden, dass MUGA meine Angaben zur Beantwortung meiner Anfrage verarbeitet. Hinweise dazu stehen in der <a href="datenschutz.html" target="_blank" rel="noopener">Datenschutzerklärung</a>.</span></label></div>
+          </div>
+          <p class="hinweis hinweis--rot" id="kontakt-fehler" role="alert" hidden style="margin-top:1.2rem"></p>
+          <div class="knopfreihe" style="margin-top:1.4rem"><button class="knopf" type="submit" id="kontakt-senden">Nachricht senden</button></div>
+        </form>
+        <div id="kontakt-fertig" hidden></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<muga-fuss></muga-fuss>
+</body>
+</html>
