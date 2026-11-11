@@ -180,7 +180,7 @@ table { border-collapse: collapse; width: 100%; }
 .kopfzeile { display: grid; gap: 1.1rem; margin-bottom: clamp(2rem, 4vw, 3.5rem); max-width: 46rem; }
 .kopfzeile--mitte { margin-inline: auto; text-align: center; justify-items: center; }
 .kopfzeile--breit { max-width: none; grid-template-columns: 1fr auto; align-items: end; }
-@media (max-width: 720px) { .kopfzeile--breit { grid-template-columns: 1fr; } }
+@media (max-width: 720px) { .kopfzeile--breit { grid-template-columns: minmax(0, 1fr); } }
 
 .vorspann {
   display: inline-flex; align-items: center; gap: 0.75rem;

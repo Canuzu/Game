@@ -145,7 +145,7 @@
       M.$$('#zusatzwahl select').forEach(function (s) {
         var huelle = s.closest('.feld');
         huelle.classList.toggle('fehler', !s.value);
-        if (!s.value) { fehlt.push(s.dataset.name); erstes = erstes || huelle; } else zusatz.push(s.value);
+        if (!s.value) { fehlt.push('eine Angabe bei „' + s.dataset.name + '“'); erstes = erstes || huelle; } else zusatz.push(s.value);
       });
       var fehler = document.getElementById('wahl-fehler');
       fehler.hidden = !fehlt.length;

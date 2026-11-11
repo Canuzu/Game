@@ -169,7 +169,7 @@ dialog::backdrop { background: rgba(21, 18, 15, 0.5); -webkit-backdrop-filter: b
 .tipp { display: inline-flex; padding: 0.5rem 1rem; border: 1px solid var(--linie); border-radius: 999px; text-decoration: none; font-size: 0.92rem; font-weight: 560; background: var(--kreide); transition: border-color 0.2s, background-color 0.2s, color 0.2s; }
 .tipp:hover { border-color: var(--tinte); background: var(--tinte); color: var(--kreide); }
 .funde { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.4rem 1.6rem; width: 100%; }
-@media (max-width: 640px) { .funde { grid-template-columns: 1fr; } }
+@media (max-width: 640px) { .funde { grid-template-columns: minmax(0, 1fr); } }
 .fund { display: grid; grid-template-columns: 4.5rem 1fr; gap: 1rem; align-items: center; padding: 0.6rem; margin: 0 -0.6rem; border-radius: var(--r-m); text-decoration: none; transition: background-color 0.2s; }
 .fund:hover, .fund:focus-visible { background: var(--leinen); }
 .fund__bild { aspect-ratio: 4 / 5; background: var(--leinen); border-radius: var(--r-s); overflow: hidden; display: block; }
@@ -231,7 +231,7 @@ dialog::backdrop { background: rgba(21, 18, 15, 0.5); -webkit-backdrop-filter: b
 .fuss__ruf em { color: #e9b8a5; font-weight: 320; }
 .fuss__raster { display: grid; grid-template-columns: minmax(0, 1.5fr) repeat(3, minmax(0, 1fr)); gap: 2.5rem clamp(1.5rem, 4vw, 4rem); }
 @media (max-width: 960px) { .fuss__raster { grid-template-columns: repeat(2, minmax(0, 1fr)); } .fuss__marke { grid-column: 1 / -1; } }
-@media (max-width: 520px) { .fuss__raster { grid-template-columns: 1fr; } }
+@media (max-width: 520px) { .fuss__raster { grid-template-columns: minmax(0, 1fr); } }
 .fuss__text { color: var(--nacht-leise); font-size: 0.95rem; max-width: 24rem; margin: 1.4rem 0 1.2rem; }
 .fuss__sozial { display: flex; flex-wrap: wrap; gap: 0.5rem 1.3rem; font-size: 0.9rem; }
 .fuss__sozial a { text-decoration: none; font-weight: 580; }

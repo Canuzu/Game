@@ -75,7 +75,7 @@
 /* ---------- Kollektion ------------------------------------------------------ */
 
 .kollektion { display: grid; grid-template-columns: 16.5rem minmax(0, 1fr); gap: clamp(2rem, 4vw, 4rem); align-items: start; padding-block: clamp(1.5rem, 3vw, 2.6rem) var(--abschnitt); }
-@media (max-width: 1040px) { .kollektion { grid-template-columns: 1fr; } }
+@media (max-width: 1040px) { .kollektion { grid-template-columns: minmax(0, 1fr); } }
 
 .kat-streifen { display: flex; gap: 0.5rem; overflow-x: auto; padding: 0.2rem var(--rand) 1rem; margin-inline: calc(var(--rand) * -1); scrollbar-width: none; margin-top: 1.6rem; }
 .kat-streifen::-webkit-scrollbar { display: none; }
@@ -146,7 +146,7 @@
 /* ---------- Produktseite ---------------------------------------------------- */
 
 .produkt { display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(0, 1fr); gap: clamp(2rem, 5vw, 5rem); align-items: start; padding-block: clamp(1.2rem, 2.5vw, 2rem) clamp(3rem, 6vw, 5rem); }
-@media (max-width: 900px) { .produkt { grid-template-columns: 1fr; } }
+@media (max-width: 900px) { .produkt { grid-template-columns: minmax(0, 1fr); } }
 
 .galerie { display: grid; gap: 0.8rem; position: sticky; top: calc(var(--kopfhoehe) + 1.2rem); }
 @media (max-width: 900px) { .galerie { position: static; } }
@@ -227,7 +227,7 @@
 /* ---------- Warenkorb und Kasse --------------------------------------------- */
 
 .kasse { display: grid; grid-template-columns: minmax(0, 1fr) minmax(19rem, 25.5rem); gap: clamp(2rem, 5vw, 4.5rem); align-items: start; padding-block: clamp(2rem, 4vw, 3rem) var(--abschnitt); }
-@media (max-width: 940px) { .kasse { grid-template-columns: 1fr; } }
+@media (max-width: 940px) { .kasse { grid-template-columns: minmax(0, 1fr); } }
 
 .uebersicht { position: sticky; top: calc(var(--kopfhoehe) + 1.5rem); background: var(--kreide); border: 1px solid var(--linie); border-radius: var(--r-l); padding: clamp(1.3rem, 2.5vw, 1.9rem); display: grid; gap: 1.1rem; }
 @media (max-width: 940px) { .uebersicht { position: static; } }
