@@ -1,0 +1,9 @@
+{
+  "name": "cafe-pausenbrot",
+  "version": "1.0.0",
+  "description": "Webseite für Café Pausenbrot, Rolandstraße 8, Köln. Läuft als reine Dateien, ohne Abhängigkeiten.",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/daten.test.js"
+  }
+}

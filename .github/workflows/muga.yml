@@ -1,4 +1,5 @@
 # Veröffentlicht die MUGA-Seite unter https://canuzu.github.io/Game/muga/
+# und Café Pausenbrot unter https://canuzu.github.io/Game/pausenbrot/
 #
 # Die Seite wird als Unterordner auf den Zweig gh-pages gelegt, ohne den Rest
 # dort (das Schachspiel) anzufassen. Ohne Server läuft sie im Dateimodus:
@@ -8,7 +9,7 @@ name: MUGA veröffentlichen
 on:
   push:
     branches: [claude/festive-albattani-gig3pz]
-    paths: ['muga/**', '.github/workflows/muga.yml']
+    paths: ['muga/**', 'pausenbrot/**', '.github/workflows/muga.yml']
   workflow_dispatch:
 
 permissions:
@@ -31,7 +32,9 @@ jobs:
           node-version: '22'
 
       - name: Tests
-        run: cd quelle/muga && npm test
+        run: |
+          (cd quelle/muga && npm test)
+          (cd quelle/pausenbrot && npm test)
 
       - name: gh-pages holen oder anlegen
         run: |
@@ -49,9 +52,11 @@ jobs:
           cd seite
           rm -rf muga && mkdir muga
           cp -r ../quelle/muga/*.html ../quelle/muga/assets ../quelle/muga/daten muga/
+          rm -rf pausenbrot && mkdir pausenbrot
+          cp -r ../quelle/pausenbrot/*.html ../quelle/pausenbrot/assets pausenbrot/
           touch .nojekyll
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          git diff --cached --quiet || git commit -q -m "MUGA-Seite — Stand ${GITHUB_SHA::7}"
+          git diff --cached --quiet || git commit -q -m "Seiten — Stand ${GITHUB_SHA::7}"
           git push origin HEAD:gh-pages
