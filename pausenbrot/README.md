@@ -5,10 +5,10 @@ Abhängigkeiten, läuft auf jedem Webspace und per Doppelklick auf `index.html`.
 
 ## Seiten
 
-* **Start** (`index.html`): Türschild mit „Offen“ oder „Geschlossen“, die Theke
+* **Start** (`index.html`): Öffnungsstatus im Kopf, die Theke
   als Foto mit Beschriftungen zum Antippen, Frühstück, Kaffee, Catering, Too Good
   To Go, Anfahrt.
-* **Karte** (`karte.html`): die Kreidetafel mit allen Preisen. Antippen legt das
+* **Speisekarte** (`karte.html`): die Kreidetafel mit allen Preisen. Antippen legt das
   Gericht auf den Bestellzettel. Abholtag, Uhrzeit, Name, dann geht die
   Bestellung als fertig geschriebene Nachricht per WhatsApp oder SMS ans Café.
 * **Tisch reservieren** (`tisch.html`): Anlass, Personen, Tag, Uhrzeit.
@@ -36,7 +36,7 @@ antwortet. Das steht auch so auf der Seite.
 
 ```
 npm test               # Öffnungsstatus, Abhol- und Tischzeiten, Bestellzettel
-node tests/browser.js  # 42 Prüfungen im Browser, Desktop und Handy (braucht Playwright)
+node tests/browser.js  # 44 Prüfungen im Browser, Desktop und Handy (braucht Playwright)
 ```
 
 ## Vor dem Einsatz zu klären

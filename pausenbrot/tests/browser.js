@@ -37,9 +37,9 @@ server.listen(0, '127.0.0.1', async () => {
       await page.goto(basis + 'index.html', { waitUntil: 'networkidle' });
       pruefe(n + ' Türschild zeigt offen oder geschlossen', /Offen|Geschlossen/.test(await page.textContent('[data-schild]')));
       pruefe(n + ' Theke hat elf Beschriftungen', (await page.locator('#theke .punkt').count()) === 11);
-      await page.click('[data-alle]');
-      await page.waitForTimeout(1200);
-      pruefe(n + ' Alles beschriften zeigt alle Zettel', (await page.locator('#theke .zettelchen.da').count()) === 11);
+      if (b < 881) { await page.click('[data-alle]'); await page.waitForTimeout(1200); }
+      pruefe(n + ' alle Gerichte an der Theke beschriftet', (await page.locator('#theke .zettelchen.da').count()) === 11);
+      pruefe(n + ' Reiter heißt Speisekarte', b < 961 || (await page.textContent('.nav')).includes('Speisekarte'));
       pruefe(n + ' Kaffeetafel trägt die Preise', (await page.textContent('#kaffeetafel')).includes('3,30 €'));
       pruefe(n + ' kein waagerechter Überlauf', (await page.evaluate(() => document.documentElement.scrollWidth)) === b);
 

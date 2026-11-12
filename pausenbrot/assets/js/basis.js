@@ -21,7 +21,7 @@
   /* ---------- Kopf -------------------------------------------------------- */
 
   var SEITEN = [
-    ['karte.html', 'Karte'],
+    ['karte.html', 'Speisekarte'],
     ['index.html#morgens', 'Frühstück'],
     ['catering.html', 'Catering'],
     ['tisch.html', 'Tisch reservieren'],
@@ -31,11 +31,9 @@
 
   function schildHtml() {
     var s = PB.status();
-    return '<span class="schild__band" aria-hidden="true"></span>' +
-      '<span class="schild__tafel' + (s.offen ? ' schild__tafel--offen' : '') + '">' +
-        '<span class="schild__wort">' + s.schild + '</span>' +
-        '<span class="schild__zeit">' + PB.esc(s.text) + '</span>' +
-      '</span>';
+    return '<span class="schild__punkt' + (s.offen ? ' schild__punkt--offen' : '') + '" aria-hidden="true"></span>' +
+      '<span class="schild__wort">' + s.schild + '</span>' +
+      '<span class="schild__zeit">' + PB.esc(s.text) + '</span>';
   }
   PB.schildHtml = schildHtml;
 
@@ -76,7 +74,7 @@
           '<p><a href="tel:' + C.telefonLink + '">' + C.telefon + '</a></p></div>' +
         '<div><h2>Geöffnet</h2><p>Montag bis Sonntag<br>' + PB.uhrKurz(z[0]) + ' bis ' + PB.uhrKurz(z[1]) + ' Uhr</p>' +
           '<p class="fuss__status" data-status></p></div>' +
-        '<div><h2>Woanders</h2><ul>' +
+        '<div><h2>Online</h2><ul>' +
           '<li><a href="' + C.instagram + '" rel="noopener" target="_blank">Instagram</a></li>' +
           '<li><a href="' + C.google + '" rel="noopener" target="_blank">Google Maps und Bewertungen</a></li>' +
           '<li><a href="' + C.tooGoodToGo + '" rel="noopener" target="_blank">Too Good To Go</a></li>' +
@@ -105,10 +103,11 @@
     PB.$$('[data-schild]').forEach(function (e) {
       var alt = e.querySelector('.schild__wort');
       var neu = PB.status().schild;
-      if (alt && alt.textContent !== neu) { e.innerHTML = schildHtml(); e.classList.remove('schwingt'); void e.offsetWidth; e.classList.add('schwingt'); }
+      if (alt && alt.textContent !== neu) e.innerHTML = schildHtml();
       else if (alt) e.querySelector('.schild__zeit').textContent = PB.status().text;
     });
     PB.$$('[data-status]').forEach(function (e) { e.textContent = statusZeile(); });
+    PB.$$('[data-status-kurz]').forEach(function (e) { var s = PB.status(); e.textContent = (s.offen ? 'geöffnet, ' : 'geschlossen, ') + s.text; e.classList.toggle('offen', s.offen); });
   }
 
   /* ---------- Versand von Anfragen ----------------------------------------
@@ -207,8 +206,6 @@
   document.addEventListener('DOMContentLoaded', function () {
     auffrischen();
     setInterval(auffrischen, 30000);
-    var schild = PB.$('[data-schild]');
-    if (schild && !PB.ruhig) schild.classList.add('schwingt');
 
     var menue = PB.$('#menue'), knopf = PB.$('[data-menue]');
     if (menue && knopf) {

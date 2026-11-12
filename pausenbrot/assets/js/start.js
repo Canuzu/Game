@@ -24,7 +24,6 @@
         knopf.className = 'punkt';
         knopf.style.setProperty('--x', t.x + '%');
         knopf.style.setProperty('--y', t.y + '%');
-        knopf.style.setProperty('--verzug', (i * 0.23 % 2.6).toFixed(2) + 's');
         knopf.setAttribute('aria-label', t.name);
         knopf.setAttribute('aria-expanded', 'false');
         var z = document.createElement('span');
@@ -53,6 +52,12 @@
         return eintrag;
       });
       var alle = theke.querySelector('[data-alle]');
+      /* Auf großen Bildschirmen ist genug Platz: alle Namen stehen gleich da */
+      if (window.matchMedia('(min-width: 881px)').matches) {
+        alleAn = true;
+        zettel.forEach(function (e) { e.zeige(true); });
+        alle.hidden = true;
+      }
       alle.addEventListener('click', function () {
         alleAn = !alleAn;
         zettel.forEach(function (e, i) {
