@@ -155,6 +155,8 @@
       leiste = document.createElement('div');
       leiste.id = 'kaufleiste';
       leiste.className = 'kaufleiste';
+      leiste.setAttribute('role', 'region');
+      leiste.setAttribute('aria-label', 'Artikel in den Warenkorb legen');
       document.body.appendChild(leiste);
     }
     leiste.innerHTML = '<div class="kaufleiste__text"><span class="kaufleiste__name">' + esc(p.n) + '</span><span class="kaufleiste__preis" id="kaufleiste-preis"></span></div>' +

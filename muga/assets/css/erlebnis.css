@@ -182,6 +182,17 @@
 }
 .puppe { position: relative; width: auto; height: min(74vh, 40rem); max-width: 100%; overflow: visible; }
 
+/* Hinweise an der Puppe wie auf einer Schnittzeichnung, nur wo daneben Platz ist */
+.hinweise { display: none; }
+@media (min-width: 1280px) {
+  .hinweise { display: block; }
+  .hinweis { opacity: 0; transition: opacity 0.3s var(--sanft); }
+  .hinweis.an { opacity: 1; transition: opacity 0.5s var(--sanft) 0.35s; }
+  .hinweis__linie { fill: none; stroke: var(--messing); stroke-width: 1; stroke-dasharray: 4 3; }
+  .hinweis__punkt { fill: #bd1e27; stroke: var(--kreide); stroke-width: 1.6; }
+  .hinweis__text { font-family: var(--sans); font-size: 10.5px; font-weight: 650; letter-spacing: 0.14em; text-transform: uppercase; fill: var(--messing-tief); }
+}
+
 /* Angeheftete Fassung: Der Abschnitt ist mehrere Bildschirme hoch, sein Inhalt bleibt stehen */
 .stilkunde--lauf { height: calc(100svh * 4.4); }
 #inhalt > .stilkunde--lauf > .stilkunde__klebt { position: sticky; top: var(--kopfhoehe); height: calc(100svh - var(--kopfhoehe)); padding-block: 0; display: grid; align-items: center; overflow: hidden; }
@@ -216,10 +227,11 @@
 .anlass__rahmen { position: relative; display: block; aspect-ratio: 3 / 4; }
 .anlass__rahmen .anlass__bogen { position: absolute; inset: 0; aspect-ratio: auto; background: linear-gradient(180deg, #efe7d9 0%, #e4dac9 100%); }
 .anlass__bogen img, .anlass__frei { mix-blend-mode: normal; }
-.anlass--frei .anlass__bogen img, .anlass__frei { position: absolute; left: 50%; bottom: -16%; height: 116%; width: auto; max-width: none; object-fit: contain; transform: translateX(-50%); transition: transform 0.9s var(--sanft); }
-.anlass__frei { z-index: 2; pointer-events: none; -webkit-mask-image: linear-gradient(to bottom, transparent 0, transparent 30%, #000 38%, #000 80%, transparent 97%); mask-image: linear-gradient(to bottom, transparent 0, transparent 30%, #000 38%, #000 80%, transparent 97%); filter: drop-shadow(0 0.9rem 0.9rem rgba(21, 18, 15, 0.28)); }
+.anlass--frei .anlass__bogen img, .anlass__frei { position: absolute; left: 50%; bottom: -8%; height: 110%; width: auto; max-width: none; object-fit: contain; transform: translateX(-50%); transition: transform 0.9s var(--sanft); }
+.anlass__frei { z-index: 2; pointer-events: none; -webkit-mask-image: linear-gradient(to bottom, transparent 0, transparent 30%, #000 38%, #000 82%, transparent 99%); mask-image: linear-gradient(to bottom, transparent 0, transparent 30%, #000 38%, #000 82%, transparent 99%); filter: drop-shadow(0 0.9rem 0.9rem rgba(21, 18, 15, 0.28)); }
 .anlass--frei:hover .anlass__bogen img, .anlass--frei:hover .anlass__frei { transform: translateX(-50%) scale(1.045); }
 .anlass__voll { width: 100%; height: 100%; object-fit: cover; object-position: center top; }
+.anlasse-luft, .anlaesse .anlass { gap: 1.9rem; }
 
 /* ---------- Atelier-Anriss --------------------------------------------------- */
 
