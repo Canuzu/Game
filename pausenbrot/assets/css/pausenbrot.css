@@ -89,7 +89,7 @@ address { font-style: normal; }
 .kopf--gerollt { border-bottom-color: var(--linie); box-shadow: 0 6px 20px rgba(28, 36, 32, 0.06); }
 .kopf__innen { max-width: calc(var(--breite) + 2 * var(--rand)); margin-inline: auto; padding-inline: var(--rand); height: var(--kopfhoehe); display: flex; align-items: center; gap: 1.6rem; }
 .marke { display: inline-flex; flex-direction: column; text-decoration: none; line-height: 1; flex: none; }
-.marke__klein { font-size: 0.66rem; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--ton-tief); margin-bottom: 0.15rem; margin-left: 0.08rem; }
+.marke__klein { font-family: var(--hand); font-size: 1.15rem; color: var(--ton-tief); margin-bottom: -0.15rem; margin-left: 0.1rem; }
 .marke__wort { font-family: var(--serif); font-size: 1.6rem; letter-spacing: -0.01em; }
 .nav { display: flex; gap: 1.4rem; margin-left: auto; font-weight: 560; font-size: 0.97rem; }
 .nav a { text-decoration: none; padding-block: 0.4rem; border-bottom: 2px solid transparent; }
@@ -100,12 +100,17 @@ address { font-style: normal; }
 .kopf__menue span:nth-child(1) { top: 1.05rem; }
 .kopf__menue span:nth-child(2) { top: 1.55rem; }
 
-/* Öffnungsstatus im Kopf */
-.schild { display: inline-flex; align-items: center; gap: 0.45rem; text-decoration: none; font-size: 0.86rem; white-space: nowrap; flex: none; padding: 0.35rem 0.75rem; border-radius: 999px; background: var(--papier-2); }
-.schild__punkt { width: 0.5rem; height: 0.5rem; border-radius: 50%; background: #9a8f7c; }
-.schild__punkt--offen { background: #2f8a5b; box-shadow: 0 0 0 3px rgba(47, 138, 91, 0.18); }
-.schild__wort { font-weight: 700; }
-.schild__zeit { color: var(--tinte-2); }
+/* Türschild: hängt an einer Schnur und schwingt, wenn es umgedreht wird */
+.schild { position: relative; display: block; text-decoration: none; padding-top: 0.55rem; transform-origin: 50% 0; flex: none; }
+.schild__band { position: absolute; top: -0.2rem; left: 50%; width: 2.4rem; height: 0.9rem; transform: translateX(-50%); border: 1.5px solid var(--tinte-2); border-bottom: 0; border-radius: 1.2rem 1.2rem 0 0; }
+.schild__band::after { content: ""; position: absolute; left: 50%; top: -0.32rem; width: 0.4rem; height: 0.4rem; border-radius: 50%; background: var(--tinte-2); transform: translateX(-50%); }
+.schild__tafel { display: grid; justify-items: center; padding: 0.3rem 0.85rem 0.35rem; border-radius: 6px; background: var(--tafel); color: var(--kreide); box-shadow: 0 3px 8px rgba(28, 36, 32, 0.2); min-width: 7.4rem; }
+.schild__wort { font-family: var(--hand); font-weight: 700; font-size: 1.35rem; line-height: 1; }
+.schild__tafel--offen .schild__wort { color: #f5d37a; }
+.schild__zeit { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.02em; opacity: 0.85; white-space: nowrap; }
+.schild.schwingt { animation: schwingen 2.4s cubic-bezier(0.3, 0, 0.2, 1) 0.2s; }
+@keyframes schwingen { 0% { transform: rotate(0); } 12% { transform: rotate(9deg); } 30% { transform: rotate(-6deg); } 48% { transform: rotate(3.5deg); } 66% { transform: rotate(-1.8deg); } 84% { transform: rotate(0.6deg); } 100% { transform: rotate(0); } }
+.schild:hover { animation: schwingen 1.6s cubic-bezier(0.3, 0, 0.2, 1); }
 
 .menue { width: 100%; max-width: none; height: 100%; max-height: none; margin: 0; padding: 5rem var(--rand) 2rem; border: 0; background: var(--tuerkis); color: var(--kreide); }
 .menue::backdrop { background: rgba(0, 0, 0, 0.3); }
@@ -120,7 +125,7 @@ address { font-style: normal; }
   .kopf__menue { display: block; }
   .schild { margin-left: auto; }
 }
-@media (max-width: 420px) { .schild__zeit { display: none; } .marke__wort { font-size: 1.45rem; } }
+@media (max-width: 380px) { .schild__tafel { min-width: 6.2rem; padding-inline: 0.6rem; } .marke__wort { font-size: 1.4rem; } }
 
 /* ---------- Einblenden -------------------------------------------------------- */
 
@@ -129,79 +134,83 @@ address { font-style: normal; }
 
 /* ---------- Anfang ------------------------------------------------------------- */
 
-.anfang { background: var(--tuerkis); color: var(--kreide); position: relative; padding-top: clamp(2.6rem, 6vw, 5rem); }
-/* unten läuft die Fläche hinter dem Foto aus, damit es in den nächsten Abschnitt ragt */
-.anfang::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: clamp(7rem, 16vw, 13rem); background: var(--papier); }
-.anfang__innen { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(1.5rem, 5vw, 5rem); align-items: end; padding-bottom: clamp(2rem, 4vw, 3rem); }
-.anfang h1 { font-size: clamp(3rem, 8.4vw, 7.4rem); line-height: 0.95; letter-spacing: -0.025em; }
-.anfang__text { font-size: clamp(1.05rem, 1.4vw, 1.2rem); color: rgba(240, 236, 225, 0.9); margin-bottom: 1.6rem; max-width: 33rem; }
-.anfang__bild { position: relative; z-index: 1; margin: 0; border-radius: var(--r); overflow: hidden; box-shadow: 0 28px 60px rgba(13, 40, 46, 0.35); aspect-ratio: 1206 / 640; }
-.anfang__bild img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 40%; }
-.anfang__fakten { position: relative; z-index: 1; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem 2rem; padding-block: 1.6rem 0; color: var(--tinte); font-size: 0.98rem; }
-.anfang__fakten li { display: grid; gap: 0.1rem; padding-top: 0.9rem; border-top: 1px solid var(--linie); }
-.anfang__fakten span { font-size: 0.78rem; color: var(--tinte-2); }
-.anfang__fakten b { font-weight: 600; }
-.anfang__fakten b.offen { color: #23704a; }
-.anfang__fakten a { text-decoration: none; }
+.anfang { background: var(--tuerkis); color: var(--kreide); overflow: hidden; position: relative; }
+.anfang__innen { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); gap: clamp(2rem, 5vw, 4.5rem); align-items: center; padding-block: clamp(2.5rem, 6vw, 5rem) clamp(3rem, 7vw, 6rem); }
+.anfang__ort { font-family: var(--hand); font-size: clamp(1.5rem, 2.4vw, 1.9rem); color: #f5d37a; margin-bottom: 0.6rem; transform: rotate(-2deg); transform-origin: left; display: inline-block; }
+.anfang h1 { margin-bottom: 1.4rem; }
+.anfang__text { font-size: clamp(1.08rem, 1.5vw, 1.24rem); max-width: 34rem; color: rgba(240, 236, 225, 0.88); margin-bottom: 2rem; }
+.anfang__fakten { display: flex; flex-wrap: wrap; gap: 0.4rem 1.6rem; margin-top: 2.2rem; font-size: 0.95rem; color: rgba(240, 236, 225, 0.8); }
+.anfang__fakten strong { color: var(--kreide); font-weight: 650; }
+.anfang__bild { position: relative; justify-self: end; width: min(100%, 31rem); }
+.anfang__bild figure { margin: 0; border-radius: var(--r); overflow: hidden; box-shadow: 0 30px 60px rgba(0, 0, 0, 0.28); aspect-ratio: 4 / 5; }
+.anfang__bild img { width: 100%; height: 100%; object-fit: cover; }
+.anfang__notiz { position: absolute; left: -2.2rem; bottom: 2.4rem; background: var(--weiss); color: var(--tinte); padding: 0.8rem 1rem 0.9rem; border-radius: 4px; box-shadow: 0 14px 30px rgba(0, 0, 0, 0.25); transform: rotate(-3deg); max-width: 13.5rem; }
+.anfang__notiz .hand { font-size: 1.45rem; display: block; }
+.anfang__notiz small { display: block; font-size: 0.8rem; color: var(--tinte-2); margin-top: 0.2rem; }
+.anfang__notiz::before { content: ""; position: absolute; top: -0.55rem; left: 50%; width: 3.6rem; height: 1.1rem; transform: translateX(-50%) rotate(2deg); background: rgba(220, 170, 54, 0.7); }
+.anfang .knopf--linie { color: var(--kreide); border-color: rgba(240, 236, 225, 0.6); }
+.anfang .knopf--linie:hover { background: var(--kreide); color: var(--tinte); border-color: var(--kreide); }
+/* untere Kante: die Fliesenreihe hinter der Theke */
+.fliesen { height: 14px; background: repeating-linear-gradient(90deg, #2e8a7c 0 46px, #f0ece1 46px 48px); border-top: 2px solid #f0ece1; }
+
 @media (max-width: 880px) {
-  .anfang__innen { grid-template-columns: minmax(0, 1fr); align-items: start; }
-  .anfang__bild { aspect-ratio: 4 / 3; }
-  .anfang__fakten { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .anfang__innen { grid-template-columns: minmax(0, 1fr); }
+  .anfang__bild { justify-self: center; width: min(100%, 24rem); }
+  .anfang__notiz { left: -0.6rem; bottom: 1.2rem; }
 }
 
 /* ---------- Abschnitte ------------------------------------------------------- */
 
 .abschnitt { padding-block: clamp(4rem, 9vw, 7.5rem); }
-.abschnitt--eng { padding-block: clamp(2.5rem, 5vw, 4rem); }
-.zweispaltig { display: grid; grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr); gap: clamp(2rem, 5vw, 5rem); align-items: center; }
-.text h2 { margin-bottom: 1.1rem; }
-.text > p { font-size: 1.08rem; color: var(--tinte-2); max-width: 34rem; }
+.zweispaltig { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr); gap: clamp(2rem, 5vw, 5rem); align-items: center; }
+.zweispaltig--umgekehrt { grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr); }
+.text h2 { margin-bottom: 1.2rem; }
+.text > p { font-size: 1.1rem; color: var(--tinte-2); max-width: 34rem; }
 .text .knopfreihe { margin-top: 1.8rem; }
-.pfeil { display: inline-flex; align-items: center; gap: 0.5rem; font-weight: 650; text-decoration: none; border-bottom: 1.5px solid currentColor; padding-bottom: 0.1rem; }
-.pfeil::after { content: "→"; transition: transform 0.25s var(--weich); }
-.pfeil:hover::after { transform: translateX(3px); }
-.text .pfeil { margin-top: 1.6rem; }
-.preise { display: grid; gap: 0.35rem; margin: 1.6rem 0 0; max-width: 22rem; }
-.preise div { display: flex; justify-content: space-between; gap: 1rem; padding-bottom: 0.35rem; border-bottom: 1px dotted #c9bb9f; }
-.preise dt { color: var(--tinte-2); }
-.preise dd { margin: 0; font-weight: 650; font-variant-numeric: tabular-nums; white-space: nowrap; }
-.angebot { margin-top: 1.2rem; padding: 0.8rem 1rem; border-left: 3px solid var(--senf); background: #fbf3dd; font-weight: 600; }
-@media (max-width: 880px) { .zweispaltig { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 880px) {
+  .zweispaltig, .zweispaltig--umgekehrt { grid-template-columns: minmax(0, 1fr); }
+}
 
 /* ---------- Die Theke --------------------------------------------------------- */
 
-.theke-abschnitt { display: grid; grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr); gap: clamp(2rem, 5vw, 4.5rem); align-items: center; }
-@media (max-width: 880px) { .theke-abschnitt { grid-template-columns: minmax(0, 1fr); } .theke-abschnitt .theke { order: -1; } }
-.theke { position: relative; border-radius: var(--r); overflow: hidden; box-shadow: 0 24px 50px rgba(28, 36, 32, 0.16); }
+.theke { position: relative; border-radius: var(--r); overflow: hidden; box-shadow: 0 24px 50px rgba(28, 36, 32, 0.18); }
 .theke img { width: 100%; }
-.punkt { position: absolute; left: var(--x); top: var(--y); width: 2.75rem; height: 2.75rem; margin: -1.375rem 0 0 -1.375rem; border-radius: 50%; display: grid; place-items: center; }
-.punkt::before { content: ""; width: 0.8rem; height: 0.8rem; border-radius: 50%; background: var(--weiss); box-shadow: 0 0 0 2.5px var(--ton), 0 2px 6px rgba(0, 0, 0, 0.45); transition: transform 0.2s var(--weich), background-color 0.2s; }
-.punkt:hover::before, .punkt[aria-expanded="true"]::before { transform: scale(1.2); background: var(--senf); }
+.punkt { position: absolute; left: var(--x); top: var(--y); width: 2.6rem; height: 2.6rem; margin: -1.3rem 0 0 -1.3rem; border-radius: 50%; display: grid; place-items: center; }
+.punkt::before { content: ""; width: 0.95rem; height: 0.95rem; border-radius: 50%; background: var(--weiss); box-shadow: 0 0 0 3px rgba(176, 83, 44, 0.9), 0 2px 8px rgba(0, 0, 0, 0.4); transition: transform 0.2s var(--weich); }
+.punkt::after { content: ""; position: absolute; inset: 0.55rem; border-radius: 50%; border: 2px solid rgba(255, 252, 246, 0.85); animation: puls 2.6s ease-out infinite; animation-delay: var(--verzug, 0s); }
+@keyframes puls { from { transform: scale(0.6); opacity: 1; } to { transform: scale(1.6); opacity: 0; } }
+.punkt:hover::before, .punkt[aria-expanded="true"]::before { transform: scale(1.25); background: var(--senf); }
 .zettelchen {
-  position: absolute; z-index: 3; left: var(--x); top: var(--y); transform: translate(-50%, calc(-100% - 0.7rem));
-  background: rgba(255, 252, 246, 0.95); color: var(--tinte); padding: 0.22rem 0.55rem; border-radius: 4px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
-  font-size: 0.8rem; font-weight: 650; line-height: 1.2; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity 0.2s;
+  position: absolute; z-index: 3; left: var(--x); top: var(--y); transform: translate(-50%, calc(-100% - 1.2rem)) rotate(var(--dreh, -2deg));
+  background: var(--weiss); color: var(--tinte); padding: 0.35rem 0.8rem 0.45rem; border-radius: 3px; box-shadow: 0 8px 18px rgba(0, 0, 0, 0.3);
+  font-family: var(--hand); font-size: 1.45rem; font-weight: 700; line-height: 1.05; white-space: nowrap; pointer-events: none;
+  opacity: 0; transition: opacity 0.2s, transform 0.3s var(--weich);
 }
-.zettelchen.da { opacity: 1; }
-.zettelchen--rechts { transform: translate(-88%, calc(-100% - 0.7rem)); }
-.zettelchen--links { transform: translate(-12%, calc(-100% - 0.7rem)); }
-.theke__alle { position: absolute; left: 0.8rem; bottom: 0.8rem; z-index: 4; }
-.theke__alle.knopf { background: rgba(28, 36, 32, 0.78); border-color: transparent; }
+.zettelchen.da { opacity: 1; transform: translate(-50%, calc(-100% - 1.6rem)) rotate(var(--dreh, -2deg)); }
+.zettelchen--rechts { transform: translate(-85%, calc(-100% - 1.2rem)) rotate(var(--dreh, -2deg)); }
+.zettelchen--rechts.da { transform: translate(-85%, calc(-100% - 1.6rem)) rotate(var(--dreh, -2deg)); }
+.zettelchen--links { transform: translate(-15%, calc(-100% - 1.2rem)) rotate(var(--dreh, -2deg)); }
+.zettelchen--links.da { transform: translate(-15%, calc(-100% - 1.6rem)) rotate(var(--dreh, -2deg)); }
+.theke__alle { position: absolute; left: 1rem; bottom: 1rem; z-index: 4; }
+.theke__alle.knopf { background: rgba(28, 36, 32, 0.75); border-color: transparent; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
 .theke__alle.knopf:hover { background: var(--tinte); }
+.preiszeile { display: grid; gap: 0.15rem; margin-top: 1.8rem; padding-top: 1.4rem; border-top: 1px dashed var(--linie); }
+.preiszeile div { display: flex; justify-content: space-between; gap: 1rem; max-width: 22rem; }
+.preiszeile span:last-child { font-variant-numeric: tabular-nums; font-weight: 600; }
 
-/* ---------- Frühstück ----------------------------------------------------------- */
+/* ---------- Morgens ----------------------------------------------------------- */
 
 .morgens { background: var(--samt); color: var(--kreide); }
-.morgens .text > p { color: rgba(240, 236, 225, 0.84); }
-.morgens__innen { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); gap: clamp(2rem, 5vw, 5rem); align-items: center; }
-@media (max-width: 880px) { .morgens__innen { grid-template-columns: minmax(0, 1fr); } }
-.bilder3 { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); grid-template-rows: 1fr 1fr; gap: 0.8rem; aspect-ratio: 5 / 4; }
-.bilder3 figure { margin: 0; border-radius: 10px; overflow: hidden; min-height: 0; }
-.bilder3__gross { grid-row: 1 / 3; }
-.bilder3 img { width: 100%; height: 100%; object-fit: cover; }
-.bilder4 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.8rem; }
-.bilder4 figure { margin: 0; border-radius: 10px; overflow: hidden; aspect-ratio: 1; }
-.bilder4 img { width: 100%; height: 100%; object-fit: cover; }
+.morgens .text > p { color: rgba(240, 236, 225, 0.82); }
+.collage { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); grid-auto-rows: minmax(0, auto); gap: 0.9rem; }
+.collage figure { margin: 0; overflow: hidden; border-radius: 10px; position: relative; }
+.collage img { width: 100%; height: 100%; object-fit: cover; transition: transform 1.2s var(--weich); }
+.collage figure:hover img { transform: scale(1.04); }
+.collage__a { grid-column: 1 / 5; aspect-ratio: 4 / 3.4; }
+.collage__b { grid-column: 5 / 7; align-self: end; aspect-ratio: 3 / 4; }
+.collage__c { grid-column: 2 / 4; aspect-ratio: 1; }
+.collage__d { grid-column: 4 / 7; aspect-ratio: 4 / 3; }
+.collage figcaption { position: absolute; left: 0.7rem; bottom: 0.5rem; font-family: var(--hand); font-size: 1.35rem; color: #fff; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6); }
 
 /* ---------- Tafel ------------------------------------------------------------- */
 
@@ -223,48 +232,44 @@ address { font-style: normal; }
 
 /* ---------- Catering-Band ----------------------------------------------------- */
 
-.band { position: relative; color: var(--kreide); min-height: clamp(26rem, 64vh, 38rem); display: grid; align-items: end; overflow: hidden; }
+.band { position: relative; color: var(--kreide); min-height: clamp(28rem, 70vh, 40rem); display: grid; align-items: end; overflow: hidden; }
 .band__bild { position: absolute; inset: 0; }
 .band__bild img { width: 100%; height: 100%; object-fit: cover; }
-.band::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(14, 22, 18, 0.86) 0%, rgba(14, 22, 18, 0.55) 45%, rgba(14, 22, 18, 0.1) 100%); }
+.band::after { content: ""; position: absolute; inset: 0; background: linear-gradient(0deg, rgba(14, 22, 18, 0.88) 0%, rgba(14, 22, 18, 0.35) 55%, rgba(14, 22, 18, 0.05) 100%); }
 .band .huelle { position: relative; z-index: 1; padding-block: clamp(2.5rem, 6vw, 4.5rem); }
 .band h2 { max-width: 42rem; margin-bottom: 1rem; }
-.band p { max-width: 34rem; color: rgba(240, 236, 225, 0.9); font-size: 1.08rem; }
+.band p { max-width: 36rem; color: rgba(240, 236, 225, 0.88); font-size: 1.1rem; }
 .band .knopfreihe { margin-top: 1.6rem; }
-@media (max-width: 700px) { .band::after { background: linear-gradient(0deg, rgba(14, 22, 18, 0.9) 0%, rgba(14, 22, 18, 0.5) 60%, rgba(14, 22, 18, 0.15) 100%); } }
 
-/* ---------- Zwei kurze Hinweise ------------------------------------------------- */
+/* ---------- Kleine Zettel (Too Good To Go, Hinweise) ----------------------------- */
 
-.zwei-hinweise { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2rem clamp(2rem, 6vw, 5rem); }
-.zwei-hinweise > div { padding-top: 1.3rem; border-top: 2px solid var(--tinte); }
-.zwei-hinweise h3 { margin-bottom: 0.6rem; }
-.zwei-hinweise p { color: var(--tinte-2); max-width: 30rem; }
-.zwei-hinweise .pfeil { margin-top: 0.4rem; }
-@media (max-width: 700px) { .zwei-hinweise { grid-template-columns: minmax(0, 1fr); } }
+.notizzettel { position: relative; background: var(--weiss); padding: 1.5rem 1.6rem 1.6rem; border-radius: 4px; box-shadow: 0 16px 34px rgba(28, 36, 32, 0.12); transform: rotate(-1deg); max-width: 34rem; }
+.notizzettel::before { content: ""; position: absolute; top: -0.6rem; left: 2rem; width: 4.5rem; height: 1.2rem; background: rgba(220, 170, 54, 0.65); transform: rotate(-3deg); }
+.notizzettel h3 { font-family: var(--hand); font-size: 1.9rem; font-weight: 700; margin-bottom: 0.4rem; }
+.notizzettel p { color: var(--tinte-2); }
 
-/* ---------- Anfahrt ------------------------------------------------------------- */
+/* ---------- Besuch ------------------------------------------------------------- */
 
-.besuch-abschnitt { background: var(--papier-2); }
-.besuch { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: clamp(2rem, 5vw, 4.5rem); align-items: center; }
-.besuch h2 { margin-bottom: 1.2rem; }
-.besuch__adresse { font-family: var(--serif); font-size: clamp(1.4rem, 2.4vw, 1.8rem); line-height: 1.25; margin-bottom: 0.4rem; }
-.preise--zeiten { margin-top: 1.2rem; }
-.besuch__status { font-weight: 650; margin-top: 0.9rem; }
-.besuch .knopfreihe { margin-top: 1.6rem; }
-.landkarte { position: relative; border-radius: var(--r); overflow: hidden; aspect-ratio: 5 / 4; background: var(--tafel); }
-.landkarte__bild { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: saturate(0.85); }
-.landkarte__vor { position: absolute; left: 0; right: 0; bottom: 0; display: grid; justify-items: start; gap: 0.6rem; padding: 3rem 1.3rem 1.2rem; background: linear-gradient(0deg, rgba(14, 22, 18, 0.85), rgba(14, 22, 18, 0)); color: var(--kreide); }
-.landkarte__vor p { margin: 0; font-size: 0.85rem; max-width: 26rem; opacity: 0.9; }
-.landkarte iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.besuch { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(2rem, 5vw, 4.5rem); align-items: start; }
+.besuch h2 { margin-bottom: 1.3rem; }
+.zeiten { display: grid; grid-template-columns: auto auto; justify-content: start; gap: 0.3rem 2rem; margin: 1.4rem 0; font-size: 1.05rem; }
+.zeiten dt { color: var(--tinte-2); }
+.zeiten dd { margin: 0; font-variant-numeric: tabular-nums; font-weight: 600; }
+.landkarte { border-radius: var(--r); overflow: hidden; aspect-ratio: 4 / 3; background: var(--papier-2); border: 1px solid var(--linie); }
+.landkarte iframe { width: 100%; height: 100%; border: 0; }
+.landkarte__vor { height: 100%; display: grid; place-content: center; justify-items: center; gap: 0.6rem; text-align: center; padding: 1.5rem; }
+.landkarte__vor p { max-width: 24rem; font-size: 0.9rem; color: var(--tinte-2); }
+.besuch__foto { margin: 1.2rem 0 0; border-radius: var(--r); overflow: hidden; }
+.besuch__foto figcaption { font-size: 0.9rem; color: var(--tinte-2); padding-top: 0.5rem; }
 @media (max-width: 880px) { .besuch { grid-template-columns: minmax(0, 1fr); } }
 
 /* ---------- Fuß ---------------------------------------------------------------- */
 
-.fuss { background: var(--tafel); color: rgba(240, 236, 225, 0.85); padding-top: clamp(3rem, 6vw, 4.5rem); margin-top: 0; border-top: 10px solid transparent; border-image: repeating-linear-gradient(90deg, #2e8a7c 0 40px, #f0ece1 40px 42px) 10; }
+.fuss { background: var(--tafel); color: rgba(240, 236, 225, 0.85); padding-top: clamp(3rem, 6vw, 4.5rem); margin-top: 0; }
 .fuss__innen { display: grid; grid-template-columns: 1.4fr repeat(3, 1fr); gap: 2rem; }
 .fuss h2 { font-family: var(--sans); font-size: 0.82rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--kreide); margin-bottom: 0.8rem; }
 .fuss__marke .marke__wort { display: block; color: var(--kreide); font-size: 2rem; }
-.fuss__marke .marke__klein { color: #e9c56a; display: block; }
+.fuss__marke .marke__klein { color: #f5d37a; display: block; }
 .fuss__marke p { margin-top: 0.8rem; max-width: 18rem; }
 .fuss a { color: var(--kreide); }
 .fuss li + li { margin-top: 0.35rem; }
@@ -400,6 +405,7 @@ fieldset > legend { padding: 0; margin-bottom: 0.5rem; }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  .zeile, .versand { animation: none; }
+  .schild, .schild.schwingt, .schild:hover, .punkt::after, .zeile, .versand { animation: none; }
   .js .zeigen { opacity: 1; transform: none; transition: none; }
+  .collage img { transition: none; }
 }
