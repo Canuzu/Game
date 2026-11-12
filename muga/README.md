@@ -76,7 +76,8 @@ Barzahlung bei Abholung, Bestätigung mit Bankdaten. Der Server rechnet jede
 Bestellung selbst nach. Preise aus dem Browser zählen nicht.
 
 **Größenberater** für Anzüge (normale, untersetzte, schlanke Größen) und Hemden
-samt den Maßtabellen von MUGA. **Stil-Finder**: vier Fragen, dann passende
+samt den Maßtabellen von MUGA. Dazu der **Passform-Check**: fünf Stellen an der
+Schneiderpuppe, an denen man erkennt, ob ein Sakko sitzt. **Stil-Finder**: vier Fragen, dann passende
 Modelle. **Merkliste**, die sich mit zum Termin nehmen lässt.
 
 **Verwaltung** unter `verwaltung.html` (nur mit Server): Termine, Bestellungen

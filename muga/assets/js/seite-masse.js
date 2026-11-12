@@ -214,5 +214,38 @@
       zeige(+ziel2.dataset.tabelle);
     });
     zeige(0);
+
+    /* ---- Passform: fünf Stellen an der Schneiderpuppe ---- */
+    var puppe = document.getElementById('sitz-puppe');
+    if (puppe && M.anzug) {
+      M.anzug(puppe, { look: { schnitt: 'anzug', stoff: '#34363c', muster: 'uni', weste: null, hals: 'krawatte', halsFarbe: '#7d1820', tuch: '#ffffff' } });
+      var STELLEN = [[352, 134], [207, 101], [254, 322], [121, 450], [338, 470]], NS = 'http://www.w3.org/2000/svg';
+      var marken = STELLEN.map(function (s, i) {
+        var g = document.createElementNS(NS, 'g');
+        g.setAttribute('class', 'sitz__marke');
+        g.setAttribute('transform', 'translate(' + s[0] + ' ' + s[1] + ')');
+        g.setAttribute('data-sitz', i);
+        g.innerHTML = '<circle class="sitz__ring" r="17"/><circle class="sitz__kreis" r="12.500"/><text y="4.800" text-anchor="middle">' + (i + 1) + '</text>';
+        puppe.appendChild(g);
+        return g;
+      });
+      var punkte = M.$$('#sitz-liste [data-sitz]');
+      var waehle = function (i) {
+        punkte.forEach(function (p, n) { p.setAttribute('aria-pressed', n === i); });
+        marken.forEach(function (m, n) { m.classList.toggle('an', n === i); });
+      };
+      punkte.forEach(function (p, i) {
+        p.addEventListener('click', function () { waehle(i); });
+        p.addEventListener('pointerenter', function (e) { if (e.pointerType === 'mouse') waehle(i); });
+        p.addEventListener('focus', function () { waehle(i); });
+      });
+      puppe.addEventListener('click', function (e) {
+        var m = e.target.closest('[data-sitz]');
+        if (!m) return;
+        waehle(+m.dataset.sitz);
+        punkte[+m.dataset.sitz].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      });
+      waehle(0);
+    }
   });
 })();

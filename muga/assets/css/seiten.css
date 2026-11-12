@@ -247,6 +247,35 @@
 .textknopf { font-weight: 600; font-size: 0.9rem; text-decoration: underline; text-underline-offset: 0.22em; text-decoration-color: var(--messing); }
 .textknopf:hover { color: var(--rot); }
 
+/* ---------- Passform: fünf Stellen an der Schneiderpuppe --------------------- */
+
+.sitz { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); gap: clamp(2rem, 5vw, 5rem); align-items: center; }
+.sitz__liste { display: grid; gap: 0.4rem; margin-bottom: 1.4rem; }
+.sitz__punkt { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 1rem; align-items: start; width: 100%; text-align: left; padding: 0.9rem 1rem; border-radius: var(--r-m); border: 1px solid transparent; transition: background-color 0.25s, border-color 0.25s, box-shadow 0.25s; }
+.sitz__punkt strong { display: block; font-family: var(--serif); font-weight: 420; font-size: 1.25rem; line-height: 1.2; }
+.sitz__punkt span span { display: block; margin-top: 0.25rem; color: var(--stein); font-size: 0.95rem; line-height: 1.5; }
+.sitz__nr { display: inline-grid; place-items: center; width: 2rem; height: 2rem; border-radius: 50%; border: 1px solid var(--messing); background: var(--kreide); color: var(--rot); font-family: var(--serif); font-style: italic; transition: background-color 0.25s, color 0.25s, border-color 0.25s; }
+.sitz__punkt:hover { background: rgba(255, 253, 249, 0.6); }
+.sitz__punkt[aria-pressed="true"] { background: var(--kreide); border-color: var(--linie); box-shadow: var(--schatten-s); }
+.sitz__punkt[aria-pressed="true"] .sitz__nr { background: var(--rot); border-color: var(--rot); color: #fff; }
+.sitz__buehne { position: relative; display: grid; place-items: center; }
+.sitz__buehne::before { content: ""; position: absolute; left: 50%; top: 46%; width: min(32rem, 100%); aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(closest-side, rgba(255, 253, 249, 0.95) 0%, rgba(255, 253, 249, 0.6) 50%, rgba(255, 253, 249, 0) 100%); }
+.sitz__buehne svg { position: relative; width: auto; height: min(70vh, 36rem); max-width: 100%; overflow: visible; }
+.sitz__marke { cursor: pointer; }
+.sitz__kreis { fill: var(--kreide); stroke: var(--messing); stroke-width: 1; transition: fill 0.25s, stroke 0.25s; }
+.sitz__marke text { font-family: var(--serif); font-style: italic; font-size: 14px; fill: var(--rot); pointer-events: none; transition: fill 0.25s; }
+.sitz__ring { fill: none; stroke: #bd1e27; stroke-width: 1.5; opacity: 0; transform-box: fill-box; transform-origin: center; }
+.sitz__marke.an .sitz__kreis { fill: #bd1e27; stroke: #bd1e27; }
+.sitz__marke.an text { fill: #fff; }
+.sitz__marke.an .sitz__ring { animation: sitz-puls 1.8s ease-out infinite; }
+@keyframes sitz-puls { from { transform: scale(0.75); opacity: 0.9; } to { transform: scale(1.5); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .sitz__marke.an .sitz__ring { animation: none; opacity: 0.6; } }
+@media (max-width: 860px) {
+  .sitz { grid-template-columns: minmax(0, 1fr); gap: 1.5rem; }
+  .sitz__buehne { order: -1; }
+  .sitz__buehne svg { height: min(52svh, 26rem); }
+}
+
 /* ---------- Größenberater --------------------------------------------------- */
 
 .berater { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr); border-radius: var(--r-l); overflow: hidden; border: 1px solid var(--linie); background: var(--kreide); }
