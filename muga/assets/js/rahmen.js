@@ -70,6 +70,22 @@
     '</a>';
   }
 
+  /* Wer im Hochzeits-Fahrplan seinen Tag genannt hat, sieht oben auf jeder Seite,
+   * wie viele Tage es noch sind. Sonst stehen dort die Vorteile. */
+  function mitteHtml() {
+    var tag = M.speicher.lies('hochzeit', null), heute = M.zeit.jetzt().datum;
+    if (typeof tag === 'string' && M.zeit.teile(tag) && tag >= heute) {
+      var a = M.zeit.teile(heute), b = M.zeit.teile(tag);
+      var tage = Math.round((Date.UTC(b.jahr, b.monat - 1, b.tag) - Date.UTC(a.jahr, a.monat - 1, a.tag)) / 86400000);
+      return (tage === 0 ? 'Heute ist Ihr großer Tag' : (tage === 1 ? 'Noch 1 Tag bis zu Ihrer Hochzeit' : 'Noch ' + tage + ' Tage bis zu Ihrer Hochzeit')) +
+        ' · <a href="index.html#fahrplan">Zum Fahrplan</a>';
+    }
+    return 'Direkt vom Hersteller · Kostenloser Versand ab 50,01&nbsp;€ in Deutschland';
+  }
+  M.bei('hochzeit', function () {
+    M.$$('[data-leistenmitte]').forEach(function (el) { el.innerHTML = mitteHtml(); });
+  });
+
   function statusHtml() {
     var s = M.zeit.status();
     return '<span class="punkt' + (s.offen ? ' offen' : '') + '"></span><span><strong>' + esc(s.kurz) + '</strong>' +
@@ -110,7 +126,7 @@
     '<div class="leiste nacht" role="region" aria-label="Öffnungsstatus und Telefon">' +
       '<div class="huelle leiste__innen">' +
         '<a class="leiste__status" href="besuch.html" data-oeffnung>' + statusHtml() + '</a>' +
-        '<p class="leiste__mitte">Direkt vom Hersteller · Kostenloser Versand ab 50,01&nbsp;€ in Deutschland</p>' +
+        '<p class="leiste__mitte" data-leistenmitte>' + mitteHtml() + '</p>' +
         '<a class="leiste__tel" href="tel:' + C.telefonLink + '" aria-label="Anrufen: ' + esc(C.telefon) + '">' + sym('telefon') + '<span>' + esc(C.telefon) + '</span></a>' +
       '</div>' +
     '</div>' +

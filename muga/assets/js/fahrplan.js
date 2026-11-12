@@ -21,8 +21,8 @@
       var d = M.speicher.lies('hochzeit', null);
       return typeof d === 'string' && Z.teile(d) && d >= Z.jetzt().datum ? d : null;
     },
-    merke: function (datum) { M.speicher.schreib('hochzeit', datum); },
-    vergiss: function () { M.speicher.weg('hochzeit'); },
+    merke: function (datum) { M.speicher.schreib('hochzeit', datum); if (M.melde) M.melde('hochzeit', datum); },
+    vergiss: function () { M.speicher.weg('hochzeit'); if (M.melde) M.melde('hochzeit', null); },
 
     tageBis: function (datum, heute) {
       var h = Z.teile(heute || Z.jetzt().datum), d = Z.teile(datum);
