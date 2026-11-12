@@ -103,7 +103,7 @@
           '</ul></div>';
         }).join('') +
         '<a class="mega__tafel" href="atelier.html">' +
-          '<span class="vorspann">Das Atelier</span>' +
+          
           '<span class="mega__tafeltitel">Entwerfen Sie Ihren Look an der Schneiderpuppe</span>' +
           '<span class="faden">Atelier öffnen ' + sym('pfeil') + '</span>' +
         '</a>' +
@@ -361,8 +361,8 @@
     return '<footer class="fuss nacht' + (ohneAuftakt ? ' fuss--knapp' : '') + '">' +
       '<div class="huelle">' +
         (ohneAuftakt ? '' : '<div class="fuss__auftakt">' +
-          '<div><p class="vorspann">Persönlich in Köln-Merheim</p>' +
-            '<p class="fuss__ruf">Am besten sitzt ein Anzug,<br>den man <em>anprobiert</em> hat.</p></div>' +
+          '<div>' +
+            '<p class="fuss__ruf">Am besten sitzt ein Anzug,<br>den man anprobiert hat.</p></div>' +
           '<div class="knopfreihe"><a class="knopf knopf--hell" href="termin.html">' + sym('kalender') + 'Termin buchen</a>' +
             '<a class="knopf knopf--hell-linie" href="tel:' + C.telefonLink + '">' + sym('telefon') + esc(C.telefon) + '</a></div>' +
         '</div>') +

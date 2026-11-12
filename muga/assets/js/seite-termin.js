@@ -343,7 +343,7 @@
     var route = 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(C.strasse + ', ' + C.plz + ' ' + C.ort);
     ziel.innerHTML = '<div class="bestaetigung">' +
       M.nahtknopf(server ? 'haken' : 'post') +
-      '<h2 tabindex="-1" id="fertig-titel">' + (server ? 'Ihr Termin ist <em>eingetragen.</em>' : 'Fast geschafft: Bitte senden Sie uns <em>Ihren Wunsch.</em>') + '</h2>' +
+      '<h2 tabindex="-1" id="fertig-titel">' + (server ? 'Ihr Termin ist eingetragen' : 'Bitte senden Sie uns Ihren Terminwunsch') + '</h2>' +
       '<p class="einleitung">' + (server
         ? 'Wir freuen uns auf Sie, ' + esc(t.vorname) + '. Falls wir vorab etwas klären müssen, rufen wir Sie an.'
         : 'Ihr Wunschtermin ist vorgemerkt. Damit er bei uns ankommt, senden Sie ihn bitte mit einem Klick per E-Mail. Wir bestätigen Ihnen den Termin.') + '</p>' +

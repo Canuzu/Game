@@ -139,7 +139,7 @@
       return;
     }
     ziel.innerHTML = '<section class="finder__ergebnis">' +
-      '<div class="stapel"><h2 tabindex="-1" id="finder-titel">Das passt <em>zu Ihnen.</em></h2>' +
+      '<div class="stapel"><h2 tabindex="-1" id="finder-titel">Unsere Vorschläge</h2>' +
         '<div class="finder__zusammen">' + marken + '</div>' +
         (e.erweitert ? '<p class="hinweis">' + sym('info') + '<span>In Ihrem Budget gab es zu wenig Auswahl. Wir zeigen deshalb auch Modelle darüber.</span></p>' : '') +
         (e.groesse ? '<p class="klein leise">Modelle in Ihrer Größe ' + esc(e.groesse) + ' aus dem Größenberater stehen vorn.</p>' : '') +
