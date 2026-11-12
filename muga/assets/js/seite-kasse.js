@@ -223,7 +223,7 @@
     var ziel = el('bestellt');
     ziel.innerHTML = '<div class="bestaetigung">' +
       M.nahtknopf(b.server ? 'haken' : 'post') +
-      '<h1 tabindex="-1" id="bestellt-titel">' + (b.server ? 'Vielen Dank für <em>Ihre Bestellung.</em>' : 'Fast geschafft: Bitte senden Sie uns <em>Ihre Bestellung.</em>') + '</h1>' +
+      '<h1 tabindex="-1" id="bestellt-titel">' + (b.server ? 'Vielen Dank für Ihre Bestellung' : 'Bitte senden Sie uns Ihre Bestellung') + '</h1>' +
       '<p class="einleitung">' + (b.server
         ? 'Ihre Bestellung ist bei uns eingegangen, ' + esc(k.vorname) + '.'
         : 'Ihre Bestellung ist vorbereitet. Damit sie bei uns ankommt, senden Sie sie bitte mit einem Klick per E-Mail. Wir bestätigen den Eingang.') + '</p>' +
