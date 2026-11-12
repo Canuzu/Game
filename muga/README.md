@@ -45,7 +45,8 @@ Anzug-Artikelseite führt ein Verweis mit Schnitt, Farbe und Muster hierher.
 wann Beratung, Anprobe, Feinschliff und Abholung sinnvoll sind. Jeder Schritt
 liegt auf einem geöffneten Tag und führt direkt in die Buchung, dazu gibt es
 eine Kalenderdatei. Bei knapper Zeit legt der Plan Schritte zusammen. Das
-Datum merkt sich nur der Browser des Kunden.
+Datum merkt sich nur der Browser des Kunden. Solange es gemerkt ist, zählt die
+Leiste über dem Kopf auf jeder Seite die Tage bis zur Hochzeit.
 
 **Stilkunde** auf der Startseite: Beim Rollen wechselt die Schneiderpuppe vom
 Anzug über Gehrock, Cutaway und Smoking zum Stehkragen, mit Hinweisen wie auf
@@ -155,7 +156,7 @@ gezeichneten Zwischenbilder.
 
 ```
 npm test                 # 26 Tests: Öffnungszeiten, Feiertage, freie Zeiten, Versand, Fahrplan, Server
-npm run test:browser     # 88 Prüfungen in einem echten Browser, Desktop und Handy
+npm run test:browser     # 92 Prüfungen in einem echten Browser, Desktop und Handy
 ```
 
 Die Oberflächentests brauchen Playwright

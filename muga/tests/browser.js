@@ -70,8 +70,10 @@ async function lauf(browser, basis, breite, hoehe) {
   pruefe(name + ' Fahrplan zeigt fünf Stationen', (await page.locator('#fahrplan-ergebnis .halt').count()) === 5);
   pruefe(name + ' Fahrplan zählt die Tage', (await page.textContent('#fahrplan-ergebnis [data-tage]')).trim() === '100');
   pruefe(name + ' Fahrplan führt in die Buchung', ((await page.getAttribute('#fahrplan-ergebnis .halt a', 'href')) || '').startsWith('termin.html?art=hochzeit&datum='));
+  pruefe(name + ' Kopfleiste zählt die Tage bis zur Hochzeit', (await page.textContent('[data-leistenmitte]')).includes('Noch 100 Tage bis zu Ihrer Hochzeit'));
   await page.click('[data-fahrplan-weg]');
   pruefe(name + ' Fahrplan lässt sich vergessen', await page.isHidden('#fahrplan-ergebnis') && (await page.evaluate(() => window.MUGA.fahrplan.gemerkt())) === null);
+  pruefe(name + ' Kopfleiste zeigt danach wieder die Vorteile', (await page.textContent('[data-leistenmitte]')).includes('Direkt vom Hersteller'));
 
   /* ---- Atelier ---- */
   await gehe('/atelier.html');

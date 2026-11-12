@@ -404,7 +404,7 @@
   .atelier__buehne {
     top: var(--kopfhoehe); z-index: 5; margin-inline: calc(var(--rand) * -1); padding: 1.1rem var(--rand) 1.2rem;
     grid-template-columns: auto minmax(0, 1fr); justify-items: start; align-items: center; gap: 0.6rem 1.1rem;
-    background: linear-gradient(var(--nacht) 0, var(--nacht) 86%, rgba(23, 20, 17, 0) 100%);
+    background: linear-gradient(var(--nacht) 0, var(--nacht) 93%, rgba(23, 20, 17, 0) 100%);
   }
   .atelier__nische { width: auto; height: min(33svh, 16.5rem); grid-row: 1 / span 2; margin: 0.4rem 0 0.4rem 0.5rem; }
   .atelier__beschreibung { text-align: left; font-size: 0.95rem; min-height: 0; align-self: end; }
