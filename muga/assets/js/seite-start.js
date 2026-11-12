@@ -115,6 +115,14 @@
 
   var STILE = ['anzug', 'gehrock', 'cutaway', 'smoking', 'stehkragen'];
   var NAMEN = ['Anzug', 'Gehrock', 'Cutaway', 'Smoking', 'Stehkragen'];
+  /* Woran man den Schnitt erkennt: Seite, Punkt an der Puppe (in ihren Zeichenmaßen), Beschriftung */
+  var HINWEISE = [
+    [['l', 167, 166, 'Fallendes Revers'], ['r', 247, 346, 'Zwei Knöpfe']],
+    [['l', 160, 339, 'Taillennaht'], ['r', 349, 596, 'Knielang']],
+    [['l', 197, 472, 'Schräg geschnitten'], ['r', 337, 592, 'Lange Schöße']],
+    [['l', 184, 192, 'Schalkragen mit Seide'], ['r', 247, 337, 'Ein Knopf']],
+    [['l', 212, 98, 'Stehkragen'], ['r', 247, 250, 'Durchgeknöpft']]
+  ];
 
   function stilkunde() {
     var abschnitt = document.getElementById('stilkunde'), svg = document.getElementById('stilkunde-puppe');
@@ -124,6 +132,24 @@
     var reiter = M.$$('[data-stil]', abschnitt), tafeln = M.$$('.stil', abschnitt), name = document.getElementById('stilkunde-name');
     var aktiv = 0, lauf = false;
 
+    /* Hinweise wie auf einer Schnittzeichnung: Punkt, gestrichelte Linie, Beschriftung */
+    var NS = 'http://www.w3.org/2000/svg', gruppe = document.createElementNS(NS, 'g'), hinweise = [];
+    gruppe.setAttribute('class', 'hinweise');
+    gruppe.setAttribute('aria-hidden', 'true');
+    HINWEISE.forEach(function (satz, nr) {
+      var g = document.createElementNS(NS, 'g');
+      g.setAttribute('class', 'hinweis' + (nr === 0 ? ' an' : ''));
+      g.innerHTML = satz.map(function (h) {
+        var links = h[0] === 'l', x = h[1], y = h[2], knick = links ? -14 : 14, ende = links ? 84 : 396;
+        return '<path class="hinweis__linie" d="M' + x + ' ' + y + 'l' + knick + ' -14H' + ende + '"/>' +
+          '<circle class="hinweis__punkt" cx="' + x + '" cy="' + y + '" r="3.4"/>' +
+          '<text class="hinweis__text" x="' + (links ? ende - 7 : ende + 7) + '" y="' + (y - 10) + '" text-anchor="' + (links ? 'end' : 'start') + '">' + M.esc(h[3]) + '</text>';
+      }).join('');
+      gruppe.appendChild(g);
+      hinweise.push(g);
+    });
+    svg.appendChild(gruppe);
+
     function markiere(i) {
       if (i === aktiv) return;
       aktiv = i;
@@ -132,6 +158,7 @@
         r.tabIndex = n === i ? 0 : -1;
       });
       tafeln.forEach(function (t, n) { t.classList.toggle('aktiv', n === i); });
+      hinweise.forEach(function (h, n) { h.classList.toggle('an', n === i); });
       name.textContent = NAMEN[i];
       var knopf = reiter[i], leiste = knopf.parentNode;
       if (leiste.scrollWidth > leiste.clientWidth) {
@@ -163,7 +190,7 @@
       if (!lauf) return;
       var f = weg() * (STILE.length - 1), i = Math.min(STILE.length - 2, Math.floor(f)), rest = f - i;
       /* Jeder Schnitt bleibt eine Weile stehen, dazwischen wird übergeblendet */
-      var t = Math.max(0, Math.min(1, (rest - 0.28) / 0.44));
+      var t = Math.max(0, Math.min(1, (rest - 0.3) / 0.4));
       t = t * t * (3 - 2 * t);
       puppe.zwischen(looks[i], looks[i + 1], t);
       markiere(Math.round(f));

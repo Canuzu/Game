@@ -5,7 +5,7 @@
   "private": true,
   "scripts": {
     "start": "node server.js",
-    "test": "node --test tests/logik.test.js tests/server.test.js",
+    "test": "node --test tests/logik.test.js tests/fahrplan.test.js tests/server.test.js",
     "test:browser": "node tests/browser.js"
   },
   "engines": { "node": ">=18" }
