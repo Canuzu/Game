@@ -105,17 +105,17 @@
   /* Beschriftungen auf dem Foto der Theke, in Prozent der Bildbreite und -höhe.
    * Gilt nur für dieses Foto: Die Theke wechselt jeden Tag. */
   var THEKE = [
-    { x: 9, y: 20, name: 'Brownies' },
-    { x: 34, y: 29, name: 'Wassermelone mit Feta' },
-    { x: 51, y: 31, name: 'Quiche' },
-    { x: 20, y: 44, name: 'Linsensalat' },
-    { x: 37, y: 52, name: 'Kichererbsen-Eintopf' },
-    { x: 63, y: 46, name: 'Gegrilltes Gemüse' },
-    { x: 90, y: 43, name: 'Falafel' },
-    { x: 48, y: 66, name: 'Krautsalat' },
-    { x: 77, y: 60, name: 'Schnitzel mit Zitrone' },
-    { x: 60, y: 77, name: 'Tomate, Rucola, Gurke' },
-    { x: 82, y: 91, name: 'Bohnensalat' }
+    { x: 9, y: 31, name: 'Brownies' },
+    { x: 34, y: 37, name: 'Wassermelone mit Feta' },
+    { x: 50.5, y: 38.5, name: 'Quiche' },
+    { x: 21, y: 47, name: 'Linsensalat' },
+    { x: 37, y: 50, name: 'Kichererbsen-Eintopf' },
+    { x: 63, y: 48, name: 'Gegrilltes Gemüse' },
+    { x: 90, y: 46, name: 'Falafel' },
+    { x: 49, y: 60, name: 'Krautsalat' },
+    { x: 77, y: 57, name: 'Schnitzel mit Zitrone' },
+    { x: 60, y: 66, name: 'Tomate, Rucola, Gurke' },
+    { x: 82, y: 79, name: 'Bohnensalat' }
   ];
 
   /* ---------- Zeit, immer in Kölner Zeit ------------------------------------ */
