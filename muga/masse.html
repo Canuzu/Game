@@ -14,6 +14,7 @@
 <script src="assets/js/config.js"></script>
 <script src="assets/js/kern.js"></script>
 <script src="assets/js/rahmen.js"></script>
+<script src="assets/js/anzug.js" defer></script>
 <script src="assets/js/seite-masse.js" defer></script>
 </head>
 <body>
@@ -111,6 +112,27 @@
         <li><h3>Bundumfang</h3><p>Dort messen, wo der Hosenbund sitzt. Nicht den Bauch einziehen, sonst kneift die Hose später.</p></li>
         <li><h3>Körpergröße</h3><p>Ohne Schuhe gerade an eine Wand stellen, den Blick nach vorn. Die Körpergröße entscheidet über normale, untersetzte oder schlanke Größe.</p></li>
       </ol>
+    </div>
+  </section>
+
+  <!-- ===== Passform: fünf Stellen an der Schneiderpuppe ===== -->
+  <section class="abschnitt abschnitt--leinen" id="sitz">
+    <div class="huelle sitz">
+      <div class="sitz__text">
+        <div class="kopfzeile"><p class="vorspann">Passform</p><h2>Sitzt er? Fünf Blicke <em>in den Spiegel.</em></h2>
+          <p class="einleitung">Die Größe ist das eine, der Sitz das andere. An diesen fünf Stellen erkennen Sie, ob ein Sakko passt.</p></div>
+        <ol class="sitz__liste" id="sitz-liste">
+          <li><button class="sitz__punkt" type="button" data-sitz="0" aria-pressed="true"><span class="sitz__nr" aria-hidden="true">1</span><span><strong>Schulter</strong><span>Die Schulternaht endet dort, wo Ihre Schulter endet. Steht sie über, ist das Sakko zu groß. Die Schulter lässt sich kaum ändern, deshalb zählt sie zuerst.</span></span></button></li>
+          <li><button class="sitz__punkt" type="button" data-sitz="1" aria-pressed="false"><span class="sitz__nr" aria-hidden="true">2</span><span><strong>Kragen</strong><span>Der Sakkokragen liegt am Hemdkragen an, ohne abzustehen. Vom Hemdkragen bleibt im Nacken etwa ein Fingerbreit sichtbar.</span></span></button></li>
+          <li><button class="sitz__punkt" type="button" data-sitz="2" aria-pressed="false"><span class="sitz__nr" aria-hidden="true">3</span><span><strong>Knopf</strong><span>Geschlossen liegt das Sakko glatt an. Zieht der Stoff um den Knopf Falten wie ein X, ist es zu eng. Bei zwei Knöpfen bleibt der untere offen.</span></span></button></li>
+          <li><button class="sitz__punkt" type="button" data-sitz="3" aria-pressed="false"><span class="sitz__nr" aria-hidden="true">4</span><span><strong>Ärmel</strong><span>Der Ärmel endet am Handgelenk. Darunter schaut die Hemdmanschette gut einen Zentimeter hervor.</span></span></button></li>
+          <li><button class="sitz__punkt" type="button" data-sitz="4" aria-pressed="false"><span class="sitz__nr" aria-hidden="true">5</span><span><strong>Länge</strong><span>Das Sakko bedeckt das Gesäß. Als Faustregel endet es etwa an der Daumenwurzel, wenn die Arme locker hängen.</span></span></button></li>
+        </ol>
+        <p class="klein leise">Das sind Faustregeln, die fast immer gelten. Was bei Ihnen richtig ist, sehen wir gemeinsam bei der <a href="termin.html?art=anprobe">Anprobe</a>.</p>
+      </div>
+      <div class="sitz__buehne">
+        <svg id="sitz-puppe" viewBox="0 0 480 680" role="img" aria-label="Schneiderpuppe im Anzug mit fünf nummerierten Stellen: Schulter, Kragen, Knopf, Ärmel und Länge"></svg>
+      </div>
     </div>
   </section>
 

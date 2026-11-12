@@ -145,7 +145,6 @@
 
 .faden-bahn { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; overflow: visible; }
 .faden-bahn path.faden-linie { fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
-.faden-bahn .nadel { filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.35)); }
 @media (max-width: 700px) { .faden-bahn path.faden-linie { stroke-width: 1.6; } }
 
 /* ---------- Vier Versprechen: Zeichen werden gezeichnet ---------------------- */

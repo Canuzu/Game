@@ -37,6 +37,8 @@
     el('stop', { offset: 1, 'stop-color': '#7d7d88' }, stahl);
     var linie = el('path', { 'class': 'faden-linie', stroke: 'url(#faden-farbe)' }, svg);
     var nadel = el('g', { 'class': 'nadel' }, svg);
+    /* Der Schatten ist mitgezeichnet: Filter auf Teilen einer Vektorgrafik kann nicht jeder Browser */
+    el('path', { d: 'M0 0C5 -2.600 11 -2.300 17 -1.800L46 0L17 1.800C11 2.300 5 2.600 0 0Z', fill: '#000', opacity: 0.26, transform: 'translate(0.800 2.200)' }, nadel);
     el('path', { d: 'M0 0C5 -2.600 11 -2.300 17 -1.800L46 0L17 1.800C11 2.300 5 2.600 0 0Z', fill: 'url(#faden-stahl)', stroke: '#4f4f58', 'stroke-width': 0.5 }, nadel);
     el('ellipse', { cx: 6.500, cy: 0, rx: 3.300, ry: 0.800, fill: '#241d19' }, nadel);
     nadel.style.display = 'none';
