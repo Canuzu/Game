@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Catering und Platten · Café Pausenbrot, Köln-Südstadt</title>
+<meta name="description" content="Catering vom Café Pausenbrot: Frühstücksplatten, Fingerfood, Buffets und warme Gerichte für Büro, Geburtstag und Feier in Köln. Jetzt anfragen.">
+<meta name="theme-color" content="#135c6a">
+<link rel="icon" href="assets/img/zeichen.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/pausenbrot.css">
+<script src="assets/js/daten.js"></script>
+<script src="assets/js/basis.js"></script>
+<script src="assets/js/catering.js" defer></script>
+</head>
+<body>
+<pb-kopf></pb-kopf>
+
+<main id="inhalt">
+  <section class="band" style="min-height: clamp(26rem, 64vh, 36rem)" aria-labelledby="titel">
+    <div class="band__bild"><img src="assets/img/catering.webp" srcset="assets/img/catering-640.webp 640w, assets/img/catering.webp 1206w" sizes="100vw" alt="Catering-Tisch mit Bagels, Wrap-Röllchen, Quiche-Stücken, Falafel und Mozzarella-Tomaten-Spießen" width="1206" height="1193" fetchpriority="high"></div>
+    <div class="huelle">
+      <h1 id="titel" style="font-size: clamp(2.4rem, 5.6vw, 4.4rem); max-width: 16ch; margin-bottom: 1rem">Fürs Büro, den Geburtstag, die ganze Familie</h1>
+      <p>Wir machen Platten und Buffets aus dem, was wir jeden Tag in die Theke stellen. Du sagst uns, wann und für wie viele, wir machen dir einen Vorschlag mit Preis.</p>
+      <div class="knopfreihe"><a class="knopf knopf--hell" href="#anfrage">Anfragen</a></div>
+    </div>
+  </section>
+
+  <section class="abschnitt" aria-labelledby="was-titel">
+    <div class="huelle zweispaltig">
+      <div class="text">
+        <h2 id="was-titel">Was wir machen</h2>
+        <p>Alles ist frisch belegt und angerichtet, auf Holzbrettern und in unseren Tonschalen. Zum Abholen in der Rolandstraße, die Bretter und Schalen bringst du einfach wieder.</p>
+        <ul class="angebot-liste">
+          <li>Belegte Bagels und Brötchen</li>
+          <li>Wrap-Röllchen</li>
+          <li>Quiche und Ofengemüse</li>
+          <li>Falafel mit Dip</li>
+          <li>Mozzarella-Tomaten-Spieße</li>
+          <li>Käse- und Aufschnittplatten mit Obst</li>
+          <li>Salate aus der Theke</li>
+          <li>Warme Gerichte, zum Beispiel gefüllte Auberginen</li>
+        </ul>
+        <p class="leise klein">Ob Lieferung möglich ist, klären wir bei der Anfrage.</p>
+      </div>
+      <div class="collage">
+        <figure class="collage__a"><img src="assets/img/platte-640.webp" alt="Holzbretter mit Aufschnitt, Tomate-Mozzarella, Orangen, Erdbeeren und Physalis" width="640" height="814" loading="lazy" style="aspect-ratio:4/3.4"></figure>
+        <figure class="collage__b"><img src="assets/img/auberginen-640.webp" alt="Gefüllte Auberginenscheiben mit Hackfleisch und Kirschtomate in Tomatensauce auf einem Silbertablett" width="640" height="793" loading="lazy"></figure>
+        <figure class="collage__c"><img src="assets/img/falafel-640.webp" alt="Falafel mit Kirschtomaten, dahinter Schnitzel und Joghurt-Dip" width="640" height="643" loading="lazy"></figure>
+        <figure class="collage__d"><img src="assets/img/aufschnitt-640.webp" alt="Aufschnittplatte mit Käse, Drachenfrucht, Tomaten und Rosmarin" width="640" height="640" loading="lazy"></figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="abschnitt" id="anfrage" style="background: var(--papier-2)" aria-labelledby="anfrage-titel">
+    <div class="huelle anfrage">
+      <div class="anfrage__bild">
+        <h2 id="anfrage-titel" style="margin-bottom:1rem">Anfrage</h2>
+        <p class="leise" style="font-size:1.1rem">Je früher, desto besser. Für kleine Platten reichen meist zwei Tage, für ein Buffet sag uns bitte eine Woche vorher Bescheid.</p>
+        <div class="kasten" style="margin-top:1.4rem">
+          <p class="hand" style="font-size:1.6rem; margin-bottom:.4rem">Grob gerechnet</p>
+          <p id="schaetzung" class="leise" aria-live="polite"></p>
+        </div>
+      </div>
+
+      <form class="kasten formular" id="cateringform" novalidate>
+        <fieldset>
+          <legend>Was soll es sein?</legend>
+          <div class="wahl">
+            <label><input type="radio" name="art" value="fruehstueck" checked><span>Frühstücksplatten</span></label>
+            <label><input type="radio" name="art" value="fingerfood"><span>Fingerfood</span></label>
+            <label><input type="radio" name="art" value="buffet"><span>Buffet mit Warmem</span></label>
+            <label><input type="radio" name="art" value="offen"><span>Weiß ich noch nicht</span></label>
+          </div>
+        </fieldset>
+
+        <div class="reihe2">
+          <div class="feld">
+            <label for="gaeste">Für wie viele?</label>
+            <input class="eingabe" type="number" id="gaeste" name="gaeste" min="5" max="200" value="20" required inputmode="numeric" data-fehler="Bitte zwischen 5 und 200.">
+          </div>
+          <div class="feld">
+            <label for="datum">Wann?</label>
+            <input class="eingabe" type="date" id="datum" name="datum" required data-fehler="Bitte einen Tag wählen.">
+          </div>
+        </div>
+
+        <fieldset>
+          <legend>Besonderes</legend>
+          <div class="wahl">
+            <label><input type="checkbox" name="extra" value="vegetarisch"><span>Vegetarisch</span></label>
+            <label><input type="checkbox" name="extra" value="vegan"><span>Vegan</span></label>
+            <label><input type="checkbox" name="extra" value="ohne Schwein"><span>Ohne Schwein</span></label>
+            <label><input type="checkbox" name="extra" value="Lieferung gewünscht"><span>Lieferung gewünscht</span></label>
+          </div>
+        </fieldset>
+
+        <div class="reihe2">
+          <div class="feld">
+            <label for="name">Name</label>
+            <input class="eingabe" id="name" name="name" autocomplete="name" required>
+          </div>
+          <div class="feld">
+            <label for="telefon">Telefon</label>
+            <input class="eingabe" id="telefon" name="telefon" type="tel" autocomplete="tel" required pattern="\+?[0-9][0-9 \/\-]{5,}" data-fehler="Damit wir dich erreichen können.">
+          </div>
+        </div>
+        <div class="feld">
+          <label for="notiz">Was sollten wir noch wissen? <span class="leise">(freiwillig)</span></label>
+          <textarea class="eingabe" id="notiz" name="notiz" maxlength="800" placeholder="Anlass, Uhrzeit, Budget, Allergien"></textarea>
+        </div>
+        <button class="knopf" type="submit">Anfrage fertig machen</button>
+        <div id="versand" hidden></div>
+      </form>
+    </div>
+  </section>
+
+  <section class="abschnitt" id="bilder" aria-labelledby="bilder-titel">
+    <div class="huelle">
+      <h2 id="bilder-titel" style="margin-bottom:2rem">Von früheren Aufträgen</h2>
+      <div class="galerie">
+        <figure><img src="assets/img/buffet-640.webp" alt="Buffet mit Quiche, belegten Baguettes, Bagels und Wraps" width="640" height="810" loading="lazy"></figure>
+        <figure><img src="assets/img/schaelchen-640.webp" alt="Tonschälchen mit Bulgursalat, gefüllten Weinblättern, Möhren, Nudelsalat und Kichererbsen, daneben Brot" width="640" height="422" loading="lazy"></figure>
+        <figure><img src="assets/img/catering-640.webp" alt="Bagels, Wrap-Röllchen, Quiche und Spieße auf Holz" width="640" height="633" loading="lazy"></figure>
+        <figure><img src="assets/img/currys-640.webp" alt="Warme Gerichte mit Gemüse und Tofu, daneben Reis" width="640" height="645" loading="lazy"></figure>
+        <figure><img src="assets/img/gemuese-640.webp" alt="Gebratenes Gemüse mit Bohnen, Paprika und Tofu" width="640" height="644" loading="lazy"></figure>
+        <figure><img src="assets/img/auberginen-640.webp" alt="Gefüllte Auberginen auf Silbertablett" width="640" height="793" loading="lazy"></figure>
+      </div>
+    </div>
+  </section>
+</main>
+
+<pb-fuss></pb-fuss>
+</body>
+</html>

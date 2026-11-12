@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Café Pausenbrot · Frühstück, Mittagstheke und Kaffee in der Kölner Südstadt</title>
+<meta name="description" content="Café Pausenbrot in der Rolandstraße 8, Köln-Südstadt: Frühstück, belegte Brötchen, eine Mittagstheke mit Salaten, Eintöpfen und Quiche, Kaffee von Schamong. Jeden Tag von 8 bis 18 Uhr.">
+<meta name="theme-color" content="#135c6a">
+<meta property="og:title" content="Café Pausenbrot, Köln-Südstadt">
+<meta property="og:description" content="Frühstück, Mittagstheke und Kaffee. Jeden Tag von 8 bis 18 Uhr in der Rolandstraße 8.">
+<meta property="og:image" content="assets/img/theke-tafel.webp">
+<link rel="icon" href="assets/img/zeichen.svg" type="image/svg+xml">
+<link rel="preload" href="assets/fonts/young-serif-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="assets/css/pausenbrot.css">
+<script src="assets/js/daten.js"></script>
+<script src="assets/js/basis.js"></script>
+<script src="assets/js/start.js" defer></script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "CafeOrCoffeeShop",
+  "name": "Café Pausenbrot",
+  "telephone": "+49 177 3216170",
+  "address": { "@type": "PostalAddress", "streetAddress": "Rolandstraße 8", "postalCode": "50677", "addressLocality": "Köln", "addressCountry": "DE" },
+  "geo": { "@type": "GeoCoordinates", "latitude": 50.9187949, "longitude": 6.958021 },
+  "openingHoursSpecification": [{ "@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"], "opens": "08:00", "closes": "18:00" }],
+  "servesCuisine": ["Frühstück", "Mittagstisch", "Kaffee"],
+  "sameAs": ["https://www.instagram.com/cafepausenbrot/"]
+}
+</script>
+</head>
+<body>
+<pb-kopf></pb-kopf>
+
+<main id="inhalt">
+
+  <section class="anfang">
+    <div class="huelle anfang__innen">
+      <div>
+        <p class="anfang__ort">Rolandstraße 8, Südstadt</p>
+        <h1>Frühstück, Mittag, Kaffee. Jeden Tag ab acht.</h1>
+        <p class="anfang__text">Morgens belegte Brötchen und Frühstück am Tisch, mittags eine Theke voller Salate, Eintöpfe und Quiche, dazu den ganzen Tag Kaffee von Schamong aus Ehrenfeld.</p>
+        <div class="knopfreihe">
+          <a class="knopf knopf--hell" href="karte.html#zettel">Vorbestellen und abholen</a>
+          <a class="knopf knopf--linie" href="tisch.html">Tisch reservieren</a>
+        </div>
+        <p class="anfang__fakten"><span><strong>Täglich 8 bis 18 Uhr</strong></span><span data-status></span></p>
+      </div>
+      <div class="anfang__bild">
+        <figure><img src="assets/img/raum.webp" srcset="assets/img/raum-640.webp 640w, assets/img/raum.webp 1206w" sizes="(max-width: 880px) 90vw, 31rem" alt="Gastraum mit petrolfarbener Wand, grünen Samtbänken und bunten Glaslampen, Sonnenlicht fällt auf den Boden" width="1206" height="1595" fetchpriority="high"></figure>
+        <p class="anfang__notiz"><span class="hand">Auch am Sonntag.</span><small>Montag bis Sonntag, 8 bis 18 Uhr</small></p>
+      </div>
+    </div>
+    <div class="fliesen" aria-hidden="true"></div>
+  </section>
+
+  <section class="abschnitt" aria-labelledby="theke-titel">
+    <div class="huelle zweispaltig">
+      <div class="text zeigen">
+        <h2 id="theke-titel">Die Theke</h2>
+        <p>Sie wird jeden Morgen neu gefüllt. Mal Linsensalat und Kichererbsen-Eintopf, mal Tortellini, gefüllte Auberginen oder Falafel. Was es gibt, siehst du, wenn du reinkommst.</p>
+        <p>Auf dem Foto steht, was an einem Tag drin war. Tipp auf die Punkte.</p>
+        <div class="preiszeile" aria-label="Preise an der Theke">
+          <div><span>Ein Salat</span><span>ab 4,50 €</span></div>
+          <div><span>Drei Salate</span><span>8,90 €</span></div>
+          <div><span>Quiche und ein Salat</span><span>7,90 €</span></div>
+          <div><span>Suppe</span><span>ab 5,50 €</span></div>
+          <div><span>Eintopf</span><span>ab 6,50 €</span></div>
+        </div>
+        <p class="tafel__notiz" id="tagesangebot" hidden></p>
+        <div class="knopfreihe"><a class="knopf knopf--linie" href="karte.html">Die ganze Karte</a></div>
+      </div>
+      <div class="theke zeigen" id="theke" style="--spaeter:.1s">
+        <img src="assets/img/theke.webp" srcset="assets/img/theke-640.webp 640w, assets/img/theke.webp 1100w" sizes="(max-width: 880px) 92vw, 44rem" alt="Die Glastheke von oben: Brownies, Wassermelone mit Feta, Quiche, Linsensalat, Kichererbsen-Eintopf, gegrilltes Gemüse, Falafel, Krautsalat, Schnitzel, Tomatensalat und Bohnensalat in Tonschalen" width="1100" height="1458" loading="lazy">
+        <button class="knopf knopf--klein theke__alle" type="button" data-alle>Alles beschriften</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="abschnitt morgens" id="morgens" aria-labelledby="morgens-titel">
+    <div class="huelle zweispaltig zweispaltig--umgekehrt">
+      <div class="collage zeigen">
+        <figure class="collage__a"><img src="assets/img/fruehstueck-640.webp" srcset="assets/img/fruehstueck-640.webp 640w, assets/img/fruehstueck.webp 1182w" sizes="(max-width: 880px) 60vw, 30rem" alt="Frühstückstisch mit Brötchenkorb, Käse, Tonschälchen mit Aufstrich und Marmelade, Rührei in der Pfanne und Kaffeetassen" width="1182" height="1185" loading="lazy"></figure>
+        <figure class="collage__b"><img src="assets/img/spiegelei-640.webp" alt="Zwei Spiegeleier auf Brot mit Salat, Kirschtomaten und Balsamico" width="640" height="641" loading="lazy"></figure>
+        <figure class="collage__c"><img src="assets/img/fruehstueck-platte-640.webp" alt="Frühstücksbrett mit Aufschnitt, Käse, Marmelade, daneben Tomate-Mozzarella und frischer Orangensaft" width="640" height="641" loading="lazy"></figure>
+        <figure class="collage__d"><img src="assets/img/broetchen-640.webp" alt="Belegte Bagels, Baguettes, Brötchen und Croissants in der Auslage" width="640" height="471" loading="lazy"></figure>
+      </div>
+      <div class="text zeigen" style="--spaeter:.1s">
+        <h2 id="morgens-titel">Morgens</h2>
+        <p>Ein Korb Brötchen, Käse und Aufschnitt auf dem Holzbrett, Rührei in der Pfanne, kleine Tonschalen mit Aufstrich und Marmelade. Dazu frischer Orangensaft und ein Milchkaffee.</p>
+        <p>Wer es eilig hat, nimmt ein belegtes Brötchen mit. Die gibt es ab 2,60 €, mit Salat drauf 20 Cent mehr.</p>
+        <div class="knopfreihe">
+          <a class="knopf knopf--hell" href="tisch.html?anlass=fruehstueck">Frühstückstisch reservieren</a>
+          <a class="knopf knopf--rand-hell" href="karte.html#broetchen">Brötchen vorbestellen</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="abschnitt" aria-labelledby="kaffee-titel">
+    <div class="huelle zweispaltig">
+      <div class="text zeigen">
+        <h2 id="kaffee-titel">Kaffee aus Ehrenfeld</h2>
+        <p>Die Bohnen kommen von Schamong, der Rösterei in Köln-Ehrenfeld. Den Espresso gibt es auch doppelt, Milch auf Wunsch pflanzlich, für 30 Cent mehr.</p>
+        <p>Wenn du morgens auf dem Weg bist: Vorbestellen, vorbeikommen, mitnehmen.</p>
+        <div class="knopfreihe"><a class="knopf" href="karte.html#getraenke">Kaffee vorbestellen</a></div>
+      </div>
+      <div class="tafel zeigen" style="--spaeter:.1s" id="kaffeetafel" aria-label="Getränke und Preise von der Tafel"></div>
+    </div>
+  </section>
+
+  <section class="band" aria-labelledby="catering-titel">
+    <div class="band__bild"><img src="assets/img/buffet.webp" srcset="assets/img/buffet-640.webp 640w, assets/img/buffet.webp 1182w" sizes="100vw" alt="Langes Buffet im Café mit Quiche, belegten Baguettes, Bagels, Wraps und Salaten" width="1182" height="1496" loading="lazy"></div>
+    <div class="huelle">
+      <h2 id="catering-titel" class="zeigen">Platten und Buffets für eure Feier oder das Büro</h2>
+      <p class="zeigen">Bagels, Wraps, Quiche, Falafel, Mozzarella-Spieße, Käse- und Aufschnittplatten mit Obst, warme Gerichte. Sag uns, wann und für wie viele, dann machen wir dir einen Vorschlag.</p>
+      <div class="knopfreihe zeigen"><a class="knopf knopf--hell" href="catering.html">Catering anfragen</a><a class="knopf knopf--rand-hell" href="catering.html#bilder">Bilder ansehen</a></div>
+    </div>
+  </section>
+
+  <section class="abschnitt" aria-label="Too Good To Go und Instagram">
+    <div class="huelle zweispaltig">
+      <div class="notizzettel zeigen">
+        <h3>Abends was übrig?</h3>
+        <p>Was wir am Abend nicht verkauft haben, landet nicht in der Tonne. Bei Too Good To Go gibt es unsere Überraschungstüte, die kleine kostet dort 3 €. Bring am besten eine eigene Dose mit.</p>
+        <a class="textknopf" href="" data-link="tooGoodToGo" target="_blank" rel="noopener">Zu Too Good To Go</a>
+      </div>
+      <div class="notizzettel zeigen" style="--spaeter:.1s; transform: rotate(1.2deg)">
+        <h3>Was gibt's heute?</h3>
+        <p>Schau auf Instagram vorbei, oder ruf kurz an. Wir sagen dir gern, was in der Theke steht.</p>
+        <p><a class="textknopf" href="" data-link="instagram" target="_blank" rel="noopener">@cafepausenbrot</a> &nbsp;·&nbsp; <a class="textknopf" href="tel:+491773216170">0177 321 61 70</a></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="abschnitt" id="besuch" style="background: var(--papier-2)" aria-labelledby="besuch-titel">
+    <div class="huelle besuch">
+      <div class="zeigen">
+        <h2 id="besuch-titel">Rolandstraße 8</h2>
+        <p class="leise" style="font-size:1.1rem">50677 Köln, in der Südstadt, ein paar Schritte vom Chlodwigplatz.</p>
+        <dl class="zeiten">
+          <dt>Montag bis Freitag</dt><dd>8 bis 18 Uhr</dd>
+          <dt>Samstag und Sonntag</dt><dd>8 bis 18 Uhr</dd>
+        </dl>
+        <p data-status style="font-weight:600"></p>
+        <p class="leise klein">An Feiertagen können die Zeiten abweichen. Im Zweifel kurz anrufen.</p>
+        <div class="knopfreihe" style="margin-top:1.6rem">
+          <a class="knopf" href="https://www.google.com/maps/dir/?api=1&amp;destination=Caf%C3%A9+Pausenbrot%2C+Rolandstra%C3%9Fe+8%2C+50677+K%C3%B6ln" target="_blank" rel="noopener">Route planen</a>
+          <a class="knopf knopf--linie" href="tel:+491773216170">Anrufen</a>
+        </div>
+        <figure class="besuch__foto"><img src="assets/img/tafel-gedeckt-640.webp" alt="Lange gedeckte Tafel vor der petrolfarbenen Wand, mit Blumen, Kerzen und kleinen Vorspeisen" width="640" height="842" loading="lazy" style="aspect-ratio: 4 / 3; object-fit: cover; width: 100%"><figcaption>Für größere Runden stellen wir Tische zu einer langen Tafel zusammen. <a href="tisch.html">Tisch anfragen</a></figcaption></figure>
+      </div>
+      <div class="landkarte zeigen" data-landkarte style="--spaeter:.1s">
+        <div class="landkarte__vor">
+          <strong>Rolandstraße 8, 50677 Köln</strong>
+          <p>Die Karte kommt von OpenStreetMap. Erst wenn du sie öffnest, wird deine IP-Adresse dorthin übertragen.</p>
+          <button class="knopf knopf--linie knopf--klein" type="button" data-karte-laden>Karte zeigen</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<pb-fuss></pb-fuss>
+</body>
+</html>

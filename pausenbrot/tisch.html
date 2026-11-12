@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tisch reservieren · Café Pausenbrot, Köln-Südstadt</title>
+<meta name="description" content="Tisch im Café Pausenbrot anfragen: zum Frühstück, Mittagessen oder für eine größere Runde an der langen Tafel. Rolandstraße 8, Köln.">
+<meta name="theme-color" content="#135c6a">
+<link rel="icon" href="assets/img/zeichen.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/pausenbrot.css">
+<script src="assets/js/daten.js"></script>
+<script src="assets/js/basis.js"></script>
+<script src="assets/js/tisch.js" defer></script>
+</head>
+<body>
+<pb-kopf></pb-kopf>
+
+<main id="inhalt">
+  <header class="seitenkopf">
+    <div class="huelle">
+      <h1>Ein Tisch für euch</h1>
+      <p>Zum Frühstück am Wochenende, zum Mittagessen mit Kollegen oder für eine lange Tafel zum Geburtstag. Sag uns, wann und wie viele, wir melden uns mit einer Bestätigung.</p>
+    </div>
+  </header>
+
+  <div class="huelle anfrage" style="padding-bottom: clamp(4rem, 8vw, 6rem)">
+    <div class="anfrage__bild">
+      <figure><img src="assets/img/tafel-gedeckt.webp" srcset="assets/img/tafel-gedeckt-640.webp 640w, assets/img/tafel-gedeckt.webp 1206w" sizes="(max-width: 880px) 92vw, 30rem" alt="Lange gedeckte Tafel mit grünen Samtstühlen, Blumen, Kerzen und kleinen Vorspeisen" width="1206" height="1586"></figure>
+      <p class="figcaption leise klein" style="margin-top:.7rem">Für größere Runden stellen wir die Tische zusammen.</p>
+    </div>
+
+    <form class="kasten formular" id="tischform" novalidate>
+      <fieldset>
+        <legend>Wofür?</legend>
+        <div class="wahl" id="anlass">
+          <label><input type="radio" name="anlass" value="fruehstueck" checked><span>Frühstück</span></label>
+          <label><input type="radio" name="anlass" value="mittag"><span>Mittagessen</span></label>
+          <label><input type="radio" name="anlass" value="kaffee"><span>Kaffee und Kuchen</span></label>
+          <label><input type="radio" name="anlass" value="feier"><span>Feier, lange Tafel</span></label>
+        </div>
+      </fieldset>
+
+      <div class="feld">
+        <span class="feld__titel" id="personen-titel">Wie viele seid ihr?</span>
+        <div style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap">
+          <span class="zaehler" role="group" aria-labelledby="personen-titel">
+            <button type="button" data-personen="-1" aria-label="Eine Person weniger">−</button>
+            <output id="personen" aria-live="polite">2</output>
+            <button type="button" data-personen="1" aria-label="Eine Person mehr">+</button>
+          </span>
+          <span class="leise klein" id="personen-text">Personen</span>
+        </div>
+      </div>
+      <p class="hinweis" id="gruppe-hinweis" hidden>Bei so vielen Gästen stellen wir eine lange Tafel. Wenn ihr wollt, bereiten wir auch Platten oder ein kleines Buffet vor. Schreib es einfach unten dazu.</p>
+
+      <div class="reihe2">
+        <div class="feld">
+          <label for="datum">Tag</label>
+          <input class="eingabe" type="date" id="datum" name="datum" required data-fehler="Bitte wähle einen Tag.">
+        </div>
+        <div class="feld">
+          <label for="zeit">Uhrzeit</label>
+          <select class="eingabe" id="zeit" name="zeit" required data-fehler="Bitte wähle eine Uhrzeit."></select>
+        </div>
+      </div>
+
+      <div class="reihe2">
+        <div class="feld">
+          <label for="name">Name</label>
+          <input class="eingabe" id="name" name="name" autocomplete="name" required>
+        </div>
+        <div class="feld">
+          <label for="telefon">Telefon</label>
+          <input class="eingabe" id="telefon" name="telefon" type="tel" autocomplete="tel" required pattern="\+?[0-9][0-9 \/\-]{5,}" data-fehler="Damit wir dich erreichen können.">
+        </div>
+      </div>
+
+      <div class="feld">
+        <label for="notiz">Noch was? <span class="leise">(freiwillig)</span></label>
+        <textarea class="eingabe" id="notiz" name="notiz" maxlength="500" placeholder="Zum Beispiel: Kinderstuhl, Geburtstag, Platte für alle"></textarea>
+      </div>
+
+      <button class="knopf" type="submit">Anfrage fertig machen</button>
+      <div id="versand" hidden></div>
+    </form>
+  </div>
+</main>
+
+<pb-fuss></pb-fuss>
+</body>
+</html>

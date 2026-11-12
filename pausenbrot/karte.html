@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Karte und Vorbestellung · Café Pausenbrot, Köln-Südstadt</title>
+<meta name="description" content="Die Karte von Café Pausenbrot mit allen Preisen: belegte Brötchen, Wraps, Baguette, Suppen, Eintöpfe, Quiche, Salate und Kaffee. Vorbestellen und zur Wunschzeit abholen.">
+<meta name="theme-color" content="#135c6a">
+<link rel="icon" href="assets/img/zeichen.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/pausenbrot.css">
+<script src="assets/js/daten.js"></script>
+<script src="assets/js/basis.js"></script>
+<script src="assets/js/karte.js" defer></script>
+</head>
+<body>
+<pb-kopf></pb-kopf>
+
+<main id="inhalt">
+  <header class="seitenkopf">
+    <div class="huelle">
+      <h1>Die Tafel</h1>
+      <p>So steht es bei uns an der Wand. Tipp auf ein Gericht, dann landet es auf deinem Zettel. Wir machen es fertig, du holst es zur gewünschten Zeit ab.</p>
+    </div>
+  </header>
+
+  <div class="huelle karte">
+    <div class="tafel tafel--gross" id="tafel">
+      <div class="tafel__spalten" id="tafel-spalten"></div>
+      <p class="tafel__angebot" id="angebot" hidden></p>
+    </div>
+
+    <aside class="zettel" id="zettel" aria-labelledby="zettel-titel">
+      <h2 id="zettel-titel">Dein Zettel</h2>
+      <div id="zettel-inhalt" aria-live="polite"></div>
+      <form class="zettel__form" id="abholform" novalidate hidden>
+        <div class="feld">
+          <span class="feld__titel" id="tag-titel">Abholen am</span>
+          <div class="wahl" role="radiogroup" aria-labelledby="tag-titel" id="tage"></div>
+        </div>
+        <div class="feld">
+          <label for="uhrzeit">Um</label>
+          <select class="eingabe" id="uhrzeit" name="uhrzeit" required data-fehler="Bitte wähle eine Uhrzeit."></select>
+        </div>
+        <div class="feld">
+          <label for="name">Dein Name</label>
+          <input class="eingabe" id="name" name="name" autocomplete="name" required data-fehler="Damit wir wissen, für wen es ist.">
+        </div>
+        <div class="feld">
+          <label for="notiz">Noch was? <span class="leise">(freiwillig)</span></label>
+          <textarea class="eingabe" id="notiz" name="notiz" rows="2" maxlength="300" placeholder="Zum Beispiel: ohne Zwiebeln, Suppe bitte zum Mitnehmen"></textarea>
+        </div>
+        <button class="knopf" type="submit">Bestellung fertig machen</button>
+        <p class="zettel__hinweis">Bezahlt wird beim Abholen, bar oder mit Karte. Was es bei Suppe, Eintopf und Salat genau gibt, hängt von der Theke am Tag ab.</p>
+      </form>
+      <div id="versand" hidden></div>
+    </aside>
+  </div>
+
+  <a class="leiste-unten" href="#zettel" id="leiste">
+    <span id="leiste-text">0 Sachen</span><strong id="leiste-summe">0,00 €</strong>
+  </a>
+</main>
+
+<pb-fuss></pb-fuss>
+</body>
+</html>
