@@ -1,7 +1,16 @@
 import re, sys
-src, out, hookf, cssf = sys.argv[1:5]
+src, out, hookf, cssf, livef = sys.argv[1:6]
+import base64, json
 s = open(src, encoding='utf-8').read()
 hook = open(hookf, encoding='utf-8').read(); css = open(cssf, encoding='utf-8').read()
+live = open(livef, 'rb').read()
+lt = live.decode('utf-8')
+LS = []
+for m in re.finditer(r'<section class="slide [^"]*" id="([a-z]+)"[^>]*>', lt):
+    tag = m.group(0); t = re.search(r'data-title="([^"]*)"', tag); st = re.search(r'data-steps="(\d+)"', tag)
+    LS.append({'id': m.group(1), 'title': t.group(1) if t else m.group(1), 'steps': int(st.group(1)) if st else 1})
+assert len(LS) >= 14, len(LS)
+hook = '/* Folien der Sponsoring-Präsentation (eingebettet, laufen mit Animation im Reiter-Fenster) */\nconst LIVE = ' + json.dumps({'slides': LS}, ensure_ascii=False) + ';\n' + hook
 def rep(a, b, cnt=1):
     global s
     assert s.count(a) == cnt, (a[:80], s.count(a))
@@ -54,5 +63,7 @@ s = s[:a] + "const IMG_LABELS = {\n  berater1: 'Foto Berater 1', berater2: 'Foto
 # 8) Referenten-Notiz
 a = s.index("  profil: 'Das Finanz-Upgrade"); b = s.index("\n", a)
 s = s[:a] + "  profil: 'Beim Betreten: Walkout – Swiss Life Select × euer Verein, dann erscheint die Beraterkarte.\\nVier Reiter: Swiss Life Select, Immobilien, Finanzkommissar, 11TeamSports. Klick öffnet den nächsten Reiter, jeder weitere Klick zeigt die nächste Folie, danach klappt er zu.\\nNach dem letzten Reiter: Finale.'," + s[b:]
+a = s.index('<script type="application/json" id="vereinsdaten">')
+s = s[:a] + '<script type="application/octet-stream" id="live-deck">' + base64.b64encode(live).decode() + '</script>\n' + s[a:]
 open(out, 'w', encoding='utf-8').write(s)
 print('ok', len(s))

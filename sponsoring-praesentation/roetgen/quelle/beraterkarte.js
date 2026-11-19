@@ -6,16 +6,20 @@
    Schritte: 0 Walkout · je Bereich: eine Stufe pro Folie, dann »schließen« · letzte Stufe = Finale
    ========================================================================== */
 const AREA_DEFAULTS = [
-  { t: 'Swiss Life Select', sub: 'Wer wir sind · persönliche Best-Select-Beratung', c: '#D82034', i: 'sls' },
+  { t: 'Swiss Life Select', sub: 'Wer wir sind · persönliche Best-Select-Beratung', c: '#D82034', i: 'sls', live: '3, 4, 5, 6, 8' },
   { t: 'Immobilien', sub: 'Eigenheim, Finanzierung & Kapitalanlage', c: '#0891B2', i: 'house' },
   { t: 'Finanzkommissar', sub: 'Der Finanz-Check für eure Mitglieder', c: '#7C3AED', i: 'search' },
-  { t: '11TeamSports', sub: 'Ausstattung für euren Verein', c: '#EA580C', i: 'present' },
+  { t: '11TeamSports', sub: 'Ausstattung für euren Verein', c: '#EA580C', i: 'present', live: '10, 11, 12, 13, 14' },
 ];
 const AREA_ICONS = ['sls', 'house', 'search', 'present', 'ball', 'shield', 'building', 'key', 'chart', 'team', 'heart', 'star', 'trophy', 'coins', 'euro', 'doc', 'advisor', 'people', 'umbrella', 'palm'];
 const areas = () => AREA_DEFAULTS.map((d, k) => {
   const a = Object.assign({}, d, (S.bereiche && S.bereiche[k]) || {});
   a.slides = Array.isArray(a.slides) ? a.slides.filter((id) => custom['fol_' + id]) : [];
-  a.m = Math.max(1, a.slides.length); // ohne eigene Folien: ein Platzhalter
+  // Folien: erst die lebendigen aus der Sponsoring-Präsentation (je Klick-Schritt ein Bild), dann eigene Bilder
+  a.liveNr = String(a.live || '').split(/[^\d]+/).map(Number).filter((x) => x >= 1 && x <= LIVE.slides.length);
+  a.pages = [...a.liveNr.map((nr) => ({ live: nr - 1, n: LIVE.slides[nr - 1].steps, title: LIVE.slides[nr - 1].title })), ...a.slides.map((id) => ({ img: id, n: 1 }))];
+  if (!a.pages.length) a.pages = [{ ph: true, n: 1 }]; // ohne Folien: ein Platzhalter
+  a.m = a.pages.length;
   return a;
 });
 const areaIcon = (a, cls = 'ico') => (a.i === 'sls' ? `<svg class="${cls} sls-rb" viewBox="124 42 212 210"><path fill-rule="evenodd" d="${D.logo.red}"/></svg>` : ico(a.i, cls));
@@ -37,10 +41,10 @@ hooks.profil = (() => {
 
   /* ---------- Ablauf ---------- */
   function buildSeq() {
-    seq = [{ open: -1, slide: 0, done: 0, fin: false }];
+    seq = [{ open: -1, slide: 0, sub: 0, done: 0, fin: false }];
     A.forEach((a, k) => {
-      for (let j = 0; j < a.m; j++) seq.push({ open: k, slide: j, done: k, fin: false });
-      seq.push({ open: -1, slide: 0, done: k + 1, fin: k === A.length - 1 });
+      a.pages.forEach((pg, j) => { for (let t = 0; t < pg.n; t++) seq.push({ open: k, slide: j, sub: t, done: k, fin: false }); });
+      seq.push({ open: -1, slide: 0, sub: 0, done: k + 1, fin: k === A.length - 1 });
     });
     s.dataset.steps = seq.length;
   }
@@ -91,8 +95,9 @@ hooks.profil = (() => {
 
   /* ---------- Fenster mit Folien ---------- */
   function slideHTML(a, k, j) {
-    const id = a.slides[j];
-    if (id) return `<div class="ps-slide"><img src="${custom['fol_' + id]}" alt=""></div>`;
+    const pg = a.pages[j];
+    if (pg.live != null) return '<div class="ps-slide ps-live-slot"></div>';
+    if (pg.img) return `<div class="ps-slide"><img src="${custom['fol_' + pg.img]}" alt=""></div>`;
     return `<div class="ps-slide ps-ph"><div><i class="ps-ph-ico">${areaIcon(a)}</i><b>${esc(a.t)}</b>
       <span>Folie ${j + 1} · Inhalt folgt</span><small>Folien hinzufügen: Einstellungen <kbd>E</kbd> → „Die vier Reiter“</small></div></div>`;
   }
@@ -105,17 +110,69 @@ hooks.profil = (() => {
   }
   const tileRect = (k) => ({ left: TILE[k][0] + 'px', top: TILE[k][1] + 'px', width: W2 + 'px', height: H2 + 'px', borderRadius: '22px' });
   const fullRect = { left: P.x + 'px', top: P.y + 'px', width: P.w + 'px', height: P.h + 'px', borderRadius: '30px' };
-  function showPanel(k, j, anim) {
+
+  /* ---------- Lebendige Folien: die Sponsoring-Präsentation läuft in einem unsichtbaren Rahmen ---------- */
+  const LW = 1166, LH = 656, LX = P.x + 28 + (1224 - LW) / 2, LY = P.y + 112 + 26;
+  const liveBox = h('div', 'ps-live', '', $('.pf-panel', s));
+  liveBox.style.cssText = `left:${LX}px;top:${LY}px;width:${LW}px;height:${LH}px`;
+  let frame = null, ready = null, lwin = null;
+  function liveEnsure() {
+    if (ready) return ready;
+    const src = document.getElementById('live-deck');
+    if (!src) return (ready = Promise.resolve(null));
+    frame = document.createElement('iframe'); frame.title = 'Folie'; frame.setAttribute('tabindex', '-1');
+    ready = new Promise((res) => {
+      frame.onload = () => {
+        lwin = frame.contentWindow;
+        try {
+          const d = lwin.document, st = d.createElement('style');
+          st.textContent = '#start,#hud,#progress,#toast,.panel-ui{display:none!important}body,body:not(.mouse){cursor:default!important}';
+          d.head.appendChild(st); d.querySelector('#start').classList.add('gone');
+        } catch (e) { console.warn('Folien', e); }
+        res(lwin);
+      };
+    });
+    const bin = atob(src.textContent.trim()), u8 = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+    frame.srcdoc = new TextDecoder().decode(u8);
+    liveBox.appendChild(frame);
+    return ready;
+  }
+  let liveWant = null;
+  function liveGo(idx, st, anim) { // Folie idx (0-basiert), Klick-Schritt st
+    liveWant = [idx, st];
+    liveEnsure().then((w) => {
+      if (!w || !w.__deck || liveWant[0] !== idx || liveWant[1] !== st) return;
+      const d = w.__deck;
+      if (anim && d.cur === idx && st === d.step + 1) d.next();
+      else if (anim && st === 0) d.show(idx, 0, { dir: 1 });
+      else d.show(idx, st, { dir: -1, instant: true });
+    });
+  }
+  function liveShow(on, delay = 0) {
+    clearTimeout(liveShow.t);
+    if (!on) { liveBox.classList.remove('on'); return; }
+    liveShow.t = setTimeout(() => liveBox.classList.add('on'), delay);
+  }
+  function showPanel(k, j, anim, sub = 0) {
     const a = A[k];
     pp.innerHTML = panelHTML(a, k, j); pp.style.setProperty('--ac', a.c);
     pp.classList.remove('show'); pp.style.display = 'block'; Object.assign(pp.style, fullRect);
+    const pg = a.pages[j];
+    if (pg.live != null) { liveGo(pg.live, sub, anim); liveShow(true, anim ? 520 : 0); } else liveShow(false);
     if (!anim) { pp.classList.add('show'); return; }
     pp.animate([tileRect(k), fullRect], { duration: 640, easing: 'cubic-bezier(.65,0,.35,1)' });
     sfx('whoosh');
     later(() => pp.classList.add('show'), 480);
   }
-  function switchSlide(k, j) { // nächste Folie fährt von rechts herein, die alte kippt nach links weg
-    const a = A[k], st = $('.ps-stage', pp), old = $('.ps-slide', st);
+  function switchSlide(k, j, sub) { // nächste Folie fährt von rechts herein, die alte kippt nach links weg
+    const a = A[k], st = $('.ps-stage', pp), old = $('.ps-slide', st), pg = a.pages[j], was = old && old.classList.contains('ps-live-slot');
+    if (pg.live != null) { liveGo(pg.live, sub, true); liveShow(true, was ? 0 : 300); } else liveShow(false);
+    if (pg.live != null && was) { // von Live-Folie zu Live-Folie: die Präsentation macht ihren eigenen Übergang
+      $('.ps-count b', pp).textContent = j + 1;
+      $$('.ps-dots i', pp).forEach((d, i) => d.classList.toggle('on', i === j));
+      return;
+    }
     st.insertAdjacentHTML('beforeend', slideHTML(a, k, j));
     const nu = st.lastElementChild;
     $('.ps-count b', pp).textContent = j + 1;
@@ -126,6 +183,7 @@ hooks.profil = (() => {
     nu.animate([{ transform: 'translateX(140px) rotateY(-18deg) scale(.94)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 700, delay: 90, easing: 'cubic-bezier(.16,1,.3,1)', fill: 'backwards' });
   }
   function hidePanel(k, anim, then) {
+    liveShow(false);
     if (pp.style.display !== 'block') { then && then(); return; }
     pp.classList.remove('show');
     if (!anim) { pp.style.display = 'none'; then && then(); return; }
@@ -147,19 +205,20 @@ hooks.profil = (() => {
     s.classList.toggle('open', st.open >= 0); s.classList.toggle('fin', st.fin);
     markDone(st.done);
     $$('.bc-dots i', cardBox).forEach((d, k) => d.classList.toggle('cur', k === st.open));
-    if (st.open >= 0) showPanel(st.open, st.slide, false); else { pp.style.display = 'none'; pp.innerHTML = ''; }
+    if (st.open >= 0) showPanel(st.open, st.slide, false, st.sub); else { liveShow(false); pp.style.display = 'none'; pp.innerHTML = ''; }
     void s.offsetWidth; s.classList.remove('pf-instant');
     at = n;
   }
   function animateTo(n) {
     const st = stateOf(n), prev = stateOf(at);
     at = n;
-    if (st.open >= 0 && prev.open === st.open) { animUntil = performance.now() + 450; switchSlide(st.open, st.slide); return; }
+    if (st.open >= 0 && prev.open === st.open && prev.slide === st.slide) { animUntil = performance.now() + 300; liveGo(A[st.open].pages[st.slide].live, st.sub, true); return; }
+    if (st.open >= 0 && prev.open === st.open) { animUntil = performance.now() + 450; switchSlide(st.open, st.slide, st.sub); return; }
     if (st.open >= 0) { // Bereich aufklappen
       animUntil = performance.now() + 900;
       s.classList.add('open');
       $$('.bc-dots i', cardBox).forEach((d, k) => d.classList.toggle('cur', k === st.open));
-      showPanel(st.open, st.slide, true);
+      showPanel(st.open, st.slide, true, st.sub);
       return;
     }
     const k = prev.open; // Bereich schließen → Reiter erledigt
@@ -184,7 +243,14 @@ hooks.profil = (() => {
     later(() => { cf.burst({ x: CARD.cx, y: CARD.cy - 60, n: 220, power: 1300 }); cf.rain(120); }, 450);
   }
 
-  /* ---------- Walkout beim Betreten ---------- */
+  /* ---------- Beim Betreten: Karte und Reiter erscheinen ---------- */
+  function intro() {
+    stopAll();
+    s.classList.remove('intro'); void s.offsetWidth; s.classList.add('ready', 'intro');
+    sfx('whoosh', { delay: 150 }); [0, 1, 2, 3].forEach((i) => sfx('pop', { delay: 750 + i * 110, vol: 0.4 }));
+    later(() => s.classList.remove('intro'), 2600);
+  }
+  /* (früherer Walkout, nicht mehr verwendet) */
   function walkout() {
     stopAll();
     s.classList.remove('ready'); void s.offsetWidth; s.classList.add('wk');
@@ -225,13 +291,15 @@ hooks.profil = (() => {
       <div class="set-row"><label>Name des Reiters<input data-k="t" value="${esc(a.t)}"></label><label>Farbe<input type="color" data-k="c" value="${esc(a.c)}"></label></div>
       <div class="set-row"><label>Zeile darunter<input data-k="sub" value="${esc(a.sub || '')}"></label>
         <label>Symbol<select data-k="i">${AREA_ICONS.map((x) => `<option value="${x}"${x === a.i ? ' selected' : ''}>${x === 'sls' ? 'Swiss-Life-Band' : x}</option>`).join('')}</select></label></div>
-      <p class="set-note">Folien (als Bild, PNG oder JPG – mehrere auf einmal möglich). Ohne Folien zeigt der Reiter einen Platzhalter.</p>
+      <label>Folien aus der Sponsoring-Präsentation (Nummern, mit Animation)<input data-k="live" value="${esc(a.live || '')}" placeholder="z. B. 3, 4, 5"></label>
+      <p class="set-note">${a.liveNr.length ? a.liveNr.map((nr) => `${nr} ${esc(LIVE.slides[nr - 1].title)}`).join(' · ') : 'keine'}</p>
+      <p class="set-note">Weitere Folien als Bild (PNG oder JPG – mehrere auf einmal möglich), sie kommen danach. Ohne Folien zeigt der Reiter einen Platzhalter.</p>
       <div class="set-slides">${a.slides.map((id, i) => `<div class="ss" data-id="${id}"><img src="${custom['fol_' + id]}" alt=""><span>${i + 1}</span>
         <button type="button" data-mv="-1" title="nach vorne">‹</button><button type="button" data-mv="1" title="nach hinten">›</button><button type="button" data-del title="entfernen">×</button></div>`).join('')}
         <label class="ss-add">+ Folien hinzufügen<input type="file" accept="image/*" multiple></label></div></details>`).join('');
     $$('details', box).forEach((d, k) => {
       $$('[data-k]', d).forEach((i) => i.addEventListener(i.tagName === 'SELECT' || i.type === 'color' ? 'change' : 'input', () => {
-        setArea(k, { [i.dataset.k]: i.value }); clearTimeout(saveT); saveT = setTimeout(build, 250);
+        setArea(k, { [i.dataset.k]: i.value }); clearTimeout(saveT); saveT = setTimeout(i.dataset.k === 'live' ? () => { build(); settings(lastBox, k); } : build, i.dataset.k === 'live' ? 900 : 250);
         if (i.dataset.k === 't') $('summary', d).lastChild.textContent = `${k + 1} · ${i.value}`;
         if (i.dataset.k === 'c') d.style.setProperty('--ac', i.value);
       }));
@@ -253,16 +321,16 @@ hooks.profil = (() => {
 
   return {
     build, settings,
-    enter() { at = -1; stopAll(); cf.clear(); s.classList.remove('open', 'fin', 'wk', 'ready'); pp.style.display = 'none'; },
+    enter() { at = -1; stopAll(); cf.clear(); s.classList.remove('open', 'fin', 'wk', 'ready', 'intro'); pp.style.display = 'none'; liveShow(false); setTimeout(liveEnsure, 900); },
     step(_, n, dir, silent) {
       const fresh = at < 0;
       if (s.classList.contains('wk') && n > 0) { stopAll(); finishWalkout(); }
-      if (fresh && n === 0 && !silent && !reduce) { apply(0); s.classList.remove('ready'); walkout(); return; }
+      if (fresh && n === 0 && !silent && !reduce) { apply(0); intro(); return; }
       if (!s.classList.contains('wk')) s.classList.add('ready');
       const racing = performance.now() < animUntil; // Klick während einer laufenden Animation → sofort in den Zielzustand
       if (silent || fresh || dir < 0 || n !== at + 1 || reduce || racing) apply(n); else animateTo(n);
     },
-    leave() { stopAll(); cf.clear(); at = -1; s.classList.remove('open', 'fin', 'wk', 'ready'); pp.style.display = 'none'; },
+    leave() { stopAll(); cf.clear(); at = -1; s.classList.remove('open', 'fin', 'wk', 'ready', 'intro'); pp.style.display = 'none'; liveShow(false); },
     final() { s.classList.remove('wk'); s.classList.add('ready'); apply(seq.length - 1); },
   };
 })();
